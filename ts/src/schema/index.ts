@@ -262,9 +262,7 @@ class ModelTool<
         if (config && typeof config === 'object' && 'fields' in config) {
           if ((config as any).fields.length === 0)
             entityResolvers.push((config as any).resolver);
-        } else if (typeof config === 'function') {
-          entityResolvers.push(config);
-        }
+        } else if (typeof config === 'function') entityResolvers.push(config);
       }
 
       for (const [fieldName, value] of Object.entries(rawInput)) {
@@ -341,7 +339,11 @@ class ModelTool<
 
       const source = isUpdate ? ignoreUpdate : ignoreInit;
 
-      if (source === undefined) continue;
+      if (
+        source === undefined ||
+        (isUpdate && this._isRequired(fieldName) && readonly)
+      )
+        continue;
 
       if (source === true) {
         relevantFieldsProvided.delete(fieldName);
@@ -365,14 +367,20 @@ class ModelTool<
           Promise.try(source as any, ctx),
         ]);
 
-      if (readonly) {
-        if (defaultValue === undefined || typeof defaultValue === 'function')
-          continue;
+      // readonly only restricts updates; creation is always allowed
+      if (readonly && isUpdate) {
+        const hasStaticDefault =
+          defaultValue !== undefined && typeof defaultValue !== 'function';
 
-        // readonly means: only allow update if value previousValue == defaultValue
-
-        // @ts-expect-error ikr
-        if (isEqual(previousValues[fieldName], defaultValue)) {
+        // readonly with a static default: only allow the update while the
+        // previous value still equals that default. Otherwise (no default,
+        // e.g. required properties, or a function/async default) the
+        // property is permanently locked after creation.
+        if (
+          hasStaticDefault &&
+          // @ts-expect-error ikr
+          isEqual(previousValues[fieldName], defaultValue)
+        ) {
           continue;
         }
 
@@ -1343,7 +1351,6 @@ class ModelTool<
   }
 
   private async _resolveDependentChanges(
-    fieldsToResolve: Set<string>,
     fieldsCollection: FieldInfoCollection,
   ) {
     const ctx = this._getContext();
@@ -1354,7 +1361,7 @@ class ModelTool<
 
     let toResolve = [] as KeyOf<O>[];
 
-    for (const prop of fieldsToResolve.values()) {
+    for (const prop of fieldsCollection.relevantDependentConfigNames.values()) {
       const fieldInfo = fieldsCollection.get(prop);
 
       const dependencies = this._getDependencies(fieldInfo.configName);
@@ -1369,11 +1376,15 @@ class ModelTool<
       toResolve.map(async (name) => {
         const config = this._getDefinition(name);
 
+        // readonly dependents only re-resolve while their value still
+        // matches the (static) default; once it has diverged, they're
+        // frozen. A function/async default has no stable baseline to
+        // compare against, so it's exempt and always re-resolves.
         if (
           !isCreation &&
           config.readonly &&
           typeof config.default !== 'function' &&
-          isEqual(
+          !isEqual(
             config.default,
             (values as any)[name],
             this._options.equalityDepth,
@@ -1396,7 +1407,7 @@ class ModelTool<
         )
           return;
 
-        fieldsResolved.add(value);
+        fieldsResolved.add(name);
         this._updateCxtValues({ [name]: value } as never);
       }),
     );
@@ -1609,14 +1620,10 @@ class ModelTool<
     // Step 10 – resolve dependent field values
     let fieldsToResolve = cloneValue(fieldsCollection.fieldsProvided);
 
-    while (fieldsToResolve.size > 0) {
+    while (fieldsToResolve.size > 0)
       fieldsToResolve = await this._resolveDependentChanges(
-        fieldsToResolve,
-        fieldsCollection,
+        fieldsCollection.withRelevantDependentFields(fieldsToResolve),
       );
-
-      fieldsCollection.appendRelevantDependentFields = fieldsToResolve;
-    }
 
     // Step 11 – attach timestamps
     const finalData = this._useConfigProps(false);
@@ -1772,16 +1779,12 @@ class ModelTool<
     await this._handleSanitizationOfVirtuals(fieldsCollection);
 
     // Step 14 – resolve dependent field values
-    let fieldsToResolve = fieldsCollection.relevantFieldsProvided;
+    let fieldsToResolve = cloneValue(fieldsCollection.fieldsProvided);
 
-    while (fieldsToResolve.size) {
+    while (fieldsToResolve.size > 0)
       fieldsToResolve = await this._resolveDependentChanges(
-        fieldsToResolve,
-        fieldsCollection,
+        fieldsCollection.withRelevantDependentFields(fieldsToResolve),
       );
-
-      fieldsCollection.appendRelevantDependentFields = fieldsToResolve;
-    }
 
     // Step 15 – drop fields that still equal the old value after all resolvers
     for (const prop of getKeysAsProps(updates)) {
@@ -1884,12 +1887,14 @@ class FieldInfoCollection {
     return this._relevantFieldsProvided;
   }
 
-  set relevantFieldsProvided(value: Set<string>) {
+  set relevantFieldsProvided(names: Set<string>) {
     const configNames = new Set<string>();
     const outputFieldsChanged = new Set<string>();
 
-    for (const field_name of value) {
-      const info = this.get(field_name);
+    for (const field_name of names) {
+      const info = this.getUnsafe(field_name);
+
+      if (!info) continue;
 
       configNames.add(info.configName);
 
@@ -1900,11 +1905,12 @@ class FieldInfoCollection {
     this._relevantFieldsProvided = outputFieldsChanged;
   }
 
-  set appendRelevantDependentFields(value: Set<string>) {
-    this.relevantFieldsProvided = this._relevantFieldsProvided.union(value);
+  withRelevantDependentFields(names: Set<string>) {
+    const col = cloneValue(this);
 
-    this._relevantDependentConfigNames =
-      this._relevantDependentConfigNames.union(value);
+    col._relevantDependentConfigNames = names;
+
+    return col;
   }
 
   get relevantDependentConfigNames() {

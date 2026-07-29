@@ -529,7 +529,6 @@ namespace NS {
     Metadata,
   > = Listenable<Input, Output, CtxOptions> & {
     required: true;
-    ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
   } & (
       | {
           validator:
@@ -547,7 +546,17 @@ namespace NS {
                 SecondaryValidator<Output[K], Input, Output, CtxOptions>,
               ];
         })
-    );
+    ) &
+    XOR<
+      {
+        ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
+        readonly?: never;
+      },
+      {
+        ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+        readonly?: true;
+      }
+    >;
 
   type VirtualField<
     K extends keyof Input | string,

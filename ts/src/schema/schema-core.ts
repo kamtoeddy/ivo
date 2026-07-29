@@ -867,24 +867,12 @@ abstract class SchemaCore<
   private __isReadonly = (
     definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
   ) => {
-    const { default: _default, readonly, required } = definition!;
-
-    const valid = false;
-
-    if (!isOneOf(readonly, [true, 'lax'] as never))
-      return {
-        reason: "Readonly properties are either true | 'lax'",
-        valid,
-      };
-
-    if (isPropertyOf('required', definition) && typeof required !== 'function')
-      return {
-        valid,
-        reason:
-          'Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule',
-      };
-
-    return { valid: true };
+    return definition!.readonly === true
+      ? { valid: true }
+      : {
+          reason: "Readonly properties must have readonly as 'true'",
+          valid: false,
+        };
   };
 
   private __isRequiredCommon = (
@@ -894,12 +882,6 @@ abstract class SchemaCore<
 
     if (isPropertyOf('dependsOn', definition))
       return { valid, reason: 'Required properties cannot be dependent' };
-
-    if (
-      !isPropertyOf('validator', definition) &&
-      !isPropertyOf('allow', definition)
-    )
-      return { valid, reason: 'Required properties must have a validator' };
 
     return { valid: true };
   };
@@ -915,17 +897,14 @@ abstract class SchemaCore<
         reason: "Required properties must have required as 'true'",
       };
 
+    if (!isPropertyOf('validator', definition))
+      return { valid, reason: 'Required properties must have a validator' };
+
     if (isPropertyOf('default', definition))
       return {
         valid,
         reason:
           'Strictly required properties cannot have a default value or setter',
-      };
-
-    if (isPropertyOf('readonly', definition))
-      return {
-        valid,
-        reason: 'Strictly required properties cannot be readonly',
       };
 
     if (isPropertyOf('ignoreInit', definition))
