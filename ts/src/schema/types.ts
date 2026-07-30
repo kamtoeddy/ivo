@@ -20,7 +20,7 @@ export type {
   ReadonlyIvoContext,
   RealType,
   ResponseErrorObject,
-  SetterFnData,
+  Setter,
   TypeOf,
   ValidationResponse,
   Validator,
@@ -38,13 +38,11 @@ export {
   VIRTUAL_RULES,
 };
 
-type SetterFnData<
+type ReadonlyIvoContext<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
-> = IvoContext<Input, Output, CtxOptions>;
-
-type ReadonlyIvoContext<Input, Output, CtxOptions extends ObjectType = {}> = (
+> = (
   | Readonly<
       WithReadonlyCtxOptions<
         {
@@ -114,18 +112,14 @@ type WithCtxOptions<T, CtxOptions extends ObjectType> = WithReadonlyCtxOptions<
 type TypeOf<T> = Exclude<T, undefined>;
 
 type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
-  data: SetterFnData<Input, Output, CtxOptions>,
+  data: IvoContext<Input, Output, CtxOptions>,
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
 type NotAllowedError<Metadata> = string | InputFieldError<Metadata>;
 
-type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType> = (
-  ctx: IvoContext<Input, Output, CtxOptions> & {},
-) => TypeOf<T>;
-
 type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
-  data: SetterFnData<Input, Output, CtxOptions>,
-) => TypeOf<T>;
+  ctx: IvoContext<Input, Output, CtxOptions>,
+) => TypeOf<T> | Promise<TypeOf<T>>;
 
 type RequiredHandlerRes<Metadata> =
   | boolean
@@ -154,13 +148,8 @@ type RequiredOptionHandler<
 > = (
   ctx: IvoContext<Input, Output, CtxOptions> & {},
 ) =>
-  | undefined
   | ResponseErrorObject<Metadata, Input>
   | Promise<undefined | ResponseErrorObject<Metadata, Input>>;
-
-type IgnoreResolver<Input, Output, CtxOptions extends ObjectType = {}> = (
-  ctx: IvoContext<Input, Output, CtxOptions> & {},
-) => boolean | Promise<boolean>;
 
 type IgnoreUpdateResolver<Input, Output, CtxOptions extends ObjectType = {}> = (
   input: Partial<Input>,
@@ -283,11 +272,11 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = {
     fields: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
-    resolver: IgnoreResolver<Input, Output, CtxOptions>;
+    resolver: Setter<boolean, Input, Output, CtxOptions>;
   };
 
   export type IgnoreConfigOption<Input, Output, CtxOptions extends ObjectType> =
-    | IgnoreResolver<Input, Output, CtxOptions>
+    | Setter<boolean, Input, Output, CtxOptions>
     | IgnoreConfigObject<Input, Output, CtxOptions>
     | ArrayOfMinSizeOne<IgnoreConfigObject<Input, Output, CtxOptions>>;
 
@@ -406,10 +395,10 @@ namespace NS {
       default?: unknown;
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
       readonly?: true;
-      resolver?: SetterWithSummary<unknown, Input, Output, {}>;
+      resolver?: Setter<unknown, Input, Output, {}>;
       required?: boolean | RequiredHandler<Input, Output, {}, Metadata>;
       sanitizer?: VirtualResolver<K, Input, Output, {}>;
-      ignore?: SetterWithSummary<boolean, Input, Output, {}>;
+      ignore?: Setter<boolean, Input, Output, {}>;
       ignoreInit?: true | Setter<boolean, Input, Output, {}>;
       ignoreUpdate?: true | Setter<boolean, Input, Output, {}>;
       validator?: Function | [Function, Function];
@@ -501,7 +490,7 @@ namespace NS {
     CtxOptions extends ObjectType,
     T,
   > = XOR<
-    { ignore?: SetterWithSummary<boolean, Input, Output, CtxOptions> },
+    { ignore?: Setter<boolean, Input, Output, CtxOptions> },
     XOR<
       { default: T; readonly?: true },
       XOR<
@@ -642,23 +631,13 @@ namespace NS {
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-    postValidate?:
-      | PostValidationConfig<
-          KeyOf<Input>,
-          Input,
-          Output,
-          CtxOptions,
-          ErrorMetadata
-        >
-      | ArrayOfMinSizeOne<
-          PostValidationConfig<
-            KeyOf<Input>,
-            Input,
-            Output,
-            CtxOptions,
-            ErrorMetadata
-          >
-        >;
+    postValidate?: PostValidationConfig<
+      KeyOf<Input>,
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[];
     ignore?: IgnoreConfigOption<Input, Output, CtxOptions>;
     ignoreUpdate?: IgnoreUpdateConfigOption<Input, Output, CtxOptions>;
     required?: RequiredConfigOption<Input, Output, CtxOptions, ErrorMetadata>;

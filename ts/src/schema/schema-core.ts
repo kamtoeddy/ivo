@@ -906,7 +906,10 @@ abstract class SchemaCore<
         reason: "Required properties must have required as 'true'",
       };
 
-    if (!isPropertyOf('validator', definition))
+    if (
+      !isPropertyOf('allow', definition) &&
+      !isPropertyOf('validator', definition)
+    )
       return { valid, reason: 'Required properties must have a validator' };
 
     if (isPropertyOf('default', definition))

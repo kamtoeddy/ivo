@@ -13,6 +13,7 @@ import {
 } from '../utils';
 import { defaultOptions, SchemaCore } from './schema-core';
 import {
+  type ArrayOfMinSizeTwo,
   type InternalValidatorResponse,
   type InvalidValidatorResponse,
   type IvoContext,
@@ -23,6 +24,7 @@ import {
   type PostValidator,
   type ReadonlyIvoContext,
   type RealType,
+  type Setter,
   type Validator,
   type ValidatorResponseObject,
   type VirtualResolver,
@@ -269,7 +271,7 @@ class ModelTool<
         const fieldInfo = fieldsCollection.get(fieldName);
 
         if (
-          (fieldInfo.isInput && !fieldInfo.isOutput) ||
+          fieldInfo.isVirtual ||
           // @ts-expect-error ikr
           !isEqual(value, previousValues[fieldName])
         ) {
@@ -281,7 +283,7 @@ class ModelTool<
           }
         } else {
           // @ts-expect-error ikr
-          input[fieldName] = undefined;
+          delete input[fieldName];
         }
 
         fieldsProvided.add(fieldName);
@@ -316,9 +318,11 @@ class ModelTool<
 
     this._updateCxtInput(input);
     this._updateCxtValues(output);
-    ctx = this._getContext();
 
-    const tasks: [string[] | readonly string[], Promise<boolean>][] = [];
+    const tasks: [
+      string[] | readonly string[],
+      Setter<boolean, I, O, CtxOptions>,
+    ][] = [];
 
     for (const fieldName of fieldsProvided.values()) {
       const fieldInfo = fieldsCollection.get(fieldName);
@@ -333,39 +337,20 @@ class ModelTool<
       } = this._getDefinition(configName);
 
       if (ignore) {
-        tasks.push([[fieldInfo?.name ?? fieldName], Promise.try(ignore, ctx)]);
+        tasks.push([[fieldName], ignore]);
         continue;
       }
 
       const source = isUpdate ? ignoreUpdate : ignoreInit;
 
-      if (
-        source === undefined ||
-        (isUpdate && this._isRequired(fieldName) && readonly)
-      )
-        continue;
+      if (!source) continue;
 
-      if (source === true) {
-        relevantFieldsProvided.delete(fieldName);
-
-        // @ts-expect-error ikr
-        delete input[fieldName];
-        delete (this.ctxInput as any)[fieldName];
-        delete (this.ctxRawInput as any)[fieldName];
-
-        if (fieldInfo?.isOutput) {
-          // @ts-expect-error ikr
-          delete output[fieldName];
-        }
+      if (isUpdate && this._isRequired(fieldName)) {
+        if (!readonly && typeof source === 'function')
+          tasks.push([[fieldName], source]);
 
         continue;
       }
-
-      if (typeof source === 'function')
-        tasks.push([
-          [fieldInfo?.name ?? fieldName],
-          Promise.try(source as any, ctx),
-        ]);
 
       // readonly only restricts updates; creation is always allowed
       if (readonly && isUpdate) {
@@ -383,17 +368,21 @@ class ModelTool<
         ) {
           continue;
         }
-
-        relevantFieldsProvided.delete(fieldName);
-
-        // @ts-expect-error ikr
-        delete input[fieldName];
-
-        if (fieldInfo?.isOutput) {
-          // @ts-expect-error ikr
-          delete output[fieldName];
-        }
       }
+
+      if (typeof source === 'function') {
+        tasks.push([[fieldName], source]);
+
+        continue;
+      }
+
+      relevantFieldsProvided.delete(fieldName);
+
+      // @ts-expect-error ikr
+      delete input[fieldName];
+
+      // @ts-expect-error ikr
+      if (fieldInfo?.isOutput) delete output[fieldName];
     }
 
     const relevantConfigNames = Array.from(
@@ -406,23 +395,12 @@ class ModelTool<
 
     for (const config of toArray(this._options.ignore ?? [])) {
       if (typeof config === 'function') {
-        tasks.push([
-          relevantConfigNames,
-          Promise.try(config, ctx)
-            .then((v) => !!v)
-            .catch(() => false),
-        ]);
+        tasks.push([relevantConfigNames, config]);
       } else if (config && typeof config === 'object') {
         const fields = config.fields as string[];
 
-        if (fields.some((name: string) => relevantConfigNames.includes(name))) {
-          tasks.push([
-            fields,
-            Promise.try(config.resolver, ctx)
-              .then((v) => !!v)
-              .catch(() => false),
-          ]);
-        }
+        if (fields.some((name: string) => relevantConfigNames.includes(name)))
+          tasks.push([fields, config.resolver]);
       }
     }
 
@@ -431,9 +409,11 @@ class ModelTool<
         if (typeof config === 'function') {
           tasks.push([
             relevantConfigNames,
-            Promise.try(config as any, ctx)
-              .then((v) => !!v)
-              .catch(() => false),
+            (ctx: IvoContext<I, O, CtxOptions>) =>
+              config(ctx.input as Partial<I>, ctx.previousValues as O, {
+                options: ctx.options,
+                updateOptions: ctx.updateOptions,
+              }),
           ]);
         } else if (config && typeof config === 'object') {
           const fields = config.fields as string[];
@@ -443,12 +423,16 @@ class ModelTool<
           ) {
             tasks.push([
               fields,
-              Promise.try(config.resolver, input, _previousValues, {
-                options: ctx.options,
-                updateOptions: ctx.updateOptions,
-              })
-                .then((v) => !!v)
-                .catch(() => false),
+
+              (ctx: IvoContext<I, O, CtxOptions>) =>
+                config.resolver(
+                  ctx.input as Partial<I>,
+                  ctx.previousValues as O,
+                  {
+                    options: ctx.options,
+                    updateOptions: ctx.updateOptions,
+                  },
+                ),
             ]);
           }
         }
@@ -456,34 +440,33 @@ class ModelTool<
     }
 
     if (!tasks.length) {
+      this._setCxtInput(input);
+      this._setCxtValues(output);
+
       fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
       return fieldsCollection;
     }
 
+    ctx = this._getContext();
+
     for (const [configNames, ignore] of await Promise.all(
-      tasks.map(async ([names, promise]) => [names, await promise] as const),
+      tasks.map(
+        async ([names, resolver]) => [names, await resolver(ctx)] as const,
+      ),
     )) {
       for (const configName of configNames) {
         const fieldInfo = fieldsCollection.get(configName);
-        const fieldName = fieldInfo?.name ?? configName;
+        const fieldName = fieldInfo.name;
 
         if (ignore) {
           // @ts-expect-error ikr
           delete input[fieldName];
-          // @ts-expect-error ikr
-          delete input[configName];
-          delete (this.ctxInput as any)[fieldName];
-          delete (this.ctxInput as any)[configName];
-          delete (this.ctxRawInput as any)[fieldName];
-          delete (this.ctxRawInput as any)[configName];
 
           relevantFieldsProvided.delete(fieldName);
 
-          if (fieldInfo.isOutput) {
-            // @ts-expect-error ikr
-            delete output[fieldName];
-          }
+          // @ts-expect-error ikr
+          if (fieldInfo.isOutput) delete output[fieldName];
 
           continue;
         }
@@ -492,8 +475,8 @@ class ModelTool<
       }
     }
 
-    this._updateCxtInput(input);
-    this._updateCxtValues(output);
+    this._setCxtInput(input);
+    this._setCxtValues(output);
 
     fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
@@ -546,6 +529,9 @@ class ModelTool<
     this.ctxPreviousValues = props.previousValues;
     this._ctxOptions = props.options;
   }
+
+  private _setCxtInput = (updates: Partial<I>) => (this.ctxInput = updates);
+  private _setCxtValues = (updates: Partial<O>) => (this.ctxValues = updates);
 
   private _updateCxtInput = (updates: Partial<I>) => {
     Object.assign(this.ctxInput, updates);
@@ -621,28 +607,9 @@ class ModelTool<
 
   private _cleanInput(input: Partial<I>) {
     const props = getKeysAsProps(input).filter(this._isInputOrAlias);
+    const values: Partial<I> = {};
 
-    const values = {} as never;
-
-    for (const prop of props) {
-      values[prop] = input[prop] as never;
-
-      if (this._isVirtual(prop)) {
-        const alias = this._getAliasByVirtual(prop);
-
-        if (alias && values[alias]) delete values[alias];
-      } else if (this._isVirtualAlias(prop)) {
-        const virtual = this._getVirtualByAlias(prop);
-
-        if (virtual && values[virtual]) delete values[virtual];
-        else if (virtual) {
-          values[virtual] = input[prop] as never;
-          delete values[prop];
-        }
-      }
-    }
-
-    this.ctxRawInput = values;
+    for (const prop of props) values[prop] = input[prop] as never;
 
     return values;
   }
@@ -714,14 +681,13 @@ class ModelTool<
   }
 
   private _handleError(errorTool: ErrorTool<ErrorMetadata, KeyOf<I>>) {
+    const options = this._getReadonlyCtx().options;
     return {
       data: null,
       error: errorTool.hasErrors
-        ? this._options.sanitizeError(
-            errorTool.payload,
-            this._getContext().options,
-          )
+        ? this._options.sanitizeError(errorTool.payload, options)
         : null,
+      options,
       handleFailure: this._makeHandleFailure(),
       handleSuccess: null,
     };
@@ -729,7 +695,7 @@ class ModelTool<
 
   private _handleInvalidValue(
     errorTool: ErrorTool<ErrorMetadata>,
-    prop: KeyOf<I & O>,
+    name: string,
     validationResponse: InvalidValidatorResponse<ErrorMetadata>,
   ) {
     const { reason, metadata } = validationResponse;
@@ -740,7 +706,7 @@ class ModelTool<
 
     if (metadata) fieldError.metadata = metadata;
 
-    errorTool.set(prop, fieldError);
+    errorTool.set(name, fieldError);
   }
 
   /**
@@ -832,11 +798,8 @@ class ModelTool<
     const ctx = this._getContext();
     const errorTool = new ErrorTool<ErrorMetadata>();
 
-    // relevantConfigNames includes virtuals (the setter for relevantFieldsProvided
-    // only keeps output fields, so we must use configNames to include virtuals)
-
     await Promise.allSettled(
-      Array.from(fieldsCollection.fieldsProvided).map(async (name) => {
+      Array.from(fieldsCollection.relevantFieldsProvided).map(async (name) => {
         const fieldInfo = fieldsCollection.get(name);
 
         // Read the raw value from filteredInput
@@ -852,7 +815,7 @@ class ModelTool<
         // skipping straight past it here would let disallowed values through
         // whenever a lax field has no explicit validator.
         const isValid = (await Promise.try(() =>
-          this._validate(name as never, rawValue, ctx),
+          this._validate(fieldInfo, rawValue, ctx),
         )) as InternalValidatorResponse<O[KeyOf<O>], ErrorMetadata>;
 
         if (!isValid.valid)
@@ -884,7 +847,7 @@ class ModelTool<
     const errorTool = new ErrorTool<ErrorMetadata>();
 
     await Promise.allSettled(
-      fieldsCollection.relevantConfigNames.values().map(async (name) => {
+      fieldsCollection.relevantFieldsProvided.values().map(async (name) => {
         const fieldInfo = fieldsCollection.get(name);
         const validator = this._getSecondaryValidator(fieldInfo.configName);
 
@@ -912,7 +875,7 @@ class ModelTool<
         }
 
         if (!isValid.valid)
-          return this._handleInvalidValue(errorTool, name as any, isValid);
+          return this._handleInvalidValue(errorTool, name, isValid);
 
         const { validated } = isValid;
 
@@ -937,36 +900,22 @@ class ModelTool<
 
     const errorTool = new ErrorTool<ErrorMetadata>();
 
-    const handlerIds = new Set<string>(),
-      handlerIdToProps = new Map<string, Set<string>>(),
-      configIDsToAllPostValidatableProps = new Map<string, Set<string>>();
+    let configIds = new Set<string>();
 
-    for (const [
-      configName,
-      setOfConfigIDs,
-    ] of this.propToPostValidationConfigIDsMap.entries()) {
-      if (!fieldsCollection.relevantConfigNames.has(configName)) continue;
+    for (const configName of fieldsCollection.relevantConfigNames) {
+      const config = this.propToPostValidationConfigIDsMap.get(configName);
 
-      for (const id of setOfConfigIDs.values()) {
-        {
-          const set = configIDsToAllPostValidatableProps.get(id) ?? new Set();
-          configIDsToAllPostValidatableProps.set(id, set.add(configName));
-        }
-
-        handlerIds.add(id);
-
-        const set = handlerIdToProps.get(id) ?? new Set();
-        handlerIdToProps.set(id, set.add(configName));
-      }
+      if (config) configIds = configIds.union(config);
     }
 
-    const handlers = Array.from(handlerIds).map((id) => ({
-      id,
-      validator: this.postValidationConfigMap.get(id)!.validators,
-      postValidatableProps: Array.from(
-        configIDsToAllPostValidatableProps.get(id)!,
-      ) as KeyOf<I>[],
-    }));
+    const handlers = Array.from(configIds).map((id) => {
+      return {
+        validator: this.postValidationConfigMap.get(id)!.validators,
+        properties: id.split(',') as ArrayOfMinSizeTwo<
+          Extract<keyof I, string>
+        >,
+      };
+    });
 
     const handleRevalidatedData = (revalidatedData: Partial<O> | null) => {
       if (!revalidatedData) return;
@@ -988,15 +937,15 @@ class ModelTool<
         this._updateCxtInput(ctxUpdate);
 
         if (fieldInfo.isOutput) this._updateCxtValues(ctxUpdate);
+        fieldsCollection.appendRelevantFieldProvided(fieldName);
       }
     };
 
     await Promise.allSettled(
-      handlers.map(async ({ id, validator, postValidatableProps }) => {
-        const propsProvided = Array.from(handlerIdToProps.get(id)!) as Extract<
-          keyof I,
-          string
-        >[];
+      handlers.map(async ({ validator, properties }) => {
+        const propsProvided = properties.filter((name) =>
+          fieldsCollection.relevantFieldsProvided.has(name),
+        );
 
         if (!Array.isArray(validator)) {
           const { revalidatedData, success } = await Promise.try(() =>
@@ -1005,7 +954,7 @@ class ModelTool<
               propsProvided,
               ctx,
               validator: validator as any,
-              postValidatableProps,
+              properties,
             }),
           );
 
@@ -1026,7 +975,7 @@ class ModelTool<
                     propsProvided,
                     ctx,
                     validator: v2 as any,
-                    postValidatableProps,
+                    properties: properties,
                   }),
                 );
 
@@ -1046,7 +995,7 @@ class ModelTool<
             propsProvided,
             ctx: this._getContext(),
             validator: v1 as any,
-            postValidatableProps,
+            properties: properties,
           });
 
           if (!success) break;
@@ -1063,13 +1012,13 @@ class ModelTool<
     ctx,
     errorTool,
     propsProvided,
-    postValidatableProps,
+    properties,
     validator,
   }: {
     ctx: IvoContext<I, O, CtxOptions>;
     errorTool: ErrorTool<ErrorMetadata>;
     propsProvided: Extract<keyof I, string>[];
-    postValidatableProps: Extract<keyof I, string>[];
+    properties: ArrayOfMinSizeTwo<string>;
     validator: PostValidator<KeyOf<I>, I, O, CtxOptions, ErrorMetadata>;
   }) {
     const revalidatedData: Partial<O> = {};
@@ -1082,33 +1031,25 @@ class ModelTool<
       const { errors, validatedData } =
         this._handleObjectValidationResponse(res);
 
-      for (const [prop, validated] of Object.entries(validatedData) as [
+      for (const [fieldName, validated] of Object.entries(validatedData) as [
         KeyOf<I>,
         any,
       ][]) {
-        const propName = (this._getAliasByVirtual(prop as never) ??
-          prop) as keyof O;
+        const configName = this._getVirtualByAlias(fieldName) ?? fieldName;
 
-        if (
-          postValidatableProps.includes(prop) ||
-          postValidatableProps.includes(propName as any)
-        )
-          revalidatedData[propName] = validated;
+        if (properties.includes(configName))
+          // @ts-expect-error ikr
+          revalidatedData[fieldName] = validated;
       }
 
       for (const [prop, error] of Object.entries(errors))
         errorTool.set(prop, makeFieldError(error));
     } catch {
-      for (const prop of propsProvided) {
-        const alias = this._getAliasByVirtual(prop as never);
-
-        let errorField: string | undefined;
-
-        if (alias && isPropertyOf(alias, ctx.rawInput)) errorField = alias;
-        else if (isPropertyOf(prop, ctx.rawInput)) errorField = prop;
+      for (const configName of propsProvided) {
+        const fieldName = this._getAliasByVirtual(configName) ?? configName;
 
         // @ts-expect-error ikr
-        if (errorField) errorTool.set(errorField, validationFailedFieldError);
+        errorTool.set(fieldName, validationFailedFieldError);
       }
     }
 
@@ -1149,16 +1090,22 @@ class ModelTool<
         // accounts for ignore/ignoreInit/ignoreUpdate/readonly filtering.
         if (fieldsCollection.relevantConfigNames.has(prop)) return;
 
-        let isUpdatable = false;
-
-        if (isUpdate && this._isReadonly(prop)) {
-          isUpdatable = this._isUpdatable(
-            prop,
-            (ctx.rawInput as never)?.[prop],
-          );
-
-          if (!isUpdatable) return;
-        }
+        // Readonly fields are only re-evaluated for required-ness while
+        // still updatable (i.e. their value still equals the default), and
+        // virtuals are exempt entirely once blocked by an (unconditional or
+        // conditional) `ignoreUpdate` rule — `_isUpdatable` answers both
+        // reliably via its own dedicated branches for these two cases. Plain
+        // (non-readonly, non-virtual) fields have no such gate: their own
+        // `required` callback is the sole authority on whether they're
+        // missing — `_isUpdatable`'s fallback for that case just compares
+        // against the untouched `ctxValues` slot, which isn't meaningful
+        // here (a field that was never touched trivially "equals" itself).
+        if (
+          isUpdate &&
+          (this._isReadonly(prop) || this._isVirtual(prop)) &&
+          !this._isUpdatable(prop, (ctx.rawInput as never)?.[prop])
+        )
+          return;
 
         const [isRequired, message] = await Promise.try(
           this._getRequiredState,
@@ -1166,13 +1113,7 @@ class ModelTool<
           ctx as never,
         );
 
-        if (
-          !isRequired ||
-          (isUpdate &&
-            !isUpdatable &&
-            !this._isUpdatable(prop, (ctx.rawInput as never)?.[prop]))
-        )
-          return;
+        if (!isRequired) return;
 
         const alias = this._getAliasByVirtual(prop);
 
@@ -1246,7 +1187,11 @@ class ModelTool<
 
     const ctx = this._getContext();
 
-    for (const name of fieldsCollection.relevantFieldsProvided) {
+    // `relevantFieldsProvided` is narrowed to output fields only (see its
+    // setter), so virtuals — the only fields that can have a `sanitizer` —
+    // never appear there. `relevantConfigNames` is the unfiltered, config-
+    // name-mapped equivalent.
+    for (const name of fieldsCollection.relevantConfigNames) {
       const fieldInfo = fieldsCollection.get(name);
       const sanitizer = this._getDefinition(fieldInfo.configName).sanitizer;
 
@@ -1331,9 +1276,14 @@ class ModelTool<
     if (hasIgnoreUpdateRule && ignoreUpdate) return false;
 
     if (this._isReadonly(propName))
+      // Compare against the actual previous record (`ctxPreviousValues`),
+      // not `ctxValues` — the latter only reflects fields that were already
+      // touched/relevant in this call, so an untouched readonly field would
+      // wrongly compare its default against `undefined` instead of its real
+      // previous value.
       return isEqual(
         this.defaults[propName],
-        this.ctxValues[propName],
+        (this.ctxPreviousValues as never)?.[propName],
         this._options.equalityDepth,
       );
 
@@ -1345,7 +1295,7 @@ class ModelTool<
   }
 
   private _isInputOrAlias = (prop: string) =>
-    this._isVirtualAlias(prop) || this._isInputProp(prop);
+    this._isInputProp(prop) || this._isVirtualAlias(prop);
 
   private _makeHandleFailure() {
     const ctx = this._getReadonlyCtx();
@@ -1363,24 +1313,36 @@ class ModelTool<
 
     return async () => {
       await Promise.allSettled(
-        cleanups.map(
-          async (h) =>
-            await Promise.try(
-              h,
-              this._getFrozenCopy(ctx),
-              this._getFrozenCopy(ctx.options),
-            ),
+        cleanups.map((h) =>
+          Promise.try(
+            h,
+            this._getFrozenCopy(ctx),
+            this._getFrozenCopy(ctx.options),
+          ),
         ),
       );
     };
   }
 
   private _makeHandleSuccess(fieldsCollection: FieldInfoCollection) {
-    const relevantFields = fieldsCollection.relevantConfigNames.union(
-      fieldsCollection.relevantDependentConfigNames,
+    const ctx = this._getReadonlyCtx();
+
+    const relevantFields = new Set<string>(
+      fieldsCollection.relevantConfigNames,
     );
-    const ctx = this._getReadonlyCtx(),
-      setOfSuccessHandlerIDs = new Set<string>();
+
+    // Mirrors Rust's `prepare_success_handlers`: every field present in the
+    // final output (`ctx.values` at creation, `ctx.changes` at update) is
+    // eligible for onSuccess — not just directly-provided fields. A dependent
+    // field's onSuccess fires whenever the field is included in the output,
+    // regardless of whether its resolver actually ran (it's always present,
+    // resolved or at its default).
+    const candidateFieldNames = ctx.isUpdate ? ctx.changes : ctx.values;
+
+    for (const name of Object.keys(candidateFieldNames ?? {}))
+      relevantFields.add(name);
+
+    const setOfSuccessHandlerIDs = new Set<string>();
 
     let successListeners = [] as NS.SuccessHandler<I, O, CtxOptions>[];
 
@@ -1554,28 +1516,19 @@ class ModelTool<
     return sortKeys(results);
   }
 
-  private async _validate<K extends KeyOf<I>>(
-    prop: K,
+  private async _validate(
+    { configName }: Pick<FieldInfo, 'configName'>,
     value: unknown,
     ctx: IvoContext<I, O, CtxOptions>,
   ) {
-    if (!this._isInputOrAlias(prop))
-      return makeResponse<I[K]>({
-        valid: false,
-        value,
-        reason: 'Invalid property',
-      });
-
-    const isAlias = this._isVirtualAlias(prop),
-      propName = (isAlias ? this._getVirtualByAlias(prop) : prop)!,
-      allowedValues = this.propsToAllowedValuesMap.get(propName);
+    const allowedValues = this.propsToAllowedValuesMap.get(configName);
 
     if (allowedValues && !allowedValues.has(value)) {
       const fieldError = makeFieldError<ErrorMetadata>(
-        this._getNotAllowedError(propName, value),
+        this._getNotAllowedError(configName, value),
       );
 
-      return makeResponse<I[K], ErrorMetadata>({
+      return makeResponse<any, ErrorMetadata>({
         valid: false,
         value,
         reason: fieldError.reason,
@@ -1583,40 +1536,34 @@ class ModelTool<
       });
     }
 
-    const validator = this._getPrimaryValidator(propName as never);
+    const validator = this._getPrimaryValidator(configName);
 
     if (validator) {
-      let res: ValidatorResponseObject<I[K], ErrorMetadata>;
+      let res: ValidatorResponseObject<any, ErrorMetadata>;
 
       try {
-        res = this._sanitizeValidationResponse<I[K]>(
+        res = this._sanitizeValidationResponse<any>(
           (await Promise.try(
             validator,
             value,
             ctx as never,
-          )) as ValidatorResponseObject<I[K], ErrorMetadata>,
+          )) as ValidatorResponseObject<any, ErrorMetadata>,
           value,
         );
       } catch {
-        return makeResponse<I[K]>({
-          valid: false,
-          reason: 'validation failed',
-        });
+        return makeResponse<any>({ valid: false, reason: 'validation failed' });
       }
 
       if (allowedValues && res.valid && !allowedValues.has(res.validated))
-        return makeResponse<I[K], ErrorMetadata>({
+        return makeResponse<any, ErrorMetadata>({
           valid: true,
-          validated: value as never,
+          validated: value,
         });
 
       return res;
     }
 
-    return makeResponse<I[K], ErrorMetadata>({
-      valid: true,
-      validated: value as never,
-    });
+    return makeResponse<any, ErrorMetadata>({ valid: true, validated: value });
   }
 
   /**
@@ -1641,13 +1588,11 @@ class ModelTool<
 
     if (!areValuesOk(input)) input = {};
 
-    // Step 1 – clean raw input (strips unknown / conflicting virtual+alias pairs)
-    this._cleanInput(input);
-
     // Build an initial ctx
     this._initContext({
       isUpdate: false,
-      rawInput: this.ctxRawInput,
+      // clean raw input (strips unknown and non-input fields)
+      rawInput: this._cleanInput(input),
       previousValues: null,
       options,
     });
@@ -1689,16 +1634,17 @@ class ModelTool<
       collection = await this._resolveDependentChanges(collection);
 
     // Step 11 – attach timestamps
-    const finalData = this._useConfigProps(false);
+    const data = this._useConfigProps(false) as O;
 
     // Keep ctxValues up-to-date for handleSuccess
-    this._updateCxtValues(finalData as never);
+    this._updateCxtValues(data);
 
     return {
-      data: finalData as O,
+      data,
       error: null,
       handleFailure: null,
       handleSuccess: this._makeHandleSuccess(fieldsCollection),
+      options: this._getReadonlyCtx().options,
     };
   }
 
@@ -1760,13 +1706,10 @@ class ModelTool<
     if (!areValuesOk(values) || !areValuesOk(changes))
       return this._handleError(emptyErrorTool);
 
-    // Step 3 – clean raw changes
-    this._cleanInput(changes);
-
     // Build an initial ctx
     this._initContext({
       isUpdate: true,
-      rawInput: changes,
+      rawInput: this._cleanInput(changes),
       previousValues: values,
       options,
     });
@@ -1787,6 +1730,7 @@ class ModelTool<
     // Step 7 – evaluate missing required fields
     const requiredError =
       await this._evaluateMissingRequiredFields(fieldsCollection);
+
     if (requiredError.hasErrors) return this._handleError(requiredError);
 
     // Step 8 – run primary validators over relevantConfigNames (includes virtuals)
@@ -1794,14 +1738,17 @@ class ModelTool<
 
     if (primaryError.hasErrors) return this._handleError(primaryError);
 
-    const updates: Partial<O> = cloneValue(this.ctxValues);
+    let updates: Partial<O> = cloneValue(this.ctxValues);
 
     // Step 9 – re-filter: after validators, drop output fields whose validated
     // value still equals the old value. Virtual (input-only) fields are kept.
-    // Mirrors Rust lines 439-467.
+    // Mirrors Rust lines 439-467. Iterate `relevantConfigNames` (not
+    // `relevantFieldsProvided`, which the setter narrows to output fields
+    // only) so virtual fields actually reach the "not output, always keep"
+    // branch below instead of being silently absent from the loop entirely.
     const reFilteredRelevant = new Set<string>();
 
-    for (const fieldName of fieldsCollection.relevantFieldsProvided) {
+    for (const fieldName of fieldsCollection.relevantConfigNames) {
       const fieldInfo = fieldsCollection.get(fieldName);
 
       // Virtual (input-only) fields are always kept
@@ -1823,6 +1770,7 @@ class ModelTool<
 
     // Update fieldsCollection to reflect the re-filtered set
     fieldsCollection.relevantFieldsProvided = reFilteredRelevant;
+    this._setCxtValues(updates);
 
     // Step 10 – second early-exit if nothing changed after validators
     if (!reFilteredRelevant.size) return this._handleError(emptyErrorTool);
@@ -1830,11 +1778,13 @@ class ModelTool<
     // Step 11 – run secondary (re-)validators
     const secondaryError =
       await this._handleSecondaryValidations(fieldsCollection);
+
     if (secondaryError.hasErrors) return this._handleError(secondaryError);
 
     // Step 12 – run post-validators
     const postValidationError =
       await this._handlePostValidations(fieldsCollection);
+
     if (postValidationError.hasErrors)
       return this._handleError(postValidationError);
 
@@ -1846,6 +1796,8 @@ class ModelTool<
 
     while (collection.relevantDependentConfigNames.size > 0)
       collection = await this._resolveDependentChanges(collection);
+
+    updates = cloneValue(this.ctxValues);
 
     // Step 15 – drop fields that still equal the old value after all resolvers
     for (const prop of getKeysAsProps(updates)) {
@@ -1860,17 +1812,20 @@ class ModelTool<
       }
     }
 
+    this._setCxtValues(updates);
+
     // Step 16 – third early-exit if no actual updates remain
     if (!Object.keys(updates).length) return this._handleError(emptyErrorTool);
 
     // Step 17 – attach timestamps
-    const finalData = this._useConfigProps(true);
+    const data = this._useConfigProps(true);
 
-    this._updateCxtInput(finalData as never);
+    this._updateCxtValues(data as never);
 
     return {
-      data: finalData as Partial<O>,
+      data,
       error: null,
+      options: this._getReadonlyCtx().options,
       handleFailure: null,
       handleSuccess: this._makeHandleSuccess(fieldsCollection),
     };
@@ -1950,30 +1905,22 @@ class FieldInfoCollection {
 
   set relevantFieldsProvided(names: Set<string>) {
     const configNames = new Set<string>();
-    const outputFieldsChanged = new Set<string>();
 
-    for (const field_name of names) {
-      const info = this.get(field_name);
-
-      configNames.add(info.configName);
-
-      if (info.isOutput) outputFieldsChanged.add(field_name);
-    }
+    for (const field_name of names)
+      configNames.add(this.get(field_name).configName);
 
     this._relevantConfigNames = configNames;
-    this._relevantFieldsProvided = outputFieldsChanged;
+    this._relevantFieldsProvided = names;
+  }
+
+  appendRelevantFieldProvided(name: string) {
+    this._relevantConfigNames.add(this.get(name).configName);
+    this._relevantFieldsProvided.add(name);
   }
 
   clonedFromRelevantFieldsProvided() {
     const col = new FieldInfoCollection(this._fields);
 
-    // Seed from `_relevantConfigNames` (not `_relevantFieldsProvided`, which
-    // the setter above deliberately narrows to output fields only). Dependent
-    // fields can depend on virtuals, which are input-only (isOutput: false),
-    // so using the output-filtered set here would make a dependent whose only
-    // parent is a virtual never see that parent as "relevant" and never
-    // resolve. `_relevantConfigNames` already carries every relevant field
-    // (lax, required, virtual) mapped to its config name.
     col._relevantDependentConfigNames = new Set(this._relevantConfigNames);
 
     return col;

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'bun:test';
-import type { ReadonlyIvoContext } from '../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_SchemaOptionIgnore = ({
@@ -113,17 +112,14 @@ export const Test_SchemaOptionIgnore = ({
     describe('behaviour', () => {
       it('should respect option to ignore updates', async () => {
         type Input = { lax?: string; lax_1?: string };
-        type Output = { lax: string; lax_1: string };
+        // type Output = { lax: string; lax_1: string };
 
         const model = new Schema(
           {
             lax: { default: 'default_lax', validator },
             lax_1: { default: 'default_lax_1', validator },
           },
-          {
-            ignoreUpdate: (ctx: ReadonlyIvoContext<Input, Output, {}>) =>
-              ctx.rawInput.lax === 'ignore_value',
-          },
+          { ignoreUpdate: ({ lax }: Partial<Input>) => lax === 'ignore_value' },
         ).getModel();
 
         const item = { lax: 'initial_lax', lax_1: 'initial_lax_1' };

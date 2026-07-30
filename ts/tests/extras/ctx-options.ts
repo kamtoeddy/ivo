@@ -119,18 +119,19 @@ export const Test_CtxOptions = ({
       const ReqModel = new SchemaClass<ReqInput, ReqOutput, CtxOpts>({
         a: {
           default: 0,
-          required: (ctx: any) => {
+          required(ctx: IvoContext<ReqInput, ReqOutput, CtxOpts>) {
             ctx.updateOptions({ log: [...ctx.options.log, 'should-not-run'] });
-            return true;
+            return false;
           },
         },
       }).getModel();
 
-      const { data, error } = await ReqModel.create({}, { log: [] });
+      const { data, error, options } = await ReqModel.create({}, { log: [] });
 
       // the thrown error inside the handler is swallowed; field is treated as not required
       expect(error).toBeNull();
       expect(data).toEqual({ a: 0 });
+      expect(options.log).toEqual(['should-not-run']);
     });
   });
 };

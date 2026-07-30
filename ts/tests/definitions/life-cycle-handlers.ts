@@ -459,7 +459,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       type OnSuccessOutput = {
         dependent: boolean;
         lax: string;
-        readonly: string;
+        requiredReadonly: string;
         readonlyLax: string;
         required: string;
       };
@@ -483,14 +483,15 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           resolver: () => true,
         },
         lax: { default: '', onSuccess: onSuccess('lax'), validator },
-        readonly: {
+        requiredReadonly: {
+          required: true,
           readonly: true,
-          onSuccess: onSuccess('readonly'),
+          onSuccess: onSuccess('requiredReadonly'),
           validator,
         },
         readonlyLax: {
           default: '',
-          readonly: 'lax',
+          readonly: true,
           onSuccess: onSuccess('readonlyLax'),
           validator,
         },
@@ -510,10 +511,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       // creation
       it('should call onSuccess handlers at creation', async () => {
         const { data, error, handleSuccess } = await Model.create(
-          {
-            required: true,
-            readonly: true,
-          },
+          { required: true, requiredReadonly: true },
           contextOptions,
         );
 
@@ -524,7 +522,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         expect(cxtOptions).toEqual({
           dependent: contextOptions,
           lax: contextOptions,
-          readonly: contextOptions,
+          requiredReadonly: contextOptions,
           readonlyLax: contextOptions,
           required: contextOptions,
         });
@@ -532,7 +530,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         expect(propChangeMap).toEqual({
           dependent: true,
           lax: true,
-          readonly: true,
+          requiredReadonly: true,
           readonlyLax: true,
           required: true,
         });
@@ -547,7 +545,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         expect(onSuccessValues).toMatchObject({
           dependent: ctx,
           lax: ctx,
-          readonly: ctx,
+          requiredReadonly: ctx,
           readonlyLax: ctx,
           required: ctx,
         });
@@ -557,18 +555,14 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       it('should call onSuccess handlers during updates with lax props', async () => {
         const { data, error, handleSuccess } = await Model.update(
           initialData,
-          {
-            lax: true,
-          },
+          { lax: true },
           contextOptions,
         );
 
         await handleSuccess();
 
         expect(error).toBeNull();
-        expect(cxtOptions).toEqual({
-          lax: contextOptions,
-        });
+        expect(cxtOptions).toEqual({ lax: contextOptions });
         expect(propChangeMap).toEqual({ lax: true });
 
         expect(onSuccessValues).toMatchObject({
@@ -584,9 +578,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       it('should call onSuccess handlers during updates with readonlyLax & dependent', async () => {
         const { data, error, handleSuccess } = await Model.update(
           initialData,
-          {
-            readonlyLax: true,
-          },
+          { readonlyLax: true },
           contextOptions,
         );
 

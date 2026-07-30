@@ -21,11 +21,12 @@ describe('Context options', () => {
     }
 
     const Model = new Schema<
-      { name: string; price: number },
-      { name: string; price: number },
+      { lax: string; name: string; price: number },
+      { lax: string; name: string; price: number },
       any,
       typeof contextOptions
     >({
+      lax: { default: '' },
       name: { default: '', required: handleRequired('name'), validator },
       price: { default: 0, required: handleRequired('price'), validator },
     }).getModel();
@@ -37,7 +38,7 @@ describe('Context options', () => {
     });
 
     it('provided "contextOptions" should be accessible in requiredBy methods at creation', async () => {
-      await Model.create({ name: 'test', price: 4 }, contextOptions);
+      await Model.create({ lax: 'lax' }, contextOptions);
 
       expect(ctxOptions).toEqual({
         name: contextOptions,
@@ -46,12 +47,13 @@ describe('Context options', () => {
     });
 
     it('provided "contextOptions" should be accessible in requiredBy methods during updates', async () => {
-      await Model.update(
-        { name: 'test', price: 4 },
-        { name: 'updateds', price: 4 },
+      const { options } = await Model.update(
+        { lax: 'lax', name: 'test', price: 4 },
+        { lax: 'update' },
         contextOptions,
       );
 
+      expect(options).toEqual(contextOptions);
       expect(ctxOptions).toEqual({
         name: contextOptions,
         price: contextOptions,

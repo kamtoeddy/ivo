@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import type { IvoContext } from '../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 /**
@@ -322,14 +323,20 @@ export const Test_SchemaOptionRequired = ({ Schema, fx }: any) => {
         });
       });
 
-      it('should key errors by alias for aliased virtual fields', async () => {
+      it('should keep errors by alias for aliased virtual fields', async () => {
         const Model = new Schema(
           {
             name: { default: '' },
             y: {
               default: 0,
               dependsOn: 'setX',
-              resolver: (ctx: any) => ctx.input.setX ?? 0,
+              resolver: (
+                ctx: IvoContext<
+                  { name: string; y2: number },
+                  { y: number },
+                  {}
+                >,
+              ) => ctx.input.y2 ?? 0,
             },
             setX: { virtual: true, alias: 'y2', validator: () => true },
           },
@@ -349,9 +356,7 @@ export const Test_SchemaOptionRequired = ({ Schema, fx }: any) => {
           y2: { reason: 'setX (aliased as y2) is required', metadata: null },
         });
 
-        const { data: data2, error: error2 } = await Model.create({
-          y2: 5,
-        } as never);
+        const { data: data2, error: error2 } = await Model.create({ y2: 5 });
 
         expect(error2).toBeNull();
         expect(data2).toEqual({ name: '', y: 5 });

@@ -121,20 +121,17 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
   });
 
   describe('behaviour of schema when errors thrown in setter of default values', () => {
-    const Model = new Schema(
-      {
-        prop: {
-          default() {
-            throw new Error('lolol');
-          },
+    const Model = new Schema({
+      prop: {
+        default() {
+          throw new Error('lolol');
         },
-        prop1: { default: '' },
       },
-      { setMissingDefaultsOnUpdate: true },
-    ).getModel();
+      prop1: { default: '' },
+    }).getModel();
 
     it('should set value as default on error generating default value at creation', async () => {
-      const { data, error } = await Model.create();
+      const { data, error } = await Model.create({});
 
       expect(error).toBeNull();
       expect(data).toMatchObject({ prop: null, prop1: '' });

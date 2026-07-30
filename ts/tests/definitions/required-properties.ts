@@ -262,8 +262,10 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             priceReadonly: null,
             priceRequiredWithoutMessage: null,
           });
+          // `price` was provided (relevant), so its `required` callback is
+          // skipped entirely — only fields that weren't given a value get
+          // evaluated for required-ness.
           expect(callsPerProp).toEqual({
-            price: true,
             priceReadonly: true,
             priceRequiredWithoutMessage: true,
           });
@@ -310,8 +312,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           const { data } = await toPass();
 
           expect(data).toEqual({ isPublished: true, price: 20 });
+          // `price` was provided (relevant), so skipped.
           expect(callsPerProp).toEqual({
-            price: true,
             priceReadonly: true,
             priceRequiredWithoutMessage: true,
           });
@@ -326,9 +328,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           const { data } = await toPass();
 
           expect(data).toEqual({ price: 101, priceReadonly: 201 });
+          // `price` and `priceReadonly` were both provided, so skipped.
           expect(callsPerProp).toEqual({
-            price: true,
-            priceReadonly: true,
             priceRequiredWithoutMessage: true,
           });
         });
@@ -370,8 +371,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             },
           });
 
+          // `price` was provided, so skipped; `priceReadonly` and
+          // `priceRequiredWithoutMessage` weren't, so both get evaluated.
           expect(callsPerProp).toEqual({
-            price: true,
             priceReadonly: true,
             priceRequiredWithoutMessage: true,
           });
@@ -391,9 +393,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
           expect(error).toBeNull();
           expect(data).toEqual({ priceRequiredWithoutMessage: 2000 });
+          // `priceReadonly`'s previous value (3000) already diverged from its
+          // default (null), so it's permanently locked — its `required`
+          // callback isn't re-evaluated. `priceRequiredWithoutMessage` was
+          // provided, so it's skipped too. Only `price` (untouched) is
+          // evaluated.
           expect(callsPerProp).toEqual({
             price: true,
-            priceRequiredWithoutMessage: true,
           });
         });
       });
@@ -806,7 +812,12 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
         describe('updates', () => {
           it('should reject when condition is not met', async () => {
-            const { data, error } = await Book.update(book, {});
+            // A genuine, unrelated change (`name`) so this isn't a no-op
+            // update — `_price` itself stays unprovided, so its `required`
+            // callback still runs and rejects.
+            const { data, error } = await Book.update(book, {
+              name: 'updated name',
+            });
 
             expect(data).toBeNull();
             expect(error).toMatchObject({
@@ -839,7 +850,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         }).getModel();
 
         it('should consider required:false if occurred at creation', async () => {
-          const { data, error } = await Model.create();
+          const { data, error } = await Model.create({});
 
           expect(error).toBeNull();
           expect(data).toEqual({ prop: null, prop1: '' });

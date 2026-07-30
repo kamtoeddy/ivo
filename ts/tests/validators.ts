@@ -337,7 +337,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 },
               }).getModel();
 
-              const { data, error } = await Model.create();
+              const { data, error } = await Model.create({});
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
@@ -467,7 +467,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           type ValidatorsSchemaOutput = {
             dependent: string;
             lax: string;
-            readonly: unknown;
+            requiredReadonly: unknown;
             readonlyLax: string;
             required: unknown;
           };
@@ -500,13 +500,17 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               resolver: validator,
             },
             lax: { default: '' },
-            readonly: {
+            requiredReadonly: {
+              required: true,
               readonly: true,
-              validator: [validator, makeSecondaryValidator('readonly')],
+              validator: [
+                validator,
+                makeSecondaryValidator('requiredReadonly'),
+              ],
             },
             readonlyLax: {
               default: '',
-              readonly: 'lax',
+              readonly: true,
               validator: [validator, makeSecondaryValidator('readonlyLax')],
             },
             required: {
@@ -524,11 +528,11 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           }).getModel();
 
           it('should trigger all secondary validators at creation', async () => {
-            const { error } = await Model.create();
+            const { error } = await Model.create({});
 
             expect(error).toBeNull();
             expect(valuesProvided).toEqual({
-              readonly: undefined,
+              requiredReadonly: undefined,
               readonlyLax: '',
               required: undefined,
             });
@@ -539,7 +543,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
             expect(error).toBeNull();
             expect(valuesProvided).toEqual({
-              readonly: undefined,
+              requiredReadonly: undefined,
               readonlyLax: '',
               required: undefined,
               virtual2: true,
@@ -552,7 +556,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               {
                 lax: true,
                 required: 1,
-                readonly: true,
+                requiredReadonly: true,
                 readonlyLax: true,
                 virtual: true,
                 virtual2: true,
@@ -565,8 +569,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
           it('should only trigger secondary validators of readonly props that have not changed during updates', async () => {
             const { error } = await Model.update(
-              { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
-              { readonly: true, readonlyLax: true },
+              { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: '' },
+              { requiredReadonly: true, readonlyLax: true },
             );
 
             expect(error).toBeNull();
@@ -624,7 +628,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 },
               }).getModel();
 
-              await Model.create();
+              await Model.create({});
               expect(stats).toEqual({});
 
               await Model.create({ lax: true, v2: true });
@@ -687,7 +691,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 p2: { default: '', validator: [validator, () => value] },
               }).getModel();
 
-              const { data, error } = await Model.create();
+              const { data, error } = await Model.create({});
 
               expect(data).toBeNull();
               expect(error).toMatchObject({

@@ -229,7 +229,7 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
       }).getModel();
 
       it('should set value of constant to null if value could not be generated properly', async () => {
-        const { data, error } = await Model.create();
+        const { data, error } = await Model.create({});
 
         expect(error).toBeNull();
         expect(data).toMatchObject({ constant: null });

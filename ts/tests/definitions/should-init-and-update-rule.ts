@@ -398,6 +398,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
           expect(data).toEqual({
             env: 'test',
+            isBlocked: false,
             laxProp: 0,
           });
         });

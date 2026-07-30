@@ -639,7 +639,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           ).getModel();
 
           it("should trigger all 'success' listeners of constant props at creation", async () => {
-            const { data, handleSuccess } = await Model.create();
+            const { data, handleSuccess } = await Model.create({});
 
             await handleSuccess();
 

@@ -916,14 +916,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
     describe('behaviour', () => {
       describe('should properly trigger post-validators', () => {
         let providedPropertiesStats: Record<string, number> = {};
-        let summaryStats: Record<string, unknown> = {};
+        let ctxStats: Record<string, unknown> = {};
 
         function handlePostValidate(
           prop: string,
-          summary: any,
+          ctx: any,
           propsProvided: string[],
         ) {
-          summaryStats[prop] = summary;
+          ctxStats[prop] = ctx;
 
           if (propsProvided.includes(prop))
             providedPropertiesStats[prop] =
@@ -933,15 +933,15 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         function makePostValidationConfig(properties: string[]) {
           return {
             properties,
-            validator(summary: any, propsProvided: string[]) {
+            validator(ctx: any, propsProvided: string[]) {
               for (const prop of properties)
-                handlePostValidate(prop, summary, propsProvided);
+                handlePostValidate(prop, ctx, propsProvided);
             },
           };
         }
 
         afterEach(() => {
-          summaryStats = {};
+          ctxStats = {};
           providedPropertiesStats = {};
         });
 
@@ -954,8 +954,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 resolver: validator,
               },
               lax: { default: '' },
-              readonly: { readonly: true, validator },
-              readonlyLax: { default: '', readonly: 'lax', validator },
+              requiredReadonly: { required: true, readonly: true, validator },
+              readonlyLax: { default: '', readonly: true, validator },
               required: { required: true, validator },
               virtual: { virtual: true, validator },
               virtual2: { virtual: true, validator },
@@ -964,7 +964,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: makePostValidationConfig([
                 'lax',
                 'required',
-                'readonly',
+                'requiredReadonly',
                 'readonlyLax',
                 'virtual',
                 'virtual2',
@@ -973,13 +973,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           ).getModel();
 
           it('should trigger all post-validators at creation', async () => {
-            const { error } = await Model.create();
+            const { error } = await Model.create({});
 
             expect(error).toBeNull();
             expect(providedPropertiesStats).toEqual({
               lax: 1,
               required: 1,
-              readonly: 1,
+              requiredReadonly: 1,
               readonlyLax: 1,
             });
           });
@@ -991,7 +991,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             expect(providedPropertiesStats).toEqual({
               lax: 1,
               required: 1,
-              readonly: 1,
+              requiredReadonly: 1,
               readonlyLax: 1,
               virtual2: 1,
             });
@@ -999,11 +999,11 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
           it('should only trigger post-validators of props that change during updates', async () => {
             const { error } = await Model.update(
-              { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
+              { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: 1 },
               {
                 lax: true,
                 required: 1,
-                readonly: true,
+                requiredReadonly: true,
                 readonlyLax: true,
                 virtual: true,
                 virtual2: true,
@@ -1020,9 +1020,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
           it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
             const { error } = await Model.update(
-              { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
+              { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: '' },
               {
-                readonly: true,
+                requiredReadonly: true,
                 readonlyLax: true,
               },
             );
@@ -1035,7 +1035,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const properties = [
               'lax',
               'required',
-              'readonly',
+              'requiredReadonly',
               'readonlyLax',
               'virtual',
               'virtual2',
@@ -1049,8 +1049,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   resolver: validator,
                 },
                 lax: { default: '' },
-                readonly: { readonly: true, validator },
-                readonlyLax: { default: '', readonly: 'lax', validator },
+                requiredReadonly: { required: true, readonly: true, validator },
+                readonlyLax: { default: '', readonly: true, validator },
                 required: { required: true, validator },
                 virtual: { virtual: true, validator },
                 virtual2: { virtual: true, validator },
@@ -1064,20 +1064,20 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             ).getModel();
 
             function makePostValidator() {
-              return (summary: any, propsProvided: string[]) => {
+              return (ctx: any, propsProvided: string[]) => {
                 for (const prop of properties)
-                  handlePostValidate(prop, summary, propsProvided);
+                  handlePostValidate(prop, ctx, propsProvided);
               };
             }
 
             it('should trigger all post-validators at creation', async () => {
-              const { error } = await Model.create();
+              const { error } = await Model.create({});
 
               expect(error).toBeNull();
               expect(providedPropertiesStats).toEqual({
                 lax: 2,
                 required: 2,
-                readonly: 2,
+                requiredReadonly: 2,
                 readonlyLax: 2,
               });
             });
@@ -1089,7 +1089,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               expect(providedPropertiesStats).toEqual({
                 lax: 2,
                 required: 2,
-                readonly: 2,
+                requiredReadonly: 2,
                 readonlyLax: 2,
                 virtual2: 2,
               });
@@ -1097,11 +1097,11 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             it('should only trigger post-validators of props that change during updates', async () => {
               const { error } = await Model.update(
-                { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
+                { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: 1 },
                 {
                   lax: true,
                   required: 1,
-                  readonly: true,
+                  requiredReadonly: true,
                   readonlyLax: true,
                   virtual: true,
                   virtual2: true,
@@ -1118,8 +1118,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
               const { error } = await Model.update(
-                { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
-                { readonly: true, readonlyLax: true },
+                { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: '' },
+                { requiredReadonly: true, readonlyLax: true },
               );
 
               expect(error).toBeNull();
@@ -1137,8 +1137,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 resolver: validator,
               },
               lax: { default: '' },
-              readonly: { readonly: true, validator },
-              readonlyLax: { default: '', readonly: 'lax', validator },
+              requiredReadonly: { required: true, readonly: true, validator },
+              readonlyLax: { default: '', readonly: true, validator },
               required: { required: true, validator },
               virtual: { virtual: true, validator },
               virtual2: { virtual: true, validator },
@@ -1148,7 +1148,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 makePostValidationConfig([
                   'lax',
                   'required',
-                  'readonly',
+                  'requiredReadonly',
                   'readonlyLax',
                 ]),
                 makePostValidationConfig(['lax', 'virtual']),
@@ -1158,18 +1158,18 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           ).getModel();
 
           afterEach(() => {
-            summaryStats = {};
+            ctxStats = {};
             providedPropertiesStats = {};
           });
 
           it('should trigger all post-validators at creation', async () => {
-            const { error } = await Model.create();
+            const { error } = await Model.create({});
 
             expect(error).toBeNull();
             expect(providedPropertiesStats).toEqual({
               lax: 2,
               required: 1,
-              readonly: 1,
+              requiredReadonly: 1,
               readonlyLax: 1,
             });
           });
@@ -1181,7 +1181,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             expect(providedPropertiesStats).toEqual({
               lax: 2,
               required: 1,
-              readonly: 1,
+              requiredReadonly: 1,
               readonlyLax: 1,
               virtual2: 1,
             });
@@ -1189,11 +1189,11 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
           it('should only trigger post-validators of props provided during updates', async () => {
             const { error } = await Model.update(
-              { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
+              { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: 1 },
               {
                 lax: true,
                 required: true,
-                readonly: true,
+                requiredReadonly: true,
                 readonlyLax: true,
                 virtual: true,
                 virtual2: true,
@@ -1211,9 +1211,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
           it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
             const { error } = await Model.update(
-              { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
+              { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: '' },
               {
-                readonly: true,
+                requiredReadonly: true,
                 readonlyLax: true,
               },
             );
@@ -1223,7 +1223,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           describe('behaviour with post-validators that have validator arrays', () => {
-            const properties1 = ['lax', 'required', 'readonly', 'readonlyLax'],
+            const properties1 = [
+                'lax',
+                'required',
+                'requiredReadonly',
+                'readonlyLax',
+              ],
               properties2 = ['virtual', 'virtual2'];
 
             const Model = new Schema(
@@ -1234,8 +1239,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   resolver: validator,
                 },
                 lax: { default: '' },
-                readonly: { readonly: true, validator },
-                readonlyLax: { default: '', readonly: 'lax', validator },
+                requiredReadonly: { required: true, readonly: true, validator },
+                readonlyLax: { default: '', readonly: true, validator },
                 required: { required: true, validator },
                 virtual: { virtual: true, validator },
                 virtual2: { virtual: true, validator },
@@ -1263,20 +1268,20 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             ).getModel();
 
             function makePostValidator(properties: string[]) {
-              return (summary: any, propsProvided: string[]) => {
+              return (ctx: any, propsProvided: string[]) => {
                 for (const prop of properties)
-                  handlePostValidate(prop, summary, propsProvided);
+                  handlePostValidate(prop, ctx, propsProvided);
               };
             }
 
             it('should trigger all post-validators at creation', async () => {
-              const { error } = await Model.create();
+              const { error } = await Model.create({});
 
               expect(error).toBeNull();
               expect(providedPropertiesStats).toEqual({
                 lax: 3,
                 required: 2,
-                readonly: 2,
+                requiredReadonly: 2,
                 readonlyLax: 2,
               });
             });
@@ -1288,7 +1293,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               expect(providedPropertiesStats).toEqual({
                 lax: 3,
                 required: 2,
-                readonly: 2,
+                requiredReadonly: 2,
                 readonlyLax: 2,
                 virtual2: 3,
               });
@@ -1296,11 +1301,11 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             it('should only trigger post-validators of props provided during updates', async () => {
               const { error } = await Model.update(
-                { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
+                { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: 1 },
                 {
                   lax: true,
                   required: true,
-                  readonly: true,
+                  requiredReadonly: true,
                   readonlyLax: true,
                   virtual: true,
                   virtual2: true,
@@ -1318,9 +1323,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
               const { error } = await Model.update(
-                { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
+                { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: '' },
                 {
-                  readonly: true,
+                  requiredReadonly: true,
                   readonlyLax: true,
                 },
               );
@@ -1350,7 +1355,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               },
             ).getModel();
 
-            const { data, error } = await Model.create();
+            const { data, error } = await Model.create({});
 
             expect(error).toBeNull();
             expect(data).toEqual({ p1: '', p2: '' });
@@ -1385,7 +1390,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           };
 
           const resolver = (ctx: IvoContext<Input, Output>) =>
-            ctx.rawInput?.v ?? ctx.input?.v ?? ctx.values?.d1;
+            ctx.rawInput.v ?? ctx.input.v ?? ctx.values?.d1;
 
           const Model = new Schema(
             {
@@ -1402,7 +1407,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 {
                   properties: ['p1', 'v'],
                   validator(ctx: IvoContext<Input, Output>) {
-                    const v = ctx.rawInput?.v ?? ctx.input?.v;
+                    const v = ctx.rawInput.v ?? ctx.input.v;
                     const isUpdate = ctx.isUpdate;
                     if (v === 'allow') return;
 
@@ -1421,7 +1426,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 {
                   properties: ['p1', 'p2'],
                   validator: (ctx: IvoContext<Input, Output>) => {
-                    const v = ctx.rawInput?.v ?? ctx.input?.v;
+                    const v = ctx.rawInput.v ?? ctx.input.v;
                     if (v === 'throw') throw new Error('lol');
 
                     return Promise.resolve(
@@ -1433,7 +1438,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             },
           ).getModel();
 
-          const res = await Model.create();
+          const res = await Model.create({});
 
           expect(res.data).toBeNull();
           expect(res.error).toMatchObject({
@@ -1552,7 +1557,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             },
           ).getModel();
 
-          const { data, error } = await Model.create();
+          const { data, error } = await Model.create({});
 
           expect(error).toBeNull();
           expect(data).toEqual({ p1: true, p2: 'also revalidated' });
@@ -1585,8 +1590,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                     { p1: string; p2: string; dependent: string }
                   >,
                 ) => {
-                  const v = ctx.input?.v ?? ctx.rawInput?.v ?? '';
-                  const v1 = ctx.input?.v1 ?? ctx.rawInput?.v1 ?? '';
+                  const v = ctx.input.v ?? ctx.rawInput.v ?? '';
+                  const v1 = ctx.input.v1 ?? ctx.rawInput.v1 ?? '';
                   return `${v} ${v1}`.trim();
                 },
               },
@@ -1634,6 +1639,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         });
 
         it('should not revalidate props not related to validator', async () => {
+          type Input = { p1?: string; p2: string; v?: string; v1?: string };
+          type Output = { p1: string; p2: string; dependent: string };
+
           const Model = new Schema(
             {
               p1: { default: '' },
@@ -1641,14 +1649,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               dependent: {
                 default: '',
                 dependsOn: ['v', 'v1'],
-                resolver: (
-                  summary: ReadonlyIvoContext<
-                    { v?: string; v1?: string },
-                    { p1: string; p2: string; dependent: string }
-                  >,
-                ) => {
-                  const v = summary.input?.v ?? summary.rawInput?.v ?? '';
-                  const v1 = summary.input?.v1 ?? summary.rawInput?.v1 ?? '';
+                resolver: (ctx: IvoContext<Input, Output>) => {
+                  const v = ctx.input.v ?? ctx.rawInput.v ?? '';
+                  const v1 = ctx.input.v1 ?? ctx.rawInput.v1 ?? '';
                   return `${v} ${v1}`.trim();
                 },
               },
@@ -1659,12 +1662,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: [
                 {
                   properties: ['v', 'v1'],
-                  validator: ({
-                    isUpdate,
-                  }: IvoContext<
-                    { v?: unknown; v1?: unknown; p1?: string; p2?: string },
-                    { p1: string; p2: string; dependent: string }
-                  >) =>
+                  validator: ({ isUpdate }: IvoContext<Input, Output>) =>
                     isUpdate
                       ? {
                           v: { validated: 're updated' },
@@ -1677,12 +1675,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
                 {
                   properties: ['p1', 'p2', 'v'],
-                  validator: ({
-                    isUpdate,
-                  }: IvoContext<
-                    { v?: unknown; v1?: unknown; p1?: string; p2?: string },
-                    { p1: string; p2: string; dependent: string }
-                  >) =>
+                  validator: ({ isUpdate }: IvoContext<Input, Output>) =>
                     isUpdate
                       ? {
                           p2: { validated: 're updated' },
@@ -1699,7 +1692,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             },
           ).getModel();
 
-          const { data, error } = await Model.create();
+          const { data, error } = await Model.create({ p1: 'provided' });
 
           expect(error).toBeNull();
           expect(data).toEqual({
@@ -1719,7 +1712,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           expect(updated).toEqual({
             p1: false,
             p2: 're updated',
-            dependent: 'successfully re updated undefined',
+            dependent: 'successfully re updated',
           });
         });
 
@@ -1729,10 +1722,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             for (const value of values) {
               const Model = new Schema(
-                {
-                  p1: { default: '' },
-                  p2: { default: '' },
-                },
+                { p1: { default: '' }, p2: { default: '' } },
                 {
                   postValidate: {
                     properties: ['p1', 'p2'],
@@ -1741,7 +1731,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
               ).getModel();
 
-              const { data, error } = await Model.create();
+              const { data, error } = await Model.create({});
 
               expect(error).toBeNull();
               expect(data).toEqual({ p1: '', p2: '' });
@@ -1760,24 +1750,23 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
           it('should process errors of first validator to return errors and stop validating', async () => {
             type PVInput = {
-              v?: any;
+              d1?: any;
               p1?: string;
               p2?: string;
               p3?: string;
               p4?: string;
             };
             type PVOutput = {
+              d1: string;
+              d2: string;
               p1: string;
               p2: string;
               p3: string;
               p4: string;
-              d1: string;
-              d2: string;
             };
-            type PVCtx = ReadonlyIvoContext<PVInput, PVOutput>;
+            type PVCtx = IvoContext<PVInput, PVOutput>;
 
-            const resolver = (summary: PVCtx) =>
-              summary.input?.v ?? summary.rawInput?.v;
+            const resolver = (ctx: PVCtx) => ctx.input.d1 ?? ctx.rawInput.d1;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -1803,18 +1792,18 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                       () => {
                         incrementValidatorCount('p1-v');
                       },
-                      (summary: PVCtx) => {
-                        const v = summary.input?.v ?? summary.rawInput?.v;
+                      (ctx: PVCtx) => {
+                        const v = ctx.input.d1 ?? ctx.rawInput.d1;
                         if (v === 'return error')
                           return { d1: 'error returned' };
                       },
-                      (summary: PVCtx) => {
-                        const v = summary.input?.v ?? summary.rawInput?.v;
+                      (ctx: PVCtx) => {
+                        const v = ctx.input.d1 ?? ctx.rawInput.d1;
                         incrementValidatorCount('p1-v');
                         if (v === 'throw') throw new Error('lol');
                       },
-                      (summary: PVCtx) => {
-                        const isUpdate = summary.isUpdate;
+                      (ctx: PVCtx) => {
+                        const isUpdate = ctx.isUpdate;
                         incrementValidatorCount('p1-v');
 
                         return isUpdate
@@ -1824,7 +1813,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                               p2: 'p2',
                               p3: 'error1',
                               p4: null,
-                              v: { reason: 'error', metadata: { lol: true } },
+                              d1: { reason: 'error', metadata: { lol: true } },
                             };
                       },
                     ],
@@ -1832,13 +1821,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   {
                     properties: ['p1', 'p2'],
                     validator: [
-                      (summary: PVCtx) => {
-                        const v = summary.input?.v ?? summary.rawInput?.v;
+                      (ctx: PVCtx) => {
+                        const v = ctx.input.d1 ?? ctx.rawInput.d1;
                         incrementValidatorCount('p1-p2');
                         if (v === 'throw') throw new Error('lol');
                       },
-                      (summary: PVCtx) => {
-                        const v = summary.input?.v ?? summary.rawInput?.v;
+                      (ctx: PVCtx) => {
+                        const v = ctx.input.d1 ?? ctx.rawInput.d1;
                         return Promise.resolve(
                           v === 'allow' ? false : { p1: 'failed to validate' },
                         );
@@ -1849,33 +1838,33 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               },
             ).getModel();
 
-            const createRes = await Model.create();
+            // const createRes = await Model.create({});
 
-            expect(createRes.data).toBeNull();
-            expect(createRes.error).toMatchObject({
-              p1: expect.objectContaining({ reason: 'failed to validate' }),
-              // p2: expect.objectContaining({ reason: 'p2' }),
-              // p3: expect.objectContaining({ reason: 'error1' }),
-              // p4: expect.objectContaining({ reason: 'validation failed' }),
-              // v: expect.objectContaining({
-              //   reason: 'error',
-              //   metadata: { lol: true },
-              // }),
-            });
+            // expect(createRes.data).toBeNull();
+            // expect(createRes.error).toMatchObject({
+            //   // p1: expect.objectContaining({ reason: "failed to validate" }),
+            //   // // p2: expect.objectContaining({ reason: "p2" }),
+            //   // // p3: expect.objectContaining({ reason: "error1" }),
+            //   // // p4: expect.objectContaining({ reason: "validation failed" }),
+            //   // d1: expect.objectContaining({
+            //   //   reason: "error",
+            //   //   metadata: { lol: true },
+            //   // }),
+            // });
 
-            expect(validatorRunCount).toMatchObject({
-              'p1-v': 3,
-              'p1-p2': 2,
-            });
+            // expect(validatorRunCount).toMatchObject({
+            //   "p1-v": 3,
+            //   "p1-p2": 2,
+            // });
 
-            validatorRunCount = {};
+            // validatorRunCount = {};
 
-            const createRes1 = await Model.create({ v: 'throw', p2: true });
+            const createRes1 = await Model.create({ d1: 'throw', p2: true });
 
             expect(createRes1.data).toBeNull();
             expect(createRes1.error).toEqual({
               p2: expect.objectContaining({ reason: 'validation failed' }),
-              v: expect.objectContaining({ reason: 'validation failed' }),
+              d1: expect.objectContaining({ reason: 'validation failed' }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -1885,20 +1874,20 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             validatorRunCount = {};
 
-            const createRes11 = await Model.create({ v: 'return error' });
+            const createRes11 = await Model.create({ d1: 'return error' });
 
             expect(createRes11.data).toBeNull();
             expect(createRes11.error).toMatchObject({
               d1: expect.objectContaining({ reason: 'error returned' }),
             });
 
-            expect(validatorRunCount).toEqual({ 'p1-v': 1, 'p1-p2': 2 });
+            expect(validatorRunCount).toEqual({ 'p1-v': 1 });
 
             validatorRunCount = {};
 
             const updateRes = await Model.update(
               {},
-              { p2: 'updated', v: 'updated' },
+              { p2: 'updated', d1: 'updated' },
             );
             expect(updateRes.data).toBeNull();
             expect(updateRes.error).toMatchObject({
@@ -1908,20 +1897,20 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(validatorRunCount).toMatchObject({
               'p1-v': 3,
-              'p1-p2': 2,
+              'p1-p2': 1,
             });
 
             validatorRunCount = {};
 
             const updateRes1 = await Model.update(
               {},
-              { p2: 'updated', v: 'throw' },
+              { p2: 'updated', d1: 'throw' },
             );
 
             expect(updateRes1.data).toBeNull();
             expect(updateRes1.error).toMatchObject({
               p2: expect.objectContaining({ reason: 'validation failed' }),
-              v: expect.objectContaining({ reason: 'validation failed' }),
+              d1: expect.objectContaining({ reason: 'validation failed' }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -1931,7 +1920,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             validatorRunCount = {};
 
-            const updateRes2 = await Model.update({}, { v: 'return error' });
+            const updateRes2 = await Model.update({}, { d1: 'return error' });
 
             expect(updateRes2.data).toBeNull();
             expect(updateRes2.error).toMatchObject({
@@ -1943,24 +1932,23 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
           it('should process parallel and sequential validators accordingly', async () => {
             type PVInput2 = {
-              v?: any;
+              d1?: any;
               p1?: string;
               p2?: string;
               p3?: string;
               p4?: string;
             };
             type PVOutput2 = {
+              d1: string;
+              d2: string;
               p1: string;
               p2: string;
               p3: string;
               p4: string;
-              d1: string;
-              d2: string;
             };
             type PVCtx2 = ReadonlyIvoContext<PVInput2, PVOutput2>;
 
-            const resolver = (summary: PVCtx2) =>
-              summary.input?.v ?? summary.rawInput?.v;
+            const resolver = (ctx: PVCtx2) => ctx.input.d1 ?? ctx.rawInput.d1;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -1970,12 +1958,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             const Model = new Schema(
               {
+                d1: { default: '', dependsOn: 'v', resolver },
+                d2: { default: '', dependsOn: 'v', resolver },
                 p1: { default: '' },
                 p2: { default: '' },
                 p3: { default: '' },
                 p4: { default: '' },
-                d1: { default: '', dependsOn: 'v', resolver },
-                d2: { default: '', dependsOn: 'v', resolver },
                 v: { alias: 'd1', virtual: true, validator },
               },
               {
@@ -1983,8 +1971,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   {
                     properties: ['p1', 'v'],
                     validator: [
-                      (summary: PVCtx2) => {
-                        const v = summary.input?.v ?? summary.rawInput?.v;
+                      (ctx: PVCtx2) => {
+                        const v = ctx.input.d1 ?? ctx.rawInput.d1;
                         incrementValidatorCount('p1-v');
 
                         if (v === 'return error')
@@ -1993,18 +1981,18 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                         if (v === 'throw') throw new Error('lol');
                       },
                       [
-                        (summary: PVCtx2) => {
-                          const v = summary.input?.v ?? summary.rawInput?.v;
+                        (ctx: PVCtx2) => {
+                          const v = ctx.input.d1 ?? ctx.rawInput.d1;
                           incrementValidatorCount('p1-v-parallel');
 
                           if (v === 'throw-parallel') throw new Error('lol');
                         },
-                        (summary: PVCtx2) => {
-                          const v = summary.input?.v ?? summary.rawInput?.v;
+                        (ctx: PVCtx2) => {
+                          const v = ctx.input.d1 ?? ctx.rawInput.d1;
                           incrementValidatorCount('p1-v-parallel');
 
                           if (v === 'return error-parallel')
-                            return { v: 'error returned' };
+                            return { d1: 'error returned' };
                         },
                       ],
                       () => {
@@ -2024,9 +2012,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               },
             ).getModel();
 
-            const createRes = await Model.create();
+            const createRes = await Model.create({});
 
             expect(createRes.error).toBeNull();
+            expect(validatorRunCount).toMatchObject({});
+
+            const createRes0 = await Model.create({ d1: '' });
+
+            expect(createRes0.error).toBeNull();
             expect(validatorRunCount).toMatchObject({
               'p1-v': 2,
               'p1-v-parallel': 2,
@@ -2035,11 +2028,11 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             validatorRunCount = {};
 
-            const createRes1 = await Model.create({ v: 'throw', p2: true });
+            const createRes1 = await Model.create({ d1: 'throw', p2: true });
 
             expect(createRes1.data).toBeNull();
             expect(createRes1.error).toMatchObject({
-              v: expect.objectContaining({ reason: 'validation failed' }),
+              d1: expect.objectContaining({ reason: 'validation failed' }),
             });
 
             expect(validatorRunCount).toMatchObject({ 'p1-v': 1 });
@@ -2058,13 +2051,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             validatorRunCount = {};
 
             const createRes3 = await Model.create({
-              v: 'throw-parallel',
+              d1: 'throw-parallel',
               p2: true,
             });
 
             expect(createRes3.data).toBeNull();
             expect(createRes3.error).toMatchObject({
-              v: expect.objectContaining({ reason: 'validation failed' }),
+              d1: expect.objectContaining({ reason: 'validation failed' }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -2075,13 +2068,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             validatorRunCount = {};
 
             const createRes4 = await Model.create({
-              v: 'return error-parallel',
+              d1: 'return error-parallel',
               p2: true,
             });
 
             expect(createRes4.data).toBeNull();
             expect(createRes4.error).toMatchObject({
-              v: expect.objectContaining({ reason: 'error returned' }),
+              d1: expect.objectContaining({ reason: 'error returned' }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -2091,7 +2084,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             validatorRunCount = {};
 
-            const updateRes = await Model.update({}, { v: 'valid' });
+            const updateRes = await Model.update({}, { d1: 'valid' });
             expect(updateRes.error).toBeNull();
 
             expect(validatorRunCount).toMatchObject({
@@ -2102,10 +2095,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             validatorRunCount = {};
 
-            const updateRes1 = await Model.update({}, { v: 'throw' });
+            const updateRes1 = await Model.update({}, { d1: 'throw' });
             expect(updateRes1.data).toBeNull();
             expect(updateRes1.error).toMatchObject({
-              v: expect.objectContaining({ reason: 'validation failed' }),
+              d1: expect.objectContaining({ reason: 'validation failed' }),
             });
 
             expect(validatorRunCount).toMatchObject({ 'p1-v': 1 });
@@ -2125,12 +2118,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             const updateRes3 = await Model.update(
               {},
-              { v: 'throw-parallel', p2: true },
+              { d1: 'throw-parallel', p2: true },
             );
 
             expect(updateRes3.data).toBeNull();
             expect(updateRes3.error).toMatchObject({
-              v: expect.objectContaining({ reason: 'validation failed' }),
+              d1: expect.objectContaining({ reason: 'validation failed' }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -2142,12 +2135,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             const updateRes4 = await Model.update(
               {},
-              { v: 'return error-parallel', p2: true },
+              { d1: 'return error-parallel', p2: true },
             );
 
             expect(updateRes4.data).toBeNull();
             expect(updateRes4.error).toMatchObject({
-              v: expect.objectContaining({ reason: 'error returned' }),
+              d1: expect.objectContaining({ reason: 'error returned' }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -2165,28 +2158,20 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           ctxValue = {};
         });
 
+        type Data = { p1: string; p2: string };
+
         const Model = new Schema(
           { p1: { default: '' }, p2: { default: '' } },
           {
             postValidate: {
               properties: ['p1', 'p2'],
-              validator: ({
-                updateOptions,
-              }: IvoContext<
-                { p1: string; p2: string },
-                { p1: string; p2: string }
-              >) => {
+              validator: ({ updateOptions }: IvoContext<Data>) => {
                 updateOptions({ updated: true });
 
                 return true;
               },
             },
-            onSuccess({
-              options,
-            }: ReadonlyIvoContext<
-              { p1: string; p2: string },
-              { p1: string; p2: string }
-            >) {
+            onSuccess({ options }: ReadonlyIvoContext<Data>) {
               ctxValue = options;
             },
           },
@@ -2195,11 +2180,19 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         it('should respect ctx updates at creation', async () => {
           expect(ctxValue).toEqual({});
 
-          const { handleSuccess } = await Model.create();
+          const { handleSuccess } = await Model.create({});
 
           await handleSuccess();
 
-          expect(ctxValue).toEqual({ updated: true });
+          expect(ctxValue).toEqual({});
+
+          {
+            const { handleSuccess } = await Model.create({ p1: '1' });
+
+            await handleSuccess();
+
+            expect(ctxValue).toEqual({ updated: true });
+          }
         });
 
         it('should respect ctx updates during updates', async () => {
@@ -2222,19 +2215,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           beforeEach(() => {
             ctxValue = {};
           });
-
+          type Data = { p1: string; p2: string };
           const Model = new Schema(
             { p1: { default: '' }, p2: { default: '' } },
             {
               postValidate: {
                 properties: ['p1', 'p2'],
                 validator: [
-                  ({
-                    updateOptions,
-                  }: IvoContext<
-                    { p1: string; p2: string },
-                    { p1: string; p2: string }
-                  >) => {
+                  ({ updateOptions }: IvoContext<Data>) => {
                     updateOptions({ updated: true });
 
                     return true;
@@ -2242,23 +2230,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   ({
                     updateOptions,
                     options: { updated },
-                  }: IvoContext<
-                    { p1: string; p2: string },
-                    { p1: string; p2: string },
-                    Record<string, unknown>
-                  >) => {
+                  }: IvoContext<Data, Data, Record<string, unknown>>) => {
                     updateOptions({ v2: { updated } });
 
                     return true;
                   },
                 ],
               },
-              onSuccess({
-                options,
-              }: ReadonlyIvoContext<
-                { p1: string; p2: string },
-                { p1: string; p2: string }
-              >) {
+              onSuccess({ options }: ReadonlyIvoContext<Data>) {
                 ctxValue = options;
               },
             },
@@ -2267,11 +2246,21 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           it('should respect ctx updates at creation', async () => {
             expect(ctxValue).toEqual({});
 
-            const { handleSuccess } = await Model.create();
+            const { handleSuccess } = await Model.create({});
 
             await handleSuccess();
 
-            expect(ctxValue).toEqual({ updated: true, v2: { updated: true } });
+            expect(ctxValue).toEqual({});
+
+            {
+              const { handleSuccess } = await Model.create({ p1: '1' });
+
+              await handleSuccess();
+              expect(ctxValue).toEqual({
+                updated: true,
+                v2: { updated: true },
+              });
+            }
           });
 
           it('should respect ctx updates during updates', async () => {

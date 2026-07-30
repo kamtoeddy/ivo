@@ -516,7 +516,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           });
 
           it('should reject if no value is provided', async () => {
-            const { data, error } = await Model.create();
+            const { data, error } = await Model.create({});
 
             expect(data).toBeNull();
             expect(error).toMatchObject({

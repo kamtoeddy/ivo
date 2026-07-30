@@ -7,7 +7,6 @@ export type {
   KeyOf,
   ReadonlyIvoContext,
   RealType,
-  SetterFnData,
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
