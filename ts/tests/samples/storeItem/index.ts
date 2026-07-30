@@ -1,5 +1,5 @@
-import { type IvoContext, Schema } from "../../../src";
-import type { StoreItem, StoreItemInput } from "./types";
+import { type IvoContext, Schema } from '../../../src';
+import type { StoreItem, StoreItemInput } from './types';
 import {
   sanitizeQuantities,
   validateName,
@@ -8,7 +8,7 @@ import {
   validateQuantities,
   validateQuantity,
   validateString,
-} from "./validators";
+} from './validators';
 
 export { StoreItemModel, storeItemSchema };
 
@@ -16,24 +16,24 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
   {
     _dependentReadOnly: {
       default: 0,
-      dependsOn: "_virtualForDependentReadOnly",
+      dependsOn: '_virtualForDependentReadOnly',
       readonly: true,
       resolver: () => 1,
     },
-    _laxProp: { default: "", validator: validateString("Invalid lax prop") },
-    _readOnlyLax1: { default: "", readonly: true },
-    _readOnlyLax2: { default: "", readonly: true },
-    _readOnlyNoInit: { default: "", readonly: true },
+    _laxProp: { default: '', validator: validateString('Invalid lax prop') },
+    _readOnlyLax1: { default: '', readonly: true },
+    _readOnlyLax2: { default: '', readonly: true },
+    _readOnlyNoInit: { default: '', readonly: true },
     _virtualForDependentReadOnly: { virtual: true, validator: () => true },
     id: {
-      default: "",
+      default: '',
       readonly: true,
-      validator: validateString("Invalid id"),
+      validator: validateString('Invalid id'),
     },
     name: { required: true, validator: validateName },
     measureUnit: {
       required: true,
-      validator: validateString("Invalid measure unit"),
+      validator: validateString('Invalid measure unit'),
     },
     otherMeasureUnits: { default: [], validator: validateOtherUnits },
     price: { required: true, validator: validatePrice },
@@ -44,17 +44,17 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     },
     quantity: {
       default: 0,
-      dependsOn: ["_quantity" as "__quantity", "quantities"],
+      dependsOn: ['_quantity' as '__quantity', 'quantities'],
       resolver: resolveQuantity,
     },
     _quantity: {
-      alias: "__quantity",
+      alias: '__quantity',
       virtual: true,
       validator: validateQuantity,
     },
     quantityChangeCounter: {
       default: 0,
-      dependsOn: "quantity",
+      dependsOn: 'quantity',
       resolver({ values: { quantityChangeCounter } }) {
         return (quantityChangeCounter ?? 0) + 1;
       },
@@ -62,7 +62,7 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
   },
   {
     onSuccess,
-    timestamps: { createdAt: "c_At", updatedAt: "u_At" },
+    timestamps: { createdAt: 'c_At', updatedAt: 'u_At' },
   },
 );
 
