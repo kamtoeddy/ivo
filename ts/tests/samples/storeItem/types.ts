@@ -10,7 +10,7 @@ export interface IOtherMeasureUnit {
 
 export interface StoreItemInput {
   _laxProp: string;
-  _quantity: number;
+  __quantity: number;
   _readOnlyLax1: string;
   _readOnlyLax2: string;
   _readOnlyNoInit: any;
