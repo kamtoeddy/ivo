@@ -578,7 +578,7 @@ namespace NS {
   > =
     // @ts-expect-error too_bad_alias_type_is_not_inferred
     Enumerable<Metadata, TypeOf<Input[K]>> & {
-      alias?: string;
+      alias?: keyof Input;
       required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
       virtual: true;
       // @ts-expect-error too_bad_alias_type_is_not_inferred
