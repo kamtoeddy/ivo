@@ -11,6 +11,7 @@ import {
   sortKeys,
   toArray,
 } from '../utils';
+import { materializeFieldBuilders } from './field-builder';
 import { defaultOptions, SchemaCore } from './schema-core';
 import {
   type ArrayOfMinSizeTwo,
@@ -75,7 +76,9 @@ class Schema<
     > = defaultOptions as never,
   ) {
     super(
-      definitions as never as NS.Definitions_<Input, Output, ErrorMetadata>,
+      materializeFieldBuilders(
+        definitions as never,
+      ) as never as NS.Definitions_<Input, Output, ErrorMetadata>,
       options as never,
     );
   }

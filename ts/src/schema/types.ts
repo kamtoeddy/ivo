@@ -8,6 +8,7 @@ import type {
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
+  Buildable,
   DefinitionRule,
   InternalValidatorResponse,
   InvalidValidatorResponse,
@@ -32,6 +33,7 @@ export type {
 
 export {
   ALLOWED_OPTIONS,
+  BUILD,
   CONSTANT_RULES,
   DEFINITION_RULES,
   LIFE_CYCLES,
@@ -385,10 +387,12 @@ namespace NS {
     Input,
     Output,
     CtxOptions extends ObjectType = {},
-  > = XOR<
-    Constant<K, Input, Output, CtxOptions>,
-    Dependent<K, Input, Output, CtxOptions>
-  >;
+  > =
+    | XOR<
+        Constant<K, Input, Output, CtxOptions>,
+        Dependent<K, Input, Output, CtxOptions>
+      >
+    | Buildable<Dependent<K, Input, Output, CtxOptions>>;
 
   export type Definitions_<Input, Output, Metadata> = {
     [K in keyof Input]?: Listenable<Input, Output, {}> & {
@@ -868,6 +872,23 @@ type PrettyType<T> = {
 type RealType<T> = {
   [K in keyof T]: TypeFromPromise<Exclude<T[K], Function> | RealType_<T[K]>>;
 } & {};
+
+/**
+ * Symbol-keyed hook a field-builder chain (see schema/field-builder.ts) uses
+ * to expose its resolved config to `Schema` internals only. It's not part of
+ * `Buildable`'s public surface - there is no `.build()` a user can reach - so
+ * `field.dependent(...).default(...).dependsOn(...).resolve(...)` can be
+ * dropped straight into a `Definitions` object literal, and only `Schema`
+ * (via `materializeFieldBuilders`, the sole holder of this symbol reference)
+ * can unwrap it.
+ */
+const BUILD: unique symbol = Symbol('ivo.build');
+
+/**
+ * Structural marker for a field-builder result: any value exposing the
+ * hidden `[BUILD]` hook can stand in for a plain `T` field definition.
+ */
+type Buildable<T> = { [BUILD]: () => T };
 
 type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 
