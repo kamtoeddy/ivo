@@ -21,8 +21,8 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
       resolver: () => 1,
     },
     _laxProp: { default: '', validator: validateString('Invalid lax prop') },
-    _readOnlyLax1: { default: '', readonly: 'lax' },
-    _readOnlyLax2: { default: '', readonly: 'lax' },
+    _readOnlyLax1: { default: '', readonly: true },
+    _readOnlyLax2: { default: '', readonly: true },
     _readOnlyNoInit: { default: '', readonly: true },
     _virtualForDependentReadOnly: { virtual: true, validator: () => true },
     id: {
@@ -70,7 +70,7 @@ function resolveQuantity({
   input: { _quantity, quantities },
   values: { quantity },
 }: IvoContext<StoreItemInput, StoreItem>) {
-  const newQty = _quantity ?? quantity;
+  const newQty = _quantity ?? quantity ?? 0;
 
   return quantities ? newQty + (quantities as number) : newQty;
 }

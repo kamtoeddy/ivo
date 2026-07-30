@@ -275,7 +275,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             },
           }).getModel();
 
-          const { data, error } = await Model.create({});
+          const { data, error } = await Model.create({ prop: 'x' });
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
@@ -311,7 +311,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               },
             }).getModel();
 
-            const { data, error } = await Model.create({});
+            const { data, error } = await Model.create({ prop: 'x' });
 
             expect(data).toBeNull();
             expect(error).toEqual({
@@ -337,7 +337,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 },
               }).getModel();
 
-              const { data, error } = await Model.create({});
+              const { data, error } = await Model.create({ prop2: 'x' });
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
@@ -365,7 +365,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 },
               }).getModel();
 
-              const { data, error } = await Model.create({ prop: 'invalid' });
+              const { data, error } = await Model.create({
+                prop: 'invalid',
+                prop2: 'x',
+              });
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
@@ -528,24 +531,33 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           }).getModel();
 
           it('should trigger all secondary validators at creation', async () => {
-            const { error } = await Model.create({});
+            const { error } = await Model.create({
+              required: 'req',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
+            });
 
             expect(error).toBeNull();
             expect(valuesProvided).toEqual({
-              requiredReadonly: undefined,
+              requiredReadonly: 'reqReadonly',
               readonlyLax: '',
-              required: undefined,
+              required: 'req',
             });
           });
 
           it('should not trigger secondary validators of virtuals not provided at creation', async () => {
-            const { error } = await Model.create({ virtual2: true });
+            const { error } = await Model.create({
+              required: 'req',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
+              virtual2: true,
+            });
 
             expect(error).toBeNull();
             expect(valuesProvided).toEqual({
-              requiredReadonly: undefined,
+              requiredReadonly: 'reqReadonly',
               readonlyLax: '',
-              required: undefined,
+              required: 'req',
               virtual2: true,
             });
           });
@@ -609,7 +621,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               const Model = new Schema({
                 lax: {
                   default: '',
-                  shouldInit: false,
+                  ignoreInit: true,
                   validator: makeSecondaryValidator('lax'),
                 },
                 dependent: {
@@ -623,7 +635,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 },
                 v2: {
                   virtual: true,
-                  shouldInit: false,
+                  ignoreInit: true,
                   validator: makeSecondaryValidator('v2'),
                 },
               }).getModel();
@@ -642,7 +654,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               const Model = new Schema({
                 lax: {
                   default: '',
-                  shouldUpdate: false,
+                  ignoreUpdate: true,
                   validator: makeSecondaryValidator('lax'),
                 },
                 dependent: {
@@ -656,7 +668,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 },
                 v2: {
                   virtual: true,
-                  shouldUpdate: false,
+                  ignoreUpdate: true,
                   validator: makeSecondaryValidator('v2'),
                 },
               }).getModel();
@@ -691,7 +703,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 p2: { default: '', validator: [validator, () => value] },
               }).getModel();
 
-              const { data, error } = await Model.create({});
+              const { data, error } = await Model.create({ p2: '' });
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
@@ -771,10 +783,16 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               },
             }).getModel();
 
-            const res = await Model.create({ v: true });
+            const res = await Model.create({
+              p1: 'x',
+              p2: 'x',
+              p3: 'x',
+              p4: 'x',
+              v: true,
+            });
 
             expect(res.data).toBeNull();
-            expect(res.error.payload).toMatchObject({
+            expect(res.error).toMatchObject({
               p1: expect.objectContaining({ reason: 'p1' }),
               p2: expect.objectContaining({ reason: 'p2' }),
               p3: expect.objectContaining({ reason: 'error1' }),
@@ -790,7 +808,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               { p1: true, p2: 'updated', d1: 'updated' },
             );
             expect(res2.data).toBeNull();
-            expect(res2.error.payload).toMatchObject({
+            expect(res2.error).toMatchObject({
               p1: expect.objectContaining({ reason: 'failed to validate' }),
               p2: expect.objectContaining({ reason: 'p2' }),
               d1: expect.objectContaining({ reason: 'lolz' }),
@@ -798,7 +816,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
             const res3 = await Model.create({ v: 'throw' });
             expect(res3.data).toBeNull();
-            expect(res3.error.payload).toMatchObject({
+            expect(res3.error).toMatchObject({
               v: expect.objectContaining({ reason: 'validation failed' }),
             });
           });

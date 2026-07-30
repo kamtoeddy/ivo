@@ -272,8 +272,12 @@ class ModelTool<
 
         if (
           fieldInfo.isVirtual ||
-          // @ts-expect-error ikr
-          !isEqual(value, previousValues[fieldName])
+          !isEqual(
+            value,
+            // @ts-expect-error ikr
+            _previousValues[fieldName],
+            this._options.equalityDepth,
+          )
         ) {
           relevantFieldsProvided.add(fieldName);
 
@@ -302,7 +306,7 @@ class ModelTool<
       }
     }
 
-    if (entityResolvers.length) {
+    if (entityResolvers.length)
       for (const task of await Promise.allSettled(
         entityResolvers.map((resolver) =>
           Promise.try(resolver, ctx).catch(() => false),
@@ -311,7 +315,6 @@ class ModelTool<
         // if "task.value" is positive, it means "ignore"
         if (task.status === 'fulfilled' && task.value) return fieldsCollection;
       }
-    }
 
     fieldsCollection.fieldsProvided = fieldsProvided;
     fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
@@ -341,18 +344,11 @@ class ModelTool<
         continue;
       }
 
-      const source = isUpdate ? ignoreUpdate : ignoreInit;
-
-      if (!source) continue;
-
-      if (isUpdate && this._isRequired(fieldName)) {
-        if (!readonly && typeof source === 'function')
-          tasks.push([[fieldName], source]);
-
-        continue;
-      }
-
-      // readonly only restricts updates; creation is always allowed
+      // readonly only restricts updates; creation is always allowed. This
+      // must run before any ignoreInit/ignoreUpdate processing below (which
+      // has its own early-continues), since a permanently-locked readonly
+      // field must be dropped regardless of whether an ignoreInit/
+      // ignoreUpdate rule is configured for it.
       if (readonly && isUpdate) {
         const hasStaticDefault =
           defaultValue !== undefined && typeof defaultValue !== 'function';
@@ -361,14 +357,34 @@ class ModelTool<
         // previous value still equals that default. Otherwise (no default,
         // e.g. required properties, or a function/async default) the
         // property is permanently locked after creation.
-        if (
+        const stillAllowed =
           hasStaticDefault &&
           // @ts-expect-error ikr
-          isEqual(previousValues[fieldName], defaultValue)
-        ) {
+          isEqual(previousValues[fieldName], defaultValue);
+
+        if (!stillAllowed) {
+          relevantFieldsProvided.delete(fieldName);
+
+          // @ts-expect-error ikr
+          delete input[fieldName];
+
+          // @ts-expect-error ikr
+          if (fieldInfo?.isOutput) delete output[fieldName];
+
           continue;
         }
       }
+
+      const source = isUpdate ? ignoreUpdate : ignoreInit;
+
+      if (isUpdate && this._isRequired(fieldName)) {
+        if (!readonly && typeof source === 'function')
+          tasks.push([[fieldName], source]);
+
+        continue;
+      }
+
+      if (!source) continue;
 
       if (typeof source === 'function') {
         tasks.push([[fieldName], source]);
@@ -653,15 +669,25 @@ class ModelTool<
       | undefined;
   };
 
-  private _getNotAllowedError(prop: string, value: unknown) {
+  private _getNotAllowedError(
+    prop: string,
+    value: unknown,
+  ): InputFieldError<ErrorMetadata> {
     const allow = this._getDefinition(prop as never)?.allow;
 
-    if (Array.isArray(allow)) return NotAllowedError;
+    // Default metadata (used whenever the caller didn't supply their own via
+    // an InputFieldError) exposes the allowed values so consumers of the
+    // error can tell what would have been accepted.
+    const values = Array.isArray(allow) ? allow : allow?.values;
+    const defaultMetadata = { allowed: values } as never;
+
+    if (Array.isArray(allow))
+      return { reason: NotAllowedError, metadata: defaultMetadata };
 
     // @ts-expect-error: lol
     const error = allow?.error;
 
-    if (isInputFieldError(error)) return error;
+    if (isInputFieldError(error)) return error as never;
 
     if (isFunctionLike(error)) {
       let message: any;
@@ -669,15 +695,21 @@ class ModelTool<
       try {
         message = error(value, allow?.values);
       } catch {
-        return NotAllowedError;
+        return { reason: NotAllowedError, metadata: defaultMetadata };
       }
 
-      if (typeof message === 'string') return message || NotAllowedError;
+      if (typeof message === 'string')
+        return {
+          reason: message || NotAllowedError,
+          metadata: defaultMetadata,
+        };
 
-      return isInputFieldError(message) ? message : NotAllowedError;
+      return isInputFieldError(message)
+        ? (message as never)
+        : { reason: NotAllowedError, metadata: defaultMetadata };
     }
 
-    return error || NotAllowedError;
+    return { reason: error || NotAllowedError, metadata: defaultMetadata };
   }
 
   private _handleError(errorTool: ErrorTool<ErrorMetadata, KeyOf<I>>) {
@@ -801,11 +833,16 @@ class ModelTool<
     await Promise.allSettled(
       Array.from(fieldsCollection.relevantFieldsProvided).map(async (name) => {
         const fieldInfo = fieldsCollection.get(name);
+        const configName = fieldInfo.configName;
 
         // Read the raw value from filteredInput
         const rawValue = (ctx.input as any)[name];
 
-        let ctxUpdate = { [name]: rawValue } as never;
+        // ctx.input/ctx.values are always keyed by config name (never by the
+        // literal alias a caller happened to use), so downstream consumers
+        // (dependents' resolvers, etc.) can reliably read e.g. `input.virtual`
+        // regardless of whether the caller provided `virtual` or its alias.
+        let ctxUpdate = { [configName]: rawValue } as never;
         this._updateCxtInput(ctxUpdate);
 
         // Note: lax fields without a validator still go through `_validate`
@@ -829,7 +866,7 @@ class ModelTool<
 
         if (isEqual(validated, undefined)) validated = rawValue;
 
-        ctxUpdate = { [name]: validated } as never;
+        ctxUpdate = { [configName]: validated } as never;
 
         if (fieldInfo.isOutput) this._updateCxtValues(ctxUpdate);
 
@@ -849,12 +886,14 @@ class ModelTool<
     await Promise.allSettled(
       fieldsCollection.relevantFieldsProvided.values().map(async (name) => {
         const fieldInfo = fieldsCollection.get(name);
-        const validator = this._getSecondaryValidator(fieldInfo.configName);
+        const configName = fieldInfo.configName;
+        const validator = this._getSecondaryValidator(configName);
 
         if (!validator) return;
 
+        // ctx.input is keyed by config name (see `_runPrimaryValidators`).
         // @ts-expect-error ikr
-        const value = ctx.input?.[name] as never as O[KeyOf<O>];
+        const value = ctx.input?.[configName] as never as O[KeyOf<O>];
 
         let isValid: ValidatorResponseObject<unknown, ErrorMetadata>;
 
@@ -883,7 +922,7 @@ class ModelTool<
           !isEqual(validated, undefined) &&
           !isEqual(validated, value, this._options.equalityDepth)
         ) {
-          const ctxUpdate = { [name]: validated } as never;
+          const ctxUpdate = { [configName]: validated } as never;
 
           if (fieldInfo.isOutput) this._updateCxtValues(ctxUpdate);
 
@@ -941,11 +980,34 @@ class ModelTool<
       }
     };
 
+    // Whether a group property counts as "provided" must also consider its
+    // alias (relevantFieldsProvided is keyed by whichever literal key — alias
+    // or config name — the caller actually used), and on a validator throw,
+    // the fallback error must be reported under that same literal key rather
+    // than always forcing alias resolution.
+    const isProvided = (name: string) => {
+      const alias = this._getAliasByVirtual(name as never);
+
+      return (
+        fieldsCollection.relevantFieldsProvided.has(name) ||
+        (!!alias && fieldsCollection.relevantFieldsProvided.has(alias))
+      );
+    };
+
+    const getDisplayKey = (name: string) => {
+      const alias = this._getAliasByVirtual(name as never);
+
+      if (alias && fieldsCollection.relevantFieldsProvided.has(alias))
+        return alias;
+
+      if (fieldsCollection.relevantFieldsProvided.has(name)) return name;
+
+      return alias ?? name;
+    };
+
     await Promise.allSettled(
       handlers.map(async ({ validator, properties }) => {
-        const propsProvided = properties.filter((name) =>
-          fieldsCollection.relevantFieldsProvided.has(name),
-        );
+        const propsProvided = properties.filter(isProvided);
 
         if (!Array.isArray(validator)) {
           const { revalidatedData, success } = await Promise.try(() =>
@@ -955,6 +1017,7 @@ class ModelTool<
               ctx,
               validator: validator as any,
               properties,
+              getDisplayKey,
             }),
           );
 
@@ -976,6 +1039,7 @@ class ModelTool<
                     ctx,
                     validator: v2 as any,
                     properties: properties,
+                    getDisplayKey,
                   }),
                 );
 
@@ -996,6 +1060,7 @@ class ModelTool<
             ctx: this._getContext(),
             validator: v1 as any,
             properties: properties,
+            getDisplayKey,
           });
 
           if (!success) break;
@@ -1014,12 +1079,14 @@ class ModelTool<
     propsProvided,
     properties,
     validator,
+    getDisplayKey,
   }: {
     ctx: IvoContext<I, O, CtxOptions>;
     errorTool: ErrorTool<ErrorMetadata>;
     propsProvided: Extract<keyof I, string>[];
     properties: ArrayOfMinSizeTwo<string>;
     validator: PostValidator<KeyOf<I>, I, O, CtxOptions, ErrorMetadata>;
+    getDisplayKey: (name: string) => string;
   }) {
     const revalidatedData: Partial<O> = {};
 
@@ -1046,10 +1113,8 @@ class ModelTool<
         errorTool.set(prop, makeFieldError(error));
     } catch {
       for (const configName of propsProvided) {
-        const fieldName = this._getAliasByVirtual(configName) ?? configName;
-
         // @ts-expect-error ikr
-        errorTool.set(fieldName, validationFailedFieldError);
+        errorTool.set(getDisplayKey(configName), validationFailedFieldError);
       }
     }
 
@@ -1114,6 +1179,26 @@ class ModelTool<
         );
 
         if (!isRequired) return;
+
+        // A strictly-required field with an `allow` list has no value at
+        // all when missing, and `undefined` is never in that list — so the
+        // more specific "value not allowed" error (with its metadata) takes
+        // precedence over the generic "is required" message.
+        if (
+          this._isRequired(prop) &&
+          this._getDefinition(prop as never)?.allow
+        ) {
+          const notAllowedError = makeFieldError<ErrorMetadata>(
+            this._getNotAllowedError(prop, undefined),
+          );
+
+          errorTool.set(
+            (this._getAliasByVirtual(prop) ?? prop) as never,
+            notAllowedError,
+          );
+
+          return;
+        }
 
         const alias = this._getAliasByVirtual(prop);
 
@@ -1748,7 +1833,12 @@ class ModelTool<
     // branch below instead of being silently absent from the loop entirely.
     const reFilteredRelevant = new Set<string>();
 
-    for (const fieldName of fieldsCollection.relevantConfigNames) {
+    // Iterate `relevantFieldsProvided` (the literal keys the caller actually
+    // used — alias or config name) rather than `relevantConfigNames`, so a
+    // virtual provided via its alias stays keyed by that alias afterwards —
+    // needed downstream (secondary validators, post-validators, sanitizers,
+    // handleSuccess) for correct alias-aware error reporting / lookups.
+    for (const fieldName of fieldsCollection.relevantFieldsProvided) {
       const fieldInfo = fieldsCollection.get(fieldName);
 
       // Virtual (input-only) fields are always kept
@@ -1757,14 +1847,14 @@ class ModelTool<
         continue;
       }
 
-      const updatedValue = (updates as any)[fieldInfo.name];
-      const oldValue = (previousPartial as any)[fieldInfo.name];
+      const updatedValue = (updates as any)[fieldInfo.configName];
+      const oldValue = (previousPartial as any)[fieldInfo.configName];
 
       if (!isEqual(updatedValue, oldValue, this._options.equalityDepth)) {
         reFilteredRelevant.add(fieldName);
       } else {
         // Drop unchanged output field
-        delete (updates as any)[fieldInfo.name];
+        delete (updates as any)[fieldInfo.configName];
       }
     }
 

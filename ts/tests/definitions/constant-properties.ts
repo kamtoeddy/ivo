@@ -191,7 +191,7 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           'resolver',
           'required',
           'sanitizer',
-          'shouldInit',
+          'ignoreInit',
           'validator',
           'virtual',
         ];

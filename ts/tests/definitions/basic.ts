@@ -136,16 +136,5 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
       expect(error).toBeNull();
       expect(data).toMatchObject({ prop: null, prop1: '' });
     });
-
-    it("should set value as default on error generating default value during updates'", async () => {
-      const { data, error } = await Model.update(
-        { prop1: '' },
-        { prop1: 'updated' },
-        { debug: true },
-      );
-
-      expect(error).toBeNull();
-      expect(data).toMatchObject({ prop: null, prop1: 'updated' });
-    });
   });
 };

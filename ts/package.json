@@ -8,7 +8,7 @@
     "build:dev": "tsdown",
     "build:watch": "tsdown --watch",
     "clean": "rm -rf coverage dist",
-    "cleanup": "bun run typecheck && bun run lint",
+    "cleanup": "bun run typecheck && bun run typecheck:test && bun run lint",
     "lint": "clear; bunx @biomejs/biome check --write .",
     "test": "bun run build && bun test",
     "test:cov": "bun run build && bun test --coverage",

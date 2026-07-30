@@ -973,7 +973,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           ).getModel();
 
           it('should trigger all post-validators at creation', async () => {
-            const { error } = await Model.create({});
+            const { error } = await Model.create({
+              required: 'req',
+              lax: '',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
+            });
 
             expect(error).toBeNull();
             expect(providedPropertiesStats).toEqual({
@@ -985,7 +990,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should not trigger post-validators of virtuals not provided at creation', async () => {
-            const { error } = await Model.create({ virtual2: true });
+            const { error } = await Model.create({
+              required: 'req',
+              lax: '',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
+              virtual2: true,
+            });
 
             expect(error).toBeNull();
             expect(providedPropertiesStats).toEqual({
@@ -1071,7 +1082,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             }
 
             it('should trigger all post-validators at creation', async () => {
-              const { error } = await Model.create({});
+              const { error } = await Model.create({
+                required: 'req',
+                lax: '',
+                requiredReadonly: 'reqReadonly',
+                readonlyLax: '',
+              });
 
               expect(error).toBeNull();
               expect(providedPropertiesStats).toEqual({
@@ -1083,7 +1099,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             });
 
             it('should not trigger post-validators of virtuals not provided at creation', async () => {
-              const { error } = await Model.create({ virtual2: true });
+              const { error } = await Model.create({
+                required: 'req',
+                lax: '',
+                requiredReadonly: 'reqReadonly',
+                readonlyLax: '',
+                virtual2: true,
+              });
 
               expect(error).toBeNull();
               expect(providedPropertiesStats).toEqual({
@@ -1163,7 +1185,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should trigger all post-validators at creation', async () => {
-            const { error } = await Model.create({});
+            const { error } = await Model.create({
+              required: 'req',
+              lax: '',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
+            });
 
             expect(error).toBeNull();
             expect(providedPropertiesStats).toEqual({
@@ -1175,7 +1202,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should not trigger post-validators of virtuals not provided at creation', async () => {
-            const { error } = await Model.create({ virtual2: true });
+            const { error } = await Model.create({
+              required: 'req',
+              lax: '',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
+              virtual2: true,
+            });
 
             expect(error).toBeNull();
             expect(providedPropertiesStats).toEqual({
@@ -1275,7 +1308,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             }
 
             it('should trigger all post-validators at creation', async () => {
-              const { error } = await Model.create({});
+              const { error } = await Model.create({
+                required: 'req',
+                lax: '',
+                requiredReadonly: 'reqReadonly',
+                readonlyLax: '',
+              });
 
               expect(error).toBeNull();
               expect(providedPropertiesStats).toEqual({
@@ -1287,7 +1325,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             });
 
             it('should not trigger post-validators of virtuals not provided at creation', async () => {
-              const { error } = await Model.create({ virtual2: true });
+              const { error } = await Model.create({
+                required: 'req',
+                lax: '',
+                requiredReadonly: 'reqReadonly',
+                readonlyLax: '',
+                virtual2: true,
+              });
 
               expect(error).toBeNull();
               expect(providedPropertiesStats).toEqual({
@@ -1438,7 +1482,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             },
           ).getModel();
 
-          const res = await Model.create({});
+          const res = await Model.create({ p2: 'x' });
 
           expect(res.data).toBeNull();
           expect(res.error).toMatchObject({
@@ -1557,7 +1601,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             },
           ).getModel();
 
-          const { data, error } = await Model.create({});
+          const { data, error } = await Model.create({ p1: '', p2: '' });
 
           expect(error).toBeNull();
           expect(data).toEqual({ p1: true, p2: 'also revalidated' });

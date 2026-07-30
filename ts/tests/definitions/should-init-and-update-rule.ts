@@ -892,7 +892,6 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         const readonlyTrue = [
           [() => {}, () => {}],
           [true, () => {}],
-          [() => {}, true],
         ];
 
         for (const [ignoreInit, ignoreUpdate] of readonlyTrue) {

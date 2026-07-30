@@ -546,7 +546,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
                 }
               >) => {
                 onSuccessValues.createdAt = values.createdAt;
-                onSuccessValues.updatedAt = values[updatedAtKey];
+                onSuccessValues[updatedAtKey] = values[updatedAtKey];
               };
 
               Model = new Schema(getValidSchema(), {
