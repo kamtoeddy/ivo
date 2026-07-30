@@ -21,13 +21,11 @@ export type {
   ReadonlyIvoContext,
   RealType,
   ResponseErrorObject,
-  Setter,
   TypeOf,
   ValidationResponse,
   Validator,
   ValidatorResponse,
   ValidatorResponseObject,
-  VirtualResolver,
   XOR,
 };
 
@@ -113,15 +111,7 @@ type WithCtxOptions<T, CtxOptions extends ObjectType> = WithReadonlyCtxOptions<
 
 type TypeOf<T> = Exclude<T, undefined>;
 
-type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
-  data: IvoContext<Input, Output, CtxOptions>,
-) => TypeOf<T> | Promise<TypeOf<T>>;
-
 type NotAllowedError<Metadata> = string | InputFieldError<Metadata>;
-
-type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
-  ctx: IvoContext<Input, Output, CtxOptions>,
-) => TypeOf<T> | Promise<TypeOf<T>>;
 
 type RequiredHandlerRes<Metadata> =
   | boolean
@@ -161,19 +151,6 @@ type IgnoreUpdateResolver<Input, Output, CtxOptions extends ObjectType = {}> = (
     updateOptions: (updates: Partial<CtxOptions>) => void;
   },
 ) => boolean | Promise<boolean>;
-
-type Resolver<
-  K extends keyof Output,
-  Input,
-  Output,
-  CtxOptions extends ObjectType,
-> = (
-  ctx: IvoContext<Input, Output, CtxOptions> & {},
-) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>;
-
-type VirtualResolver<Value, Input, Output, CtxOptions extends ObjectType> = (
-  ctx: IvoContext<Input, Output, CtxOptions>,
-) => Value | Promise<Value>;
 
 type PostValidator<
   InputKeys extends KeyOf<Input>,
@@ -267,6 +244,26 @@ namespace NS {
         | SuccessHandler<Input, Output, CtxOptions>
         | OnSuccessConfigObject<Input, Output, CtxOptions>
       >;
+
+  export type Resolver<
+    K extends keyof Output,
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+  > = (
+    ctx: IvoContext<Input, Output, CtxOptions> & {},
+  ) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>;
+
+  export type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
+    ctx: IvoContext<Input, Output, CtxOptions>,
+  ) => TypeOf<T> | Promise<TypeOf<T>>;
+
+  export type VirtualResolver<
+    Value,
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+  > = (ctx: IvoContext<Input, Output, CtxOptions>) => Value | Promise<Value>;
 
   export type IgnoreConfigObject<
     Input,
@@ -379,7 +376,7 @@ namespace NS {
   > = Enumerable<Metadata, TypeOf<Output[K]>> &
     (
       | LaxField<K, Input, Output, CtxOptions, Metadata>
-      | Required<K, Input, Output, CtxOptions, Metadata>
+      | RequiredField<K, Input, Output, CtxOptions, Metadata>
     );
 
   type PrivateField<
@@ -389,10 +386,11 @@ namespace NS {
     CtxOptions extends ObjectType = {},
   > =
     | XOR<
-        Constant<K, Input, Output, CtxOptions>,
-        Dependent<K, Input, Output, CtxOptions>
+        ConstantField<K, Input, Output, CtxOptions>,
+        DependentField<K, Input, Output, CtxOptions>
       >
-    | Buildable<Dependent<K, Input, Output, CtxOptions>>;
+    | Buildable<ConstantField<K, Input, Output, CtxOptions>>
+    | Buildable<DependentField<K, Input, Output, CtxOptions>>;
 
   export type Definitions_<Input, Output, Metadata> = {
     [K in keyof Input]?: Listenable<Input, Output, {}> & {
@@ -442,22 +440,20 @@ namespace NS {
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
   };
 
-  type Constant<
+  export type ConstantField<
     K extends keyof Output,
     Input,
     Output,
     CtxOptions extends ObjectType,
   > = {
-    constant: true;
+    constant: true; // TODO: replace with: (type: "constant") once migration to builder pattern is complete
+    value: TypeOf<Output[K]> | Setter<Output[K], Input, Output, CtxOptions>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-    value:
-      | TypeOf<Output[K]>
-      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
   };
 
   type Enumerable<Metadata, T, V extends T | Readonly<T> = T> = {
@@ -474,62 +470,33 @@ namespace NS {
         };
   };
 
-  type Dependables<K extends keyof Output, Input, Output> = Exclude<
+  export type Dependables<K extends keyof Output, Input, Output> = Exclude<
     KeyOf<Input> | KeyOf<Output>,
     K
   >;
 
-  type Dependent<
+  export type DependentField<
     K extends keyof Output,
     Input,
     Output,
     CtxOptions extends ObjectType,
   > = {
-    default:
-      | TypeOf<Output[K]>
-      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
+    // TODO: add: (type: "dependent") once migration to builder pattern is complete
+    default: TypeOf<Output[K]> | Setter<Output[K], Input, Output, CtxOptions>;
     dependsOn:
       | Dependables<K, Input, Output>
       | ArrayOfMinSizeOne<Dependables<K, Input, Output>>;
+    resolver: Resolver<K, Input, Output, CtxOptions>;
+    readonly?: true;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-    readonly?: true;
-    resolver: Resolver<K, Input, Output, CtxOptions>;
   };
 
-  type InitAndUpdateBlockable<
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-    T,
-  > = XOR<
-    { ignore?: Setter<boolean, Input, Output, CtxOptions> },
-    XOR<
-      { default: T; readonly?: true },
-      XOR<
-        {
-          ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
-          ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-        },
-        XOR<
-          {
-            ignoreInit?: true | Setter<boolean, Input, Output, CtxOptions>;
-            ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-          },
-          {
-            ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
-            ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
-          }
-        >
-      >
-    >
-  >;
-
-  type LaxField<
+  export type LaxField<
     K extends keyof Output & keyof Input,
     Input,
     Output,
@@ -537,9 +504,8 @@ namespace NS {
     Metadata,
   > = Listenable<Input, Output, CtxOptions> &
     InitAndUpdateBlockable<Input, Output, CtxOptions, TypeOf<Output[K]>> & {
-      default:
-        | TypeOf<Output[K]>
-        | AsyncSetter<Output[K], Input, Output, CtxOptions>;
+      // TODO: add: (type: "lax") once migration to builder pattern is complete
+      default: TypeOf<Output[K]> | Setter<Output[K], Input, Output, CtxOptions>;
       validator?:
         | Validator<K, Input, Output, CtxOptions>
         | [
@@ -549,14 +515,14 @@ namespace NS {
       required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
     };
 
-  type Required<
+  export type RequiredField<
     K extends keyof Output & keyof Input,
     Input,
     Output,
     CtxOptions extends ObjectType,
     Metadata,
   > = Listenable<Input, Output, CtxOptions> & {
-    required: true;
+    required: true; // TODO: replace with: (type: "required") once migration to builder pattern is complete
   } & (
       | {
           validator:
@@ -586,7 +552,7 @@ namespace NS {
       }
     >;
 
-  type VirtualField<
+  export type VirtualField<
     K extends keyof Input | string,
     Alias extends keyof Input | never,
     Input,
@@ -596,9 +562,9 @@ namespace NS {
   > =
     // @ts-expect-error too_bad_alias_type_is_not_inferred
     Enumerable<Metadata, TypeOf<Input[K]>> & {
+      virtual: true; // TODO: replace with: (type: "virtual") once migration to builder pattern is complete
       alias?: Alias;
       required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
-      virtual: true;
       // @ts-expect-error too_bad_alias_type_is_not_inferred
       sanitizer?: VirtualResolver<Input[K], Input, Output, CtxOptions>;
       onFailure?:
@@ -634,6 +600,34 @@ namespace NS {
           >
         >
       >;
+
+  type InitAndUpdateBlockable<
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+    T,
+  > = XOR<
+    { ignore?: Setter<boolean, Input, Output, CtxOptions> },
+    XOR<
+      { default: T; readonly?: true },
+      XOR<
+        {
+          ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
+          ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+        },
+        XOR<
+          {
+            ignoreInit?: true | Setter<boolean, Input, Output, CtxOptions>;
+            ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+          },
+          {
+            ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
+            ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
+          }
+        >
+      >
+    >
+  >;
 
   export type InternalOptions<
     Input,

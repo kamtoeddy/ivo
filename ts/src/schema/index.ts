@@ -11,7 +11,7 @@ import {
   sortKeys,
   toArray,
 } from '../utils';
-import { materializeFieldBuilders } from './field-builder';
+import { materializeFieldBuilders } from './fields';
 import { defaultOptions, SchemaCore } from './schema-core';
 import {
   type ArrayOfMinSizeTwo,
@@ -25,10 +25,8 @@ import {
   type PostValidator,
   type ReadonlyIvoContext,
   type RealType,
-  type Setter,
   type Validator,
   type ValidatorResponseObject,
-  type VirtualResolver,
 } from './types';
 import {
   cloneValue,
@@ -327,7 +325,7 @@ class ModelTool<
 
     const tasks: [
       string[] | readonly string[],
-      Setter<boolean, I, O, CtxOptions>,
+      NS.Setter<boolean, I, O, CtxOptions>,
     ][] = [];
 
     for (const fieldName of fieldsProvided.values()) {
@@ -1270,13 +1268,15 @@ class ModelTool<
   private async _handleSanitizationOfVirtuals(
     fieldsCollection: FieldInfoCollection,
   ) {
-    const sanitizers: [KeyOf<I>, VirtualResolver<unknown, I, O, CtxOptions>][] =
-      [];
+    const sanitizers: [
+      KeyOf<I>,
+      NS.VirtualResolver<unknown, I, O, CtxOptions>,
+    ][] = [];
 
     const ctx = this._getContext();
 
     // `relevantFieldsProvided` is narrowed to output fields only (see its
-    // setter), so virtuals — the only fields that can have a `sanitizer` —
+    // NS.setter), so virtuals — the only fields that can have a `sanitizer` —
     // never appear there. `relevantConfigNames` is the unfiltered, config-
     // name-mapped equivalent.
     for (const name of fieldsCollection.relevantConfigNames) {
@@ -1810,7 +1810,7 @@ class ModelTool<
 
     // Step 5 – early-exit if nothing relevant to update
     // Use relevantConfigNames.size (not relevantFieldsProvided.size) because the
-    // relevantFieldsProvided setter strips virtuals, so virtual-only changes would
+    // relevantFieldsProvided NS.setter strips virtuals, so virtual-only changes would
     // be incorrectly treated as empty.
     if (!fieldsCollection.relevantConfigNames.size)
       return this._handleError(emptyErrorTool);
@@ -1831,7 +1831,7 @@ class ModelTool<
     // Step 9 – re-filter: after validators, drop output fields whose validated
     // value still equals the old value. Virtual (input-only) fields are kept.
     // Mirrors Rust lines 439-467. Iterate `relevantConfigNames` (not
-    // `relevantFieldsProvided`, which the setter narrows to output fields
+    // `relevantFieldsProvided`, which the NS.setter narrows to output fields
     // only) so virtual fields actually reach the "not output, always keep"
     // branch below instead of being silently absent from the loop entirely.
     const reFilteredRelevant = new Set<string>();

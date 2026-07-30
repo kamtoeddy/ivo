@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from '../../src';
-import { createFieldBuilder } from '../../src/schema/field-builder';
+import { createFieldBuilder } from '../../src/schema/fields';
 
 /**
  * End-to-end prototype of the Rust-style typestate builder for "dependent"
@@ -19,7 +19,7 @@ import { createFieldBuilder } from '../../src/schema/field-builder';
  */
 
 type Input = { price: number; qty: number };
-type Output = { price: number; qty: number; total: number };
+type Output = { id: number; price: number; qty: number; total: number };
 
 const field = createFieldBuilder<Input, Output>();
 
@@ -30,6 +30,7 @@ const totalField = field
   .resolve(({ values }) => (values.price ?? 0) * (values.qty ?? 0));
 
 const schema = new Schema<Input, Output>({
+  id: field.constant('id').value(0),
   price: { default: 0 },
   qty: { default: 0 },
   total: totalField,
