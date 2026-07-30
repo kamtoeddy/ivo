@@ -1,4 +1,4 @@
-import { type IvoContext, Schema } from '../../../../dist';
+import { type IvoContext, Schema } from '../../../dist';
 import type { StoreItem, StoreItemInput } from './types';
 import {
   sanitizeQuantities,

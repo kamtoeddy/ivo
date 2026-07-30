@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { Schema } from '../../src';
+import { Schema } from '../src';
 
 /**
  * Stress & pathological inputs tests

@@ -1,4 +1,4 @@
-import type { IvoContext, StringValidatorOptions } from '../../../../dist';
+import type { IvoContext, StringValidatorOptions } from '../../../dist';
 import type {
   IOtherMeasureUnit,
   IOtherQuantity,
@@ -12,7 +12,7 @@ import {
   makeArrayValidator,
   makeNumberValidator,
   makeStringValidator,
-} from '../../../../src';
+} from '../../../src';
 import { findBy } from '../../_utils';
 
 export const validateName = (val: any) =>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { expectFailure } from '../../schema/_utils';
+import { expectFailure } from '../../_utils';
 
 const people = [
   { name: 'James', bio: { displayName: 'james' }, age: 31 },

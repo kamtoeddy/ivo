@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
-import { type IvoContext, Schema } from '../../../src';
+import { type IvoContext, Schema } from '../../src';
 
 describe('Context options', () => {
   describe('RequiredBy', () => {
