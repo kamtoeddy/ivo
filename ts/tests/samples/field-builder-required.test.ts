@@ -227,7 +227,7 @@ describe('field builder prototype: required()', () => {
     expect(accepted.error).toBeNull();
   });
 
-  it('supports readonly()/ignoreUpdate() (mutually exclusive) and onDelete()/onFailure()/onSuccess()', async () => {
+  it('supports readonly()/ignoreUpdate(resolver?) and onDelete()/onFailure()/onSuccess()', async () => {
     let deleted = false;
     let succeeded = false;
 
@@ -253,7 +253,6 @@ describe('field builder prototype: required()', () => {
           field
             .required('role')
             .allow(['admin', 'member'])
-            // .readonly()
             .ignoreUpdate(() => false),
         )
         .field(field.required('plan').allow(['free', 'pro']))
@@ -324,7 +323,7 @@ describe('field builder prototype: required()', () => {
         .allow(['admin', 'member'])
         .readonly();
 
-      // @ts-expect-error - readonly() was already consumed
+      // @ts-expect-error - readonly was already consumed
       decorated.readonly?.();
       // @ts-expect-error - ignoreUpdate() shares readonly()'s flag - also consumed
       decorated.ignoreUpdate?.();
@@ -341,6 +340,141 @@ describe('field builder prototype: required()', () => {
       decorated.allowError?.('nope again');
       // @ts-expect-error - reValidate() was already consumed
       decorated.reValidate?.(() => true);
+    });
+
+    it('should reject a second call to readonly()', () => {
+      const decorated = field
+        .required('role')
+        .allow(['admin', 'member'])
+        .readonly();
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly?.();
+    });
+
+    it('should reject a second call to ignoreUpdate()', () => {
+      const decorated = field
+        .required('role')
+        .allow(['admin', 'member'])
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should reject a second call to ignoreUpdate(() => boolean)', () => {
+      const decorated = field
+        .required('role')
+        .allow(['admin', 'member'])
+        .ignoreUpdate(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should reject ignoreUpdate()/readonly()', () => {
+      const decorated = field
+        .required('role')
+        .allow(['admin', 'member'])
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate() and readonly() should be rejected
+      decorated.readonly?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+    });
+
+    it('should accept allow + ignoreUpdate(() => boolean)/readonly()', () => {
+      const decorated = field
+        .required('role')
+        .allow(['admin', 'member'])
+        .ignoreUpdate(() => true)
+        .readonly();
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should accept allow + readonly()/ignoreUpdate(() => boolean)', () => {
+      const decorated = field
+        .required('role')
+        .allow(['admin', 'member'])
+        .readonly()
+        .ignoreUpdate(() => true);
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should accept validate + ignoreUpdate(() => boolean)/readonly()', () => {
+      const decorated = field
+        .required('role')
+        .validate(() => true)
+        .ignoreUpdate(() => true)
+        .readonly();
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should accept validate + readonly()/ignoreUpdate(() => boolean)', () => {
+      const decorated = field
+        .required('role')
+        .validate(() => true)
+        .readonly()
+        .ignoreUpdate(() => true);
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
     });
   });
 });

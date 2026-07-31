@@ -336,5 +336,148 @@ describe('field builder prototype: lax()', () => {
       // @ts-expect-error - readonly() was already consumed
       decorated.readonly?.();
     });
+
+    it('should reject a second call to readonly()', () => {
+      const decorated = field
+        .lax('status')
+        .default('active')
+        .allow(['active', 'inactive'])
+        .readonly();
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly?.();
+    });
+
+    it('should reject a second call to ignoreUpdate()', () => {
+      const decorated = field
+        .lax('status')
+        .default('active')
+        .allow(['active', 'inactive'])
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should reject a second call to ignoreUpdate(() => boolean)', () => {
+      const decorated = field
+        .lax('status')
+        .default('active')
+        .allow(['active', 'inactive'])
+        .ignoreUpdate(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should reject ignoreUpdate()/readonly()', () => {
+      const decorated = field
+        .lax('status')
+        .default('active')
+        .allow(['active', 'inactive'])
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate() and readonly() should be rejected
+      decorated.readonly?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+    });
+
+    it('should accept allow + ignoreUpdate(() => boolean)/readonly()', () => {
+      const decorated = field
+        .lax('status')
+        .default('active')
+        .allow(['active', 'inactive'])
+        .ignoreUpdate(() => true)
+        .readonly();
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should accept allow + readonly()/ignoreUpdate(() => boolean)', () => {
+      const decorated = field
+        .lax('status')
+        .default('active')
+        .allow(['active', 'inactive'])
+        .readonly()
+        .ignoreUpdate(() => true);
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should accept validate + ignoreUpdate(() => boolean)/readonly()', () => {
+      const decorated = field
+        .lax('status')
+        .default('active')
+        .validate(() => true)
+        .ignoreUpdate(() => true)
+        .readonly();
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
+
+    it('should accept validate + readonly()/ignoreUpdate(() => boolean)', () => {
+      const decorated = field
+        .lax('status')
+        .default('active')
+        .validate(() => true)
+        .readonly()
+        .ignoreUpdate(() => true);
+
+      // @ts-expect-error - readonly was already consumed
+      decorated.readonly();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already consumed
+      decorated.ignoreUpdate?.(() => false);
+    });
   });
 });
