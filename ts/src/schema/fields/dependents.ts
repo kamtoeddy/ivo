@@ -1,5 +1,11 @@
-import type { ObjectType } from '../../utils';
-import { type ArrayOfMinSizeOne, BUILD, type NS, type TypeOf } from '../types';
+import type { ObjectType } from "../../utils";
+import {
+  type ArrayOfMinSizeOne,
+  BUILD,
+  Buildable,
+  type NS,
+  type TypeOf,
+} from "../types";
 
 export { type BlankDependentBuilder, DependentBuilder };
 
@@ -10,9 +16,7 @@ interface BlankDependentBuilder<
   CtxOptions extends ObjectType,
 > {
   default(
-    value:
-      | TypeOf<Output[K]>
-      | NS.Resolver<Output[K], Input, Output, CtxOptions>,
+    v: TypeOf<Output[K]> | NS.Resolver<Output[K], Input, Output, CtxOptions>,
   ): HasDefault<K, Input, Output, CtxOptions>;
   dependsOn(
     deps:
@@ -41,9 +45,7 @@ interface HasDependsOn<
   CtxOptions extends ObjectType,
 > {
   default(
-    value:
-      | TypeOf<Output[K]>
-      | NS.Resolver<Output[K], Input, Output, CtxOptions>,
+    v: TypeOf<Output[K]> | NS.Resolver<Output[K], Input, Output, CtxOptions>,
   ): ReadyToResolve<K, Input, Output, CtxOptions>;
 }
 
@@ -76,21 +78,20 @@ type BuildableDependentConfig<
   HasReadonly extends boolean = false,
   HasOnDelete extends boolean = false,
   HasOnSuccess extends boolean = false,
-> = {
-  [BUILD](): NS.DependentField<K, Input, Output, CtxOptions>;
-} & (HasReadonly extends true
-  ? {}
-  : {
-      readonly(): BuildableDependentConfig<
-        K,
-        Input,
-        Output,
-        CtxOptions,
-        true,
-        HasOnDelete,
-        HasOnSuccess
-      >;
-    }) &
+> = Buildable<NS.DependentField<K, Input, Output, CtxOptions>> &
+  (HasReadonly extends true
+    ? {}
+    : {
+        readonly(): BuildableDependentConfig<
+          K,
+          Input,
+          Output,
+          CtxOptions,
+          true,
+          HasOnDelete,
+          HasOnSuccess
+        >;
+      }) &
   (HasOnDelete extends true
     ? {}
     : {
@@ -131,23 +132,28 @@ class DependentBuilder<
   Input,
   Output,
   CtxOptions extends ObjectType,
-> implements
+>
+  implements
     BlankDependentBuilder<K, Input, Output, CtxOptions>,
     HasDefault<K, Input, Output, CtxOptions>,
     HasDependsOn<K, Input, Output, CtxOptions>,
     ReadyToResolve<K, Input, Output, CtxOptions>,
     BuildableDependentConfig<K, Input, Output, CtxOptions>
 {
+  name: string;
   private config: Partial<NS.DependentField<K, Input, Output, CtxOptions>> = {
-    type: 'dependent',
+    type: "dependent",
   };
 
+  constructor(name: string) {
+    this.name = name;
+    this.config.name = name;
+  }
+
   default(
-    value:
-      | TypeOf<Output[K]>
-      | NS.Resolver<Output[K], Input, Output, CtxOptions>,
+    v: TypeOf<Output[K]> | NS.Resolver<Output[K], Input, Output, CtxOptions>,
   ) {
-    this.config.default = value;
+    this.config.default = v;
     return this as never;
   }
 

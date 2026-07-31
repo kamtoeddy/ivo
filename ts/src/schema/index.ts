@@ -10,11 +10,13 @@ import {
   sort,
   sortKeys,
   toArray,
-} from '../utils';
-import { materializeFieldBuilders } from './fields';
-import { defaultOptions, SchemaCore } from './schema-core';
+} from "../utils";
+
+import { defaultOptions, SchemaCore } from "./schema-core";
 import {
   type ArrayOfMinSizeTwo,
+  BUILD,
+  Buildable,
   type InternalValidatorResponse,
   type InvalidValidatorResponse,
   type IvoContext,
@@ -26,7 +28,7 @@ import {
   type ReadonlyIvoContext,
   type RealType,
   type ValidatorResponseObject,
-} from './types';
+} from "./types";
 import {
   cloneValue,
   type DefaultFieldErrorMetadata,
@@ -35,26 +37,55 @@ import {
   type InputFieldError,
   isInputFieldError,
   makeFieldError,
-} from './utils';
+} from "./utils";
 
 export { Model, ModelTool, Schema };
 
-export type IvoResultInfo<
-  T extends Model<any, any, any>,
-  Operation extends 'create' | 'update' = 'create',
-> =
-  | {
-      data: NonNullable<Awaited<ReturnType<T[Operation]>>['data']>;
-      error: null;
+const NotAllowedError = "value not allowed";
+const validationFailedFieldError = makeFieldError("validation failed");
+
+const FIELD_BUILDER_DEFINITIONS: unique symbol = Symbol(
+  "ivo-schema-field-builder",
+);
+
+function isBuildable(value: unknown): value is Buildable<unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { name?: unknown })?.name === "string" &&
+    typeof (value as { [BUILD]?: unknown })[BUILD] === "function"
+  );
+}
+
+class SchemaFieldBuilder<
+  const I extends RealType<I>,
+  const O extends RealType<O> = I,
+  const CtxOptions extends ObjectType = {},
+  const ErrorMetadata = DefaultFieldErrorMetadata,
+> {
+  private _definitions: NS.Definitions_<I, O, CtxOptions, ErrorMetadata> = {};
+
+  field<K extends keyof I | keyof O>(
+    config: NS.FieldDefinition<K, I, O, CtxOptions, ErrorMetadata>,
+  ) {
+    if (isBuildable(config)) {
+      const built = config[BUILD]();
+
+      this._definitions[built.name] = built;
     }
-  | {
-      data: null;
-      error: NonNullable<Awaited<ReturnType<T[Operation]>>['error']>;
-    };
 
-const NotAllowedError = 'value not allowed';
-const validationFailedFieldError = makeFieldError('validation failed');
+    return this;
+  }
 
+  get [FIELD_BUILDER_DEFINITIONS](): NS.Definitions_<
+    I,
+    O,
+    CtxOptions,
+    ErrorMetadata
+  > {
+    return this._definitions;
+  }
+}
 class Schema<
   const Input extends RealType<Input>,
   const Output extends RealType<Output> = Input,
@@ -63,7 +94,9 @@ class Schema<
   const ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
 > extends SchemaCore<Input, Output, CtxOptions, ErrorMetadata, ErrorPayload> {
   constructor(
-    definitions: NS.Definitions<Input, Output, CtxOptions, ErrorMetadata>,
+    builder: (
+      b: SchemaFieldBuilder<Input, Output, CtxOptions, ErrorMetadata>,
+    ) => SchemaFieldBuilder<Input, Output, CtxOptions, ErrorMetadata>,
     options: NS.Options<
       Input,
       Output,
@@ -73,9 +106,7 @@ class Schema<
     > = defaultOptions as never,
   ) {
     super(
-      materializeFieldBuilders(
-        definitions as never,
-      ) as never as NS.Definitions_<Input, Output, CtxOptions, ErrorMetadata>,
+      builder(new SchemaFieldBuilder())[FIELD_BUILDER_DEFINITIONS],
       options as never,
     );
   }
@@ -159,7 +190,7 @@ class Schema<
     if (useParentOptions)
       getKeysAsProps(this.options)
         .filter(
-          (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as never),
+          (prop) => ![...LIFE_CYCLES, "shouldUpdate"].includes(prop as never),
         )
         .forEach((prop) => {
           options_[prop] = this.options[prop] as never;
@@ -172,6 +203,7 @@ class Schema<
       ExtendedErrorMetadata,
       ExtendedErrorPayload
     >(
+      // @ts-expect-error TODO: Fix
       Object.assign({}, _definitions, definitions),
       Object.assign({}, options_, rest),
     );
@@ -212,9 +244,9 @@ class ModelTool<
     for (const configName of getKeysAsProps(this._definitions)) {
       const config = this._definitions[configName]!;
 
-      if (config.type === 'constant' || config.type === 'dependent') continue;
+      if (config.type === "constant" || config.type === "dependent") continue;
 
-      const isVirtual = config.type === 'virtual';
+      const isVirtual = config.type === "virtual";
 
       fields.set(
         configName,
@@ -261,10 +293,10 @@ class ModelTool<
 
     if (isUpdate) {
       for (const config of toArray(this._options.ignoreUpdate ?? [])) {
-        if (config && typeof config === 'object' && 'fields' in config) {
+        if (config && typeof config === "object" && "fields" in config) {
           if ((config as any).fields.length === 0)
             entityResolvers.push((config as any).resolver);
-        } else if (typeof config === 'function') entityResolvers.push(config);
+        } else if (typeof config === "function") entityResolvers.push(config);
       }
 
       for (const [fieldName, value] of Object.entries(rawInput)) {
@@ -313,7 +345,7 @@ class ModelTool<
         ),
       )) {
         // if "task.value" is positive, it means "ignore"
-        if (task.status === 'fulfilled' && task.value) return fieldsCollection;
+        if (task.status === "fulfilled" && task.value) return fieldsCollection;
       }
 
     fieldsCollection.fieldsProvided = fieldsProvided;
@@ -357,7 +389,7 @@ class ModelTool<
       // ignoreUpdate rule is configured for it.
       if (readonly && isUpdate) {
         const hasStaticDefault =
-          defaultValue !== undefined && typeof defaultValue !== 'function';
+          defaultValue !== undefined && typeof defaultValue !== "function";
 
         // readonly with a static default: only allow the update while the
         // previous value still equals that default. Otherwise (no default,
@@ -384,7 +416,7 @@ class ModelTool<
       const source = isUpdate ? ignoreUpdate : ignoreInit;
 
       if (isUpdate && this._isRequired(fieldName)) {
-        if (!readonly && typeof source === 'function')
+        if (!readonly && typeof source === "function")
           tasks.push([
             [fieldName],
             (ctx: IvoContext<I, O, CtxOptions>) =>
@@ -400,7 +432,7 @@ class ModelTool<
 
       if (!source) continue;
 
-      if (typeof source === 'function') {
+      if (typeof source === "function") {
         tasks.push([
           [fieldName],
           isUpdate
@@ -439,9 +471,9 @@ class ModelTool<
     );
 
     for (const config of toArray(this._options.ignore ?? [])) {
-      if (typeof config === 'function') {
+      if (typeof config === "function") {
         tasks.push([relevantConfigNames, config]);
-      } else if (config && typeof config === 'object') {
+      } else if (config && typeof config === "object") {
         const fields = config.fields as string[];
 
         if (fields.some((name: string) => relevantConfigNames.includes(name)))
@@ -451,7 +483,7 @@ class ModelTool<
 
     if (isUpdate) {
       for (const config of toArray(this._options.ignoreUpdate ?? [])) {
-        if (typeof config === 'function') {
+        if (typeof config === "function") {
           tasks.push([
             relevantConfigNames,
             (ctx: IvoContext<I, O, CtxOptions>) =>
@@ -460,7 +492,7 @@ class ModelTool<
                 updateOptions: ctx.updateOptions,
               }),
           ]);
-        } else if (config && typeof config === 'object') {
+        } else if (config && typeof config === "object") {
           const fields = config.fields as string[];
 
           if (
@@ -600,24 +632,24 @@ class ModelTool<
       ErrorMetadata
     >;
 
-    if (!required) return [false, ''];
+    if (!required) return [false, ""];
 
     const fallbackMessage = `'${prop}' is required`;
 
     if (!isFunctionLike(required)) return [required, fallbackMessage];
 
     const results = await required(ctx);
-    const isBoolean = typeof results === 'boolean';
+    const isBoolean = typeof results === "boolean";
 
-    if (!isBoolean && !Array.isArray(results)) return [false, ''];
+    if (!isBoolean && !Array.isArray(results)) return [false, ""];
 
-    if (isBoolean) return [results as boolean, results ? fallbackMessage : ''];
+    if (isBoolean) return [results as boolean, results ? fallbackMessage : ""];
 
     const [isRequired, message] = results as [
         boolean,
         string | InputFieldError<ErrorMetadata>,
       ],
-      isString = typeof message === 'string';
+      isString = typeof message === "string";
 
     if (!isRequired || (!isString && !isInputFieldError(message)))
       return [isRequired, fallbackMessage];
@@ -628,7 +660,7 @@ class ModelTool<
 
     return [
       true,
-      isPropertyOf('metadata', message)
+      isPropertyOf("metadata", message)
         ? fieldError
         : ({ reason: fieldError.reason } as never),
     ];
@@ -661,7 +693,7 @@ class ModelTool<
 
     if (ignoreUpdate === undefined) return false;
     if (ignoreUpdate === true) return true;
-    if (typeof ignoreUpdate === 'function') {
+    if (typeof ignoreUpdate === "function") {
       const res = ignoreUpdate(this._getContext() as never);
       return !!res;
     }
@@ -728,7 +760,7 @@ class ModelTool<
         return { reason: NotAllowedError, metadata: defaultMetadata };
       }
 
-      if (typeof message === 'string')
+      if (typeof message === "string")
         return {
           reason: message || NotAllowedError,
           metadata: defaultMetadata,
@@ -763,7 +795,7 @@ class ModelTool<
     const { reason, metadata } = validationResponse;
 
     const fieldError = makeFieldError<ErrorMetadata>(
-      reason || 'validation failed',
+      reason || "validation failed",
     );
 
     if (metadata) fieldError.metadata = metadata;
@@ -786,7 +818,7 @@ class ModelTool<
     getKeysAsProps(this._definitions).map(async (configName) => {
       const config = this._definitions[configName]!;
 
-      if (config.type === 'constant') {
+      if (config.type === "constant") {
         const value = config.value;
 
         if (isFunctionLike(value)) {
@@ -797,7 +829,7 @@ class ModelTool<
         return this._updateCxtValues({ [configName]: value } as never);
       }
 
-      if (config.type === 'lax' && !fieldsProvidedNames.has(configName)) {
+      if (config.type === "lax" && !fieldsProvidedNames.has(configName)) {
         const value = config.default;
 
         if (isFunctionLike(value)) {
@@ -808,7 +840,7 @@ class ModelTool<
         return this._updateCxtValues({ [configName]: value } as never);
       }
 
-      if (config.type === 'dependent') {
+      if (config.type === "dependent") {
         const value = config.default;
 
         if (isFunctionLike(value)) {
@@ -832,15 +864,12 @@ class ModelTool<
             ] as const,
         ),
       )
-    ).reduce(
-      (acc, [configName, value]) => {
-        // @ts-expect-error ikr
-        acc[configName] = value;
+    ).reduce((acc, [configName, value]) => {
+      // @ts-expect-error ikr
+      acc[configName] = value;
 
-        return acc;
-      },
-      {} as Partial<O>,
-    );
+      return acc;
+    }, {} as Partial<O>);
 
     this._updateCxtValues(defaultValues);
   }
@@ -940,7 +969,7 @@ class ModelTool<
         } catch {
           isValid = makeResponse<unknown, ErrorMetadata>({
             valid: false,
-            reason: 'validation failed',
+            reason: "validation failed",
           });
         }
 
@@ -981,7 +1010,7 @@ class ModelTool<
     const handlers = Array.from(configIds).map((id) => {
       return {
         validator: this.postValidationConfigMap.get(id)!.validators,
-        properties: id.split(',') as ArrayOfMinSizeTwo<
+        properties: id.split(",") as ArrayOfMinSizeTwo<
           Extract<keyof I, string>
         >,
       };
@@ -1278,7 +1307,7 @@ class ModelTool<
         );
 
         for (const result of results) {
-          if (result.status !== 'fulfilled' || !result.value) continue;
+          if (result.status !== "fulfilled" || !result.value) continue;
 
           for (const [prop, err] of Object.entries(result.value)) {
             if (!resolvedNames.has(prop as never)) continue;
@@ -1342,7 +1371,7 @@ class ModelTool<
     for (const prop of validProperties) {
       const res = data[prop];
 
-      if (typeof res === 'object' && 'validated' in (res as any)) {
+      if (typeof res === "object" && "validated" in (res as any)) {
         validatedData[prop] = (res as any).validated;
 
         continue;
@@ -1354,15 +1383,15 @@ class ModelTool<
         continue;
       }
 
-      if (typeof res === 'string') {
+      if (typeof res === "string") {
         const message = res.trim();
 
-        errors[prop] = message.length ? message : 'validation failed';
+        errors[prop] = message.length ? message : "validation failed";
 
         continue;
       }
 
-      errors[prop] = 'validation failed';
+      errors[prop] = "validation failed";
     }
 
     return { errors, validatedData };
@@ -1382,7 +1411,7 @@ class ModelTool<
 
     const hasIgnoreUpdateRule = this._isRuleInDefinition(
       propName,
-      'ignoreUpdate',
+      "ignoreUpdate",
     );
 
     const extraCtx = isAlias ? { [propName]: value } : {};
@@ -1426,7 +1455,7 @@ class ModelTool<
       cleanups = cleanups.concat(
         this._getHandlers<NS.FailureHandler<I, O, CtxOptions>>(
           prop,
-          'onFailure',
+          "onFailure",
         ),
       );
 
@@ -1468,7 +1497,7 @@ class ModelTool<
     for (const prop of relevantFields) {
       const handlers = this._getHandlers<NS.SuccessHandler<I, O>>(
         prop,
-        'onSuccess',
+        "onSuccess",
       );
 
       const setOfHandlerIDs = this.propToOnSuccessConfigIDMap.get(prop);
@@ -1504,7 +1533,7 @@ class ModelTool<
     for (const configName in this._definitions) {
       const config = this._definitions[configName];
 
-      if (config.type !== 'dependent') continue;
+      if (config.type !== "dependent") continue;
 
       if (
         toArray(config.dependsOn).some((parent) =>
@@ -1533,7 +1562,7 @@ class ModelTool<
         if (
           !isCreation &&
           config.readonly &&
-          typeof config.default !== 'function' &&
+          typeof config.default !== "function" &&
           !isEqual(
             config.default,
             (values as any)[name],
@@ -1567,14 +1596,14 @@ class ModelTool<
   ): ValidatorResponseObject<T, ErrorMetadata> {
     const responseType = typeof response;
 
-    if (responseType === 'boolean')
+    if (responseType === "boolean")
       return (
         response
           ? { valid: true, validated: value }
           : getValidationFailedResponse(value)
       ) as never;
 
-    if (!response && responseType !== 'object')
+    if (!response && responseType !== "object")
       return getValidationFailedResponse(value) as never;
 
     if (response?.valid) {
@@ -1590,7 +1619,7 @@ class ModelTool<
       value,
     } as never;
 
-    if (response?.reason && typeof response?.reason === 'string')
+    if (response?.reason && typeof response?.reason === "string")
       _response.reason = response.reason;
 
     if (response?.metadata && isRecordLike(response.metadata))
@@ -1636,7 +1665,7 @@ class ModelTool<
   }
 
   private async _validate(
-    { configName }: Pick<FieldInfo, 'configName'>,
+    { configName }: Pick<FieldInfo, "configName">,
     value: unknown,
     ctx: IvoContext<I, O, CtxOptions>,
   ) {
@@ -1670,7 +1699,7 @@ class ModelTool<
           value,
         );
       } catch {
-        return makeResponse<any>({ valid: false, reason: 'validation failed' });
+        return makeResponse<any>({ valid: false, reason: "validation failed" });
       }
 
       if (allowedValues && res.valid && !allowedValues.has(res.validated))
@@ -1777,7 +1806,7 @@ class ModelTool<
     for (const prop of getSetValuesAsProps(this.props)) {
       const handlers_ = this._getHandlers<NS.DeleteHandler<O, CtxOptions>>(
         prop,
-        'onDelete',
+        "onDelete",
       );
 
       if (handlers_.length) handlers = handlers.concat(handlers_);
@@ -1987,13 +2016,13 @@ class Model<
 }
 
 function areValuesOk(values: unknown) {
-  return values && typeof values === 'object';
+  return values && typeof values === "object";
 }
 
 function getValidationFailedResponse(value: unknown) {
   return {
     metadata: null,
-    reason: 'validation failed',
+    reason: "validation failed",
     valid: false,
     value,
   } as ValidatorResponseObject<unknown, unknown>;

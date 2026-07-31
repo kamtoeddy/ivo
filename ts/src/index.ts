@@ -1,4 +1,4 @@
-export { type IvoResultInfo, Schema } from './schema';
+export { Schema } from "./schema";
 
 export type {
   ArrayOfMinSizeOne,
@@ -10,13 +10,13 @@ export type {
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
-} from './schema/types';
-export type { FieldError, InputFieldError, InputPayload } from './schema/utils';
+} from "./schema/types";
+export type { FieldError, InputFieldError, InputPayload } from "./schema/utils";
 export {
   isFieldError,
   isInputFieldError,
   makeFieldError,
-} from './schema/utils';
+} from "./schema/utils";
 export {
   getKeysAsProps,
   isEqual,
@@ -27,5 +27,5 @@ export {
   isRecordLike,
   type ObjectType,
   toArray,
-} from './utils';
-export * from './validators';
+} from "./utils";
+export * from "./validators";

@@ -1,5 +1,5 @@
-import type { ObjectType } from '../../utils';
-import { type ArrayOfMinSizeOne, BUILD, type NS } from '../types';
+import type { ObjectType } from "../../utils";
+import { type ArrayOfMinSizeOne, BUILD, Buildable, type NS } from "../types";
 
 export { type BlankConstantBuilder, ConstantBuilder };
 
@@ -10,7 +10,7 @@ interface BlankConstantBuilder<
   CtxOptions extends ObjectType,
 > {
   value(
-    value: Value | NS.Resolver<Value, Input, Output, CtxOptions>,
+    v: Value | NS.Resolver<Value, Input, Output, CtxOptions>,
   ): BuildableConstantConfig<Value, Input, Output, CtxOptions>;
 }
 
@@ -22,25 +22,24 @@ type BuildableConstantConfig<
   HasReadonly extends boolean = false,
   HasOnDelete extends boolean = false,
   HasOnSuccess extends boolean = false,
-> = {
-  [BUILD](): NS.ConstantField<Value, Input, Output, CtxOptions>;
-} & (HasOnDelete extends true
-  ? {}
-  : {
-      onDelete(
-        handler:
-          | NS.DeleteHandler<Output, CtxOptions>
-          | ArrayOfMinSizeOne<NS.DeleteHandler<Output, CtxOptions>>,
-      ): BuildableConstantConfig<
-        Value,
-        Input,
-        Output,
-        CtxOptions,
-        HasReadonly,
-        true,
-        HasOnSuccess
-      >;
-    }) &
+> = Buildable<NS.ConstantField<Value, Input, Output, CtxOptions>> &
+  (HasOnDelete extends true
+    ? {}
+    : {
+        onDelete(
+          handler:
+            | NS.DeleteHandler<Output, CtxOptions>
+            | ArrayOfMinSizeOne<NS.DeleteHandler<Output, CtxOptions>>,
+        ): BuildableConstantConfig<
+          Value,
+          Input,
+          Output,
+          CtxOptions,
+          HasReadonly,
+          true,
+          HasOnSuccess
+        >;
+      }) &
   (HasOnSuccess extends true
     ? {}
     : {
@@ -64,17 +63,22 @@ class ConstantBuilder<
   Input,
   Output,
   CtxOptions extends ObjectType,
-> implements
+>
+  implements
     BlankConstantBuilder<Value, Input, Output, CtxOptions>,
     BuildableConstantConfig<Value, Input, Output, CtxOptions>
 {
+  name: string;
   private config: Partial<NS.ConstantField<Value, Input, Output, CtxOptions>> =
-    {
-      type: 'constant',
-    };
+    { type: "constant" };
 
-  value(value: Value | NS.Resolver<Value, Input, Output, CtxOptions>) {
-    this.config.value = value;
+  constructor(name: string) {
+    this.name = name;
+    this.config.name = name;
+  }
+
+  value(v: Value | NS.Resolver<Value, Input, Output, CtxOptions>) {
+    this.config.value = v;
     return this as never;
   }
 

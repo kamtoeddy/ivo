@@ -1,13 +1,14 @@
-import type { ObjectType } from '../../utils';
+import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
   BUILD,
+  Buildable,
   type NotAllowedError,
   type NS,
   type ReValidator,
   type Validator,
-} from '../types';
+} from "../types";
 
 export { type BlankRequiredBuilder, RequiredBuilder };
 
@@ -20,16 +21,16 @@ interface BlankRequiredBuilder<
 > {
   allow<const V extends Value>(
     values: ArrayOfMinSizeTwo<V>,
-  ): BuildableRequiredConfig<V, Input, Output, CtxOptions, Metadata, 'allow'>;
-  validate<const V extends Value>(
-    validator: Validator<V, Input, Output, CtxOptions, Metadata>,
+  ): BuildableRequiredConfig<V, Input, Output, CtxOptions, Metadata, "allow">;
+  validate(
+    validator: Validator<Value, Input, Output, CtxOptions, Metadata>,
   ): BuildableRequiredConfig<
-    V,
+    Value,
     Input,
     Output,
     CtxOptions,
     Metadata,
-    'validate'
+    "validate"
   >;
 }
 
@@ -47,19 +48,17 @@ type BuildableRequiredConfig<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-  ValidationState extends 'allow' | 'none' | 'validate' = 'none',
+  ValidationState extends "allow" | "none" | "validate" = "none",
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
   HasReadonlyOrIgnoreUpdate extends boolean = false,
   HasOnDelete extends boolean = false,
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
-> = (ValidationState extends 'none'
+> = (ValidationState extends "none"
   ? {}
-  : {
-      [BUILD](): NS.RequiredField<Value, Input, Output, CtxOptions, Metadata>;
-    }) &
-  (ValidationState extends 'allow'
+  : Buildable<NS.RequiredField<Value, Input, Output, CtxOptions, Metadata>>) &
+  (ValidationState extends "allow"
     ? HasAllowError extends true
       ? {}
       : {
@@ -76,7 +75,7 @@ type BuildableRequiredConfig<
             Output,
             CtxOptions,
             Metadata,
-            'allow',
+            "allow",
             true,
             HasReValidate,
             HasReadonlyOrIgnoreUpdate,
@@ -86,7 +85,7 @@ type BuildableRequiredConfig<
           >;
         }
     : {}) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasReValidate extends true
       ? {}
@@ -215,14 +214,20 @@ class RequiredBuilder<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-> implements
+>
+  implements
     BlankRequiredBuilder<Value, Input, Output, CtxOptions, Metadata>,
-    BuildableRequiredConfig<Value, Input, Output, CtxOptions, Metadata, 'allow'>
+    BuildableRequiredConfig<Value, Input, Output, CtxOptions, Metadata, "allow">
 {
-  private config: NS.RequiredField<Value, Input, Output, CtxOptions, Metadata> =
-    {
-      type: 'required',
-    };
+  name: string;
+  private config: Partial<
+    NS.RequiredField<Value, Input, Output, CtxOptions, Metadata>
+  > = { type: "required" };
+
+  constructor(name: string) {
+    this.name = name;
+    this.config.name = name;
+  }
 
   allow(values: ArrayOfMinSizeTwo<Value>) {
     this.config.allow = values;

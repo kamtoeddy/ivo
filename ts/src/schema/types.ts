@@ -1,9 +1,9 @@
-import type { ObjectType } from '../utils';
+import type { ObjectType } from "../utils";
 import type {
   DefaultFieldErrorMetadata,
   FieldError,
   InputFieldError,
-} from './utils';
+} from "./utils";
 
 export type {
   ArrayOfMinSizeOne,
@@ -281,7 +281,11 @@ namespace NS {
     resolver: Resolver<boolean, Input, Output, CtxOptions>;
   };
 
-  export type IgnoreConfigOption<Input, Output, CtxOptions extends ObjectType> =
+  export type IgnoreConfigOption<
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+  > =
     | Resolver<boolean, Input, Output, CtxOptions>
     | IgnoreConfigObject<Input, Output, CtxOptions>
     | ArrayOfMinSizeOne<IgnoreConfigObject<Input, Output, CtxOptions>>;
@@ -329,36 +333,18 @@ namespace NS {
         RequiredConfigObject<Input, Output, CtxOptions, Metadata>
       >;
 
-  type FieldDefinition<
-    K extends keyof Input | keyof Output,
+  export type FieldDefinition<
+    _K extends keyof Input | keyof Output,
     Input,
     Output,
     CtxOptions extends ObjectType,
     Metadata,
   > =
-    | (K extends keyof Output & keyof Input
-        ?
-            | PublicField<any, Input, Output, CtxOptions, Metadata>
-            | Buildable<LaxField<any, Input, Output, CtxOptions, Metadata>>
-            | Buildable<RequiredField<any, Input, Output, CtxOptions, Metadata>>
-        : never)
-    | (K extends keyof Output
-        ? PrivateField<any, Input, Output, CtxOptions>
-        : never)
-    | (K extends keyof Input
-        ?
-            | VirtualField<K, any, Input, Output, CtxOptions, Metadata>
-            | Buildable<
-                VirtualField<K, any, Input, Output, CtxOptions, Metadata>
-              >
-        : never)
-    | (K extends string
-        ?
-            | VirtualField<any, any, Input, Output, CtxOptions, Metadata>
-            | Buildable<
-                VirtualField<any, any, Input, Output, CtxOptions, Metadata>
-              >
-        : never);
+    | Buildable<LaxField<any, Input, Output, CtxOptions, Metadata>>
+    | Buildable<RequiredField<any, Input, Output, CtxOptions, Metadata>>
+    | Buildable<ConstantField<any, Input, Output, CtxOptions>>
+    | Buildable<DependentField<any, Input, Output, CtxOptions>>
+    | Buildable<VirtualField<any, any, Input, Output, CtxOptions, Metadata>>;
 
   export type Definitions<
     Input,
@@ -384,29 +370,6 @@ namespace NS {
       >;
     }
   >;
-
-  type PublicField<
-    Value extends Output[keyof Output],
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-    Metadata,
-  > =
-    | LaxField<Value, Input, Output, CtxOptions, Metadata>
-    | RequiredField<Value, Input, Output, CtxOptions, Metadata>;
-
-  type PrivateField<
-    Value extends Output[keyof Output],
-    Input,
-    Output,
-    CtxOptions extends ObjectType = {},
-  > =
-    | XOR<
-        ConstantField<Value, Input, Output, CtxOptions>,
-        DependentField<any, Input, Output, CtxOptions>
-      >
-    | Buildable<ConstantField<Value, Input, Output, CtxOptions>>
-    | Buildable<DependentField<any, Input, Output, CtxOptions>>;
 
   export type Definitions_<
     Input,
@@ -434,7 +397,8 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > = {
-    type: 'constant';
+    name: string;
+    type: "constant";
     value: Value | Resolver<Value, Input, Output, CtxOptions>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
@@ -455,7 +419,8 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > = {
-    type: 'dependent';
+    name: string;
+    type: "dependent";
     default: TypeOf<Output[K]> | Resolver<Output[K], Input, Output, CtxOptions>;
     dependsOn:
       | Dependables<K, Input, Output>
@@ -477,7 +442,8 @@ namespace NS {
     CtxOptions extends ObjectType,
     Metadata,
   > = {
-    type: 'lax';
+    name: string;
+    type: "lax";
     default: Value | Resolver<Value, Input, Output, CtxOptions>;
     allow?:
       | ArrayOfMinSizeTwo<Value>
@@ -516,7 +482,8 @@ namespace NS {
     CtxOptions extends ObjectType,
     Metadata,
   > = {
-    type: 'required';
+    name: string;
+    type: "required";
     allow?:
       | ArrayOfMinSizeTwo<Value>
       | {
@@ -552,7 +519,8 @@ namespace NS {
     CtxOptions extends ObjectType,
     Metadata,
   > = {
-    type: 'virtual';
+    name: string;
+    type: "virtual";
     alias?: Alias;
     required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
     validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
@@ -682,13 +650,13 @@ namespace NS {
 type ValidationResponse<T, Metadata = DefaultFieldErrorMetadata> =
   | { valid: true; validated: T }
   | {
-      metadata: FieldError<Metadata>['metadata'];
+      metadata: FieldError<Metadata>["metadata"];
       reason: string;
       valid: false;
     };
 
 type InvalidValidatorResponse<Metadata> = {
-  metadata?: FieldError<Metadata>['metadata'];
+  metadata?: FieldError<Metadata>["metadata"];
   reason?: string;
   valid: false;
   value?: unknown;
@@ -736,55 +704,66 @@ type ArrayOfMinSizeOne<T> = [T, ...T[]] | readonly [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]] | readonly [T, T, ...T[]];
 
 const DEFINITION_RULES = [
-  'alias',
-  'allow',
-  'constant',
-  'default',
-  'dependsOn',
-  'ignore',
-  'onDelete',
-  'onFailure',
-  'onSuccess',
-  'readonly',
-  'resolver',
-  'required',
-  'sanitizer',
-  'ignoreInit',
-  'ignoreUpdate',
-  'validator',
-  'value',
-  'virtual',
+  "name",
+  "type",
+  "alias",
+  "allow",
+  "constant",
+  "default",
+  "dependsOn",
+  "ignore",
+  "onDelete",
+  "onFailure",
+  "onSuccess",
+  "readonly",
+  "resolver",
+  "required",
+  "sanitizer",
+  "ignoreInit",
+  "ignoreUpdate",
+  "validator",
+  "value",
+  "virtual",
 ] as const;
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
 const ALLOWED_OPTIONS: NS.OptionsKey<unknown, unknown>[] = [
-  'equalityDepth',
-  'ignore',
-  'ignoreUpdate',
-  'onDelete',
-  'onSuccess',
-  'postValidate',
-  'required',
-  'sanitizeError',
-  'timestamps',
+  "equalityDepth",
+  "ignore",
+  "ignoreUpdate",
+  "onDelete",
+  "onSuccess",
+  "postValidate",
+  "required",
+  "sanitizeError",
+  "timestamps",
 ];
-const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value'];
+const CONSTANT_RULES = [
+  "name",
+  "type",
+  "constant",
+  "onDelete",
+  "onSuccess",
+  "value",
+];
 const VIRTUAL_RULES = [
-  'alias',
-  'allow',
-  'ignore',
-  'sanitizer',
-  'onFailure',
-  'onSuccess',
-  'required',
-  'ignoreInit',
-  'ignoreUpdate',
-  'validator',
-  'virtual',
+  "name",
+  "type",
+  "alias",
+  "allow",
+  "ignore",
+  "sanitizer",
+  "onFailure",
+  "onSuccess",
+  "required",
+  "ignoreInit",
+  "ignoreUpdate",
+  "validator",
+  "virtual",
 ];
 
-const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
+const LIFE_CYCLES = ["onDelete", "onFailure", "onSuccess"] as const;
 
 type IvoErrorPayload<Metadata, Keys extends string> = Record<
   Keys,
@@ -812,13 +791,13 @@ type RealType<T> = {
  * (via `materializeFieldBuilders`, the sole holder of this symbol reference)
  * can unwrap it.
  */
-const BUILD: unique symbol = Symbol('ivo.build');
+const BUILD: unique symbol = Symbol("ivo.build");
 
 /**
  * Structural marker for a field-builder result: any value exposing the
  * hidden `[BUILD]` hook can stand in for a plain `T` field definition.
  */
-type Buildable<T> = { [BUILD]: () => T };
+type Buildable<T> = { name: string; [BUILD]: () => T };
 
 type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 

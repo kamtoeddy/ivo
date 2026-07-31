@@ -1,13 +1,12 @@
-import type { ObjectType } from '../../utils';
-import { BUILD } from '../types';
-import type { DefaultFieldErrorMetadata } from '../utils';
-import { type BlankConstantBuilder, ConstantBuilder } from './constants';
-import { type BlankDependentBuilder, DependentBuilder } from './dependents';
-import { type BlankLaxBuilder, LaxBuilder } from './lax';
-import { type BlankRequiredBuilder, RequiredBuilder } from './required';
-import { type BlankVirtualBuilder, VirtualBuilder } from './virtual';
+import type { ObjectType } from "../../utils";
+import type { DefaultFieldErrorMetadata } from "../utils";
+import { type BlankConstantBuilder, ConstantBuilder } from "./constants";
+import { type BlankDependentBuilder, DependentBuilder } from "./dependents";
+import { type BlankLaxBuilder, LaxBuilder } from "./lax";
+import { type BlankRequiredBuilder, RequiredBuilder } from "./required";
+import { type BlankVirtualBuilder, VirtualBuilder } from "./virtual";
 
-export { createFieldBuilder, materializeFieldBuilders };
+export { createFieldBuilder };
 
 /**
  * Prototype of a Rust-style typestate builder for the "dependent" field
@@ -40,18 +39,18 @@ function createFieldBuilder<
   Metadata = DefaultFieldErrorMetadata,
 >() {
   return {
-    constant<K extends keyof Output>(
-      _fieldName: K,
+    constant<K extends keyof Output & string>(
+      name: K,
     ): BlankConstantBuilder<Output[K], Input, Output, CtxOptions> {
-      return new ConstantBuilder<Output[K], Input, Output, CtxOptions>();
+      return new ConstantBuilder<Output[K], Input, Output, CtxOptions>(name);
     },
-    dependent<K extends keyof Output>(
-      _fieldName: K,
+    dependent<K extends keyof Output & string>(
+      name: K,
     ): BlankDependentBuilder<K, Input, Output, CtxOptions> {
-      return new DependentBuilder<K, Input, Output, CtxOptions>();
+      return new DependentBuilder<K, Input, Output, CtxOptions>(name);
     },
-    lax<K extends keyof Output & keyof Input>(
-      _fieldName: K,
+    lax<K extends keyof (Input | Output) & string>(
+      name: K,
     ): BlankLaxBuilder<
       (Input & Output)[K],
       Input,
@@ -65,10 +64,10 @@ function createFieldBuilder<
         Output,
         CtxOptions,
         Metadata
-      >();
+      >(name);
     },
-    required<K extends keyof Output & keyof Input>(
-      _fieldName: K,
+    required<K extends keyof (Input | Output) & string>(
+      name: K,
     ): BlankRequiredBuilder<
       (Input & Output)[K],
       Input,
@@ -82,39 +81,12 @@ function createFieldBuilder<
         Output,
         CtxOptions,
         Metadata
-      >();
+      >(name);
     },
     virtual<K extends string>(
-      _fieldName: K,
+      name: K,
     ): BlankVirtualBuilder<any, Input, Output, CtxOptions, Metadata> {
-      return new VirtualBuilder<any, Input, Output, CtxOptions, Metadata>();
+      return new VirtualBuilder<any, Input, Output, CtxOptions, Metadata>(name);
     },
   };
-}
-
-function isFieldBuilder(value: unknown): value is { [BUILD]: () => unknown } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { [BUILD]?: unknown })[BUILD] === 'function'
-  );
-}
-
-/**
- * Called by `Schema` before processing a `Definitions` object, so users
- * never get (or need) a way to resolve a field-builder chain themselves -
- * mirrors how the Rust schema macro resolves `impl BuildableFieldConfig`
- * under the hood. This is the only place in the codebase that imports
- * `BUILD` as a value, which is what keeps it out of reach elsewhere.
- */
-function materializeFieldBuilders<T extends ObjectType>(definitions: T): T {
-  const result: ObjectType = { ...definitions };
-
-  for (const key of Object.keys(result)) {
-    const value = result[key];
-
-    if (isFieldBuilder(value)) result[key] = value[BUILD]();
-  }
-
-  return result as T;
 }
