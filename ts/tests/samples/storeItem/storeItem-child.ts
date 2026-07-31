@@ -1,14 +1,19 @@
 import { storeItemSchema } from '.';
+import type { StoreItem, StoreItemInput } from './types';
 import { validateString } from './validators';
 
-const storeItemChildSchema = storeItemSchema.extend(
-  {
-    childID: {
-      default: '',
-      readonly: true,
-      validator: validateString('Invalid child id'),
-    },
-  },
+const storeItemChildSchema = storeItemSchema.extend<
+  StoreItemInput & { childID: string },
+  StoreItem & { childID: string }
+>(
+  (b, m) =>
+    b.field(
+      m
+        .lax('childID')
+        .default('')
+        .validate(validateString('Invalid child id'))
+        .readonly(),
+    ),
   { timestamps: true },
 );
 

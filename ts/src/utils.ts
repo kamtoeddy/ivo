@@ -43,7 +43,7 @@ function makeResponse<T = undefined, Metadata = DefaultFieldErrorMetadata>(
     return { valid, validated } as ValidationResponse<TypeOf<T>, Metadata>;
   }
 
-  const { metadata = null, reason: inputReason, valid, value } = input;
+  const { metadata = null, reason: inputReason, valid } = input;
 
   const reason = inputReason
     ? isRecordLike(inputReason)
@@ -55,7 +55,6 @@ function makeResponse<T = undefined, Metadata = DefaultFieldErrorMetadata>(
     metadata,
     reason,
     valid,
-    value,
   } as ValidationResponse<TypeOf<T>, Metadata>;
 }
 

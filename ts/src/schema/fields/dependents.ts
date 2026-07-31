@@ -1,11 +1,11 @@
-import type { ObjectType } from "../../utils";
+import type { ObjectType } from '../../utils';
 import {
   type ArrayOfMinSizeOne,
   BUILD,
-  Buildable,
+  type Buildable,
   type NS,
   type TypeOf,
-} from "../types";
+} from '../types';
 
 export { type BlankDependentBuilder, DependentBuilder };
 
@@ -132,8 +132,7 @@ class DependentBuilder<
   Input,
   Output,
   CtxOptions extends ObjectType,
->
-  implements
+> implements
     BlankDependentBuilder<K, Input, Output, CtxOptions>,
     HasDefault<K, Input, Output, CtxOptions>,
     HasDependsOn<K, Input, Output, CtxOptions>,
@@ -142,7 +141,7 @@ class DependentBuilder<
 {
   name: string;
   private config: Partial<NS.DependentField<K, Input, Output, CtxOptions>> = {
-    type: "dependent",
+    type: 'dependent',
   };
 
   constructor(name: string) {

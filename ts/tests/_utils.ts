@@ -1,4 +1,5 @@
 import { expect } from 'bun:test';
+import { type FieldMaker, Schema } from '../src/schema';
 import { ERRORS } from '../src/schema/utils/constants';
 import { isEqual, type ObjectType } from '../src/utils';
 
@@ -45,18 +46,34 @@ function getSubObject(obj: ObjectType, sampleSub: ObjectType) {
   return _obj;
 }
 
-function getValidSchema(extraDefinition = {}, extraProps = {}) {
-  return {
-    propertyName1: { default: '', validator, ...extraDefinition },
-    propertyName2: { default: '', validator },
-    ...extraProps,
+/**
+ * Builder-closure equivalent of the old `{ fieldName1: {...}, fieldName2: {...}, ...extraFields }`
+ * flat-map helper. `extendField1` can further decorate fieldName1's builder
+ * chain (e.g. `(b) => b.onSuccess(handler)`); `extraFields` are additional
+ * already-built fields (e.g. `field.constant('id').value(1)`) to include
+ * alongside fieldName1/fieldName2.
+ */
+function getValidSchema(
+  extendField1: (b: any) => any = (b) => b,
+  extraFields: any[] = [],
+) {
+  return (b: any, { lax }: FieldMaker<any>) => {
+    b.field(
+      extendField1(lax('fieldName1').default('').validate(validator)),
+    ).field(lax('fieldName2').default('').validate(validator));
+
+    for (const extraField of extraFields) b.field(extraField);
+
+    return b;
   };
 }
 
 const makeFx =
-  (Schema: any) =>
-  (definition: any = undefined, options: any = { timestamps: false }) =>
+  (
+    builder: (b: any, m: FieldMaker<any>) => any = (b) => b,
+    options: any = { timestamps: false },
+  ) =>
   () =>
-    new Schema(definition, options);
+    new Schema(builder, options);
 
 const validator = () => ({ valid: true });

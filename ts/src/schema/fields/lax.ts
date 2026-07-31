@@ -1,15 +1,15 @@
-import type { ObjectType } from "../../utils";
+import type { ObjectType } from '../../utils';
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
   BUILD,
-  Buildable,
+  type Buildable,
   type NotAllowedError,
   type NS,
   type RequiredHandler,
   type ReValidator,
   type Validator,
-} from "../types";
+} from '../types';
 
 export { type BlankLaxBuilder, LaxBuilder };
 
@@ -40,7 +40,7 @@ type BuildableLaxConfig<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-  ValidationState extends "allow" | "none" | "validate" = "none",
+  ValidationState extends 'allow' | 'none' | 'validate' = 'none',
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
   HasRequired extends boolean = false,
@@ -52,7 +52,7 @@ type BuildableLaxConfig<
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
 > = Buildable<NS.LaxField<Value, Input, Output, CtxOptions, Metadata>> &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {
         allow<const V extends Value>(
           values: ArrayOfMinSizeTwo<V>,
@@ -62,7 +62,7 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
-          "allow",
+          'allow',
           HasAllowError,
           HasReValidate,
           HasRequired,
@@ -82,7 +82,7 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
-          "validate",
+          'validate',
           HasAllowError,
           HasReValidate,
           HasRequired,
@@ -96,7 +96,7 @@ type BuildableLaxConfig<
         >;
       }
     : {}) &
-  (ValidationState extends "allow"
+  (ValidationState extends 'allow'
     ? HasAllowError extends true
       ? {}
       : {
@@ -113,7 +113,7 @@ type BuildableLaxConfig<
             Output,
             CtxOptions,
             Metadata,
-            "allow",
+            'allow',
             true,
             HasReValidate,
             HasRequired,
@@ -127,7 +127,7 @@ type BuildableLaxConfig<
           >;
         }
     : {}) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasReValidate extends true
       ? {}
@@ -356,15 +356,14 @@ class LaxBuilder<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
->
-  implements
+> implements
     BlankLaxBuilder<Value, Input, Output, CtxOptions, Metadata>,
     BuildableLaxConfig<Value, Input, Output, CtxOptions, Metadata>
 {
   name: string;
   private config: Partial<
     NS.LaxField<Value, Input, Output, CtxOptions, Metadata>
-  > = { type: "lax" };
+  > = { type: 'lax' };
 
   constructor(name: string) {
     this.name = name;

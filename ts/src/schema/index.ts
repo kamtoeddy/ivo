@@ -10,13 +10,14 @@ import {
   sort,
   sortKeys,
   toArray,
-} from "../utils";
+} from '../utils';
+import { newFieldMaker } from './fields';
 
-import { defaultOptions, SchemaCore } from "./schema-core";
+import { defaultOptions, SchemaCore } from './schema-core';
 import {
   type ArrayOfMinSizeTwo,
   BUILD,
-  Buildable,
+  type Buildable,
   type InternalValidatorResponse,
   type InvalidValidatorResponse,
   type IvoContext,
@@ -28,7 +29,7 @@ import {
   type ReadonlyIvoContext,
   type RealType,
   type ValidatorResponseObject,
-} from "./types";
+} from './types';
 import {
   cloneValue,
   type DefaultFieldErrorMetadata,
@@ -37,39 +38,48 @@ import {
   type InputFieldError,
   isInputFieldError,
   makeFieldError,
-} from "./utils";
+} from './utils';
 
-export { Model, ModelTool, Schema };
+export { type FieldMaker, Model, ModelTool, Schema };
 
-const NotAllowedError = "value not allowed";
-const validationFailedFieldError = makeFieldError("validation failed");
+const NotAllowedError = 'value not allowed';
+const validationFailedFieldError = makeFieldError('validation failed');
 
 const FIELD_BUILDER_DEFINITIONS: unique symbol = Symbol(
-  "ivo-schema-field-builder",
+  'ivo-schema-field-builder',
 );
 
 function isBuildable(value: unknown): value is Buildable<unknown> {
   return (
-    typeof value === "object" &&
+    typeof value === 'object' &&
     value !== null &&
-    typeof (value as { name?: unknown })?.name === "string" &&
-    typeof (value as { [BUILD]?: unknown })[BUILD] === "function"
+    typeof (value as { name?: unknown })?.name === 'string' &&
+    typeof (value as { [BUILD]?: unknown })[BUILD] === 'function'
   );
 }
 
-class SchemaFieldBuilder<
+class FieldBuilder<
   const I extends RealType<I>,
   const O extends RealType<O> = I,
   const CtxOptions extends ObjectType = {},
   const ErrorMetadata = DefaultFieldErrorMetadata,
 > {
-  private _definitions: NS.Definitions_<I, O, CtxOptions, ErrorMetadata> = {};
+  private _definitions: NS.Definitions_<I, O, CtxOptions, ErrorMetadata>;
+
+  // Optional seed, used exclusively by `Schema.extend()` to carry a parent
+  // schema's already-materialized definitions (real field configs, not
+  // `Buildable`s) into a fresh builder before the extension closure runs -
+  // `field()` itself stays `Buildable`-only, so this is the only legitimate
+  // way to fold pre-built definitions back into the builder pattern.
+  constructor(seed: NS.Definitions_<I, O, CtxOptions, ErrorMetadata> = {}) {
+    this._definitions = seed;
+  }
 
   field<K extends keyof I | keyof O>(
-    config: NS.FieldDefinition<K, I, O, CtxOptions, ErrorMetadata>,
+    c: NS.FieldDefinition<K, I, O, CtxOptions, ErrorMetadata>,
   ) {
-    if (isBuildable(config)) {
-      const built = config[BUILD]();
+    if (isBuildable(c)) {
+      const built = c[BUILD]();
 
       this._definitions[built.name] = built;
     }
@@ -86,6 +96,14 @@ class SchemaFieldBuilder<
     return this._definitions;
   }
 }
+
+type FieldMaker<
+  Input extends RealType<Input>,
+  Output extends RealType<Output> = Input,
+  CtxOptions extends ObjectType = {},
+  ErrorMetadata = DefaultFieldErrorMetadata,
+> = ReturnType<typeof newFieldMaker<Input, Output, CtxOptions, ErrorMetadata>>;
+
 class Schema<
   const Input extends RealType<Input>,
   const Output extends RealType<Output> = Input,
@@ -95,8 +113,9 @@ class Schema<
 > extends SchemaCore<Input, Output, CtxOptions, ErrorMetadata, ErrorPayload> {
   constructor(
     builder: (
-      b: SchemaFieldBuilder<Input, Output, CtxOptions, ErrorMetadata>,
-    ) => SchemaFieldBuilder<Input, Output, CtxOptions, ErrorMetadata>,
+      b: FieldBuilder<Input, Output, CtxOptions, ErrorMetadata>,
+      m: FieldMaker<Input, Output, CtxOptions, ErrorMetadata>,
+    ) => FieldBuilder<Input, Output, CtxOptions, ErrorMetadata>,
     options: NS.Options<
       Input,
       Output,
@@ -106,7 +125,7 @@ class Schema<
     > = defaultOptions as never,
   ) {
     super(
-      builder(new SchemaFieldBuilder())[FIELD_BUILDER_DEFINITIONS],
+      builder(new FieldBuilder(), newFieldMaker())[FIELD_BUILDER_DEFINITIONS],
       options as never,
     );
   }
@@ -148,13 +167,24 @@ class Schema<
       KeyOf<ExtendedInput>
     >,
   >(
-    definitions: Partial<
-      NS.Definitions<
+    builder: (
+      b: FieldBuilder<
         ExtendedInput,
         ExtendedOutput,
         ExtendedCtxOptions,
         ExtendedErrorMetadata
-      >
+      >,
+      m: FieldMaker<
+        ExtendedInput,
+        ExtendedOutput,
+        ExtendedCtxOptions,
+        ExtendedErrorMetadata
+      >,
+    ) => FieldBuilder<
+      ExtendedInput,
+      ExtendedOutput,
+      ExtendedCtxOptions,
+      ExtendedErrorMetadata
     >,
     options: NS.ExtensionOptions<
       Input,
@@ -168,7 +198,9 @@ class Schema<
   ) {
     const { remove = [], useParentOptions = true, ...rest } = options;
 
-    const _definitions = { ...this.definitions } as unknown as NS.Definitions<
+    const _definitions = {
+      ...this.definitions,
+    } as unknown as NS.Definitions_<
       ExtendedInput,
       ExtendedOutput,
       ExtendedCtxOptions,
@@ -190,7 +222,7 @@ class Schema<
     if (useParentOptions)
       getKeysAsProps(this.options)
         .filter(
-          (prop) => ![...LIFE_CYCLES, "shouldUpdate"].includes(prop as never),
+          (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as never),
         )
         .forEach((prop) => {
           options_[prop] = this.options[prop] as never;
@@ -203,8 +235,7 @@ class Schema<
       ExtendedErrorMetadata,
       ExtendedErrorPayload
     >(
-      // @ts-expect-error TODO: Fix
-      Object.assign({}, _definitions, definitions),
+      () => builder(new FieldBuilder(_definitions), newFieldMaker()),
       Object.assign({}, options_, rest),
     );
   }
@@ -244,9 +275,9 @@ class ModelTool<
     for (const configName of getKeysAsProps(this._definitions)) {
       const config = this._definitions[configName]!;
 
-      if (config.type === "constant" || config.type === "dependent") continue;
+      if (config.type === 'constant' || config.type === 'dependent') continue;
 
-      const isVirtual = config.type === "virtual";
+      const isVirtual = config.type === 'virtual';
 
       fields.set(
         configName,
@@ -293,10 +324,10 @@ class ModelTool<
 
     if (isUpdate) {
       for (const config of toArray(this._options.ignoreUpdate ?? [])) {
-        if (config && typeof config === "object" && "fields" in config) {
+        if (config && typeof config === 'object' && 'fields' in config) {
           if ((config as any).fields.length === 0)
             entityResolvers.push((config as any).resolver);
-        } else if (typeof config === "function") entityResolvers.push(config);
+        } else if (typeof config === 'function') entityResolvers.push(config);
       }
 
       for (const [fieldName, value] of Object.entries(rawInput)) {
@@ -345,7 +376,7 @@ class ModelTool<
         ),
       )) {
         // if "task.value" is positive, it means "ignore"
-        if (task.status === "fulfilled" && task.value) return fieldsCollection;
+        if (task.status === 'fulfilled' && task.value) return fieldsCollection;
       }
 
     fieldsCollection.fieldsProvided = fieldsProvided;
@@ -389,7 +420,7 @@ class ModelTool<
       // ignoreUpdate rule is configured for it.
       if (readonly && isUpdate) {
         const hasStaticDefault =
-          defaultValue !== undefined && typeof defaultValue !== "function";
+          defaultValue !== undefined && typeof defaultValue !== 'function';
 
         // readonly with a static default: only allow the update while the
         // previous value still equals that default. Otherwise (no default,
@@ -416,7 +447,7 @@ class ModelTool<
       const source = isUpdate ? ignoreUpdate : ignoreInit;
 
       if (isUpdate && this._isRequired(fieldName)) {
-        if (!readonly && typeof source === "function")
+        if (!readonly && typeof source === 'function')
           tasks.push([
             [fieldName],
             (ctx: IvoContext<I, O, CtxOptions>) =>
@@ -432,7 +463,7 @@ class ModelTool<
 
       if (!source) continue;
 
-      if (typeof source === "function") {
+      if (typeof source === 'function') {
         tasks.push([
           [fieldName],
           isUpdate
@@ -444,7 +475,7 @@ class ModelTool<
                 })
             : (ctx: IvoContext<I, O, CtxOptions>) =>
                 // @ts-expect-error ikr
-                source(ctx.input as Partial<I>, ctx.rawInput as Partial<I>, {
+                source(ctx.rawInput as Partial<I>, {
                   options: ctx.options,
                   updateOptions: ctx.updateOptions,
                 }),
@@ -471,9 +502,9 @@ class ModelTool<
     );
 
     for (const config of toArray(this._options.ignore ?? [])) {
-      if (typeof config === "function") {
+      if (typeof config === 'function') {
         tasks.push([relevantConfigNames, config]);
-      } else if (config && typeof config === "object") {
+      } else if (config && typeof config === 'object') {
         const fields = config.fields as string[];
 
         if (fields.some((name: string) => relevantConfigNames.includes(name)))
@@ -483,7 +514,7 @@ class ModelTool<
 
     if (isUpdate) {
       for (const config of toArray(this._options.ignoreUpdate ?? [])) {
-        if (typeof config === "function") {
+        if (typeof config === 'function') {
           tasks.push([
             relevantConfigNames,
             (ctx: IvoContext<I, O, CtxOptions>) =>
@@ -492,7 +523,7 @@ class ModelTool<
                 updateOptions: ctx.updateOptions,
               }),
           ]);
-        } else if (config && typeof config === "object") {
+        } else if (config && typeof config === 'object') {
           const fields = config.fields as string[];
 
           if (
@@ -624,7 +655,7 @@ class ModelTool<
     prop: string,
     ctx: IvoContext<I, O, CtxOptions>,
   ): Promise<[boolean, string | FieldError<ErrorMetadata>]> => {
-    const { required } = this._getDefinition(prop) as NS.LaxField<
+    const { required, type } = this._getDefinition(prop) as NS.LaxField<
       any,
       I,
       O,
@@ -632,24 +663,31 @@ class ModelTool<
       ErrorMetadata
     >;
 
-    if (!required) return [false, ""];
-
     const fallbackMessage = `'${prop}' is required`;
+
+    // Strictly-required fields built via the `required` field builder carry
+    // no `required` key at all (unlike the legacy `required: true` object
+    // literal) - `type: "required"` is itself the marker. `_getDefinition`
+    // is typed here as `LaxField` (whose `type` literal is "lax"), but this
+    // reads across every field kind at runtime, so the comparison is cast.
+    if ((type as string) === 'required') return [true, fallbackMessage];
+
+    if (!required) return [false, ''];
 
     if (!isFunctionLike(required)) return [required, fallbackMessage];
 
     const results = await required(ctx);
-    const isBoolean = typeof results === "boolean";
+    const isBoolean = typeof results === 'boolean';
 
-    if (!isBoolean && !Array.isArray(results)) return [false, ""];
+    if (!isBoolean && !Array.isArray(results)) return [false, ''];
 
-    if (isBoolean) return [results as boolean, results ? fallbackMessage : ""];
+    if (isBoolean) return [results as boolean, results ? fallbackMessage : ''];
 
     const [isRequired, message] = results as [
         boolean,
         string | InputFieldError<ErrorMetadata>,
       ],
-      isString = typeof message === "string";
+      isString = typeof message === 'string';
 
     if (!isRequired || (!isString && !isInputFieldError(message)))
       return [isRequired, fallbackMessage];
@@ -660,7 +698,7 @@ class ModelTool<
 
     return [
       true,
-      isPropertyOf("metadata", message)
+      isPropertyOf('metadata', message)
         ? fieldError
         : ({ reason: fieldError.reason } as never),
     ];
@@ -693,7 +731,7 @@ class ModelTool<
 
     if (ignoreUpdate === undefined) return false;
     if (ignoreUpdate === true) return true;
-    if (typeof ignoreUpdate === "function") {
+    if (typeof ignoreUpdate === 'function') {
       const res = ignoreUpdate(this._getContext() as never);
       return !!res;
     }
@@ -760,7 +798,7 @@ class ModelTool<
         return { reason: NotAllowedError, metadata: defaultMetadata };
       }
 
-      if (typeof message === "string")
+      if (typeof message === 'string')
         return {
           reason: message || NotAllowedError,
           metadata: defaultMetadata,
@@ -795,7 +833,7 @@ class ModelTool<
     const { reason, metadata } = validationResponse;
 
     const fieldError = makeFieldError<ErrorMetadata>(
-      reason || "validation failed",
+      reason || 'validation failed',
     );
 
     if (metadata) fieldError.metadata = metadata;
@@ -818,7 +856,7 @@ class ModelTool<
     getKeysAsProps(this._definitions).map(async (configName) => {
       const config = this._definitions[configName]!;
 
-      if (config.type === "constant") {
+      if (config.type === 'constant') {
         const value = config.value;
 
         if (isFunctionLike(value)) {
@@ -829,7 +867,7 @@ class ModelTool<
         return this._updateCxtValues({ [configName]: value } as never);
       }
 
-      if (config.type === "lax" && !fieldsProvidedNames.has(configName)) {
+      if (config.type === 'lax' && !fieldsProvidedNames.has(configName)) {
         const value = config.default;
 
         if (isFunctionLike(value)) {
@@ -840,7 +878,7 @@ class ModelTool<
         return this._updateCxtValues({ [configName]: value } as never);
       }
 
-      if (config.type === "dependent") {
+      if (config.type === 'dependent') {
         const value = config.default;
 
         if (isFunctionLike(value)) {
@@ -864,12 +902,15 @@ class ModelTool<
             ] as const,
         ),
       )
-    ).reduce((acc, [configName, value]) => {
-      // @ts-expect-error ikr
-      acc[configName] = value;
+    ).reduce(
+      (acc, [configName, value]) => {
+        // @ts-expect-error ikr
+        acc[configName] = value;
 
-      return acc;
-    }, {} as Partial<O>);
+        return acc;
+      },
+      {} as Partial<O>,
+    );
 
     this._updateCxtValues(defaultValues);
   }
@@ -969,7 +1010,7 @@ class ModelTool<
         } catch {
           isValid = makeResponse<unknown, ErrorMetadata>({
             valid: false,
-            reason: "validation failed",
+            reason: 'validation failed',
           });
         }
 
@@ -1010,7 +1051,7 @@ class ModelTool<
     const handlers = Array.from(configIds).map((id) => {
       return {
         validator: this.postValidationConfigMap.get(id)!.validators,
-        properties: id.split(",") as ArrayOfMinSizeTwo<
+        properties: id.split(',') as ArrayOfMinSizeTwo<
           Extract<keyof I, string>
         >,
       };
@@ -1284,7 +1325,7 @@ class ModelTool<
       // Errors for fields outside the config's own `properties` are dropped,
       // matching Rust's `field_names.contains(...)` filter.
       ...toArray(this._options.required ?? []).map(async (config) => {
-        const properties = config.properties as KeyOf<I>[];
+        const properties = config.fields as KeyOf<I>[];
 
         if (
           properties.some((prop) =>
@@ -1307,7 +1348,7 @@ class ModelTool<
         );
 
         for (const result of results) {
-          if (result.status !== "fulfilled" || !result.value) continue;
+          if (result.status !== 'fulfilled' || !result.value) continue;
 
           for (const [prop, err] of Object.entries(result.value)) {
             if (!resolvedNames.has(prop as never)) continue;
@@ -1371,7 +1412,7 @@ class ModelTool<
     for (const prop of validProperties) {
       const res = data[prop];
 
-      if (typeof res === "object" && "validated" in (res as any)) {
+      if (typeof res === 'object' && 'validated' in (res as any)) {
         validatedData[prop] = (res as any).validated;
 
         continue;
@@ -1383,15 +1424,15 @@ class ModelTool<
         continue;
       }
 
-      if (typeof res === "string") {
+      if (typeof res === 'string') {
         const message = res.trim();
 
-        errors[prop] = message.length ? message : "validation failed";
+        errors[prop] = message.length ? message : 'validation failed';
 
         continue;
       }
 
-      errors[prop] = "validation failed";
+      errors[prop] = 'validation failed';
     }
 
     return { errors, validatedData };
@@ -1411,7 +1452,7 @@ class ModelTool<
 
     const hasIgnoreUpdateRule = this._isRuleInDefinition(
       propName,
-      "ignoreUpdate",
+      'ignoreUpdate',
     );
 
     const extraCtx = isAlias ? { [propName]: value } : {};
@@ -1455,7 +1496,7 @@ class ModelTool<
       cleanups = cleanups.concat(
         this._getHandlers<NS.FailureHandler<I, O, CtxOptions>>(
           prop,
-          "onFailure",
+          'onFailure',
         ),
       );
 
@@ -1497,7 +1538,7 @@ class ModelTool<
     for (const prop of relevantFields) {
       const handlers = this._getHandlers<NS.SuccessHandler<I, O>>(
         prop,
-        "onSuccess",
+        'onSuccess',
       );
 
       const setOfHandlerIDs = this.propToOnSuccessConfigIDMap.get(prop);
@@ -1533,7 +1574,7 @@ class ModelTool<
     for (const configName in this._definitions) {
       const config = this._definitions[configName];
 
-      if (config.type !== "dependent") continue;
+      if (config.type !== 'dependent') continue;
 
       if (
         toArray(config.dependsOn).some((parent) =>
@@ -1562,7 +1603,7 @@ class ModelTool<
         if (
           !isCreation &&
           config.readonly &&
-          typeof config.default !== "function" &&
+          typeof config.default !== 'function' &&
           !isEqual(
             config.default,
             (values as any)[name],
@@ -1596,14 +1637,14 @@ class ModelTool<
   ): ValidatorResponseObject<T, ErrorMetadata> {
     const responseType = typeof response;
 
-    if (responseType === "boolean")
+    if (responseType === 'boolean')
       return (
         response
           ? { valid: true, validated: value }
           : getValidationFailedResponse(value)
       ) as never;
 
-    if (!response && responseType !== "object")
+    if (!response && responseType !== 'object')
       return getValidationFailedResponse(value) as never;
 
     if (response?.valid) {
@@ -1619,7 +1660,7 @@ class ModelTool<
       value,
     } as never;
 
-    if (response?.reason && typeof response?.reason === "string")
+    if (response?.reason && typeof response?.reason === 'string')
       _response.reason = response.reason;
 
     if (response?.metadata && isRecordLike(response.metadata))
@@ -1665,7 +1706,7 @@ class ModelTool<
   }
 
   private async _validate(
-    { configName }: Pick<FieldInfo, "configName">,
+    { configName }: Pick<FieldInfo, 'configName'>,
     value: unknown,
     ctx: IvoContext<I, O, CtxOptions>,
   ) {
@@ -1699,7 +1740,7 @@ class ModelTool<
           value,
         );
       } catch {
-        return makeResponse<any>({ valid: false, reason: "validation failed" });
+        return makeResponse<any>({ valid: false, reason: 'validation failed' });
       }
 
       if (allowedValues && res.valid && !allowedValues.has(res.validated))
@@ -1731,7 +1772,8 @@ class ModelTool<
    * 11. Attach timestamps  (attach_timestamps)
    * 12. Build & return result
    */
-  async create(input: Partial<I>, contextOptions: CtxOptions) {
+  // @ts-expect-error ikr
+  async create(input: Partial<I>, contextOptions: CtxOptions = {}) {
     const options = this._updateCtxOptions(contextOptions);
 
     if (!areValuesOk(input)) input = {};
@@ -1796,7 +1838,8 @@ class ModelTool<
     };
   }
 
-  async delete(data: O, options: CtxOptions) {
+  // @ts-expect-error ikr
+  async delete(data: O, options: CtxOptions = {}) {
     if (!areValuesOk(data)) return;
 
     let handlers: NS.DeleteHandler<O, CtxOptions>[] = [
@@ -1806,7 +1849,7 @@ class ModelTool<
     for (const prop of getSetValuesAsProps(this.props)) {
       const handlers_ = this._getHandlers<NS.DeleteHandler<O, CtxOptions>>(
         prop,
-        "onDelete",
+        'onDelete',
       );
 
       if (handlers_.length) handlers = handlers.concat(handlers_);
@@ -1847,7 +1890,8 @@ class ModelTool<
    * 17. Attach timestamps  (attach_timestamps)
    * 18. Build & return result
    */
-  async update(values: O, changes: Partial<I>, options: CtxOptions) {
+  // @ts-expect-error ikr
+  async update(values: O, changes: Partial<I>, options: CtxOptions = {}) {
     const emptyErrorTool = new ErrorTool<ErrorMetadata>();
 
     // Step 1 – validate arguments
@@ -2002,27 +2046,27 @@ class Model<
     >,
   ) {}
 
-  create = (values: Partial<Input>, contextOptions: CtxOptions) =>
+  create = (values: Partial<Input>, contextOptions?: CtxOptions) =>
     this.modelFactory().create(values, contextOptions);
 
-  delete = (values: Output, contextOptions: CtxOptions) =>
+  delete = (values: Output, contextOptions?: CtxOptions) =>
     this.modelFactory().delete(values, contextOptions);
 
   update = (
     values: Output,
     changes: Partial<Input>,
-    contextOptions: CtxOptions,
+    contextOptions?: CtxOptions,
   ) => this.modelFactory().update(values, changes, contextOptions);
 }
 
 function areValuesOk(values: unknown) {
-  return values && typeof values === "object";
+  return values && typeof values === 'object';
 }
 
 function getValidationFailedResponse(value: unknown) {
   return {
     metadata: null,
-    reason: "validation failed",
+    reason: 'validation failed',
     valid: false,
     value,
   } as ValidatorResponseObject<unknown, unknown>;

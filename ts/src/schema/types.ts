@@ -1,9 +1,9 @@
-import type { ObjectType } from "../utils";
+import type { ObjectType } from '../utils';
 import type {
   DefaultFieldErrorMetadata,
   FieldError,
   InputFieldError,
-} from "./utils";
+} from './utils';
 
 export type {
   ArrayOfMinSizeOne,
@@ -157,10 +157,15 @@ type PostValidator<
   propertiesProvided: InputKeys[],
 ) =>
   | undefined
+  | true
+  | void
   | ResponseErrorObject<Metadata, Input>
   | PostValidatorSanitizedResponse<InputKeys, Input, Output>
   | Promise<
       | undefined
+      | true
+      // biome-ignore lint/suspicious/noConfusingVoidType: lol
+      | void
       | ResponseErrorObject<Metadata, Input>
       | PostValidatorSanitizedResponse<InputKeys, Input, Output>
     >;
@@ -178,7 +183,7 @@ type PostValidationConfig<
   CtxOptions extends ObjectType,
   Metadata,
 > = {
-  properties: ArrayOfMinSizeTwo<K>;
+  fields: ArrayOfMinSizeTwo<K>;
   validator:
     | PostValidator<K, Input, Output, CtxOptions, Metadata>
     | ArrayOfMinSizeOne<
@@ -244,7 +249,6 @@ namespace NS {
   ) => TypeOf<T> | Promise<TypeOf<T>>;
 
   export type IgnoreInitResolver<Input, CtxOptions extends ObjectType = {}> = (
-    input: Partial<Input>,
     rawInput: Partial<Input>,
     o: {
       options: CtxOptions;
@@ -281,11 +285,7 @@ namespace NS {
     resolver: Resolver<boolean, Input, Output, CtxOptions>;
   };
 
-  export type IgnoreConfigOption<
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-  > =
+  export type IgnoreConfigOption<Input, Output, CtxOptions extends ObjectType> =
     | Resolver<boolean, Input, Output, CtxOptions>
     | IgnoreConfigObject<Input, Output, CtxOptions>
     | ArrayOfMinSizeOne<IgnoreConfigObject<Input, Output, CtxOptions>>;
@@ -314,7 +314,7 @@ namespace NS {
     CtxOptions extends ObjectType,
     Metadata,
   > = {
-    properties: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
+    fields: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
     handler:
       | RequiredOptionHandler<Input, Output, CtxOptions, Metadata>
       | ArrayOfMinSizeOne<
@@ -398,7 +398,7 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = {
     name: string;
-    type: "constant";
+    type: 'constant';
     value: Value | Resolver<Value, Input, Output, CtxOptions>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
@@ -409,7 +409,7 @@ namespace NS {
   };
 
   export type Dependables<K extends keyof Output, Input, Output> = Exclude<
-    KeyOf<Input> | KeyOf<Output>,
+    (KeyOf<Input> | KeyOf<Output>) | (string & {}),
     K
   >;
 
@@ -420,7 +420,7 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = {
     name: string;
-    type: "dependent";
+    type: 'dependent';
     default: TypeOf<Output[K]> | Resolver<Output[K], Input, Output, CtxOptions>;
     dependsOn:
       | Dependables<K, Input, Output>
@@ -443,7 +443,7 @@ namespace NS {
     Metadata,
   > = {
     name: string;
-    type: "lax";
+    type: 'lax';
     default: Value | Resolver<Value, Input, Output, CtxOptions>;
     allow?:
       | ArrayOfMinSizeTwo<Value>
@@ -483,7 +483,7 @@ namespace NS {
     Metadata,
   > = {
     name: string;
-    type: "required";
+    type: 'required';
     allow?:
       | ArrayOfMinSizeTwo<Value>
       | {
@@ -520,7 +520,7 @@ namespace NS {
     Metadata,
   > = {
     name: string;
-    type: "virtual";
+    type: 'virtual';
     alias?: Alias;
     required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
     validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
@@ -650,13 +650,13 @@ namespace NS {
 type ValidationResponse<T, Metadata = DefaultFieldErrorMetadata> =
   | { valid: true; validated: T }
   | {
-      metadata: FieldError<Metadata>["metadata"];
+      metadata: FieldError<Metadata>['metadata'];
       reason: string;
       valid: false;
     };
 
 type InvalidValidatorResponse<Metadata> = {
-  metadata?: FieldError<Metadata>["metadata"];
+  metadata?: FieldError<Metadata>['metadata'];
   reason?: string;
   valid: false;
   value?: unknown;
@@ -704,71 +704,72 @@ type ArrayOfMinSizeOne<T> = [T, ...T[]] | readonly [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]] | readonly [T, T, ...T[]];
 
 const DEFINITION_RULES = [
-  "name",
-  "type",
-  "alias",
-  "allow",
-  "constant",
-  "default",
-  "dependsOn",
-  "ignore",
-  "onDelete",
-  "onFailure",
-  "onSuccess",
-  "readonly",
-  "resolver",
-  "required",
-  "sanitizer",
-  "ignoreInit",
-  "ignoreUpdate",
-  "validator",
-  "value",
-  "virtual",
+  'name',
+  'type',
+  'alias',
+  'allow',
+  'constant',
+  'default',
+  'dependsOn',
+  'ignore',
+  'onDelete',
+  'onFailure',
+  'onSuccess',
+  'readonly',
+  'resolver',
+  'required',
+  'reValidator',
+  'sanitizer',
+  'ignoreInit',
+  'ignoreUpdate',
+  'validator',
+  'value',
+  'virtual',
 ] as const;
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
 const ALLOWED_OPTIONS: NS.OptionsKey<unknown, unknown>[] = [
-  "equalityDepth",
-  "ignore",
-  "ignoreUpdate",
-  "onDelete",
-  "onSuccess",
-  "postValidate",
-  "required",
-  "sanitizeError",
-  "timestamps",
+  'equalityDepth',
+  'ignore',
+  'ignoreUpdate',
+  'onDelete',
+  'onSuccess',
+  'postValidate',
+  'required',
+  'sanitizeError',
+  'timestamps',
 ];
 const CONSTANT_RULES = [
-  "name",
-  "type",
-  "constant",
-  "onDelete",
-  "onSuccess",
-  "value",
+  'name',
+  'type',
+  'constant',
+  'onDelete',
+  'onSuccess',
+  'value',
 ];
 const VIRTUAL_RULES = [
-  "name",
-  "type",
-  "alias",
-  "allow",
-  "ignore",
-  "sanitizer",
-  "onFailure",
-  "onSuccess",
-  "required",
-  "ignoreInit",
-  "ignoreUpdate",
-  "validator",
-  "virtual",
+  'name',
+  'type',
+  'alias',
+  'allow',
+  'ignore',
+  'sanitizer',
+  'onFailure',
+  'onSuccess',
+  'required',
+  'reValidator',
+  'ignoreInit',
+  'ignoreUpdate',
+  'validator',
+  'virtual',
 ];
 
-const LIFE_CYCLES = ["onDelete", "onFailure", "onSuccess"] as const;
+const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
 
-type IvoErrorPayload<Metadata, Keys extends string> = Record<
-  Keys,
-  FieldError<Metadata>
->;
+type IvoErrorPayload<Metadata, Keys extends string> = {
+  [K in Keys]?: FieldError<Metadata>;
+};
 
 type TypeFromPromise<T> = T extends Promise<infer I> ? I : T;
 
@@ -791,7 +792,7 @@ type RealType<T> = {
  * (via `materializeFieldBuilders`, the sole holder of this symbol reference)
  * can unwrap it.
  */
-const BUILD: unique symbol = Symbol("ivo.build");
+const BUILD: unique symbol = Symbol('ivo.build');
 
 /**
  * Structural marker for a field-builder result: any value exposing the

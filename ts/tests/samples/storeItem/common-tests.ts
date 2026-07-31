@@ -284,14 +284,14 @@ export const CommonInheritanceTest = (
         {
           ...commonTestData,
           name: '',
-          _laxProp: [],
+          _laxField: [],
         },
         null,
       );
 
       expect(data).toBeNull();
       expect(error).toMatchObject({
-        _laxProp: { reason: 'Invalid lax prop' },
+        _laxField: { reason: 'Invalid lax field' },
         name: expect.objectContaining({ reason: 'too_short' }),
       });
     });
@@ -301,14 +301,14 @@ export const CommonInheritanceTest = (
         commonTestData,
         {
           name: '',
-          _laxProp: [],
+          _laxField: [],
         },
         null,
       );
 
       expect(data).toBeNull();
       expect(error).toMatchObject({
-        _laxProp: { reason: 'Invalid lax prop' },
+        _laxField: { reason: 'Invalid lax field' },
         name: expect.objectContaining({ reason: 'too_short' }),
       });
     });

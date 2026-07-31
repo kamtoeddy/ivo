@@ -1,15 +1,15 @@
-import type { ObjectType } from "../../utils";
+import type { ObjectType } from '../../utils';
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
   BUILD,
-  Buildable,
+  type Buildable,
   type NotAllowedError,
   type NS,
   type RequiredHandler,
   type ReValidator,
   type Validator,
-} from "../types";
+} from '../types';
 
 export { type BlankVirtualBuilder, VirtualBuilder };
 
@@ -22,10 +22,10 @@ interface BlankVirtualBuilder<
 > {
   alias<Alias extends keyof Input>(
     name: Alias,
-  ): BlankVirtualBuilder<Value, Input, Output, CtxOptions, Metadata>;
+  ): BlankVirtualBuilder<Input[Alias], Input, Output, CtxOptions, Metadata>;
   allow<const V extends Value>(
     values: ArrayOfMinSizeTwo<V>,
-  ): BuildableVirtualConfig<V, Input, Output, CtxOptions, Metadata, "allow">;
+  ): BuildableVirtualConfig<V, Input, Output, CtxOptions, Metadata, 'allow'>;
   validate(
     validator: Validator<Value, Input, Output, CtxOptions, Metadata>,
   ): BuildableVirtualConfig<
@@ -34,7 +34,7 @@ interface BlankVirtualBuilder<
     Output,
     CtxOptions,
     Metadata,
-    "validate"
+    'validate'
   >;
 }
 
@@ -51,7 +51,7 @@ type BuildableVirtualConfig<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-  ValidationState extends "allow" | "none" | "validate" = "none",
+  ValidationState extends 'allow' | 'none' | 'validate' = 'none',
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
   HasRequired extends boolean = false,
@@ -61,12 +61,12 @@ type BuildableVirtualConfig<
   HasIgnoreUpdate extends boolean = false,
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
-> = (ValidationState extends "none"
+> = (ValidationState extends 'none'
   ? {}
   : Buildable<
       NS.VirtualField<never, Value, Input, Output, CtxOptions, Metadata>
     >) &
-  (ValidationState extends "allow"
+  (ValidationState extends 'allow'
     ? HasAllowError extends true
       ? {}
       : {
@@ -83,7 +83,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
-            "allow",
+            'allow',
             true,
             HasReValidate,
             HasRequired,
@@ -96,7 +96,7 @@ type BuildableVirtualConfig<
           >;
         }
     : {}) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasReValidate extends true
       ? {}
@@ -121,7 +121,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasRequired extends true
       ? {}
@@ -146,7 +146,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasSanitizer extends true
       ? {}
@@ -171,7 +171,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasIgnore extends true
       ? {}
@@ -196,7 +196,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasIgnoreInit extends true
       ? {}
@@ -221,7 +221,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasIgnoreUpdate extends true
       ? {}
@@ -246,7 +246,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasOnFailure extends true
       ? {}
@@ -273,7 +273,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasOnSuccess extends true
       ? {}
@@ -307,15 +307,14 @@ class VirtualBuilder<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
->
-  implements
+> implements
     BlankVirtualBuilder<Value, Input, Output, CtxOptions, Metadata>,
-    BuildableVirtualConfig<Value, Input, Output, CtxOptions, Metadata, "allow">
+    BuildableVirtualConfig<Value, Input, Output, CtxOptions, Metadata, 'allow'>
 {
   name: string;
   private config: Partial<
     NS.VirtualField<never, Value, Input, Output, CtxOptions, Metadata>
-  > = { type: "virtual" };
+  > = { type: 'virtual' };
 
   constructor(name: string) {
     this.name = name;

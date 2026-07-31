@@ -1,12 +1,12 @@
-import type { ObjectType } from "../../utils";
-import type { DefaultFieldErrorMetadata } from "../utils";
-import { type BlankConstantBuilder, ConstantBuilder } from "./constants";
-import { type BlankDependentBuilder, DependentBuilder } from "./dependents";
-import { type BlankLaxBuilder, LaxBuilder } from "./lax";
-import { type BlankRequiredBuilder, RequiredBuilder } from "./required";
-import { type BlankVirtualBuilder, VirtualBuilder } from "./virtual";
+import type { ObjectType } from '../../utils';
+import type { DefaultFieldErrorMetadata } from '../utils';
+import { type BlankConstantBuilder, ConstantBuilder } from './constants';
+import { type BlankDependentBuilder, DependentBuilder } from './dependents';
+import { type BlankLaxBuilder, LaxBuilder } from './lax';
+import { type BlankRequiredBuilder, RequiredBuilder } from './required';
+import { type BlankVirtualBuilder, VirtualBuilder } from './virtual';
 
-export { createFieldBuilder };
+export { newFieldMaker };
 
 /**
  * Prototype of a Rust-style typestate builder for the "dependent" field
@@ -32,7 +32,7 @@ export { createFieldBuilder };
  * `Schema<Input, Output, CtxOptions>`), then infers `K` per-field from the
  * property name passed to `.dependent(...)`.
  */
-function createFieldBuilder<
+function newFieldMaker<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},

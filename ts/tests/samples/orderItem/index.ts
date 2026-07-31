@@ -6,10 +6,10 @@ export { OrderItem };
 
 const OrderItem = storeItemSchema
   .extend<OrderItemInput, IOrderItem>(
-    {
-      costPrice: { default: 0, readonly: true, validator: validatePrice },
-      price: { default: 0, readonly: true, validator: validatePrice },
-    },
+    (b, m) =>
+      b
+        .field(m.lax('costPrice').default(0).readonly().validate(validatePrice))
+        .field(m.lax('price').default(0).readonly().validate(validatePrice)),
     {
       timestamps: true,
       remove: [

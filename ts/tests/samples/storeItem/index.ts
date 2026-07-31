@@ -13,53 +13,63 @@ import {
 export { StoreItemModel, storeItemSchema };
 
 const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
-  {
-    _dependentReadOnly: {
-      default: 0,
-      dependsOn: '_virtualForDependentReadOnly',
-      readonly: true,
-      resolver: () => 1,
-    },
-    _laxProp: { default: '', validator: validateString('Invalid lax prop') },
-    _readOnlyLax1: { default: '', readonly: true },
-    _readOnlyLax2: { default: '', readonly: true },
-    _readOnlyNoInit: { default: '', readonly: true },
-    _virtualForDependentReadOnly: { virtual: true, validator: () => true },
-    id: {
-      default: '',
-      readonly: true,
-      validator: validateString('Invalid id'),
-    },
-    name: { required: true, validator: validateName },
-    measureUnit: {
-      required: true,
-      validator: validateString('Invalid measure unit'),
-    },
-    otherMeasureUnits: { default: [], validator: validateOtherUnits },
-    price: { required: true, validator: validatePrice },
-    quantities: {
-      virtual: true,
-      sanitizer: sanitizeQuantities,
-      validator: validateQuantities,
-    },
-    quantity: {
-      default: 0,
-      dependsOn: ['_quantity' as '__quantity', 'quantities'],
-      resolver: resolveQuantity,
-    },
-    _quantity: {
-      alias: '__quantity',
-      virtual: true,
-      validator: validateQuantity,
-    },
-    quantityChangeCounter: {
-      default: 0,
-      dependsOn: 'quantity',
-      resolver({ values: { quantityChangeCounter } }) {
-        return (quantityChangeCounter ?? 0) + 1;
-      },
-    },
-  },
+  (b, m) =>
+    b
+      .field(
+        m
+          .dependent('_dependentReadOnly')
+          .default(0)
+          .dependsOn('_virtualForDependentReadOnly')
+          .resolve(() => 1),
+      )
+      .field(
+        m
+          .lax('_laxField')
+          .default('')
+          .validate(validateString('Invalid lax field')),
+      )
+      .field(m.lax('_readOnlyLax1').default('').readonly())
+      .field(m.lax('_readOnlyLax2').default('').readonly())
+      .field(m.lax('_readOnlyNoInit').default('').readonly())
+      .field(m.virtual('_virtualForDependentReadOnly').validate(() => true))
+      .field(m.lax('id').default('').validate(validateString('Invalid id')))
+      .field(m.required('name').validate(validateName))
+      .field(
+        m
+          .required('measureUnit')
+          .validate(validateString('Invalid measure unit')),
+      )
+      .field(
+        m.lax('otherMeasureUnits').default([]).validate(validateOtherUnits),
+      )
+      .field(m.required('price').validate(validatePrice))
+      .field(
+        m
+          .virtual('quantities')
+          .validate(validateQuantities)
+          .sanitize(sanitizeQuantities),
+      )
+      .field(
+        m
+          .dependent('quantity')
+          .default(0)
+          .dependsOn(['_quantity', 'quantities'])
+          .resolve(resolveQuantity),
+      )
+      .field(
+        m.virtual('_quantity').alias('__quantity').validate(validateQuantity),
+      )
+      .field(
+        m
+          .dependent('quantityChangeCounter')
+          .default(0)
+          .dependsOn('quantity')
+          .resolve(
+            ({ values: { quantityChangeCounter } }) =>
+              (quantityChangeCounter ?? 0) + 1,
+          ),
+      ),
+
   {
     onSuccess,
     timestamps: { createdAt: 'c_At', updatedAt: 'u_At' },

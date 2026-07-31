@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from '../../src';
-import { createFieldBuilder } from '../../src/schema/fields';
+import { newFieldMaker } from '../../src/schema/fields';
 
 /**
  * End-to-end prototype of the Rust-style typestate builder for "virtual"
@@ -27,8 +27,8 @@ type Output = {
   status: string;
 };
 
-const field = createFieldBuilder<Input, Output>();
-const dependent = createFieldBuilder<Input, Output>();
+const field = newFieldMaker<Input, Output>();
+const dependent = newFieldMaker<Input, Output>();
 
 const gradeDependent = () =>
   dependent
@@ -46,18 +46,21 @@ const statusDependent = () =>
 
 describe('field builder prototype: virtual()', () => {
   it('supports validate() as the primary validator, feeding a dependent field', async () => {
-    const schema = new Schema<Input, Output>({
-      rawGrade: field
-        .virtual('rawGrade')
-        .validate((value) =>
-          typeof value === 'number'
-            ? { valid: true, validated: value }
-            : { valid: false, reason: 'grade must be a number' },
-        ),
-      rawStatus: field.virtual('rawStatus').allow(['ok', 'fail']),
-      grade: gradeDependent(),
-      status: statusDependent(),
-    });
+    const schema = new Schema<Input, Output>((b) =>
+      b
+        .field(
+          field
+            .virtual('rawGrade')
+            .validate((value) =>
+              typeof value === 'number'
+                ? { valid: true, validated: value }
+                : { valid: false, reason: 'grade must be a number' },
+            ),
+        )
+        .field(field.virtual('rawStatus').allow(['ok', 'fail']))
+        .field(gradeDependent())
+        .field(statusDependent()),
+    );
 
     const Model = schema.getModel();
 
@@ -75,18 +78,21 @@ describe('field builder prototype: virtual()', () => {
   });
 
   it('supports allow() as the primary validator, rejecting values outside the list', async () => {
-    const schema = new Schema<Input, Output>({
-      rawGrade: field
-        .virtual('rawGrade')
-        .validate((value) =>
-          typeof value === 'number'
-            ? { valid: true, validated: value }
-            : { valid: false, reason: 'grade must be a number' },
-        ),
-      rawStatus: field.virtual('rawStatus').allow(['ok', 'fail']),
-      grade: gradeDependent(),
-      status: statusDependent(),
-    });
+    const schema = new Schema<Input, Output>((b) =>
+      b
+        .field(
+          field
+            .virtual('rawGrade')
+            .validate((value) =>
+              typeof value === 'number'
+                ? { valid: true, validated: value }
+                : { valid: false, reason: 'grade must be a number' },
+            ),
+        )
+        .field(field.virtual('rawStatus').allow(['ok', 'fail']))
+        .field(gradeDependent())
+        .field(statusDependent()),
+    );
 
     const { data, error } = await schema
       .getModel()
@@ -99,15 +105,18 @@ describe('field builder prototype: virtual()', () => {
   });
 
   it('supports allow().allowError() to customize the rejection message', async () => {
-    const schema = new Schema<Input, Output>({
-      rawGrade: field.virtual('rawGrade').validate(() => true),
-      rawStatus: field
-        .virtual('rawStatus')
-        .allow(['ok', 'fail'])
-        .allowError('status must be ok or fail'),
-      grade: gradeDependent(),
-      status: statusDependent(),
-    });
+    const schema = new Schema<Input, Output>((b) =>
+      b
+        .field(field.virtual('rawGrade').validate(() => true))
+        .field(
+          field
+            .virtual('rawStatus')
+            .allow(['ok', 'fail'])
+            .allowError('status must be ok or fail'),
+        )
+        .field(gradeDependent())
+        .field(statusDependent()),
+    );
 
     const { data, error } = await schema
       .getModel()
@@ -122,30 +131,35 @@ describe('field builder prototype: virtual()', () => {
   });
 
   it('supports validate().reValidate() and allow().reValidate()', async () => {
-    const schema = new Schema<Input, Output>({
-      rawGrade: field
-        .virtual('rawGrade')
-        .validate((value) =>
-          typeof value === 'number'
-            ? { valid: true, validated: value }
-            : { valid: false, reason: 'grade must be a number' },
+    const schema = new Schema<Input, Output>((b) =>
+      b
+        .field(
+          field
+            .virtual('rawGrade')
+            .validate((value) =>
+              typeof value === 'number'
+                ? { valid: true, validated: value }
+                : { valid: false, reason: 'grade must be a number' },
+            )
+            .reValidate((value) =>
+              (value as number) <= 100
+                ? { valid: true, validated: value }
+                : { valid: false, reason: 'grade must be at most 100' },
+            ),
         )
-        .reValidate((value) =>
-          (value as number) <= 100
-            ? { valid: true, validated: value }
-            : { valid: false, reason: 'grade must be at most 100' },
-        ),
-      rawStatus: field
-        .virtual('rawStatus')
-        .allow(['ok', 'fail', 'unknown'])
-        .reValidate((value) =>
-          value !== 'unknown'
-            ? { valid: true, validated: value }
-            : { valid: false, reason: 'status cannot be unknown' },
-        ),
-      grade: gradeDependent(),
-      status: statusDependent(),
-    });
+        .field(
+          field
+            .virtual('rawStatus')
+            .allow(['ok', 'fail', 'unknown'])
+            .reValidate((value) =>
+              value !== 'unknown'
+                ? { valid: true, validated: value }
+                : { valid: false, reason: 'status cannot be unknown' },
+            ),
+        )
+        .field(gradeDependent())
+        .field(statusDependent()),
+    );
 
     const Model = schema.getModel();
 
@@ -177,29 +191,29 @@ describe('field builder prototype: virtual()', () => {
     let failed = false;
     let succeeded = false;
 
-    const schema = new Schema<Input, Output>({
-      rawGrade: field
-        .virtual('rawGrade')
-        .validate((value) =>
-          typeof value === 'number'
-            ? { valid: true, validated: value }
-            : { valid: false, reason: 'grade must be a number' },
+    const schema = new Schema<Input, Output>((b) =>
+      b
+        .field(
+          field
+            .virtual('rawGrade')
+            .validate((value) =>
+              typeof value === 'number'
+                ? { valid: true, validated: value }
+                : { valid: false, reason: 'grade must be a number' },
+            )
+            .required(() => true)
+            .sanitize(({ values }) => Math.round(values.grade ?? 0))
+            .onFailure(() => {
+              failed = true;
+            })
+            .onSuccess(() => {
+              succeeded = true;
+            }),
         )
-        .required(() => true)
-        .sanitize(({ values }) => Math.round(values.grade ?? 0))
-        .onFailure(() => {
-          failed = true;
-        })
-        .onSuccess(() => {
-          succeeded = true;
-        }),
-      rawStatus: field
-        .virtual('rawStatus')
-        .allow(['ok', 'fail'])
-        .ignoreUpdate(),
-      grade: gradeDependent(),
-      status: statusDependent(),
-    });
+        .field(field.virtual('rawStatus').allow(['ok', 'fail']).ignoreUpdate())
+        .field(gradeDependent())
+        .field(statusDependent()),
+    );
 
     const Model = schema.getModel();
 
@@ -237,28 +251,34 @@ describe('field builder prototype: virtual()', () => {
     type AliasInput = { grade: number };
     type AliasOutput = { result: number };
 
-    const aliasField = createFieldBuilder<AliasInput, AliasOutput>();
-    const aliasDependent = createFieldBuilder<AliasInput, AliasOutput>();
+    const aliasField = newFieldMaker<AliasInput, AliasOutput>();
+    const aliasDependent = newFieldMaker<AliasInput, AliasOutput>();
 
-    const schema = new Schema<AliasInput, AliasOutput>({
-      g: aliasField
-        .virtual('g')
-        .alias('grade')
-        .validate((value) =>
-          typeof value === 'number'
-            ? { valid: true, validated: value }
-            : { valid: false, reason: 'grade must be a number' },
+    const schema = new Schema<AliasInput, AliasOutput>((b) =>
+      b
+        .field(
+          aliasField
+            .virtual('g')
+            .alias('grade')
+            .validate((value) =>
+              typeof value === 'number'
+                ? { valid: true, validated: value }
+                : { valid: false, reason: 'grade must be a number' },
+            ),
+        )
+        // `dependsOn()` can only reference `keyof Input | keyof Output` (see
+        // the top-of-file note) - 'g' is the virtual's own arbitrary
+        // definition key, not a real input/output key, so referencing it
+        // here needs a cast, same as the pre-existing alias/dependsOn
+        // limitation.
+        .field(
+          aliasDependent
+            .dependent('result')
+            .default(0)
+            .dependsOn('g' as never)
+            .resolve(({ input }) => input.grade ?? 0),
         ),
-      // `dependsOn()` can only reference `keyof Input | keyof Output` (see
-      // the top-of-file note) - 'g' is the virtual's own arbitrary
-      // definition key, not a real input/output key, so referencing it here
-      // needs a cast, same as the pre-existing alias/dependsOn limitation.
-      result: aliasDependent
-        .dependent('result')
-        .default(0)
-        .dependsOn('g' as never)
-        .resolve(({ input }) => input.grade ?? 0),
-    });
+    );
 
     const Model = schema.getModel();
 

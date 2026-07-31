@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-type CommonUtilsProps = { [key: string]: Function };
+type CommonUtilsFields = { [key: string]: Function };
 
 export const commonUtilTests = ({
   isOneOf,
@@ -8,7 +8,7 @@ export const commonUtilTests = ({
   getUniqueBy,
   isEqual,
   isNullOrUndefined,
-}: CommonUtilsProps) => {
+}: CommonUtilsFields) => {
   describe('utils', () => {
     describe('belongsTo', () => {
       it('should return true if value passed is in array supplied else false', () => {
