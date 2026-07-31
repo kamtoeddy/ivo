@@ -1,17 +1,6 @@
-import { describe, expect, it } from 'bun:test';
-import { Schema } from '../../src';
-import { newFieldMaker } from '../../src/schema/fields';
-
-/**
- * End-to-end prototype of the Rust-style typestate builder for "required"
- * fields (see src/schema/fields/required.ts). Unlike lax fields, validation
- * is mandatory here - `[BUILD]` (and therefore dropping the chain into a
- * `Definitions` object literal) only becomes available once either
- * `.allow()` or `.validate()` has been called, still mutually exclusive with
- * one another. `.readonly()`/`.ignoreUpdate()` share a single flag - like
- * Rust, calling either consumes both, since a required property is either
- * readonly or conditionally updatable, never both.
- */
+import { describe, expect, it } from "bun:test";
+import { Schema } from "../../src";
+import { newFieldMaker } from "../../src/schema/fields";
 
 type Input = {
   email: string;
@@ -23,28 +12,28 @@ type Output = Input;
 
 const field = newFieldMaker<Input, Output>();
 
-describe('field builder prototype: required()', () => {
-  it('supports validate() as the primary validator', async () => {
+describe("field builder prototype: required()", () => {
+  it("should allow validate() as the primary validator", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b
         .field(
           field
-            .required('email')
+            .required("email")
             .validate((value) =>
-              typeof value === 'string' && value.includes('@')
+              typeof value === "string" && value.includes("@")
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid email' },
+                : { valid: false, reason: "invalid email" },
             ),
         )
-        .field(field.required('role').allow(['admin', 'member']))
-        .field(field.required('plan').allow(['free', 'pro']))
+        .field(field.required("role").allow(["admin", "member"]))
+        .field(field.required("plan").allow(["free", "pro"]))
         .field(
           field
-            .required('score')
+            .required("score")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid score' },
+                : { valid: false, reason: "invalid score" },
             ),
         ),
     );
@@ -57,42 +46,42 @@ describe('field builder prototype: required()', () => {
     });
 
     const rejected = await Model.create(
-      { email: 'not-an-email', role: 'admin', plan: 'free', score: 1 },
+      { email: "not-an-email", role: "admin", plan: "free", score: 1 },
       {},
     );
     expect(rejected.error).toMatchObject({
-      email: expect.objectContaining({ reason: 'invalid email' }),
+      email: expect.objectContaining({ reason: "invalid email" }),
     });
 
     const accepted = await Model.create(
-      { email: 'ada@ivo.dev', role: 'admin', plan: 'free', score: 1 },
+      { email: "ada@ivo.dev", role: "admin", plan: "free", score: 1 },
       {},
     );
     expect(accepted.error).toBeNull();
-    expect(accepted.data?.email).toBe('ada@ivo.dev');
+    expect(accepted.data?.email).toBe("ada@ivo.dev");
   });
 
-  it('supports allow() as the primary validator, rejecting values outside the list', async () => {
+  it("should allow allow() as the primary validator, rejecting values outside the list", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b
         .field(
           field
-            .required('email')
+            .required("email")
             .validate((value) =>
-              typeof value === 'string'
+              typeof value === "string"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid email' },
+                : { valid: false, reason: "invalid email" },
             ),
         )
-        .field(field.required('role').allow(['admin', 'member']))
-        .field(field.required('plan').allow(['free', 'pro']))
+        .field(field.required("role").allow(["admin", "member"]))
+        .field(field.required("plan").allow(["free", "pro"]))
         .field(
           field
-            .required('score')
+            .required("score")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid score' },
+                : { valid: false, reason: "invalid score" },
             ),
         ),
     );
@@ -100,47 +89,47 @@ describe('field builder prototype: required()', () => {
     const Model = schema.getModel();
 
     const rejected = await Model.create(
-      { email: 'ada@ivo.dev', role: 'owner', plan: 'free', score: 1 },
+      { email: "ada@ivo.dev", role: "owner", plan: "free", score: 1 },
       {},
     );
     expect(rejected.error).toMatchObject({
-      role: expect.objectContaining({ reason: 'value not allowed' }),
+      role: expect.objectContaining({ reason: "value not allowed" }),
     });
 
     const accepted = await Model.create(
-      { email: 'ada@ivo.dev', role: 'member', plan: 'free', score: 1 },
+      { email: "ada@ivo.dev", role: "member", plan: "free", score: 1 },
       {},
     );
     expect(accepted.error).toBeNull();
-    expect(accepted.data?.role).toBe('member');
+    expect(accepted.data?.role).toBe("member");
   });
 
-  it('supports allow().allowError() to customize the rejection message', async () => {
+  it("should allow allow().allowError() to customize the rejection message", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b
         .field(
           field
-            .required('email')
+            .required("email")
             .validate((value) =>
-              typeof value === 'string'
+              typeof value === "string"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid email' },
+                : { valid: false, reason: "invalid email" },
             ),
         )
         .field(
           field
-            .required('role')
-            .allow(['admin', 'member'])
-            .allowError('role must be admin or member'),
+            .required("role")
+            .allow(["admin", "member"])
+            .allowError("role must be admin or member"),
         )
-        .field(field.required('plan').allow(['free', 'pro']))
+        .field(field.required("plan").allow(["free", "pro"]))
         .field(
           field
-            .required('score')
+            .required("score")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid score' },
+                : { valid: false, reason: "invalid score" },
             ),
         ),
     );
@@ -148,54 +137,54 @@ describe('field builder prototype: required()', () => {
     const { data, error } = await schema
       .getModel()
       .create(
-        { email: 'ada@ivo.dev', role: 'owner', plan: 'free', score: 1 },
+        { email: "ada@ivo.dev", role: "owner", plan: "free", score: 1 },
         {},
       );
 
     expect(data).toBeNull();
     expect(error).toMatchObject({
-      role: expect.objectContaining({ reason: 'role must be admin or member' }),
+      role: expect.objectContaining({ reason: "role must be admin or member" }),
     });
   });
 
-  it('supports validate().reValidate() and allow().reValidate()', async () => {
+  it("should allow validate().reValidate() and allow().reValidate()", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b
         .field(
           field
-            .required('email')
+            .required("email")
             .validate((value) =>
-              typeof value === 'string'
+              typeof value === "string"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid email' },
+                : { valid: false, reason: "invalid email" },
             ),
         )
-        .field(field.required('role').allow(['admin', 'member']))
+        .field(field.required("role").allow(["admin", "member"]))
         .field(
           field
-            .required('plan')
-            .allow(['free', 'pro', 'enterprise'])
+            .required("plan")
+            .allow(["free", "pro", "enterprise"])
             .reValidate((value) =>
-              value !== 'enterprise'
+              value !== "enterprise"
                 ? { valid: true, validated: value }
                 : {
                     valid: false,
-                    reason: 'enterprise plan requires sales approval',
+                    reason: "enterprise plan requires sales approval",
                   },
             ),
         )
         .field(
           field
-            .required('score')
+            .required("score")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid score' },
+                : { valid: false, reason: "invalid score" },
             )
             .reValidate((value) =>
               value >= 0
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'score must be non-negative' },
+                : { valid: false, reason: "score must be non-negative" },
             ),
         ),
     );
@@ -203,31 +192,31 @@ describe('field builder prototype: required()', () => {
     const Model = schema.getModel();
 
     const rejectedByAllowSecondary = await Model.create(
-      { email: 'ada@ivo.dev', role: 'admin', plan: 'enterprise', score: 1 },
+      { email: "ada@ivo.dev", role: "admin", plan: "enterprise", score: 1 },
       {},
     );
     expect(rejectedByAllowSecondary.error).toMatchObject({
       plan: expect.objectContaining({
-        reason: 'enterprise plan requires sales approval',
+        reason: "enterprise plan requires sales approval",
       }),
     });
 
     const rejectedByValidateSecondary = await Model.create(
-      { email: 'ada@ivo.dev', role: 'admin', plan: 'free', score: -1 },
+      { email: "ada@ivo.dev", role: "admin", plan: "free", score: -1 },
       {},
     );
     expect(rejectedByValidateSecondary.error).toMatchObject({
-      score: expect.objectContaining({ reason: 'score must be non-negative' }),
+      score: expect.objectContaining({ reason: "score must be non-negative" }),
     });
 
     const accepted = await Model.create(
-      { email: 'ada@ivo.dev', role: 'admin', plan: 'free', score: 5 },
+      { email: "ada@ivo.dev", role: "admin", plan: "free", score: 5 },
       {},
     );
     expect(accepted.error).toBeNull();
   });
 
-  it('supports readonly()/ignoreUpdate(resolver?) and onDelete()/onFailure()/onSuccess()', async () => {
+  it("should allow readonly()/ignoreUpdate(resolver?) and onDelete()/onFailure()/onSuccess()", async () => {
     let deleted = false;
     let succeeded = false;
 
@@ -235,11 +224,11 @@ describe('field builder prototype: required()', () => {
       b
         .field(
           field
-            .required('email')
+            .required("email")
             .validate((value) =>
-              typeof value === 'string'
+              typeof value === "string"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid email' },
+                : { valid: false, reason: "invalid email" },
             )
             .readonly()
             .onDelete(() => {
@@ -251,18 +240,18 @@ describe('field builder prototype: required()', () => {
         )
         .field(
           field
-            .required('role')
-            .allow(['admin', 'member'])
+            .required("role")
+            .allow(["admin", "member"])
             .ignoreUpdate(() => false),
         )
-        .field(field.required('plan').allow(['free', 'pro']))
+        .field(field.required("plan").allow(["free", "pro"]))
         .field(
           field
-            .required('score')
+            .required("score")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'invalid score' },
+                : { valid: false, reason: "invalid score" },
             ),
         ),
     );
@@ -270,10 +259,10 @@ describe('field builder prototype: required()', () => {
     const Model = schema.getModel();
 
     const { data, handleSuccess } = await Model.create(
-      { email: 'ada@ivo.dev', role: 'admin', plan: 'free', score: 1 },
+      { email: "ada@ivo.dev", role: "admin", plan: "free", score: 1 },
       {},
     );
-    if (!data) throw new Error('expected data to be present');
+    if (!data) throw new Error("expected data to be present");
 
     await handleSuccess();
     await Model.delete(data, {});
@@ -281,199 +270,192 @@ describe('field builder prototype: required()', () => {
     expect(succeeded).toBe(true);
     expect(deleted).toBe(true);
 
-    const updated = await Model.update(data, { email: 'other@ivo.dev' }, {});
+    const updated = await Model.update(data, { email: "other@ivo.dev" }, {});
     expect(updated.data).toBeNull();
   });
 
-  describe('invalid usage (compile-time only - nothing here is meant to run)', () => {
-    it('rejects calling [BUILD] before allow() or validate()', () => {
-      const builder = field.required('role');
+  describe("invalid usage (compile-time only - nothing here is meant to run)", () => {
+    it("should never expose a callable .build()", () => {
+      const allow = field.required("role").allow(["anonymous", "user", "root"]);
 
-      // @ts-expect-error - build() doesn't exist until either allow() or validate() has been called
-      builder.build?.();
+      // @ts-expect-error - build() doesn't exist even on the buildable stage
+      allow.build?.();
+
+      const validated = field.required("role").validate(() => true);
+
+      // @ts-expect-error - build() doesn't exist even on the buildable stage
+      validated.build?.();
     });
 
-    it('makes allow() and validate() mutually exclusive', () => {
-      const withAllow = field.required('role').allow(['admin', 'member']);
+    it("makes allow() and validate() mutually exclusive", () => {
+      const withAllow = field.required("role").allow(["admin", "member"]);
       // @ts-expect-error - validate() isn't available once allow() has been chosen as the primary validator
       withAllow.validate?.(() => true);
 
-      const withValidator = field.required('email').validate(() => true);
+      const withValidator = field.required("email").validate(() => true);
       // @ts-expect-error - allow() isn't available once validate() has been chosen as the primary validator
-      withValidator.allow?.(['a', 'b']);
+      withValidator.allow?.(["a", "b"]);
     });
 
-    it('rejects allowError() before allow()', () => {
-      const withValidator = field.required('email').validate(() => true);
+    it("should reject allowError() before allow()", () => {
+      const withValidator = field.required("email").validate(() => true);
 
       // @ts-expect-error - allowError() only becomes available once allow() has been called
-      withValidator.allowError?.('nope');
+      withValidator.allowError?.("nope");
     });
 
-    it('never exposes a callable .build(), at any stage', () => {
-      const validated = field.required('email').validate(() => true);
+    it("never exposes a callable .build(), at any stage", () => {
+      const validated = field.required("email").validate(() => true);
 
       // @ts-expect-error - build() doesn't exist; it's resolved internally by Schema only
       validated.build?.();
     });
 
-    it('makes readonly() and ignoreUpdate() share a single flag', () => {
+    it("should reject a second call to allowError()/reValidate()", () => {
       const decorated = field
-        .required('role')
-        .allow(['admin', 'member'])
-        .readonly();
-
-      // @ts-expect-error - readonly was already consumed
-      decorated.readonly?.();
-      // @ts-expect-error - ignoreUpdate() shares readonly()'s flag - also consumed
-      decorated.ignoreUpdate?.();
-    });
-
-    it('rejects a second call to allowError()/reValidate()', () => {
-      const decorated = field
-        .required('role')
-        .allow(['admin', 'member'])
-        .allowError('nope')
+        .required("role")
+        .allow(["admin", "member"])
+        .allowError("nope")
         .reValidate(() => true);
 
-      // @ts-expect-error - allowError() was already consumed
-      decorated.allowError?.('nope again');
-      // @ts-expect-error - reValidate() was already consumed
+      // @ts-expect-error - allowError() was already provided
+      decorated.allowError?.("nope again");
+      // @ts-expect-error - reValidate() was already provided
       decorated.reValidate?.(() => true);
     });
 
-    it('should reject a second call to readonly()', () => {
+    it("should reject a second call to readonly()", () => {
       const decorated = field
-        .required('role')
-        .allow(['admin', 'member'])
+        .required("role")
+        .allow(["admin", "member"])
         .readonly();
 
-      // @ts-expect-error - readonly was already consumed
+      // @ts-expect-error - readonly was already provided
       decorated.readonly?.();
     });
 
-    it('should reject a second call to ignoreUpdate()', () => {
+    it("should reject a second call to ignoreUpdate()", () => {
       const decorated = field
-        .required('role')
-        .allow(['admin', 'member'])
+        .required("role")
+        .allow(["admin", "member"])
         .ignoreUpdate();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => true);
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => false);
     });
 
-    it('should reject a second call to ignoreUpdate(() => boolean)', () => {
+    it("should reject a second call to ignoreUpdate(() => boolean)", () => {
       const decorated = field
-        .required('role')
-        .allow(['admin', 'member'])
+        .required("role")
+        .allow(["admin", "member"])
         .ignoreUpdate(() => false);
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => true);
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => false);
     });
 
-    it('should reject ignoreUpdate()/readonly()', () => {
+    it("should reject ignoreUpdate()/readonly()", () => {
       const decorated = field
-        .required('role')
-        .allow(['admin', 'member'])
+        .required("role")
+        .allow(["admin", "member"])
         .ignoreUpdate();
 
       // @ts-expect-error - ignoreUpdate() and readonly() should be rejected
       decorated.readonly?.();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.();
     });
 
-    it('should accept allow + ignoreUpdate(() => boolean)/readonly()', () => {
+    it("should accept allow + ignoreUpdate(() => boolean)/readonly()", () => {
       const decorated = field
-        .required('role')
-        .allow(['admin', 'member'])
+        .required("role")
+        .allow(["admin", "member"])
         .ignoreUpdate(() => true)
         .readonly();
 
-      // @ts-expect-error - readonly was already consumed
+      // @ts-expect-error - readonly was already provided
       decorated.readonly();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => true);
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => false);
     });
 
-    it('should accept allow + readonly()/ignoreUpdate(() => boolean)', () => {
+    it("should accept allow + readonly()/ignoreUpdate(() => boolean)", () => {
       const decorated = field
-        .required('role')
-        .allow(['admin', 'member'])
+        .required("role")
+        .allow(["admin", "member"])
         .readonly()
         .ignoreUpdate(() => true);
 
-      // @ts-expect-error - readonly was already consumed
+      // @ts-expect-error - readonly was already provided
       decorated.readonly();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => true);
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => false);
     });
 
-    it('should accept validate + ignoreUpdate(() => boolean)/readonly()', () => {
+    it("should accept validate + ignoreUpdate(() => boolean)/readonly()", () => {
       const decorated = field
-        .required('role')
+        .required("role")
         .validate(() => true)
         .ignoreUpdate(() => true)
         .readonly();
 
-      // @ts-expect-error - readonly was already consumed
+      // @ts-expect-error - readonly was already provided
       decorated.readonly();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => true);
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => false);
     });
 
-    it('should accept validate + readonly()/ignoreUpdate(() => boolean)', () => {
+    it("should accept validate + readonly()/ignoreUpdate(() => boolean)", () => {
       const decorated = field
-        .required('role')
+        .required("role")
         .validate(() => true)
         .readonly()
         .ignoreUpdate(() => true);
 
-      // @ts-expect-error - readonly was already consumed
+      // @ts-expect-error - readonly was already provided
       decorated.readonly();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.();
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => true);
 
-      // @ts-expect-error - ignoreUpdate was already consumed
+      // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => false);
     });
   });

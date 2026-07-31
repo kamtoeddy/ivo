@@ -1,4 +1,4 @@
-import type { ObjectType } from '../../utils';
+import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
@@ -8,7 +8,7 @@ import {
   type NS,
   type ReValidator,
   type Validator,
-} from '../types';
+} from "../types";
 
 export { type BlankRequiredBuilder, RequiredBuilder };
 
@@ -21,7 +21,7 @@ interface BlankRequiredBuilder<
 > {
   allow<const V extends Value>(
     values: ArrayOfMinSizeTwo<V>,
-  ): BuildableRequiredConfig<V, Input, Output, CtxOptions, Metadata, 'allow'>;
+  ): BuildableRequiredConfig<V, Input, Output, CtxOptions, Metadata, "allow">;
   validate(
     validator: Validator<Value, Input, Output, CtxOptions, Metadata>,
   ): BuildableRequiredConfig<
@@ -30,36 +30,28 @@ interface BlankRequiredBuilder<
     Output,
     CtxOptions,
     Metadata,
-    'validate'
+    "validate"
   >;
 }
 
-/**
- * Unlike lax fields, a required field's validation is mandatory - either
- * `.allow()` or `.validate()` must be called (mutually exclusive, same as
- * lax) before `[BUILD]` is offered. `.readonly()` and `.ignoreUpdate()`
- * share a single flag - like Rust, calling either consumes both, since a
- * required property is either readonly or conditionally updatable, never
- * both.
- */
 type BuildableRequiredConfig<
   Value extends Output[keyof Output],
   Input,
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-  ValidationState extends 'allow' | 'none' | 'validate' = 'none',
+  ValidationState extends "allow" | "none" | "validate" = "none",
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
   HasReadonly extends boolean = false,
-  HasIgnoreUpdate extends 'yes' | 'yes-computed' | 'no' = 'no',
+  HasIgnoreUpdate extends "yes" | "yes-computed" | "no" = "no",
   HasOnDelete extends boolean = false,
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
-> = (ValidationState extends 'none'
+> = (ValidationState extends "none"
   ? {}
   : Buildable<NS.RequiredField<Value, Input, Output, CtxOptions, Metadata>>) &
-  (ValidationState extends 'allow'
+  (ValidationState extends "allow"
     ? HasAllowError extends true
       ? {}
       : {
@@ -76,7 +68,7 @@ type BuildableRequiredConfig<
             Output,
             CtxOptions,
             Metadata,
-            'allow',
+            "allow",
             true,
             HasReValidate,
             HasReadonly,
@@ -87,7 +79,7 @@ type BuildableRequiredConfig<
           >;
         }
     : {}) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasReValidate extends true
       ? {}
@@ -111,7 +103,7 @@ type BuildableRequiredConfig<
           >;
         }) &
   (HasReadonly extends false
-    ? HasIgnoreUpdate extends 'no'
+    ? HasIgnoreUpdate extends "no"
       ? {
           readonly(): BuildableRequiredConfig<
             Value,
@@ -138,7 +130,7 @@ type BuildableRequiredConfig<
             HasAllowError,
             HasReValidate,
             HasReadonly,
-            'yes',
+            "yes",
             HasOnDelete,
             HasOnFailure,
             HasOnSuccess
@@ -155,13 +147,13 @@ type BuildableRequiredConfig<
             HasAllowError,
             HasReValidate,
             HasReadonly,
-            'yes-computed',
+            "yes-computed",
             HasOnDelete,
             HasOnFailure,
             HasOnSuccess
           >;
         }
-      : HasIgnoreUpdate extends 'yes-computed'
+      : HasIgnoreUpdate extends "yes-computed"
         ? {
             readonly(): BuildableRequiredConfig<
               Value,
@@ -180,7 +172,7 @@ type BuildableRequiredConfig<
             >;
           }
         : {}
-    : HasIgnoreUpdate extends 'no'
+    : HasIgnoreUpdate extends "no"
       ? {
           ignoreUpdate(
             resolver: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>,
@@ -194,7 +186,7 @@ type BuildableRequiredConfig<
             HasAllowError,
             HasReValidate,
             HasReadonly,
-            'yes-computed',
+            "yes-computed",
             HasOnDelete,
             HasOnFailure,
             HasOnSuccess
@@ -277,14 +269,15 @@ class RequiredBuilder<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-> implements
+>
+  implements
     BlankRequiredBuilder<Value, Input, Output, CtxOptions, Metadata>,
-    BuildableRequiredConfig<Value, Input, Output, CtxOptions, Metadata, 'allow'>
+    BuildableRequiredConfig<Value, Input, Output, CtxOptions, Metadata, "allow">
 {
   name: string;
   private config: Partial<
     NS.RequiredField<Value, Input, Output, CtxOptions, Metadata>
-  > = { type: 'required' };
+  > = { type: "required" };
 
   constructor(name: string) {
     this.name = name;

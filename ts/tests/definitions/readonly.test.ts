@@ -1,34 +1,21 @@
-import { beforeAll, describe, expect, it } from 'bun:test';
-import { Schema } from '../../src';
-import { expectNoFailure, makeFx, validator } from '../_utils';
+import { beforeAll, describe, expect, it } from "bun:test";
+import { Schema } from "../../src";
+import { expectNoFailure, makeFx, validator } from "../_utils";
 
-/**
- * Current schema-core only supports `readonly: true` (the old `readonly: 'lax'`
- * variant no longer exists). Its interaction rules, mirroring
- * `rs/tests/fields/required/ignore.rs::should_respect_the_readonly_rule` and
- * `rs/tests/fields/dependents.rs`'s readonly-freeze tests:
- *  - lax + readonly: locked once its value diverges from the static default.
- *  - dependent + readonly: resolver keeps running while value == default,
- *    freezes permanently once it has diverged.
- *  - required + readonly: now a VALID combination (unlike the pre-refactor
- *    rule which rejected it) — creation is normal, every subsequent update is
- *    unconditionally rejected as a no-op.
- */
-
-describe('readonly', () => {
-  describe('valid', () => {
-    it('should allow readonly(true) + dependent + default', () => {
+describe("readonly", () => {
+  describe("valid", () => {
+    it("should allow readonly(true) + dependent + default", () => {
       const toPass = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependentField')
-              .default('value')
-              .dependsOn('field')
+              .dependent("dependentField")
+              .default("value")
+              .dependsOn("field")
               .resolve(() => 1)
               .readonly(),
           )
-          .field(m.lax('field').default('')),
+          .field(m.lax("field").default("")),
       );
 
       expectNoFailure(toPass);
@@ -36,12 +23,12 @@ describe('readonly', () => {
       toPass();
     });
 
-    it('should allow readonly(true) + requiredBy', () => {
+    it("should allow readonly(true) + requiredBy", () => {
       const toPass = makeFx((b, m) =>
         b.field(
           m
-            .lax('fieldName')
-            .default('')
+            .lax("fieldName")
+            .default("")
             .validate(validator)
             .readonly()
             .required(() => true),
@@ -53,9 +40,9 @@ describe('readonly', () => {
       toPass();
     });
 
-    it('should allow readonly(true) + strictly required', () => {
+    it("should allow readonly(true) + strictly required", () => {
       const toPass = makeFx((b, m) =>
-        b.field(m.required('fieldName').validate(validator).readonly()),
+        b.field(m.required("fieldName").validate(validator).readonly()),
       );
 
       expectNoFailure(toPass);
@@ -63,35 +50,35 @@ describe('readonly', () => {
       toPass();
     });
 
-    describe('behaviour', () => {
+    describe("behaviour", () => {
       let Model: any;
 
       beforeAll(() => {
         Model = new Schema<any>((b, m) =>
           b
-            .field(m.lax('age').default(null).readonly())
-            .field(m.lax('name').default('Default Name')),
+            .field(m.lax("age").default(null).readonly())
+            .field(m.lax("name").default("Default Name")),
         ).getModel();
       });
 
-      it('should not modify readonly props that have changed via life cycle listeners at creation', async () => {
+      it("should not modify readonly props that have changed via life cycle listeners at creation", async () => {
         const { data } = await Model.create({ age: 25 });
 
-        expect(data).toMatchObject({ age: 25, name: 'Default Name' });
+        expect(data).toMatchObject({ age: 25, name: "Default Name" });
       });
 
-      it('should not modify readonly props that have changed via life cycle listeners during updates', async () => {
+      it("should not modify readonly props that have changed via life cycle listeners during updates", async () => {
         const { data } = await Model.update(
-          { age: null, name: 'Default Name' },
-          { age: 25, name: 'YoYo' },
+          { age: null, name: "Default Name" },
+          { age: 25, name: "YoYo" },
         );
 
-        expect(data).toMatchObject({ age: 25, name: 'YoYo' });
+        expect(data).toMatchObject({ age: 25, name: "YoYo" });
       });
 
-      it('should still accept updates while the readonly value still equals its default', async () => {
+      it("should still accept updates while the readonly value still equals its default", async () => {
         const { data, error } = await Model.update(
-          { age: null, name: 'Default Name' },
+          { age: null, name: "Default Name" },
           { age: 30 },
         );
 
@@ -99,9 +86,9 @@ describe('readonly', () => {
         expect(data).toEqual({ age: 30 });
       });
 
-      it('should permanently lock a readonly lax field once its value has diverged from the default', async () => {
+      it("should permanently lock a readonly lax field once its value has diverged from the default", async () => {
         const { data, error } = await Model.update(
-          { age: 30, name: 'Default Name' },
+          { age: 30, name: "Default Name" },
           { age: 40 },
         );
 
@@ -111,26 +98,26 @@ describe('readonly', () => {
       });
     });
 
-    describe('behaviour with readonly + strictly required', () => {
+    describe("behaviour with readonly + strictly required", () => {
       let Book: any;
-      const book = { title: 'A Book' };
+      const book = { title: "A Book" };
 
       beforeAll(() => {
         Book = new Schema<any>((b, m) =>
-          b.field(m.required('title').validate(validator).readonly()),
+          b.field(m.required("title").validate(validator).readonly()),
         ).getModel();
       });
 
-      it('should create normally, requiring the field once', async () => {
-        const { data, error } = await Book.create({ title: 'A Book' });
+      it("should create normally, requiring the field once", async () => {
+        const { data, error } = await Book.create({ title: "A Book" });
 
         expect(error).toBeNull();
         expect(data).toEqual(book);
       });
 
-      it('should permanently reject every subsequent update, regardless of value', async () => {
+      it("should permanently reject every subsequent update, regardless of value", async () => {
         const { data, error } = await Book.update(book, {
-          title: 'A different title',
+          title: "A different title",
         });
 
         expect(error).toBeNull();

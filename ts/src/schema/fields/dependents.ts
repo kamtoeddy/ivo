@@ -1,11 +1,11 @@
-import type { ObjectType } from '../../utils';
+import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
   BUILD,
   type Buildable,
   type NS,
   type TypeOf,
-} from '../types';
+} from "../types";
 
 export { type BlankDependentBuilder, DependentBuilder };
 
@@ -60,16 +60,6 @@ interface ReadyToResolve<
   ): BuildableDependentConfig<K, Input, Output, CtxOptions>;
 }
 
-/**
- * Unlike the Rust builders - where `on_delete`/`on_success` are called once
- * per handler, chained repeatedly to attach several - the TS builder allows
- * exactly one call to each, accepting either a single handler or an array of
- * them (matching the plain object `Definitions` shape's
- * `T | ArrayOfMinSizeOne<T>` convention). `readonly`/`onDelete`/`onSuccess`
- * are independent and can be called in any order, but each becomes
- * unavailable on the returned type once used - three independent typestate
- * flags rather than a single linear chain.
- */
 type BuildableDependentConfig<
   K extends keyof Output,
   Input,
@@ -132,7 +122,8 @@ class DependentBuilder<
   Input,
   Output,
   CtxOptions extends ObjectType,
-> implements
+>
+  implements
     BlankDependentBuilder<K, Input, Output, CtxOptions>,
     HasDefault<K, Input, Output, CtxOptions>,
     HasDependsOn<K, Input, Output, CtxOptions>,
@@ -141,7 +132,7 @@ class DependentBuilder<
 {
   name: string;
   private config: Partial<NS.DependentField<K, Input, Output, CtxOptions>> = {
-    type: 'dependent',
+    type: "dependent",
   };
 
   constructor(name: string) {

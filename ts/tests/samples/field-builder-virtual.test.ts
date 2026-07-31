@@ -1,22 +1,6 @@
-import { describe, expect, it } from 'bun:test';
-import { Schema } from '../../src';
-import { newFieldMaker } from '../../src/schema/fields';
-
-/**
- * End-to-end prototype of the Rust-style typestate builder for "virtual"
- * fields (see src/schema/fields/virtual.ts). A virtual field's `validator`
- * is mandatory at runtime, so - unlike lax - every rule except `.alias()`
- * only unlocks once either `.allow()` or `.validate()` has been called
- * (mutually exclusive, same rule as lax/required); `.allow()`-only still
- * needs a real `validator` to exist, so the builder synthesizes a
- * passthrough primary validator in that case, same as lax/required.
- *
- * `dependsOn()` can only reference `keyof Input | keyof Output` (a pre-
- * existing, unrelated limitation - see the `dependent` builder), so these
- * tests keep every virtual's own definition key equal to a real `keyof
- * Input` key, and cover `.alias()` in isolation instead of wiring it to a
- * dependent.
- */
+import { describe, expect, it } from "bun:test";
+import { Schema } from "../../src";
+import { newFieldMaker } from "../../src/schema/fields";
 
 type Input = {
   rawGrade: unknown;
@@ -32,32 +16,32 @@ const dependent = newFieldMaker<Input, Output>();
 
 const gradeDependent = () =>
   dependent
-    .dependent('grade')
+    .dependent("grade")
     .default(0)
-    .dependsOn('rawGrade')
+    .dependsOn("rawGrade")
     .resolve(({ input }) => (input.rawGrade as number) ?? 0);
 
 const statusDependent = () =>
   dependent
-    .dependent('status')
-    .default('unknown')
-    .dependsOn('rawStatus')
-    .resolve(({ input }) => (input.rawStatus as string) ?? 'unknown');
+    .dependent("status")
+    .default("unknown")
+    .dependsOn("rawStatus")
+    .resolve(({ input }) => (input.rawStatus as string) ?? "unknown");
 
-describe('field builder prototype: virtual()', () => {
-  it('supports validate() as the primary validator, feeding a dependent field', async () => {
+describe("field builder prototype: virtual()", () => {
+  it("should allow validate() as the primary validator, feeding a dependent field", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b
         .field(
           field
-            .virtual('rawGrade')
+            .virtual("rawGrade")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'grade must be a number' },
+                : { valid: false, reason: "grade must be a number" },
             ),
         )
-        .field(field.virtual('rawStatus').allow(['ok', 'fail']))
+        .field(field.virtual("rawStatus").allow(["ok", "fail"]))
         .field(gradeDependent())
         .field(statusDependent()),
     );
@@ -65,54 +49,54 @@ describe('field builder prototype: virtual()', () => {
     const Model = schema.getModel();
 
     const rejected = await Model.create(
-      { rawGrade: 'lol', rawStatus: 'ok' },
+      { rawGrade: "lol", rawStatus: "ok" },
       {},
     );
     expect(rejected.error).toMatchObject({
-      rawGrade: expect.objectContaining({ reason: 'grade must be a number' }),
+      rawGrade: expect.objectContaining({ reason: "grade must be a number" }),
     });
 
-    const accepted = await Model.create({ rawGrade: 87, rawStatus: 'ok' }, {});
+    const accepted = await Model.create({ rawGrade: 87, rawStatus: "ok" }, {});
     expect(accepted.error).toBeNull();
     expect(accepted.data?.grade).toBe(87);
   });
 
-  it('supports allow() as the primary validator, rejecting values outside the list', async () => {
+  it("should allow allow() as the primary validator, rejecting values outside the list", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b
         .field(
           field
-            .virtual('rawGrade')
+            .virtual("rawGrade")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'grade must be a number' },
+                : { valid: false, reason: "grade must be a number" },
             ),
         )
-        .field(field.virtual('rawStatus').allow(['ok', 'fail']))
+        .field(field.virtual("rawStatus").allow(["ok", "fail"]))
         .field(gradeDependent())
         .field(statusDependent()),
     );
 
     const { data, error } = await schema
       .getModel()
-      .create({ rawGrade: 87, rawStatus: 'unknown' }, {});
+      .create({ rawGrade: 87, rawStatus: "unknown" }, {});
 
     expect(data).toBeNull();
     expect(error).toMatchObject({
-      rawStatus: expect.objectContaining({ reason: 'value not allowed' }),
+      rawStatus: expect.objectContaining({ reason: "value not allowed" }),
     });
   });
 
-  it('supports allow().allowError() to customize the rejection message', async () => {
+  it("should allow allow().allowError() to customize the rejection message", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b
-        .field(field.virtual('rawGrade').validate(() => true))
+        .field(field.virtual("rawGrade").validate(() => true))
         .field(
           field
-            .virtual('rawStatus')
-            .allow(['ok', 'fail'])
-            .allowError('status must be ok or fail'),
+            .virtual("rawStatus")
+            .allow(["ok", "fail"])
+            .allowError("status must be ok or fail"),
         )
         .field(gradeDependent())
         .field(statusDependent()),
@@ -120,41 +104,41 @@ describe('field builder prototype: virtual()', () => {
 
     const { data, error } = await schema
       .getModel()
-      .create({ rawGrade: 1, rawStatus: 'unknown' }, {});
+      .create({ rawGrade: 1, rawStatus: "unknown" }, {});
 
     expect(data).toBeNull();
     expect(error).toMatchObject({
       rawStatus: expect.objectContaining({
-        reason: 'status must be ok or fail',
+        reason: "status must be ok or fail",
       }),
     });
   });
 
-  it('supports validate().reValidate() and allow().reValidate()', async () => {
+  it("should allow validate().reValidate() and allow().reValidate()", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b
         .field(
           field
-            .virtual('rawGrade')
+            .virtual("rawGrade")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'grade must be a number' },
+                : { valid: false, reason: "grade must be a number" },
             )
             .reValidate((value) =>
               (value as number) <= 100
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'grade must be at most 100' },
+                : { valid: false, reason: "grade must be at most 100" },
             ),
         )
         .field(
           field
-            .virtual('rawStatus')
-            .allow(['ok', 'fail', 'unknown'])
+            .virtual("rawStatus")
+            .allow(["ok", "fail", "unknown"])
             .reValidate((value) =>
-              value !== 'unknown'
+              value !== "unknown"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'status cannot be unknown' },
+                : { valid: false, reason: "status cannot be unknown" },
             ),
         )
         .field(gradeDependent())
@@ -164,30 +148,30 @@ describe('field builder prototype: virtual()', () => {
     const Model = schema.getModel();
 
     const rejectedByValidateSecondary = await Model.create(
-      { rawGrade: 150, rawStatus: 'ok' },
+      { rawGrade: 150, rawStatus: "ok" },
       {},
     );
     expect(rejectedByValidateSecondary.error).toMatchObject({
       rawGrade: expect.objectContaining({
-        reason: 'grade must be at most 100',
+        reason: "grade must be at most 100",
       }),
     });
 
     const rejectedByAllowSecondary = await Model.create(
-      { rawGrade: 87, rawStatus: 'unknown' },
+      { rawGrade: 87, rawStatus: "unknown" },
       {},
     );
     expect(rejectedByAllowSecondary.error).toMatchObject({
       rawStatus: expect.objectContaining({
-        reason: 'status cannot be unknown',
+        reason: "status cannot be unknown",
       }),
     });
 
-    const accepted = await Model.create({ rawGrade: 87, rawStatus: 'ok' }, {});
+    const accepted = await Model.create({ rawGrade: 87, rawStatus: "ok" }, {});
     expect(accepted.error).toBeNull();
   });
 
-  it('supports required()/sanitize()/ignoreInit()/ignoreUpdate()/onFailure()/onSuccess()', async () => {
+  it("should allow required()/sanitize()/ignoreInit()/ignoreUpdate()/onFailure()/onSuccess()", async () => {
     let failed = false;
     let succeeded = false;
 
@@ -195,11 +179,11 @@ describe('field builder prototype: virtual()', () => {
       b
         .field(
           field
-            .virtual('rawGrade')
+            .virtual("rawGrade")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'grade must be a number' },
+                : { valid: false, reason: "grade must be a number" },
             )
             .required(() => true)
             .sanitize(({ values }) => Math.round(values.grade ?? 0))
@@ -210,14 +194,14 @@ describe('field builder prototype: virtual()', () => {
               succeeded = true;
             }),
         )
-        .field(field.virtual('rawStatus').allow(['ok', 'fail']).ignoreUpdate())
+        .field(field.virtual("rawStatus").allow(["ok", "fail"]).ignoreUpdate())
         .field(gradeDependent())
         .field(statusDependent()),
     );
 
     const Model = schema.getModel();
 
-    const missing = await Model.create({ rawStatus: 'ok' }, {});
+    const missing = await Model.create({ rawStatus: "ok" }, {});
     expect(missing.error).toMatchObject({
       rawGrade: expect.objectContaining({ reason: "'rawGrade' is required" }),
     });
@@ -226,28 +210,28 @@ describe('field builder prototype: virtual()', () => {
     // must be invoked explicitly by the caller, so trigger it with an
     // invalid (rather than missing) value.
     const invalid = await Model.create(
-      { rawGrade: 'lol', rawStatus: 'ok' },
+      { rawGrade: "lol", rawStatus: "ok" },
       {},
     );
     expect(invalid.error).toMatchObject({
-      rawGrade: expect.objectContaining({ reason: 'grade must be a number' }),
+      rawGrade: expect.objectContaining({ reason: "grade must be a number" }),
     });
     if (!invalid.handleFailure)
-      throw new Error('expected handleFailure to be present');
+      throw new Error("expected handleFailure to be present");
     await invalid.handleFailure();
     expect(failed).toBe(true);
 
     const { error, handleSuccess } = await Model.create(
-      { rawGrade: 87, rawStatus: 'ok' },
+      { rawGrade: 87, rawStatus: "ok" },
       {},
     );
     expect(error).toBeNull();
-    if (!handleSuccess) throw new Error('expected handleSuccess to be present');
+    if (!handleSuccess) throw new Error("expected handleSuccess to be present");
     await handleSuccess();
     expect(succeeded).toBe(true);
   });
 
-  it('supports alias() to accept input under a different public name', async () => {
+  it("should allow alias() to accept input under a different public name", async () => {
     type AliasInput = { grade: number };
     type AliasOutput = { result: number };
 
@@ -258,12 +242,12 @@ describe('field builder prototype: virtual()', () => {
       b
         .field(
           aliasField
-            .virtual('g')
-            .alias('grade')
+            .virtual("g")
+            .alias("grade")
             .validate((value) =>
-              typeof value === 'number'
+              typeof value === "number"
                 ? { valid: true, validated: value }
-                : { valid: false, reason: 'grade must be a number' },
+                : { valid: false, reason: "grade must be a number" },
             ),
         )
         // `dependsOn()` can only reference `keyof Input | keyof Output` (see
@@ -273,9 +257,9 @@ describe('field builder prototype: virtual()', () => {
         // limitation.
         .field(
           aliasDependent
-            .dependent('result')
+            .dependent("result")
             .default(0)
-            .dependsOn('g' as never)
+            .dependsOn("g" as never)
             .resolve(({ input }) => input.grade ?? 0),
         ),
     );
@@ -283,9 +267,9 @@ describe('field builder prototype: virtual()', () => {
     const Model = schema.getModel();
 
     // @ts-expect-error ikr
-    const rejected = await Model.create({ grade: 'lol' }, {});
+    const rejected = await Model.create({ grade: "lol" }, {});
     expect(rejected.error).toMatchObject({
-      grade: expect.objectContaining({ reason: 'grade must be a number' }),
+      grade: expect.objectContaining({ reason: "grade must be a number" }),
     });
 
     const accepted = await Model.create({ grade: 87 }, {});
@@ -293,9 +277,16 @@ describe('field builder prototype: virtual()', () => {
     expect(accepted.data?.result).toBe(87);
   });
 
-  describe('invalid usage (compile-time only - nothing here is meant to run)', () => {
-    it('rejects calling [BUILD] and validation-gated rules before allow() or validate()', () => {
-      const builder = field.virtual('rawGrade');
+  describe("invalid usage (compile-time only - nothing here is meant to run)", () => {
+    it("should never expose a callable .build()", () => {
+      const validated = field.virtual("rawGrade").validate(() => true);
+
+      // @ts-expect-error - build() doesn't exist; it's resolved internally by Schema only
+      validated.build?.();
+    });
+
+    it("should reject calling [BUILD] and validation-gated rules before allow() or validate()", () => {
+      const builder = field.virtual("rawGrade");
 
       // @ts-expect-error - build() doesn't exist until either allow() or validate() has been called
       builder.build?.();
@@ -305,47 +296,536 @@ describe('field builder prototype: virtual()', () => {
       builder.sanitize?.(() => 0);
     });
 
-    it('makes allow() and validate() mutually exclusive', () => {
-      const withAllow = field.virtual('rawStatus').allow(['ok', 'fail']);
+    it("should reject allow() + validate() or validate() + allow()", () => {
+      const withAllow = field.virtual("rawStatus").allow(["ok", "fail"]);
       // @ts-expect-error - validate() isn't available once allow() has been chosen as the primary validator
       withAllow.validate?.(() => true);
 
-      const withValidator = field.virtual('rawGrade').validate(() => true);
+      const withValidator = field.virtual("rawGrade").validate(() => true);
       // @ts-expect-error - allow() isn't available once validate() has been chosen as the primary validator
-      withValidator.allow?.(['a', 'b']);
+      withValidator.allow?.(["a", "b"]);
     });
 
-    it('rejects allowError() before allow()', () => {
-      const withValidator = field.virtual('rawGrade').validate(() => true);
+    it("should reject allowError() before allow()", () => {
+      const withValidator = field.virtual("rawGrade").validate(() => true);
 
       // @ts-expect-error - allowError() only becomes available once allow() has been called
-      withValidator.allowError?.('nope');
+      withValidator.allowError?.("nope");
     });
 
-    it('never exposes a callable .build(), at any stage', () => {
-      const validated = field.virtual('rawGrade').validate(() => true);
-
-      // @ts-expect-error - build() doesn't exist; it's resolved internally by Schema only
-      validated.build?.();
-    });
-
-    it('rejects a second call to allowError()/reValidate()/required()/sanitize()', () => {
+    it("should reject a second call to allowError()/reValidate()/required()/sanitize()", () => {
       const decorated = field
-        .virtual('rawStatus')
-        .allow(['ok', 'fail'])
-        .allowError('nope')
+        .virtual("rawStatus")
+        .allow(["ok", "fail"])
+        .allowError("nope")
         .reValidate(() => true)
         .required(() => true)
         .sanitize(() => 0);
 
-      // @ts-expect-error - allowError() was already consumed
-      decorated.allowError?.('nope again');
-      // @ts-expect-error - reValidate() was already consumed
+      // @ts-expect-error - allowError() was already provided
+      decorated.allowError?.("nope again");
+      // @ts-expect-error - reValidate() was already provided
       decorated.reValidate?.(() => true);
-      // @ts-expect-error - required() was already consumed
+      // @ts-expect-error - required() was already provided
       decorated.required?.(() => true);
-      // @ts-expect-error - sanitize() was already consumed
+      // @ts-expect-error - sanitize() was already provided
       decorated.sanitize?.(() => 0);
+    });
+
+    it("should reject allow() + ignoreInit() + ignoreUpdate()", () => {
+      const ignoreInitFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreInit();
+
+      // @ts-expect-error - ignoreInit() and ignoreUpdate() should not be provided together
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => false);
+
+      const ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate and ignoreInit() should not be provided together
+      ignoreUpdateFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
+    });
+
+    it("should reject validate() + ignoreInit() + ignoreUpdate()", () => {
+      const ignoreInitFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreInit();
+
+      // @ts-expect-error - ignoreInit() and ignoreUpdate() should not be provided together
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => false);
+
+      const ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate and ignoreInit() should not be provided together
+      ignoreUpdateFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
+    });
+
+    it("should accept allow() + ignoreInit() + ignoreUpdate(() => boolean)", () => {
+      const ignoreInitFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreInit()
+        .ignoreUpdate(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => false);
+
+      const ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreUpdate(() => false)
+        .ignoreInit();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => false);
+    });
+
+    it("should accept validate() + ignoreInit() + ignoreUpdate(() => boolean)", () => {
+      const ignoreInitFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreInit()
+        .ignoreUpdate(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => false);
+
+      const ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreUpdate(() => false)
+        .ignoreInit();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => false);
+    });
+
+    it("should accept allow() + ignoreInit(() => boolean) + ignoreUpdate()", () => {
+      const ignoreInitFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreInit(() => false)
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => false);
+
+      const ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreUpdate()
+        .ignoreInit(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => false);
+    });
+
+    it("should accept validate() + ignoreInit(() => boolean) + ignoreUpdate()", () => {
+      const ignoreInitFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreInit(() => false)
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => false);
+
+      const ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreUpdate()
+        .ignoreInit(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => false);
+    });
+
+    it("should accept allow() + ignoreInit(() => boolean) + ignoreUpdate(() => boolean)", () => {
+      const ignoreInitFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreInit(() => false)
+        .ignoreUpdate(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => false);
+
+      const ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreUpdate(() => false)
+        .ignoreInit(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => false);
+    });
+
+    it("should accept validate() + ignoreInit(() => boolean) + ignoreUpdate(() => boolean)", () => {
+      const ignoreInitFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreInit(() => false)
+        .ignoreUpdate(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreInitFirst.ignoreInit?.(() => false);
+
+      const ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreUpdate(() => false)
+        .ignoreInit(() => false);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.();
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => true);
+
+      // @ts-expect-error - ignoreInit was already provided
+      ignoreUpdateFirst.ignoreInit?.(() => false);
+    });
+
+    it("should reject allow() + ignore(() => boolean) + ignoreInit()/ignoreInit(() => boolean) or ignoreUpdate()/ignoreUpdate(() => boolean)", () => {
+      let ignoreInitFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreInit();
+
+      // @ts-expect-error - ignoreInit() + ignore() should not be allowed
+      ignoreInitFirst.ignore(() => false);
+
+      ignoreInitFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreInit(() => false);
+
+      // @ts-expect-error - ignoreInit(() => boolean) + ignore() should not be allowed
+      ignoreInitFirst.ignore(() => false);
+
+      const ignoreFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignore(() => false);
+
+      // @ts-expect-error - ignore() + ignoreInit() should not be allowed
+      ignoreFirst.ignoreInit();
+
+      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
+      ignoreFirst.ignoreInit(() => true);
+
+      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
+      ignoreFirst.ignoreInit(() => false);
+
+      let ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate() + ignore() should not be allowed
+      ignoreUpdateFirst.ignore(() => false);
+
+      ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreUpdate(() => false);
+
+      // @ts-expect-error - ignoreUpdate(() => boolean) + ignore() should not be allowed
+      ignoreUpdateFirst.ignore(() => false);
+
+      const ignoreBeforeIgnoreUpdate = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignore(() => false);
+
+      // @ts-expect-error - ignore() + ignoreUpdate() should not be allowed
+      ignoreBeforeIgnoreUpdate.ignoreUpdate();
+
+      // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
+      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => true);
+
+      // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
+      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => false);
+    });
+
+    it("should reject validate() + ignore(() => boolean) + ignoreInit()/ignoreInit(() => boolean) or ignoreUpdate()/ignoreUpdate(() => boolean)", () => {
+      let ignoreInitFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreInit();
+
+      // @ts-expect-error - ignoreInit() + ignore() should not be allowed
+      ignoreInitFirst.ignore(() => false);
+
+      ignoreInitFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreInit(() => false);
+
+      // @ts-expect-error - ignoreInit(() => boolean) + ignore() should not be allowed
+      ignoreInitFirst.ignore(() => false);
+
+      const ignoreFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignore(() => false);
+
+      // @ts-expect-error - ignore() + ignoreInit() should not be allowed
+      ignoreFirst.ignoreInit();
+
+      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
+      ignoreFirst.ignoreInit(() => true);
+
+      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
+      ignoreFirst.ignoreInit(() => false);
+
+      let ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreUpdate();
+
+      // @ts-expect-error - ignoreUpdate() + ignore() should not be allowed
+      ignoreUpdateFirst.ignore(() => false);
+
+      ignoreUpdateFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreUpdate(() => false);
+
+      // @ts-expect-error - ignoreUpdate(() => boolean) + ignore() should not be allowed
+      ignoreUpdateFirst.ignore(() => false);
+
+      const ignoreBeforeIgnoreUpdate = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignore(() => false);
+
+      // @ts-expect-error - ignore() + ignoreUpdate() should not be allowed
+      ignoreBeforeIgnoreUpdate.ignoreUpdate();
+
+      // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
+      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => true);
+
+      // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
+      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => false);
     });
   });
 });
