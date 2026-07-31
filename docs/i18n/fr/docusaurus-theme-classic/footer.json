@@ -1,0 +1,30 @@
+{
+  "link.title.Docs": {
+    "message": "Documentation",
+    "description": "The title of the footer links column with title=Docs in the footer"
+  },
+  "link.title.More": {
+    "message": "Plus",
+    "description": "The title of the footer links column with title=More in the footer"
+  },
+  "link.item.label.TypeScript": {
+    "message": "TypeScript",
+    "description": "The label of footer link with label=TypeScript linking to /docs/ts"
+  },
+  "link.item.label.Rust": {
+    "message": "Rust",
+    "description": "The label of footer link with label=Rust linking to /docs/rs"
+  },
+  "link.item.label.GitHub": {
+    "message": "GitHub",
+    "description": "The label of footer link with label=GitHub linking to https://github.com/kamtoeddy/ivo"
+  },
+  "link.item.label.Issues": {
+    "message": "Problèmes",
+    "description": "The label of footer link with label=Issues linking to https://github.com/kamtoeddy/ivo/issues"
+  },
+  "copyright": {
+    "message": "Copyright © 2026 kamtoeddy. Créé avec Docusaurus.",
+    "description": "The footer copyright"
+  }
+}

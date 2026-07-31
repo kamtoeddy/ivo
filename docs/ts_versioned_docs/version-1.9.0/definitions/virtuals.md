@@ -1,3 +1,7 @@
+---
+title: "Virtual Properties"
+---
+
 ## Virtual Properties
 
 These properties are used to manipulate dependent properties at the level of your model but won't appear on instances, hence don't go to you database.

@@ -1,3 +1,7 @@
+---
+title: "Dependent Properties"
+---
+
 # Dependent Properties
 
 Any external attempt to modify the value of the a dependent property will be ignored; making it's value solely modifiable via their resolver functions.

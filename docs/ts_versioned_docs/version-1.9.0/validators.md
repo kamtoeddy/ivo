@@ -1,3 +1,7 @@
+---
+title: "Validators"
+---
+
 # Validators
 
 A validator is a function that assesses the validity of a property (meaning one validator per property). It can be sync/async but is expected to behave as below.

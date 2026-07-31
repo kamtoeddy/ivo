@@ -1,3 +1,7 @@
+---
+title: "Readonly Properties"
+---
+
 # Readonly Properties
 
 Such a property's value will be changed at most twice depending on your usecase. Any attempt to modify the value after it has changed will be ignored.

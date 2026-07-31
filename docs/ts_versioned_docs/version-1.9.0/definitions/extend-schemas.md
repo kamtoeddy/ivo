@@ -1,3 +1,7 @@
+---
+title: "Extending Schemas"
+---
+
 ## Extending Schemas
 
 For any schema that inherits from another, call the extend method on the parent schema like in the example below

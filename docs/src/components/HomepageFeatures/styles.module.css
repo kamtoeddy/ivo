@@ -1,0 +1,10 @@
+.features {
+  display: flex;
+  align-items: flex-start;
+  padding: 2rem 0 3rem;
+  width: 100%;
+}
+
+.feature {
+  height: 100%;
+}

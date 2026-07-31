@@ -1,0 +1,22 @@
+{
+  "title": {
+    "message": "ivo",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "logo ivo",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.TypeScript": {
+    "message": "TypeScript",
+    "description": "Navbar item with label TypeScript"
+  },
+  "item.label.Rust": {
+    "message": "Rust",
+    "description": "Navbar item with label Rust"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}

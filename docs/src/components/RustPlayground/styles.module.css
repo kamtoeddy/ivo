@@ -1,0 +1,53 @@
+.playground {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.pane {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.outputHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.textarea {
+  flex: 1;
+  min-height: 180px;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85rem;
+  padding: 0.75rem;
+  border-radius: var(--ifm-code-border-radius);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-code-background);
+  color: var(--ifm-font-color-base);
+  resize: vertical;
+}
+
+.output {
+  flex: 1;
+  min-height: 180px;
+  margin: 0;
+  overflow: auto;
+}
+
+/* Stack editor above output on narrow viewports. */
+@media screen and (max-width: 768px) {
+  .playground {
+    flex-direction: column;
+  }
+}

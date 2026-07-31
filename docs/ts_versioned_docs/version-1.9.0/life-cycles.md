@@ -1,3 +1,7 @@
+---
+title: "Life Cycles"
+---
+
 # Life Cycles
 
 ## The Operation Context

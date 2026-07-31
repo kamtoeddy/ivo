@@ -1,3 +1,7 @@
+---
+title: "Defining a schema"
+---
+
 # Defining a schema
 
 Clean schema considers a property to be properly defined if it is `dependent`, `readonly`, `required`, a `virtual` or has a `default` value other than _undefined_
@@ -317,3 +321,59 @@ let transactionSchema = new Schema(definitions, {
 ### useParentOptions (default: true)
 
 When extending schemas, extended schemas automatically inherit all options(except life cycle methods) of base schema. Setting `useParentOptions: false` in extended schema option will prevent this behaviour. Default is `true`
+
+## Try it in the browser
+
+<TsPlayground
+  ivoVersion="1.9.0"
+  code={`
+import { Schema, type IvoSummary } from 'ivo';
+
+type UserInput = {
+  email: string | null;
+  username: string;
+};
+
+type User = {
+  id: string;
+  createdAt: Date;
+  email: string | null;
+  username: string;
+};
+
+const userSchema = new Schema<UserInput, User>(
+  {
+    id: { constant: true, value: () => Math.random().toString(36).slice(2) },
+    email: {
+      default: null,
+      validator: (value: string) =>
+        typeof value === 'string' && value.includes('@')
+          ? true
+          : { valid: false, reason: 'Invalid email' },
+    },
+    username: {
+      required: true,
+      validator: (value: string) =>
+        value.length >= 3
+          ? true
+          : { valid: false, reason: 'Username too short' },
+    },
+  },
+  { timestamps: true },
+);
+
+const UserModel = userSchema.getModel();
+
+async function main() {
+  const { data, error } = await UserModel.create({
+    email: 'john.doe@mail.com',
+    username: 'john_doe',
+  });
+
+  console.log('data:', data);
+  console.log('error:', error);
+}
+
+main();
+`}
+/>
