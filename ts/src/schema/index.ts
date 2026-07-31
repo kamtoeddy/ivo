@@ -25,7 +25,6 @@ import {
   type PostValidator,
   type ReadonlyIvoContext,
   type RealType,
-  type Validator,
   type ValidatorResponseObject,
 } from './types';
 import {
@@ -76,7 +75,7 @@ class Schema<
     super(
       materializeFieldBuilders(
         definitions as never,
-      ) as never as NS.Definitions_<Input, Output, ErrorMetadata>,
+      ) as never as NS.Definitions_<Input, Output, CtxOptions, ErrorMetadata>,
       options as never,
     );
   }
@@ -213,9 +212,9 @@ class ModelTool<
     for (const configName of getKeysAsProps(this._definitions)) {
       const config = this._definitions[configName]!;
 
-      if (config.constant || config.dependsOn) continue;
+      if (config.type === 'constant' || config.type === 'dependent') continue;
 
-      const isVirtual = !!config.virtual;
+      const isVirtual = config.type === 'virtual';
 
       fields.set(
         configName,
@@ -227,7 +226,7 @@ class ModelTool<
         }),
       );
 
-      const aliasName = config.alias;
+      const aliasName = (config as { alias?: string }).alias;
 
       if (aliasName)
         fields.set(
@@ -325,7 +324,7 @@ class ModelTool<
 
     const tasks: [
       string[] | readonly string[],
-      NS.Setter<boolean, I, O, CtxOptions>,
+      NS.Resolver<boolean, I, O, CtxOptions>,
     ][] = [];
 
     for (const fieldName of fieldsProvided.values()) {
@@ -338,7 +337,13 @@ class ModelTool<
         ignoreInit,
         ignoreUpdate,
         readonly,
-      } = this._getDefinition(configName);
+      } = this._getDefinition(configName) as NS.LaxField<
+        any,
+        I,
+        O,
+        CtxOptions,
+        any
+      >;
 
       if (ignore) {
         tasks.push([[fieldName], ignore]);
@@ -380,7 +385,15 @@ class ModelTool<
 
       if (isUpdate && this._isRequired(fieldName)) {
         if (!readonly && typeof source === 'function')
-          tasks.push([[fieldName], source]);
+          tasks.push([
+            [fieldName],
+            (ctx: IvoContext<I, O, CtxOptions>) =>
+              // @ts-expect-error ikr
+              source(ctx.input as Partial<I>, ctx.previousValues as O, {
+                options: ctx.options,
+                updateOptions: ctx.updateOptions,
+              }),
+          ]);
 
         continue;
       }
@@ -388,7 +401,22 @@ class ModelTool<
       if (!source) continue;
 
       if (typeof source === 'function') {
-        tasks.push([[fieldName], source]);
+        tasks.push([
+          [fieldName],
+          isUpdate
+            ? (ctx: IvoContext<I, O, CtxOptions>) =>
+                // @ts-expect-error ikr
+                source(ctx.input as Partial<I>, ctx.previousValues as O, {
+                  options: ctx.options,
+                  updateOptions: ctx.updateOptions,
+                })
+            : (ctx: IvoContext<I, O, CtxOptions>) =>
+                // @ts-expect-error ikr
+                source(ctx.input as Partial<I>, ctx.rawInput as Partial<I>, {
+                  options: ctx.options,
+                  updateOptions: ctx.updateOptions,
+                }),
+        ]);
 
         continue;
       }
@@ -445,10 +473,7 @@ class ModelTool<
                 config.resolver(
                   ctx.input as Partial<I>,
                   ctx.previousValues as O,
-                  {
-                    options: ctx.options,
-                    updateOptions: ctx.updateOptions,
-                  },
+                  { options: ctx.options, updateOptions: ctx.updateOptions },
                 ),
             ]);
           }
@@ -563,30 +588,17 @@ class ModelTool<
   private _updateCtxOptions = (options: Partial<CtxOptions>) =>
     Object.assign(this._ctxOptions, options);
 
-  private _getDefaultValue = async (
-    prop: string,
-    ctx: IvoContext<I, O, CtxOptions>,
-  ) => {
-    const _default = this._getDefinition(prop)?.default;
-
-    let value: any;
-
-    try {
-      value = isFunctionLike(_default)
-        ? await Promise.try(_default as any, ctx)
-        : this.defaults[prop as KeyOf<O>];
-    } catch {
-      value = null;
-    }
-
-    return isEqual(value, undefined) ? this.ctxValues[prop as KeyOf<O>] : value;
-  };
-
   private _getRequiredState = async (
     prop: string,
     ctx: IvoContext<I, O, CtxOptions>,
   ): Promise<[boolean, string | FieldError<ErrorMetadata>]> => {
-    const { required } = this._getDefinition(prop);
+    const { required } = this._getDefinition(prop) as NS.LaxField<
+      any,
+      I,
+      O,
+      CtxOptions,
+      ErrorMetadata
+    >;
 
     if (!required) return [false, ''];
 
@@ -632,16 +644,19 @@ class ModelTool<
   }
 
   private _isIngnorable = (prop: string) => {
+    // @ts-expect-error ikr
     return !!this._getDefinition(prop).ignore;
   };
 
   private _shouldIgnore = (prop: string) => {
+    // @ts-expect-error ikr
     const { ignore } = this._getDefinition(prop);
 
     return ignore ? ignore(this._getContext()) : undefined;
   };
 
   private _ignoreUpdate = (prop: string, _extraCtx?: ObjectType) => {
+    // @ts-expect-error ikr
     const { ignoreUpdate } = this._getDefinition(prop);
 
     if (ignoreUpdate === undefined) return false;
@@ -654,27 +669,41 @@ class ModelTool<
     return false;
   };
 
-  private _getPrimaryValidator = <K extends keyof (O | I)>(prop: string) => {
-    const { validator } = this._getDefinition(prop as never);
+  private _getPrimaryValidator = (prop: string) => {
+    const { validator } = this._getDefinition(prop) as NS.LaxField<
+      any,
+      I,
+      O,
+      CtxOptions,
+      ErrorMetadata
+    >;
 
-    return (Array.isArray(validator) ? validator[0] : validator) as
-      | Validator<K, I, O>
-      | undefined;
+    return validator;
   };
 
-  private _getSecondaryValidator = <K extends keyof (O | I)>(prop: string) => {
-    const { validator } = this._getDefinition(prop as never);
+  private _getSecondaryValidator = (prop: string) => {
+    const { reValidator } = this._getDefinition(prop) as NS.LaxField<
+      any,
+      I,
+      O,
+      CtxOptions,
+      ErrorMetadata
+    >;
 
-    return (Array.isArray(validator) ? validator[1] : undefined) as
-      | Validator<K, I, O>
-      | undefined;
+    return reValidator;
   };
 
   private _getNotAllowedError(
     prop: string,
     value: unknown,
   ): InputFieldError<ErrorMetadata> {
-    const allow = this._getDefinition(prop as never)?.allow;
+    const { allow } = this._getDefinition(prop) as NS.LaxField<
+      any,
+      I,
+      O,
+      CtxOptions,
+      ErrorMetadata
+    >;
 
     // Default metadata (used whenever the caller didn't supply their own via
     // an InputFieldError) exposes the allowed values so consumers of the
@@ -749,70 +778,71 @@ class ModelTool<
    * that are NOT present in `filteredInput`. Updates `ctxValues` / `partialContext`
    * in place and returns the accumulated output partial.
    */
-  private async _attachConstantsAndDefaults(): Promise<Partial<O>> {
-    const data = {} as Partial<O>;
+  private async _attachConstantsAndDefaults() {
     const input = cloneValue(this.ctxInput);
-    const ctx = this._getContext();
     const fieldsProvidedNames = new Set(Object.keys(input));
+    const tasks: [string, NS.Resolver<any, I, O, CtxOptions>][] = [];
 
-    await Promise.allSettled(
-      getKeysAsProps(this._definitions).map(async (configName) => {
-        const config = this._definitions[configName]!;
+    getKeysAsProps(this._definitions).map(async (configName) => {
+      const config = this._definitions[configName]!;
 
-        // ── Constants ──────────────────────────────────────────────────────────
-        if (config.constant) {
-          const _val = config.value;
-          let value: any;
+      if (config.type === 'constant') {
+        const value = config.value;
 
-          try {
-            value = isFunctionLike(_val)
-              ? await Promise.try(_val as any, ctx)
-              : _val;
-          } catch {
-            value = null;
-          }
-
-          (data as any)[configName] = value;
-
-          this._updateCxtValues({ [configName]: value } as never);
-
+        if (isFunctionLike(value)) {
+          tasks.push([configName, value]);
           return;
         }
 
-        // ── Lax (and conditionally-required, i.e. "requiredBy") fields that
-        // were NOT provided in the filtered input ────────────────────────────
-        // Mirrors Rust: `requiredBy` fields are just Lax fields with an extra
-        // `required_fn`, so they're classified as `FieldType::Lax` there and
-        // defaulted the same way. TS's `laxProps` set excludes anything with a
-        // `required` rule (see `__isLax` in schema-core.ts), so requiredBy
-        // fields must be included explicitly here (virtuals excluded: they
-        // have no Output slot to default).
-        if (
-          (this._isLaxProp(configName) ||
-            (this._isRequiredBy(configName) && !this._isVirtual(configName))) &&
-          !fieldsProvidedNames.has(configName)
-        ) {
-          const value = await this._getDefaultValue(configName, ctx);
+        return this._updateCxtValues({ [configName]: value } as never);
+      }
 
-          (data as any)[configName] = value;
+      if (config.type === 'lax' && !fieldsProvidedNames.has(configName)) {
+        const value = config.default;
 
-          this._updateCxtValues({ [configName]: value } as never);
-
+        if (isFunctionLike(value)) {
+          tasks.push([configName, value]);
           return;
         }
 
-        // ── Dependent fields: attach default value ──────────────────────────────
-        if (config.dependsOn) {
-          const value = await this._getDefaultValue(configName, ctx);
+        return this._updateCxtValues({ [configName]: value } as never);
+      }
 
-          (data as any)[configName] = value;
+      if (config.type === 'dependent') {
+        const value = config.default;
 
-          this._updateCxtValues({ [configName]: value } as never);
+        if (isFunctionLike(value)) {
+          tasks.push([configName, value]);
+          return;
         }
-      }),
+
+        this._updateCxtValues({ [configName]: value } as never);
+      }
+    });
+
+    const ctx = this._getContext();
+
+    const defaultValues = (
+      await Promise.all(
+        tasks.map(
+          async ([configName, resolver]) =>
+            [
+              configName,
+              await Promise.try(resolver, ctx).catch(() => null),
+            ] as const,
+        ),
+      )
+    ).reduce(
+      (acc, [configName, value]) => {
+        // @ts-expect-error ikr
+        acc[configName] = value;
+
+        return acc;
+      },
+      {} as Partial<O>,
     );
 
-    return data;
+    this._updateCxtValues(defaultValues);
   }
 
   /**
@@ -1187,7 +1217,7 @@ class ModelTool<
         // precedence over the generic "is required" message.
         if (
           this._isRequired(prop) &&
-          this._getDefinition(prop as never)?.allow
+          (this._getDefinition(prop) as any)?.allow
         ) {
           const notAllowedError = makeFieldError<ErrorMetadata>(
             this._getNotAllowedError(prop, undefined),
@@ -1281,6 +1311,7 @@ class ModelTool<
     // name-mapped equivalent.
     for (const name of fieldsCollection.relevantConfigNames) {
       const fieldInfo = fieldsCollection.get(name);
+      // @ts-expect-error ikr
       const sanitizer = this._getDefinition(fieldInfo.configName).sanitizer;
 
       if (sanitizer) sanitizers.push([name as KeyOf<I>, sanitizer]);
@@ -1471,12 +1502,12 @@ class ModelTool<
     const toResolve = new Set<string>();
 
     for (const configName in this._definitions) {
-      const dependsOn = this._definitions[configName]?.dependsOn;
+      const config = this._definitions[configName];
 
-      if (!dependsOn) continue;
+      if (config.type !== 'dependent') continue;
 
       if (
-        toArray(dependsOn).some((parent) =>
+        toArray(config.dependsOn).some((parent) =>
           fieldsCollection.relevantDependentConfigNames.has(parent),
         )
       )
@@ -1488,7 +1519,12 @@ class ModelTool<
 
     await Promise.allSettled(
       toResolve.values().map(async (name) => {
-        const config = this._getDefinition(name);
+        const config = this._getDefinition(name) as NS.DependentField<
+          any,
+          I,
+          O,
+          CtxOptions
+        >;
 
         // readonly dependents only re-resolve while their value still
         // matches the (static) default; once it has diverged, they're
@@ -1506,15 +1542,10 @@ class ModelTool<
         )
           return;
 
-        const resolver = config.resolver!;
-        let value: any;
-
-        try {
-          value = await Promise.try(resolver, ctx);
-        } catch {
+        const value = await Promise.try(config.resolver, ctx).catch(() =>
           // @ts-expect-error ikr
-          value = isCreation ? null : ctx.previousValues?.[name];
-        }
+          isCreation ? null : ctx.previousValues?.[name],
+        );
 
         if (
           !isCreation &&

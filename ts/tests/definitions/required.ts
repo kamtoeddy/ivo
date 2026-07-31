@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import type { ReadonlyIvoContext } from '../../src';
+import { createFieldBuilder } from '../../src/schema/fields';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 export const Test_RequiredProperties = ({ Schema, fx }: any) => {
   describe('required', () => {
     describe('valid', () => {
       it('should allow required + validator', () => {
-        const toPass = fx({ propertyName: { required: true, validator } });
+        const toPass = fx({
+          propertyName: field.required('propertyName').validate(validator),
+        });
 
         expectNoFailure(toPass);
 
@@ -16,7 +20,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
       it('should allow required: true + allow alone', () => {
         const toPass = fx({
-          propertyName: { required: true, allow: [1, 2, 435, 45] },
+          propertyName: field.required('propertyName').allow([1, 2, 435, 45]),
         });
 
         expectNoFailure(toPass);
@@ -26,7 +30,10 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
       it('should allow required(true) + readonly(true) (locks the field after creation)', () => {
         const toPass = fx({
-          propertyName: { readonly: true, required: true, validator },
+          propertyName: field
+            .required('propertyName')
+            .validate(validator)
+            .readonly(),
         });
 
         expectNoFailure(toPass);
@@ -104,8 +111,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
     // Mirrors rs/tests/fields/required/mod.rs::
     // should_respect_the_default_required_error_if_field_is_missing
     const Book = new Schema({
-      bookId: { required: true, validator },
-      isPublished: { default: false, validator },
+      bookId: field.required('bookId').validate(validator),
+      isPublished: field.lax('isPublished').default(false).validate(validator),
     }).getModel();
 
     it('should reject creation if a strictly required field is missing, with the default message', async () => {
@@ -158,27 +165,17 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         callsPerProp[prop] = true;
       }
 
-      type BookInput = {
-        bookId?: string;
-        isPublished?: boolean;
-        price?: number | null;
-        priceReadonly?: number | null;
-        priceRequiredWithoutMessage?: number | null;
-      };
-      type BookOutput = {
-        bookId: string;
-        isPublished: boolean;
-        price: number | null;
-        priceReadonly: number | null;
-        priceRequiredWithoutMessage: number | null;
-      };
-
       const Book = new Schema({
-        bookId: { required: true, validator },
-        isPublished: { default: false, validator },
-        price: {
-          default: null,
-          required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+        bookId: field.required('bookId').validate(validator),
+        isPublished: field
+          .lax('isPublished')
+          .default(false)
+          .validate(validator),
+        price: field
+          .lax('price')
+          .default(null)
+          .validate(validatePrice as never)
+          .required((ctx: any) => {
             const isPublished =
               ctx.rawInput.isPublished ??
               ctx.input.isPublished ??
@@ -188,13 +185,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             const isRequired = isPublished && price == null;
             recordCalls('price');
             return [isRequired, 'A price is required to publish a book!'];
-          },
-          validator: validatePrice,
-        },
-        priceReadonly: {
-          default: null,
-          readonly: true,
-          required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+          }),
+        priceReadonly: field
+          .lax('priceReadonly')
+          .default(null)
+          .validate(validatePrice as never)
+          .readonly()
+          .required((ctx: any) => {
             const price =
               ctx.rawInput.price ?? ctx.input.price ?? ctx.values.price;
             const priceReadonly =
@@ -207,13 +204,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               isRequired,
               'A priceReadonly is required when price is 101!',
             ];
-          },
-          validator: validatePrice,
-        },
-        priceRequiredWithoutMessage: {
-          default: null,
-          readonly: true,
-          required: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) => {
+          }),
+        priceRequiredWithoutMessage: field
+          .lax('priceRequiredWithoutMessage')
+          .default(null)
+          .validate(validatePrice as never)
+          .readonly()
+          .required((ctx: any) => {
             const price =
               ctx.rawInput.price ?? ctx.input.price ?? ctx.values.price;
             const priceReadonly =
@@ -222,9 +219,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               ctx.values.priceReadonly;
             recordCalls('priceRequiredWithoutMessage');
             return price === 101 && priceReadonly == null;
-          },
-          validator: validatePrice,
-        },
+          }),
       }).getModel();
 
       beforeEach(() => {
@@ -406,14 +401,17 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
       describe('behaviour when nothing is returned from required function', () => {
         const Book = new Schema({
-          bookId: { required: true, validator },
-          isPublished: { default: false, validator },
-          name: { default: '', validator },
-          price: {
-            default: null,
-            required() {},
-            validator: validator,
-          },
+          bookId: field.required('bookId').validate(validator),
+          isPublished: field
+            .lax('isPublished')
+            .default(false)
+            .validate(validator),
+          name: field.lax('name').default('').validate(validator),
+          price: field
+            .lax('price')
+            .default(null)
+            .validate(validator)
+            .required((() => {}) as never),
         }).getModel();
 
         it('should create normally', async () => {
@@ -461,14 +459,17 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
           for (const [provided, expected] of responses) {
             const Book = new Schema({
-              bookId: { required: true, validator },
-              isPublished: { default: false, validator },
-              name: { default: '', validator },
-              price: {
-                default: null,
-                required: () => [true, provided],
-                validator: validator,
-              },
+              bookId: field.required('bookId').validate(validator),
+              isPublished: field
+                .lax('isPublished')
+                .default(false)
+                .validate(validator),
+              name: field.lax('name').default('').validate(validator),
+              price: field
+                .lax('price')
+                .default(null)
+                .validate(validator)
+                .required((): never => [true, provided] as never),
             }).getModel();
 
             it('should reject with proper required error message at creation', async () => {
@@ -515,14 +516,17 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
           for (const message of invalidMessages) {
             const Book = new Schema({
-              bookId: { required: true, validator },
-              isPublished: { default: false, validator },
-              name: { default: '', validator },
-              price: {
-                default: null,
-                required: () => [true, message],
-                validator: validator,
-              },
+              bookId: field.required('bookId').validate(validator),
+              isPublished: field
+                .lax('isPublished')
+                .default(false)
+                .validate(validator),
+              name: field.lax('name').default('').validate(validator),
+              price: field
+                .lax('price')
+                .default(null)
+                .validate(validator)
+                .required((): never => [true, message] as never),
             }).getModel();
 
             it('should reject with proper required error message at creation', async () => {
@@ -574,14 +578,17 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
         for (const response of invalidResponses) {
           const Book = new Schema({
-            bookId: { required: true, validator },
-            isPublished: { default: false, validator },
-            name: { default: '', validator },
-            price: {
-              default: null,
-              required: () => response,
-              validator: validator,
-            },
+            bookId: field.required('bookId').validate(validator),
+            isPublished: field
+              .lax('isPublished')
+              .default(false)
+              .validate(validator),
+            name: field.lax('name').default('').validate(validator),
+            price: field
+              .lax('price')
+              .default(null)
+              .validate(validator)
+              .required((): never => response as never),
           }).getModel();
 
           it('should create normally', async () => {
@@ -613,29 +620,23 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         const book = { name: 'book name', price: 10 };
 
         describe('when value of virtual is not provided', () => {
-          type BookInput = {
-            name?: string;
-            price?: number | null;
-            _price?: number;
-          };
-          type BookOutput = { name: string; price: number | null };
-
           const Book = new Schema({
-            name: { default: '' },
-            price: {
-              default: null,
-              dependsOn: '_price',
-              resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) =>
-                ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
-            },
-            _price: {
-              virtual: true,
-              required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+            name: field.lax('name').default(''),
+            price: field
+              .dependent('price')
+              .default(null)
+              .dependsOn('_price')
+              .resolve(
+                (ctx: any) =>
+                  ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
+              ),
+            _price: field
+              .virtual('_price')
+              .validate(validator)
+              .required((ctx: any) => {
                 const _price = ctx.rawInput._price ?? ctx.input._price;
                 return _price === undefined;
-              },
-              validator: validator,
-            },
+              }),
           }).getModel();
 
           it('should reject at creation', async () => {
@@ -666,29 +667,23 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
 
         describe('when value of virtual is not provided and required at creation only', () => {
-          type BookInput = {
-            name?: string;
-            price?: number | null;
-            _price?: number;
-          };
-          type BookOutput = { name: string; price: number | null };
-
           const Book = new Schema({
-            name: { default: '' },
-            price: {
-              default: null,
-              dependsOn: '_price',
-              resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) =>
-                ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
-            },
-            _price: {
-              virtual: true,
-              required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+            name: field.lax('name').default(''),
+            price: field
+              .dependent('price')
+              .default(null)
+              .dependsOn('_price')
+              .resolve(
+                (ctx: any) =>
+                  ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
+              ),
+            _price: field
+              .virtual('_price')
+              .validate(validator)
+              .required((ctx: any) => {
                 const _price = ctx.rawInput._price ?? ctx.input._price;
                 return _price === undefined && !ctx.isUpdate;
-              },
-              validator: validator,
-            },
+              }),
           }).getModel();
 
           it('should reject at creation', async () => {
@@ -715,30 +710,24 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
 
         describe('when value of virtual is not provided and required at creation and update is blocked', () => {
-          type BookInput = {
-            name?: string;
-            price?: number | null;
-            _price?: number;
-          };
-          type BookOutput = { name: string; price: number | null };
-
           const Book = new Schema({
-            name: { default: '' },
-            price: {
-              default: null,
-              dependsOn: '_price',
-              resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) =>
-                ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
-            },
-            _price: {
-              virtual: true,
-              ignoreUpdate: true,
-              required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+            name: field.lax('name').default(''),
+            price: field
+              .dependent('price')
+              .default(null)
+              .dependsOn('_price')
+              .resolve(
+                (ctx: any) =>
+                  ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
+              ),
+            _price: field
+              .virtual('_price')
+              .validate(validator)
+              .ignoreUpdate()
+              .required((ctx: any) => {
                 const _price = ctx.rawInput._price ?? ctx.input._price;
                 return _price === undefined;
-              },
-              validator: validator,
-            },
+              }),
           }).getModel();
 
           it('should reject at creation', async () => {
@@ -767,29 +756,23 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
       describe('behaviour with asychronous required setters', () => {
         const book = { name: 'book name', price: 10 };
-        type BookInput = {
-          name?: string;
-          price?: number | null;
-          _price?: number;
-        };
-        type BookOutput = { name: string; price: number | null };
-
         const Book = new Schema({
-          name: { default: '' },
-          price: {
-            default: null,
-            dependsOn: '_price',
-            resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) =>
-              ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
-          },
-          _price: {
-            virtual: true,
-            required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+          name: field.lax('name').default(''),
+          price: field
+            .dependent('price')
+            .default(null)
+            .dependsOn('_price')
+            .resolve(
+              (ctx: any) =>
+                ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
+            ),
+          _price: field
+            .virtual('_price')
+            .validate(validator)
+            .required((ctx: any) => {
               const _price = ctx.rawInput._price ?? ctx.input._price;
               return Promise.resolve(_price === undefined);
-            },
-            validator: validator,
-          },
+            }),
         }).getModel();
 
         describe('creation', () => {
@@ -839,14 +822,14 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
       describe('behaviour with errors thrown in required setter', () => {
         const Model = new Schema({
-          prop1: { default: '' },
-          prop: {
-            default: null,
-            required() {
+          prop1: field.lax('prop1').default(''),
+          prop: field
+            .lax('prop')
+            .default(null)
+            .validate(validator)
+            .required(() => {
               throw new Error('lolol');
-            },
-            validator,
-          },
+            }),
         }).getModel();
 
         it('should consider required:false if occurred at creation', async () => {
@@ -874,11 +857,11 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
         for (const value of values) {
           const toPass = fx({
-            propertyName: {
-              default: value,
-              required: () => true,
-              validator,
-            },
+            propertyName: field
+              .lax('propertyName')
+              .default(value)
+              .validate(validator)
+              .required(() => true),
           });
 
           expectNoFailure(toPass);
@@ -889,12 +872,12 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
       it('should accept requiredBy + readonly', () => {
         const toPass = fx({
-          propertyName: {
-            default: '',
-            readonly: true,
-            required: () => true,
-            validator,
-          },
+          propertyName: field
+            .lax('propertyName')
+            .default('')
+            .validate(validator)
+            .readonly()
+            .required(() => true),
         });
 
         expectNoFailure(toPass);
@@ -904,13 +887,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
       it('should accept requiredBy + ignoreInit', () => {
         const toPass = fx({
-          propertyName: {
-            default: '',
-            readonly: true,
-            required: () => true,
-            ignoreInit: () => true,
-            validator,
-          },
+          propertyName: field
+            .lax('propertyName')
+            .default('')
+            .validate(validator)
+            .readonly()
+            .ignoreInit(() => true)
+            .required(() => true),
         });
 
         expectNoFailure(toPass);

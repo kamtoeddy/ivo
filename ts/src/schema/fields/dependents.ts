@@ -10,7 +10,9 @@ interface BlankDependentBuilder<
   CtxOptions extends ObjectType,
 > {
   default(
-    value: TypeOf<Output[K]> | NS.Setter<Output[K], Input, Output, CtxOptions>,
+    value:
+      | TypeOf<Output[K]>
+      | NS.Resolver<Output[K], Input, Output, CtxOptions>,
   ): HasDefault<K, Input, Output, CtxOptions>;
   dependsOn(
     deps:
@@ -39,7 +41,9 @@ interface HasDependsOn<
   CtxOptions extends ObjectType,
 > {
   default(
-    value: TypeOf<Output[K]> | NS.Setter<Output[K], Input, Output, CtxOptions>,
+    value:
+      | TypeOf<Output[K]>
+      | NS.Resolver<Output[K], Input, Output, CtxOptions>,
   ): ReadyToResolve<K, Input, Output, CtxOptions>;
 }
 
@@ -50,7 +54,7 @@ interface ReadyToResolve<
   CtxOptions extends ObjectType,
 > {
   resolve(
-    resolver: NS.Resolver<K, Input, Output, CtxOptions>,
+    resolver: NS.Resolver<Output[K], Input, Output, CtxOptions>,
   ): BuildableDependentConfig<K, Input, Output, CtxOptions>;
 }
 
@@ -134,10 +138,14 @@ class DependentBuilder<
     ReadyToResolve<K, Input, Output, CtxOptions>,
     BuildableDependentConfig<K, Input, Output, CtxOptions>
 {
-  private config: Partial<NS.DependentField<K, Input, Output, CtxOptions>> = {};
+  private config: Partial<NS.DependentField<K, Input, Output, CtxOptions>> = {
+    type: 'dependent',
+  };
 
   default(
-    value: TypeOf<Output[K]> | NS.Setter<Output[K], Input, Output, CtxOptions>,
+    value:
+      | TypeOf<Output[K]>
+      | NS.Resolver<Output[K], Input, Output, CtxOptions>,
   ) {
     this.config.default = value;
     return this as never;
@@ -152,7 +160,7 @@ class DependentBuilder<
     return this as never;
   }
 
-  resolve(resolver: NS.Resolver<K, Input, Output, CtxOptions>) {
+  resolve(resolver: NS.Resolver<Output[K], Input, Output, CtxOptions>) {
     this.config.resolver = resolver;
     return this as never;
   }

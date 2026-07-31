@@ -15,12 +15,15 @@ export type {
   IvoContext,
   IvoErrorPayload,
   KeyOf,
+  NotAllowedError,
   NS,
   PostValidationConfig,
   PostValidator,
   ReadonlyIvoContext,
   RealType,
+  RequiredHandler,
   ResponseErrorObject,
+  ReValidator,
   TypeOf,
   ValidationResponse,
   Validator,
@@ -143,15 +146,6 @@ type RequiredOptionHandler<
   | ResponseErrorObject<Metadata, Input>
   | Promise<undefined | ResponseErrorObject<Metadata, Input>>;
 
-type IgnoreUpdateResolver<Input, Output, CtxOptions extends ObjectType = {}> = (
-  input: Partial<Input>,
-  previousValues: Output,
-  o: {
-    options: CtxOptions;
-    updateOptions: (updates: Partial<CtxOptions>) => void;
-  },
-) => boolean | Promise<boolean>;
-
 type PostValidator<
   InputKeys extends KeyOf<Input>,
   Input,
@@ -245,18 +239,31 @@ namespace NS {
         | OnSuccessConfigObject<Input, Output, CtxOptions>
       >;
 
-  export type Resolver<
-    K extends keyof Output,
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-  > = (
-    ctx: IvoContext<Input, Output, CtxOptions> & {},
-  ) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>;
-
-  export type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
+  export type Resolver<T, Input, Output, CtxOptions extends ObjectType> = (
     ctx: IvoContext<Input, Output, CtxOptions>,
   ) => TypeOf<T> | Promise<TypeOf<T>>;
+
+  export type IgnoreInitResolver<Input, CtxOptions extends ObjectType = {}> = (
+    input: Partial<Input>,
+    rawInput: Partial<Input>,
+    o: {
+      options: CtxOptions;
+      updateOptions: (updates: Partial<CtxOptions>) => void;
+    },
+  ) => boolean | Promise<boolean>;
+
+  export type IgnoreUpdateResolver<
+    Input,
+    Output,
+    CtxOptions extends ObjectType = {},
+  > = (
+    input: Partial<Input>,
+    previousValues: Output,
+    o: {
+      options: CtxOptions;
+      updateOptions: (updates: Partial<CtxOptions>) => void;
+    },
+  ) => boolean | Promise<boolean>;
 
   export type VirtualResolver<
     Value,
@@ -271,11 +278,11 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = {
     fields: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
-    resolver: Setter<boolean, Input, Output, CtxOptions>;
+    resolver: Resolver<boolean, Input, Output, CtxOptions>;
   };
 
   export type IgnoreConfigOption<Input, Output, CtxOptions extends ObjectType> =
-    | Setter<boolean, Input, Output, CtxOptions>
+    | Resolver<boolean, Input, Output, CtxOptions>
     | IgnoreConfigObject<Input, Output, CtxOptions>
     | ArrayOfMinSizeOne<IgnoreConfigObject<Input, Output, CtxOptions>>;
 
@@ -330,16 +337,27 @@ namespace NS {
     Metadata,
   > =
     | (K extends keyof Output & keyof Input
-        ? PublicField<K, Input, Output, CtxOptions, Metadata>
+        ?
+            | PublicField<any, Input, Output, CtxOptions, Metadata>
+            | Buildable<LaxField<any, Input, Output, CtxOptions, Metadata>>
+            | Buildable<RequiredField<any, Input, Output, CtxOptions, Metadata>>
         : never)
     | (K extends keyof Output
-        ? PrivateField<K, Input, Output, CtxOptions>
+        ? PrivateField<any, Input, Output, CtxOptions>
         : never)
     | (K extends keyof Input
-        ? VirtualField<K, never, Input, Output, CtxOptions, Metadata>
+        ?
+            | VirtualField<K, any, Input, Output, CtxOptions, Metadata>
+            | Buildable<
+                VirtualField<K, any, Input, Output, CtxOptions, Metadata>
+              >
         : never)
     | (K extends string
-        ? VirtualField<K, keyof Input, Input, Output, CtxOptions, Metadata>
+        ?
+            | VirtualField<any, any, Input, Output, CtxOptions, Metadata>
+            | Buildable<
+                VirtualField<any, any, Input, Output, CtxOptions, Metadata>
+              >
         : never);
 
   export type Definitions<
@@ -368,59 +386,41 @@ namespace NS {
   >;
 
   type PublicField<
-    K extends keyof Output & keyof Input,
+    Value extends Output[keyof Output],
     Input,
     Output,
     CtxOptions extends ObjectType,
     Metadata,
-  > = Enumerable<Metadata, TypeOf<Output[K]>> &
-    (
-      | LaxField<K, Input, Output, CtxOptions, Metadata>
-      | RequiredField<K, Input, Output, CtxOptions, Metadata>
-    );
+  > =
+    | LaxField<Value, Input, Output, CtxOptions, Metadata>
+    | RequiredField<Value, Input, Output, CtxOptions, Metadata>;
 
   type PrivateField<
-    K extends keyof Output,
+    Value extends Output[keyof Output],
     Input,
     Output,
     CtxOptions extends ObjectType = {},
   > =
     | XOR<
-        ConstantField<K, Input, Output, CtxOptions>,
-        DependentField<K, Input, Output, CtxOptions>
+        ConstantField<Value, Input, Output, CtxOptions>,
+        DependentField<any, Input, Output, CtxOptions>
       >
-    | Buildable<ConstantField<K, Input, Output, CtxOptions>>
-    | Buildable<DependentField<K, Input, Output, CtxOptions>>;
+    | Buildable<ConstantField<Value, Input, Output, CtxOptions>>
+    | Buildable<DependentField<any, Input, Output, CtxOptions>>;
 
-  export type Definitions_<Input, Output, Metadata> = {
-    [K in keyof Input]?: Listenable<Input, Output, {}> & {
-      allow?:
-        | Readonly<ArrayOfMinSizeTwo<unknown>>
-        | {
-            values: Readonly<ArrayOfMinSizeTwo<unknown>>;
-            error?:
-              | NotAllowedError<Metadata>
-              | ((
-                  value: unknown,
-                  allowedValues: ArrayOfMinSizeOne<unknown>,
-                ) => NotAllowedError<Metadata>);
-          };
-      alias?: string;
-      constant?: unknown;
-      default?: unknown;
-      dependsOn?: KeyOf<Input> | KeyOf<Input>[];
-      readonly?: true;
-      resolver?: Setter<unknown, Input, Output, {}>;
-      required?: boolean | RequiredHandler<Input, Output, {}, Metadata>;
-      sanitizer?: VirtualResolver<K, Input, Output, {}>;
-      ignore?: Setter<boolean, Input, Output, {}>;
-      ignoreInit?: true | Setter<boolean, Input, Output, {}>;
-      ignoreUpdate?: true | Setter<boolean, Input, Output, {}>;
-      validator?: Function | [Function, Function];
-      value?: unknown;
-      virtual?: boolean;
-    };
-  };
+  export type Definitions_<
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+    Metadata,
+  > = Record<
+    string,
+    | ConstantField<any, Input, Output, CtxOptions>
+    | DependentField<any, Input, Output, CtxOptions>
+    | LaxField<any, Input, Output, CtxOptions, Metadata>
+    | RequiredField<any, Input, Output, CtxOptions, Metadata>
+    | VirtualField<any, any, Input, Output, CtxOptions, Metadata>
+  >;
 
   export type AliasToVirtualMap<T> = Record<string, KeyOf<T>>;
 
@@ -428,46 +428,20 @@ namespace NS {
 
   export type DependencyMap<T> = { [K in KeyOf<T>]?: KeyOf<T>[] };
 
-  type Listenable<Input, Output, CtxOptions extends ObjectType> = {
-    onDelete?:
-      | DeleteHandler<Output, CtxOptions>
-      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
-    onFailure?:
-      | FailureHandler<Input, Output, CtxOptions>
-      | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
-    onSuccess?:
-      | SuccessHandler<Input, Output, CtxOptions>
-      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-  };
-
   export type ConstantField<
-    K extends keyof Output,
+    Value extends Output[keyof Output],
     Input,
     Output,
     CtxOptions extends ObjectType,
   > = {
-    constant: true; // TODO: replace with: (type: "constant") once migration to builder pattern is complete
-    value: TypeOf<Output[K]> | Setter<Output[K], Input, Output, CtxOptions>;
+    type: 'constant';
+    value: Value | Resolver<Value, Input, Output, CtxOptions>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-  };
-
-  type Enumerable<Metadata, T, V extends T | Readonly<T> = T> = {
-    allow?:
-      | ArrayOfMinSizeTwo<V>
-      | {
-          values: ArrayOfMinSizeTwo<V>;
-          error?:
-            | NotAllowedError<Metadata>
-            | ((
-                value: unknown,
-                allowedValues: ArrayOfMinSizeOne<T>,
-              ) => NotAllowedError<Metadata>);
-        };
   };
 
   export type Dependables<K extends keyof Output, Input, Output> = Exclude<
@@ -481,12 +455,12 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > = {
-    // TODO: add: (type: "dependent") once migration to builder pattern is complete
-    default: TypeOf<Output[K]> | Setter<Output[K], Input, Output, CtxOptions>;
+    type: 'dependent';
+    default: TypeOf<Output[K]> | Resolver<Output[K], Input, Output, CtxOptions>;
     dependsOn:
       | Dependables<K, Input, Output>
       | ArrayOfMinSizeOne<Dependables<K, Input, Output>>;
-    resolver: Resolver<K, Input, Output, CtxOptions>;
+    resolver: Resolver<Output[K], Input, Output, CtxOptions>;
     readonly?: true;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
@@ -497,137 +471,114 @@ namespace NS {
   };
 
   export type LaxField<
-    K extends keyof Output & keyof Input,
+    Value extends Output[keyof Output],
     Input,
     Output,
     CtxOptions extends ObjectType,
     Metadata,
-  > = Listenable<Input, Output, CtxOptions> &
-    InitAndUpdateBlockable<Input, Output, CtxOptions, TypeOf<Output[K]>> & {
-      // TODO: add: (type: "lax") once migration to builder pattern is complete
-      default: TypeOf<Output[K]> | Setter<Output[K], Input, Output, CtxOptions>;
-      validator?:
-        | Validator<K, Input, Output, CtxOptions>
-        | [
-            Validator<K, Input, Output, CtxOptions>,
-            SecondaryValidator<Output[K], Input, Output, CtxOptions>,
-          ];
-      required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
-    };
+  > = {
+    type: 'lax';
+    default: Value | Resolver<Value, Input, Output, CtxOptions>;
+    allow?:
+      | ArrayOfMinSizeTwo<Value>
+      | {
+          values: ArrayOfMinSizeTwo<Value>;
+          error?:
+            | NotAllowedError<Metadata>
+            | ((
+                value: unknown,
+                allowedValues: ArrayOfMinSizeOne<Value>,
+              ) => NotAllowedError<Metadata>);
+        };
+    readonly?: true;
+    ignore?: Resolver<boolean, Input, Output, CtxOptions>;
+    ignoreInit?: true | IgnoreInitResolver<Input, CtxOptions>;
+    ignoreUpdate?: true | IgnoreUpdateResolver<Input, Output, CtxOptions>;
+    validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
+    reValidator?: ReValidator<Value, Input, Output, CtxOptions, Metadata>;
+    required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
+    onDelete?:
+      | DeleteHandler<Output, CtxOptions>
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>
+      | undefined;
+    onFailure?:
+      | FailureHandler<Input, Output, CtxOptions>
+      | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
+    onSuccess?:
+      | SuccessHandler<Input, Output, CtxOptions>
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+  };
 
   export type RequiredField<
-    K extends keyof Output & keyof Input,
+    Value extends Output[keyof Output],
     Input,
     Output,
     CtxOptions extends ObjectType,
     Metadata,
-  > = Listenable<Input, Output, CtxOptions> & {
-    required: true; // TODO: replace with: (type: "required") once migration to builder pattern is complete
-  } & (
+  > = {
+    type: 'required';
+    allow?:
+      | ArrayOfMinSizeTwo<Value>
       | {
-          validator:
-            | Validator<K, Input, Output, CtxOptions>
-            | [
-                Validator<K, Input, Output, CtxOptions>,
-                SecondaryValidator<Output[K], Input, Output, CtxOptions>,
-              ];
-        }
-      | (Enumerable<Metadata, Input[K]> & {
-          validator?:
-            | Validator<K, Input, Output, CtxOptions>
-            | [
-                Validator<K, Input, Output, CtxOptions>,
-                SecondaryValidator<Output[K], Input, Output, CtxOptions>,
-              ];
-        })
-    ) &
-    XOR<
-      {
-        ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
-        readonly?: never;
-      },
-      {
-        ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-        readonly?: true;
-      }
-    >;
+          values: ArrayOfMinSizeTwo<Value>;
+          error?:
+            | NotAllowedError<Metadata>
+            | ((
+                value: unknown,
+                allowedValues: ArrayOfMinSizeOne<Value>,
+              ) => NotAllowedError<Metadata>);
+        };
+    readonly?: true;
+    ignoreUpdate?: true | IgnoreUpdateResolver<Input, Output, CtxOptions>;
+    validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
+    reValidator?: ReValidator<Value, Input, Output, CtxOptions, Metadata>;
+    onDelete?:
+      | DeleteHandler<Output, CtxOptions>
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>
+      | undefined;
+    onFailure?:
+      | FailureHandler<Input, Output, CtxOptions>
+      | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
+    onSuccess?:
+      | SuccessHandler<Input, Output, CtxOptions>
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+  };
 
   export type VirtualField<
-    K extends keyof Input | string,
     Alias extends keyof Input | never,
+    Value extends Input[keyof Input],
     Input,
     Output,
     CtxOptions extends ObjectType,
     Metadata,
-  > =
-    // @ts-expect-error too_bad_alias_type_is_not_inferred
-    Enumerable<Metadata, TypeOf<Input[K]>> & {
-      virtual: true; // TODO: replace with: (type: "virtual") once migration to builder pattern is complete
-      alias?: Alias;
-      required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
-      // @ts-expect-error too_bad_alias_type_is_not_inferred
-      sanitizer?: VirtualResolver<Input[K], Input, Output, CtxOptions>;
-      onFailure?:
-        | FailureHandler<Input, Output, CtxOptions>
-        | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
-      onSuccess?:
-        | SuccessHandler<Input, Output, CtxOptions>
-        | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-      validator: // @ts-expect-error too_bad_alias_type_is_not_inferred
-        | VirtualValidator<Input[K], Input, Output, CtxOptions>
-        | [
-            // @ts-expect-error too_bad_alias_type_is_not_inferred
-            VirtualValidator<Input[K], Input, Output, CtxOptions>,
-            // @ts-expect-error too_bad_alias_type_is_not_inferred
-            SecondaryValidator<Input[K], Input, Output, CtxOptions>,
-          ];
-    } & XOR<
-        {},
-        XOR<
-          {
-            ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
-            ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-          },
-          XOR<
-            {
-              ignoreInit?: true | Setter<boolean, Input, Output, CtxOptions>;
-              ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-            },
-            {
-              ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
-              ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
-            }
-          >
-        >
-      >;
-
-  type InitAndUpdateBlockable<
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-    T,
-  > = XOR<
-    { ignore?: Setter<boolean, Input, Output, CtxOptions> },
-    XOR<
-      { default: T; readonly?: true },
-      XOR<
-        {
-          ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
-          ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-        },
-        XOR<
-          {
-            ignoreInit?: true | Setter<boolean, Input, Output, CtxOptions>;
-            ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-          },
-          {
-            ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
-            ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
-          }
-        >
-      >
-    >
-  >;
+  > = {
+    type: 'virtual';
+    alias?: Alias;
+    required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
+    validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
+    reValidator?: ReValidator<Value, Input, Output, CtxOptions, Metadata>;
+    sanitizer?: VirtualResolver<Value, Input, Output, CtxOptions>;
+    allow?:
+      | ArrayOfMinSizeTwo<Value>
+      | {
+          values: ArrayOfMinSizeTwo<Value>;
+          error?:
+            | NotAllowedError<Metadata>
+            | ((
+                value: unknown,
+                allowedValues: ArrayOfMinSizeOne<Value>,
+              ) => NotAllowedError<Metadata>);
+        };
+    ignore?: Resolver<boolean, Input, Output, CtxOptions>;
+    ignoreInit?: true | IgnoreInitResolver<Input, CtxOptions>;
+    ignoreUpdate?: true | IgnoreUpdateResolver<Input, Output, CtxOptions>;
+    onFailure?:
+      | FailureHandler<Input, Output, CtxOptions>
+      | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
+    onSuccess?:
+      | SuccessHandler<Input, Output, CtxOptions>
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+  };
 
   export type InternalOptions<
     Input,
@@ -760,7 +711,7 @@ type ValidatorResponse<T, Metadata> =
   | (ValidatorResponseObject<T, Metadata> & {});
 
 type Validator<
-  K extends keyof (Output | Input),
+  T,
   Input,
   Output,
   CtxOptions extends ObjectType = {},
@@ -768,11 +719,9 @@ type Validator<
 > = (
   value: unknown,
   ctx: IvoContext<Input, Output, CtxOptions> & {},
-) =>
-  | ValidatorResponse<TypeOf<Output[K]>, Metadata>
-  | Promise<ValidatorResponse<TypeOf<Output[K]>, Metadata>>;
+) => ValidatorResponse<T, Metadata> | Promise<ValidatorResponse<T, Metadata>>;
 
-type SecondaryValidator<
+type ReValidator<
   T,
   Input,
   Output,
@@ -782,19 +731,6 @@ type SecondaryValidator<
   value: T,
   ctx: IvoContext<Input, Output, CtxOptions> & {},
 ) => ValidatorResponse<T, Metadata> | Promise<ValidatorResponse<T, Metadata>>;
-
-type VirtualValidator<
-  Value,
-  Input,
-  Output,
-  CtxOptions extends ObjectType = {},
-  Metadata = DefaultFieldErrorMetadata,
-> = (
-  value: unknown,
-  ctx: IvoContext<Input, Output, CtxOptions> & {},
-) =>
-  | ValidatorResponse<Value, Metadata>
-  | Promise<ValidatorResponse<Value, Metadata>>;
 
 type ArrayOfMinSizeOne<T> = [T, ...T[]] | readonly [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]] | readonly [T, T, ...T[]];

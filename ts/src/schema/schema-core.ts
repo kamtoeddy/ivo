@@ -57,7 +57,12 @@ abstract class SchemaCore<
   ErrorMetadata = DefaultFieldErrorMetadata,
   ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
 > {
-  protected _definitions = {} as ns.Definitions_<Input, Output, ErrorMetadata>;
+  protected _definitions = {} as ns.Definitions_<
+    Input,
+    Output,
+    CtxOptions,
+    ErrorMetadata
+  >;
   protected _options: ns.InternalOptions<
     Input,
     Output,
@@ -125,7 +130,7 @@ abstract class SchemaCore<
   >[] = [];
 
   constructor(
-    definitions: ns.Definitions_<Input, Output, ErrorMetadata>,
+    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>,
     options: ns.Options<
       Input,
       Output,
@@ -163,7 +168,7 @@ abstract class SchemaCore<
     propertyB = property,
     visitedNodes = [],
   }: {
-    definitions: ns.Definitions_<Input, Output, ErrorMetadata>;
+    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>;
     property: KeyOf<Input>;
     propertyB?: KeyOf<Input>;
     visitedNodes?: KeyOf<Input>[];
@@ -176,6 +181,7 @@ abstract class SchemaCore<
     if (property !== propertyB) visitedNodes.push(propertyB);
 
     const _dependsOn = toArray<KeyOf<Input>>(
+      // @ts-expect-error ikr
       definitions?.[propertyB]?.dependsOn ?? [],
     );
 
@@ -199,7 +205,7 @@ abstract class SchemaCore<
     definitions,
     property,
   }: {
-    definitions: ns.Definitions_<Input, Output, ErrorMetadata>;
+    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>;
     property: KeyOf<Input>;
   }) => {
     const redundantParentProps: [string, string][] = [];
@@ -207,6 +213,7 @@ abstract class SchemaCore<
     if (!this._isDependentProp(property)) return [];
 
     const parentProps = toArray<KeyOf<Input>>(
+      // @ts-expect-error ikr
       definitions?.[property]?.dependsOn ?? [],
     );
 
@@ -227,13 +234,14 @@ abstract class SchemaCore<
     prop,
     parentProp,
   }: {
-    definitions: ns.Definitions_<Input, Output, ErrorMetadata>;
+    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>;
     prop: KeyOf<Input>;
     parentProp: KeyOf<Input>;
   }): boolean => {
     if (!this._isDependentProp(prop)) return false;
 
     const parentProps = toArray<KeyOf<Input>>(
+      // @ts-expect-error ikr
       definitions?.[prop]?.dependsOn ?? [],
     );
 
@@ -373,7 +381,7 @@ abstract class SchemaCore<
   };
 
   protected _checkPropDefinitions = (
-    definitions: ns.Definitions_<Input, Output, ErrorMetadata>,
+    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>,
   ) => {
     const error = new SchemaErrorTool();
 
@@ -385,6 +393,7 @@ abstract class SchemaCore<
       error.add('schema properties', 'Insufficient Schema properties').throw();
 
     for (const prop of props) {
+      // @ts-expect-error ikr
       const isDefOk = this.__isPropDefinitionOk(prop, definitions[prop]);
 
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
@@ -410,10 +419,11 @@ abstract class SchemaCore<
 
     // make sure every virtual has at least one dependency
     for (const prop of this.dependents) {
-      // @ts-expect-error: lol
       const definition = definitions[prop];
 
-      const _dependsOn = toArray<KeyOf<Input>>(definition?.dependsOn ?? []);
+      const _dependsOn = toArray<KeyOf<Input>>(
+        (definition as any)?.dependsOn ?? [],
+      );
 
       if (_dependsOn.includes(prop as never))
         error.add(prop, 'A property cannot depend on itself');
@@ -515,13 +525,19 @@ abstract class SchemaCore<
     Object.freeze(Object.assign({}, data)) as Readonly<T>;
 
   protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>
+    // @ts-expect-error ikr
     toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as never) as T[];
 
   private _isValidatorOk = (
     prop: string,
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
-    const { validator } = definition!,
+    const { validator } = definition as any,
       valid = false;
 
     if (Array.isArray(validator)) {
@@ -553,10 +569,15 @@ abstract class SchemaCore<
   };
 
   private __hasAllowedValues = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
     isRecursion = false,
   ): { valid: boolean; reason?: string } => {
-    const { allow } = definition!,
+    const { allow } = definition as any,
       valid = false,
       isObject = isRecordLike(allow);
 
@@ -605,7 +626,7 @@ abstract class SchemaCore<
 
     if (
       isPropertyOf('default', definition) &&
-      !isOneOf(definition?.default, allowedValues as never)
+      !isOneOf((definition as any)?.default, allowedValues as never)
     )
       return { reason: 'The default value must be an allowed value', valid };
 
@@ -613,9 +634,14 @@ abstract class SchemaCore<
   };
 
   private __isConstantProp = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
-    const { constant, value } = definition!;
+    const { constant, value } = definition as any;
 
     const valid = false;
 
@@ -653,15 +679,19 @@ abstract class SchemaCore<
 
   private __isDependentProp = (
     prop: KeyOf<Input>,
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
     const {
       default: _default,
       dependsOn,
       ignoreInit,
-
       resolver,
-    } = definition!;
+    } = definition as any;
 
     const valid = false;
 
@@ -709,7 +739,12 @@ abstract class SchemaCore<
 
   private __isPropDefinitionOk = (
     prop: KeyOf<Input>,
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
     const propertyTypeProvided = typeof definition;
 
@@ -735,9 +770,9 @@ abstract class SchemaCore<
       const { valid, reason } = this.__hasAllowedValues(definition);
 
       if (valid) {
-        const allowedValues = Array.isArray(definition.allow)
-          ? (definition.allow as never)
-          : definition.allow!.values;
+        const allowedValues = Array.isArray((definition as any).allow)
+          ? ((definition as any).allow as never)
+          : (definition as any).allow!.values;
 
         this.propsToAllowedValuesMap.set(prop, new Set(allowedValues as never));
       } else reasons.push(reason!);
@@ -747,7 +782,7 @@ abstract class SchemaCore<
       const { valid, reason } = this.__isVirtualAliasOk(prop, definition);
 
       if (valid) {
-        const alias = definition.alias!;
+        const alias = (definition as any).alias!;
 
         this.aliasToVirtualMap[alias] = prop;
         this.virtualToAliasMap[prop] = alias as KeyOf<Input>;
@@ -766,7 +801,7 @@ abstract class SchemaCore<
 
       if (valid) {
         this.dependents.add(prop as never);
-        this._setDependencies(prop, definition.dependsOn!);
+        this._setDependencies(prop, (definition as any).dependsOn!);
       } else reasons.push(reason!);
     }
 
@@ -783,7 +818,7 @@ abstract class SchemaCore<
     }
 
     if (isPropertyOf('required', definition)) {
-      const { required } = definition;
+      const { required } = definition as any;
 
       if (typeof required === 'function') {
         const { valid, reason } = this.__isRequiredBy(definition);
@@ -865,18 +900,23 @@ abstract class SchemaCore<
     if (valid && !this._isVirtual(prop)) {
       this.props.add(prop as never);
 
-      if (hasDefaultRule && typeof definition.default !== 'function')
-        this.defaults[prop as unknown as KeyOf<Output>] =
-          definition.default as never;
+      if (hasDefaultRule && typeof (definition as any).default !== 'function')
+        this.defaults[prop as unknown as KeyOf<Output>] = (definition as any)
+          .default as never;
     }
 
     return { reasons, valid };
   };
 
   private __isReadonly = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
-    return definition!.readonly === true
+    return (definition as any)!.readonly === true
       ? { valid: true }
       : {
           reason: "Readonly properties must have readonly as 'true'",
@@ -885,7 +925,12 @@ abstract class SchemaCore<
   };
 
   private __isRequiredCommon = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
     const valid = false;
 
@@ -896,11 +941,16 @@ abstract class SchemaCore<
   };
 
   private __isRequired = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
     const valid = false;
 
-    if (definition?.required !== true)
+    if ((definition as any)?.required !== true)
       return {
         valid,
         reason: "Required properties must have required as 'true'",
@@ -934,11 +984,16 @@ abstract class SchemaCore<
   };
 
   private __isRequiredBy = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
     const valid = false;
 
-    const requiredType = typeof definition?.required;
+    const requiredType = typeof (definition as any)?.required;
 
     if (requiredType !== 'function')
       return {
@@ -955,7 +1010,7 @@ abstract class SchemaCore<
 
     const hasVirtualRule = isPropertyOf('virtual', definition);
 
-    if (isEqual(definition?.default, undefined) && !hasVirtualRule)
+    if (isEqual((definition as any)?.default, undefined) && !hasVirtualRule)
       return {
         valid,
         reason:
@@ -972,9 +1027,14 @@ abstract class SchemaCore<
   };
 
   private __isIgnoreConfigOk = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
-    const { ignore } = definition!;
+    const { ignore } = definition as any;
 
     const valid = false;
 
@@ -1001,9 +1061,14 @@ abstract class SchemaCore<
   };
 
   private ignoreInitConfigOk = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
-    const { ignoreInit } = definition!;
+    const { ignoreInit } = definition as any;
 
     const valid = false;
 
@@ -1025,9 +1090,14 @@ abstract class SchemaCore<
   };
 
   private __isIgnoreUpdateConfigOk = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
-    const { readonly, ignoreInit, ignoreUpdate } = definition!;
+    const { readonly, ignoreInit, ignoreUpdate } = definition as any;
     const valid = false;
 
     if (ignoreUpdate !== true && !isFunctionLike(ignoreUpdate))
@@ -1054,7 +1124,12 @@ abstract class SchemaCore<
   };
 
   private __isVirtualRequiredBy = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
     if (isPropertyOf('ignoreInit', definition))
       return {
@@ -1071,17 +1146,24 @@ abstract class SchemaCore<
 
   private __isVirtual = (
     prop: string,
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
     const valid = false;
-    const { sanitizer, virtual } = definition!;
+    const { sanitizer, virtual } = definition as any;
 
     if (virtual !== true)
       return { valid, reason: "Virtuals must have virtual as 'true'" };
 
-    const isValidatorOk = this._isValidatorOk(prop, definition);
+    if (!isPropertyOf('allow', definition)) {
+      const isValidatorOk = this._isValidatorOk(prop, definition);
 
-    if (!isValidatorOk.valid) return { valid, reason: isValidatorOk.reason };
+      if (!isValidatorOk.valid) return { valid, reason: isValidatorOk.reason };
+    }
 
     if (isPropertyOf('sanitizer', definition) && !isFunctionLike(sanitizer))
       return { valid, reason: "'sanitizer' must be a function" };
@@ -1109,11 +1191,16 @@ abstract class SchemaCore<
 
   private __isVirtualAliasOk = (
     prop: KeyOf<Input>,
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
     const valid = false;
 
-    const { alias } = definition!;
+    const { alias } = definition as any;
 
     if (!isPropertyOf('virtual', definition))
       return { valid, reason: 'Only virtual properties can have aliases' };
@@ -1159,10 +1246,15 @@ abstract class SchemaCore<
   };
 
   private __isLax = (
-    definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
+    definition: ns.Definitions_<
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[KeyOf<Input>],
   ) => {
     // Lax properties must have a default value nor setter
-    if (isEqual(definition?.default, undefined)) return false;
+    if (isEqual((definition as any)?.default, undefined)) return false;
 
     // Lax properties cannot be dependent
     if (isPropertyOf('dependent', definition)) return false;

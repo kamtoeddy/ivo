@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'bun:test';
 
+import { createFieldBuilder } from '../../src/schema/fields';
+
+const field = createFieldBuilder<any, any>();
+
 export const Test_ExtendedSchemas = ({ Schema }: any) => {
   describe('Extended Schema', () => {
     describe('Options', () => {
       describe('timestamps', () => {
         it('should respect "timestamps" option from baseSchema if enabled', async () => {
           const Model = new Schema(
-            { id: { constant: true, value: 1 } },
+            { id: field.constant('id').value(1) },
             { timestamps: { updatedAt: 'u_At' } },
           )
-            .extend({ name: { default: '' } })
+            .extend({ name: field.lax('name').default('') })
             .getModel();
 
           const { data, error } = await Model.create({}, null);
@@ -22,10 +26,10 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
 
         it('should respect "timestamps" option from baseSchema if not enabled', async () => {
           const Model = new Schema(
-            { id: { constant: true, value: 1 } },
+            { id: field.constant('id').value(1) },
             { timestamps: false },
           )
-            .extend({ name: { default: '' } })
+            .extend({ name: field.lax('name').default('') })
             .getModel();
 
           const { data, error } = await Model.create({}, null);
@@ -38,10 +42,10 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
 
         it('should respect overwritten "timestamps" option from baseSchema', async () => {
           const Model = new Schema(
-            { id: { constant: true, value: 1 } },
+            { id: field.constant('id').value(1) },
             { timestamps: { createdAt: 'c_at', updatedAt: 'uAt' } },
           )
-            .extend({ name: { default: '' } })
+            .extend({ name: field.lax('name').default('') })
             .getModel();
 
           const { data, error } = await Model.create({}, null);
@@ -58,7 +62,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
           const options = [undefined, true];
           for (const useParentOptions of options) {
             const Model = new Schema(
-              { id: { constant: true, value: 1 } },
+              { id: field.constant('id').value(1) },
               { timestamps: { updatedAt: 'u_At' } },
             )
               .extend({ name: { default: '' } }, { useParentOptions })
@@ -75,7 +79,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
 
         it('should respect "useParentOptions" option if enabled', async () => {
           const Model = new Schema(
-            { id: { constant: true, value: 1 } },
+            { id: field.constant('id').value(1) },
             { timestamps: { updatedAt: 'u_At' } },
           )
             .extend({ name: { default: '' } }, { useParentOptions: false })

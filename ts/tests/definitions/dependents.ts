@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import type { ReadonlyIvoContext } from '../../src';
+import { createFieldBuilder } from '../../src/schema/fields';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 export const Test_DependentProperties = ({ Schema, fx }: any) => {
   describe('dependent', () => {
@@ -18,60 +21,68 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         dependentProp_3: 1,
       };
 
+      type SampleInput = { laxProp?: string; laxProp_1?: string };
+      type SampleOutput = {
+        laxProp: string;
+        laxProp_1: string;
+        dependentProp: number;
+        dependentProp_1: number;
+      };
+
       const Model = new Schema({
-        laxProp: { default: '' },
-        laxProp_1: { default: '' },
-        laxProp_2: {
-          default: '',
-          onDelete: incrementOnDeleteCountOf('laxProp_2'),
-        },
-        dependentProp: {
-          default: 0,
-          dependsOn: ['laxProp', 'laxProp_1'],
-          resolver: resolverOfDependentProp,
-          onDelete: [
+        laxProp: field.lax('laxProp').default(''),
+        laxProp_1: field.lax('laxProp_1').default(''),
+        laxProp_2: field
+          .lax('laxProp_2')
+          .default('')
+          .onDelete(incrementOnDeleteCountOf('laxProp_2')),
+        dependentProp: field
+          .dependent('dependentProp')
+          .default(0)
+          .dependsOn(['laxProp', 'laxProp_1'])
+          .resolve(resolverOfDependentProp as never)
+          .onDelete([
             incrementOnDeleteCountOf('dependentProp'),
             incrementOnDeleteCountOf('dependentProp'),
-          ],
-          onSuccess: [
+          ])
+          .onSuccess([
             incrementOnSuccessCountOf('dependentProp'),
             incrementOnSuccessCountOf('dependentProp'),
             incrementOnSuccessCountOf('dependentProp'),
             incrementOnSuccessCountOf('dependentProp'),
-          ],
-        },
-        dependentProp_1: {
-          default: 0,
-          dependsOn: 'dependentProp',
-          resolver: resolverOfDependentProp_1,
-          onDelete: incrementOnDeleteCountOf('dependentProp_1'),
-          onSuccess: incrementOnSuccessCountOf('dependentProp_1'),
-        },
-        dependentProp_2: {
-          default: 0,
-          dependsOn: 'dependentProp',
-          readonly: true,
-          resolver: asyncResolver('dependentProp_2'),
-          onDelete: [
+          ]),
+        dependentProp_1: field
+          .dependent('dependentProp_1')
+          .default(0)
+          .dependsOn('dependentProp')
+          .resolve(resolverOfDependentProp_1 as never)
+          .onDelete(incrementOnDeleteCountOf('dependentProp_1'))
+          .onSuccess(incrementOnSuccessCountOf('dependentProp_1')),
+        dependentProp_2: field
+          .dependent('dependentProp_2')
+          .default(0)
+          .dependsOn('dependentProp')
+          .resolve(asyncResolver('dependentProp_2') as never)
+          .readonly()
+          .onDelete([
             incrementOnDeleteCountOf('dependentProp_2'),
             incrementOnDeleteCountOf('dependentProp_2'),
-          ],
-          onSuccess: [
+          ])
+          .onSuccess([
             incrementOnSuccessCountOf('dependentProp_2'),
             incrementOnSuccessCountOf('dependentProp_2'),
             incrementOnSuccessCountOf('dependentProp_2'),
-          ],
-        },
-        dependentProp_3: {
-          default: 0,
-          dependsOn: 'laxProp_2',
-          resolver: asyncResolver('dependentProp_3'),
-          onDelete: [
+          ]),
+        dependentProp_3: field
+          .dependent('dependentProp_3')
+          .default(0)
+          .dependsOn('laxProp_2')
+          .resolve(asyncResolver('dependentProp_3') as never)
+          .onDelete([
             incrementOnDeleteCountOf('dependentProp_3'),
             incrementOnDeleteCountOf('dependentProp_3'),
-          ],
-          onSuccess: [incrementOnSuccessCountOf('dependentProp_3')],
-        },
+          ])
+          .onSuccess([incrementOnSuccessCountOf('dependentProp_3')]),
       }).getModel();
 
       function incrementOnDeleteCountOf(prop: string) {
@@ -95,14 +106,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
         resolversCalledStats[prop] = previousCount + 1;
       }
-
-      type SampleInput = { laxProp?: string; laxProp_1?: string };
-      type SampleOutput = {
-        laxProp: string;
-        laxProp_1: string;
-        dependentProp: number;
-        dependentProp_1: number;
-      };
 
       function resolverOfDependentProp(
         ctx: ReadonlyIvoContext<SampleInput, SampleOutput, {}>,
@@ -346,16 +349,16 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         let resolverRunCount = 0;
 
         const Model = new Schema({
-          parent: { default: '' },
-          child: {
-            default: 0,
-            dependsOn: 'parent',
-            readonly: true,
-            resolver: () => {
+          parent: field.lax('parent').default(''),
+          child: field
+            .dependent('child')
+            .default(0)
+            .dependsOn('parent')
+            .resolve(() => {
               resolverRunCount++;
               return 1;
-            },
-          },
+            })
+            .readonly(),
         }).getModel();
 
         it('does not run the resolver at creation if the parent was not provided (value stays at the raw static default)', async () => {
@@ -399,28 +402,28 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       describe('behaviour with errors thrown in the resolver', () => {
         const Model = new Schema({
-          prop: { default: '' },
-          dependent: {
-            default: '',
-            dependsOn: 'prop',
-            resolver() {
+          prop: field.lax('prop').default(''),
+          dependent: field
+            .dependent('dependent')
+            .default('')
+            .dependsOn('prop')
+            .resolve(() => {
               throw new Error('lolol');
-            },
-          },
-          dependent1: {
-            default: '',
-            dependsOn: 'dependent',
-            resolver() {
+            }),
+          dependent1: field
+            .dependent('dependent1')
+            .default('')
+            .dependsOn('dependent')
+            .resolve(() => {
               throw new Error('lolol');
-            },
-          },
-          dependent2: {
-            default: '',
-            dependsOn: 'dependent',
-            resolver() {
+            }),
+          dependent2: field
+            .dependent('dependent2')
+            .default('')
+            .dependsOn('dependent')
+            .resolve(() => {
               throw new Error('lolol');
-            },
-          },
+            }),
         }).getModel();
 
         it("should set dependent to null if error occurred resolving at creation'", async () => {
@@ -453,8 +456,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
         for (const value of values) {
           const toPass = fx({
-            dependentProp: { default: value, dependsOn: 'prop', resolver },
-            prop: { default: '' },
+            dependentProp: field
+              .dependent('dependentProp')
+              .default(value)
+              .dependsOn('prop')
+              .resolve(resolver),
+            prop: field.lax('prop').default(''),
           });
 
           expectNoFailure(toPass);
@@ -465,8 +472,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       it('should allow dependsOn + resolver & no dependent', () => {
         const toPass = fx({
-          dependentProp: { default: '', dependsOn: 'prop', resolver },
-          prop: { default: '' },
+          dependentProp: field
+            .dependent('dependentProp')
+            .default('')
+            .dependsOn('prop')
+            .resolve(resolver),
+          prop: field.lax('prop').default(''),
         });
 
         expectNoFailure(toPass);
@@ -475,19 +486,19 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
       });
 
       it("should accept life cycle listeners except 'onFailure'", () => {
-        const lifeCycles = ['onDelete', 'onSuccess'];
+        const lifeCycles = ['onDelete', 'onSuccess'] as const;
         const values = [() => {}, () => ({}), [() => {}, () => ({})]];
 
         for (const lifeCycle of lifeCycles) {
           for (const value of values) {
             const toPass = fx({
-              dependentProp: {
-                default: value,
-                dependsOn: 'prop',
-                resolver,
-                [lifeCycle]: value,
-              },
-              prop: { default: '' },
+              dependentProp: field
+                .dependent('dependentProp')
+                .default(value)
+                .dependsOn('prop')
+                .resolve(resolver)
+                [lifeCycle](value as never),
+              prop: field.lax('prop').default(''),
             });
 
             expectNoFailure(toPass);
@@ -506,11 +517,15 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
         for (const dependsOn of values) {
           const toPass = fx({
-            dependentProp: { default: '', dependsOn, resolver },
-            prop: { default: '' },
-            prop1: { default: '' },
-            prop2: { default: '' },
-            prop3: { default: '' },
+            dependentProp: field
+              .dependent('dependentProp')
+              .default('')
+              .dependsOn(dependsOn as never)
+              .resolve(resolver),
+            prop: field.lax('prop').default(''),
+            prop1: field.lax('prop1').default(''),
+            prop2: field.lax('prop2').default(''),
+            prop3: field.lax('prop3').default(''),
           });
 
           expectNoFailure(toPass);
@@ -521,13 +536,17 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       it('should allow a dependent prop to depend on another dependent prop (non-circular)', () => {
         const toPass = fx({
-          dependentProp1: { default: '', dependsOn: 'prop', resolver },
-          dependentProp2: {
-            default: '',
-            dependsOn: 'dependentProp1',
-            resolver,
-          },
-          prop: { default: '' },
+          dependentProp1: field
+            .dependent('dependentProp1')
+            .default('')
+            .dependsOn('prop')
+            .resolve(resolver),
+          dependentProp2: field
+            .dependent('dependentProp2')
+            .default('')
+            .dependsOn('dependentProp1')
+            .resolve(resolver),
+          prop: field.lax('prop').default(''),
         });
 
         expectNoFailure(toPass);
@@ -537,8 +556,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       it('should allow a dependency on virtuals', () => {
         const toPass = fx({
-          dependentProp: { default: '', dependsOn: 'virtualProp', resolver },
-          virtualProp: { virtual: true, validator: resolver },
+          dependentProp: field
+            .dependent('dependentProp')
+            .default('')
+            .dependsOn('virtualProp')
+            .resolve(resolver),
+          virtualProp: field.virtual('virtualProp').validate(() => true),
         });
 
         expectNoFailure(toPass);

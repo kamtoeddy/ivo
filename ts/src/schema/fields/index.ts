@@ -1,7 +1,11 @@
 import type { ObjectType } from '../../utils';
 import { BUILD } from '../types';
+import type { DefaultFieldErrorMetadata } from '../utils';
 import { type BlankConstantBuilder, ConstantBuilder } from './constants';
 import { type BlankDependentBuilder, DependentBuilder } from './dependents';
+import { type BlankLaxBuilder, LaxBuilder } from './lax';
+import { type BlankRequiredBuilder, RequiredBuilder } from './required';
+import { type BlankVirtualBuilder, VirtualBuilder } from './virtual';
 
 export { createFieldBuilder, materializeFieldBuilders };
 
@@ -33,17 +37,57 @@ function createFieldBuilder<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
+  Metadata = DefaultFieldErrorMetadata,
 >() {
   return {
     constant<K extends keyof Output>(
       _fieldName: K,
-    ): BlankConstantBuilder<K, Input, Output, CtxOptions> {
-      return new ConstantBuilder<K, Input, Output, CtxOptions>();
+    ): BlankConstantBuilder<Output[K], Input, Output, CtxOptions> {
+      return new ConstantBuilder<Output[K], Input, Output, CtxOptions>();
     },
     dependent<K extends keyof Output>(
       _fieldName: K,
     ): BlankDependentBuilder<K, Input, Output, CtxOptions> {
       return new DependentBuilder<K, Input, Output, CtxOptions>();
+    },
+    lax<K extends keyof Output & keyof Input>(
+      _fieldName: K,
+    ): BlankLaxBuilder<
+      (Input & Output)[K],
+      Input,
+      Output,
+      CtxOptions,
+      Metadata
+    > {
+      return new LaxBuilder<
+        (Input & Output)[K],
+        Input,
+        Output,
+        CtxOptions,
+        Metadata
+      >();
+    },
+    required<K extends keyof Output & keyof Input>(
+      _fieldName: K,
+    ): BlankRequiredBuilder<
+      (Input & Output)[K],
+      Input,
+      Output,
+      CtxOptions,
+      Metadata
+    > {
+      return new RequiredBuilder<
+        (Input & Output)[K],
+        Input,
+        Output,
+        CtxOptions,
+        Metadata
+      >();
+    },
+    virtual<K extends string>(
+      _fieldName: K,
+    ): BlankVirtualBuilder<any, Input, Output, CtxOptions, Metadata> {
+      return new VirtualBuilder<any, Input, Output, CtxOptions, Metadata>();
     },
   };
 }

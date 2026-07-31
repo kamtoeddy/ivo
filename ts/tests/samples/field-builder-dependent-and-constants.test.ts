@@ -2,22 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import { Schema } from '../../src';
 import { createFieldBuilder } from '../../src/schema/fields';
 
-/**
- * End-to-end prototype of the Rust-style typestate builder for "dependent"
- * fields (see src/schema/field-builder.ts). Proves three things:
- *  1. runtime: a builder chain's result is a real, working field definition
- *     once dropped into a Definitions object literal - no `.build()` call
- *     required or even possible; `Schema` resolves it internally.
- *  2. compile-time: skipping/reordering required steps is a type error, not
- *     a runtime footgun - see the "invalid usage" block below.
- *  3. there is no user-reachable `.build()`, at any stage - not before
- *     `resolve()`, and not even after it.
- *  4. `readonly()`/`onDelete()`/`onSuccess()` are each callable exactly
- *     once (unlike Rust, where attaching several `on_delete`/`on_success`
- *     handlers means calling the method repeatedly) - pass an array to
- *     attach several handlers in that one call instead.
- */
-
 type Input = { price: number; qty: number };
 type Output = { id: number; price: number; qty: number; total: number };
 

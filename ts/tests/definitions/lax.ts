@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'bun:test';
 
+import { createFieldBuilder } from '../../src/schema/fields';
 import { expectFailure, expectNoFailure } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 export const Test_LaxProperties = ({ fx }: any) => {
   describe('lax props', () => {
     describe('valid', () => {
       it('should allow default alone', () => {
-        const toPass = fx({ propertyName: { default: '' } });
+        const toPass = fx({
+          propertyName: field.lax('propertyName').default(''),
+        });
 
         expectNoFailure(toPass);
 
@@ -15,7 +20,10 @@ export const Test_LaxProperties = ({ fx }: any) => {
 
       it('should allow default + validator', () => {
         const toPass = fx({
-          propertyName: { default: '', validator: () => ({ valid: true }) },
+          propertyName: field
+            .lax('propertyName')
+            .default('')
+            .validate(() => ({ valid: true })),
         });
 
         expectNoFailure(toPass);

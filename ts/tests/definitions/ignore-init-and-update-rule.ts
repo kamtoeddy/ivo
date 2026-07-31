@@ -8,15 +8,21 @@ import {
   mock,
 } from 'bun:test';
 
-import type { IvoContext, ReadonlyIvoContext } from '../../src';
+import type { ReadonlyIvoContext } from '../../src';
+import { createFieldBuilder } from '../../src/schema/fields';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
   describe('ignore', () => {
     describe('valid', () => {
       it('should accept ignore + default', () => {
         const fxn = fx({
-          propertyName: { ignore: () => false, default: true },
+          propertyName: field
+            .lax('propertyName')
+            .default(true)
+            .ignore(() => false),
         });
 
         expectNoFailure(fxn);
@@ -26,12 +32,15 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
       it('should accept ignore + virtual', () => {
         const fxn = fx({
-          dependent: {
-            default: true,
-            dependsOn: 'propertyName',
-            resolver: validator,
-          },
-          propertyName: { ignore: () => false, virtual: true, validator },
+          dependent: field
+            .dependent('dependent')
+            .default(true)
+            .dependsOn('propertyName')
+            .resolve(validator as never),
+          propertyName: field
+            .virtual('propertyName')
+            .validate(validator)
+            .ignore(() => false),
         });
 
         expectNoFailure(fxn);
@@ -42,17 +51,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
       describe('behaviour', () => {
         it('should ignore accordingly', async () => {
           const Model = new Schema({
-            isBlocked: {
-              default: false,
-              ignore: ({
-                input: { env },
-              }: IvoContext<
-                { env: string; isBlocked?: boolean },
-                { env: string; isBlocked: boolean; laxProp: number }
-              >) => env === 'dev',
-            },
-            env: { default: 'dev' },
-            laxProp: { default: 0 },
+            isBlocked: field
+              .lax('isBlocked')
+              .default(false)
+              .ignore(({ input: { env } }: any) => env === 'dev'),
+            env: field.lax('env').default('dev'),
+            laxProp: field.lax('laxProp').default(0),
           }).getModel();
 
           const { data } = await Model.create({ env: 'dev', isBlocked: true });
@@ -108,18 +112,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const mockedValidator = mock(validator);
 
           const Model = new Schema({
-            isBlocked: {
-              default: false,
-              ignore: ({
-                input: { env },
-              }: IvoContext<
-                { env: string; isBlocked?: boolean },
-                { env: string; isBlocked: boolean; laxProp: number }
-              >) => env === 'dev',
-              validator: mockedValidator,
-            },
-            env: { default: 'dev' },
-            laxProp: { default: 0 },
+            isBlocked: field
+              .lax('isBlocked')
+              .default(false)
+              .validate(mockedValidator as never)
+              .ignore(({ input: { env } }: any) => env === 'dev'),
+            env: field.lax('env').default('dev'),
+            laxProp: field.lax('laxProp').default(0),
           }).getModel();
 
           const { data } = await Model.create({ env: 'dev', isBlocked: true });
@@ -181,18 +180,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const mockedValidator = mock(validator);
 
           const Model = new Schema({
-            isBlocked: {
-              default: false,
-              ignore: ({
-                input: { env },
-              }: IvoContext<
-                { env: string; isBlocked?: boolean },
-                { env: string; isBlocked: boolean; laxProp: number }
-              >) => env === 'dev',
-              validator: mockedValidator,
-            },
-            env: { default: 'dev' },
-            laxProp: { default: 0 },
+            isBlocked: field
+              .lax('isBlocked')
+              .default(false)
+              .validate(mockedValidator as never)
+              .ignore(({ input: { env } }: any) => env === 'dev'),
+            env: field.lax('env').default('dev'),
+            laxProp: field.lax('laxProp').default(0),
           }).getModel();
 
           const { data } = await Model.create({ env: 'dev' });
@@ -342,7 +336,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
     describe('valid', () => {
       it('should accept ignoreInit(false) + default', () => {
         const fxn = fx({
-          propertyName: { ignoreInit: true, default: true },
+          propertyName: field.lax('propertyName').default(true).ignoreInit(),
         });
 
         expectNoFailure(fxn);
@@ -355,7 +349,10 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
         for (const ignoreInit of values) {
           const fxn = fx({
-            propertyName: { ignoreInit, default: true },
+            propertyName: field
+              .lax('propertyName')
+              .default(true)
+              .ignoreInit(ignoreInit),
           });
 
           expectNoFailure(fxn);
@@ -366,18 +363,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
       describe('behaviour', () => {
         const Model = new Schema({
-          isBlocked: {
-            default: false,
-            ignoreInit: ({
-              input,
-            }: IvoContext<{
-              isBlocked: boolean;
-              env: string;
-              laxProp: number;
-            }>) => input?.env === 'test',
-          },
-          env: { default: 'dev' },
-          laxProp: { default: 0 },
+          isBlocked: field
+            .lax('isBlocked')
+            .default(false)
+            .ignoreInit(({ input }: any) => input?.env === 'test'),
+          env: field.lax('env').default('dev'),
+          laxProp: field.lax('laxProp').default(0),
         }).getModel();
 
         it('should respect default rules', async () => {
@@ -405,8 +396,11 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
         describe('behaviour when ignoreInit method returns nothing', () => {
           const Model = new Schema({
-            isBlocked: { default: false, ignoreInit: () => {} },
-            laxProp: { default: 0 },
+            isBlocked: field
+              .lax('isBlocked')
+              .default(false)
+              .ignoreInit((() => {}) as never),
+            laxProp: field.lax('laxProp').default(0),
           }).getModel();
 
           it('should assume initialization as falsy if ignoreInit method returns nothing at creation', async () => {
@@ -426,25 +420,25 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
         beforeAll(() => {
           Model = new Schema({
-            dependent: {
-              default: '',
-              dependsOn: 'virtual',
-              resolver: () => 'changed',
-              onSuccess: onSuccess('dependent'),
-            },
-            laxProp: { default: '' },
-            virtual: {
-              virtual: true,
-              ignoreInit: ({ input }: IvoContext<{ laxProp: string }>) =>
-                input?.laxProp === 'ignore virtual',
-              onSuccess: [
+            dependent: field
+              .dependent('dependent')
+              .default('')
+              .dependsOn('virtual')
+              .resolve(() => 'changed')
+              .onSuccess(onSuccess('dependent')),
+            laxProp: field.lax('laxProp').default(''),
+            virtual: field
+              .virtual('virtual')
+              .validate(validateBoolean)
+              .ignoreInit(
+                ({ input }: any) => input?.laxProp === 'ignore virtual',
+              )
+              .sanitize(sanitizerOf('virtual', 'sanitized'))
+              .onSuccess([
                 onSuccess('virtual'),
                 incrementOnSuccessStats('virtual'),
                 incrementOnSuccessStats('virtual'),
-              ],
-              sanitizer: sanitizerOf('virtual', 'sanitized'),
-              validator: validateBoolean,
-            },
+              ]),
           }).getModel();
 
           function sanitizerOf(prop: string, value: any) {
@@ -587,7 +581,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         const validValues = [() => false, () => true];
 
         for (const ignoreUpdate of validValues) {
-          const toPass = fx({ propertyName: { default: '', ignoreUpdate } });
+          const toPass = fx({
+            propertyName: field
+              .lax('propertyName')
+              .default('')
+              .ignoreUpdate(ignoreUpdate),
+          });
 
           expectNoFailure(toPass);
 
@@ -600,17 +599,16 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
         for (const ignoreInit of values) {
           const toPass = fx({
-            dependentProp: {
-              default: '',
-              dependsOn: 'virtual',
-              resolver: () => '',
-            },
-            virtual: {
-              virtual: true,
-              ignoreInit,
-              ignoreUpdate: true,
-              validator,
-            },
+            dependentProp: field
+              .dependent('dependentProp')
+              .default('')
+              .dependsOn('virtual')
+              .resolve(() => ''),
+            virtual: field
+              .virtual('virtual')
+              .validate(validator)
+              .ignoreInit(ignoreInit)
+              .ignoreUpdate(),
           });
 
           expectNoFailure(toPass);
@@ -653,71 +651,35 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
 
         const Model = new Schema({
-          dependentProp: {
-            default: false,
-            dependsOn: 'virtual',
-            resolver: ({
-              input,
-            }: IvoContext<{
-              virtual: boolean;
-              virtual_1: boolean;
-              laxProp: string;
-              laxProp_1: string;
-            }>) => input.virtual,
-            onSuccess: incrementOnSuccessCountOf('dependentProp'),
-          },
-          dependentProp_1: {
-            default: false,
-            dependsOn: 'virtual_1',
-            resolver: ({
-              input,
-            }: IvoContext<{
-              virtual: boolean;
-              virtual_1: boolean;
-              laxProp: string;
-              laxProp_1: string;
-            }>) => input.virtual_1,
-            onSuccess: incrementOnSuccessCountOf('dependentProp_1'),
-          },
-          laxProp: {
-            default: '',
-            readonly: true,
-            ignoreUpdate: ({
-              values,
-            }: ReadonlyIvoContext<
-              {
-                virtual: boolean;
-                virtual_1: boolean;
-                laxProp: string;
-                laxProp_1: string;
-              },
-              IgnoreUpdateOutput
-            >) => values?.laxProp_1 === 'test',
-            onSuccess: incrementOnSuccessCountOf('laxProp'),
-          },
-          laxProp_1: { default: 'dev' },
-          virtual: {
-            virtual: true,
-            ignoreUpdate: true,
-            validator: () => ({ valid: true }),
-            onSuccess: incrementOnSuccessCountOf('virtual'),
-          },
-          virtual_1: {
-            virtual: true,
-            ignoreUpdate: ({
-              values,
-            }: ReadonlyIvoContext<
-              {
-                virtual: boolean;
-                virtual_1: boolean;
-                laxProp: string;
-                laxProp_1: string;
-              },
-              IgnoreUpdateOutput
-            >) => values?.laxProp_1 === 'test',
-            validator: () => ({ valid: true }),
-            onSuccess: incrementOnSuccessCountOf('virtual_1'),
-          },
+          dependentProp: field
+            .dependent('dependentProp')
+            .default(false)
+            .dependsOn('virtual')
+            .resolve(({ input }: any) => input.virtual)
+            .onSuccess(incrementOnSuccessCountOf('dependentProp')),
+          dependentProp_1: field
+            .dependent('dependentProp_1')
+            .default(false)
+            .dependsOn('virtual_1')
+            .resolve(({ input }: any) => input.virtual_1)
+            .onSuccess(incrementOnSuccessCountOf('dependentProp_1')),
+          laxProp: field
+            .lax('laxProp')
+            .default('')
+            .readonly()
+            .ignoreUpdate(({ values }: any) => values?.laxProp_1 === 'test')
+            .onSuccess(incrementOnSuccessCountOf('laxProp')),
+          laxProp_1: field.lax('laxProp_1').default('dev'),
+          virtual: field
+            .virtual('virtual')
+            .validate(() => ({ valid: true }))
+            .ignoreUpdate()
+            .onSuccess(incrementOnSuccessCountOf('virtual')),
+          virtual_1: field
+            .virtual('virtual_1')
+            .validate(() => ({ valid: true }))
+            .ignoreUpdate(({ values }: any) => values?.laxProp_1 === 'test')
+            .onSuccess(incrementOnSuccessCountOf('virtual_1')),
         }).getModel();
 
         afterEach(() => {
@@ -786,8 +748,11 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
         describe('behaviour when ignoreUpdate method returns nothing', () => {
           const Model = new Schema({
-            isBlocked: { default: false, ignoreUpdate: () => {} },
-            laxProp: { default: 0 },
+            isBlocked: field
+              .lax('isBlocked')
+              .default(false)
+              .ignoreUpdate((() => {}) as never),
+            laxProp: field.lax('laxProp').default(0),
           }).getModel();
 
           it('should update property if ignoreUpdate method returns nothing', async () => {
@@ -877,9 +842,17 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         ];
 
         for (const [ignoreInit, ignoreUpdate] of values) {
-          const toPass = fx({
-            propertyName: { default: '', ignoreInit, ignoreUpdate },
-          });
+          let builder: any = field.lax('propertyName').default('');
+          builder =
+            ignoreInit === true
+              ? builder.ignoreInit()
+              : builder.ignoreInit(ignoreInit as never);
+          builder =
+            ignoreUpdate === true
+              ? builder.ignoreUpdate()
+              : builder.ignoreUpdate(ignoreUpdate as never);
+
+          const toPass = fx({ propertyName: builder });
 
           expectNoFailure(toPass);
 
@@ -895,15 +868,21 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         ];
 
         for (const [ignoreInit, ignoreUpdate] of readonlyTrue) {
-          const toPass = fx({
-            dependentProp: {
-              default: '',
-              readonly: true,
-              ignoreInit,
-              ignoreUpdate,
-              validator,
-            },
-          });
+          let builder: any = field
+            .lax('dependentProp')
+            .default('')
+            .validate(validator)
+            .readonly();
+          builder =
+            ignoreInit === true
+              ? builder.ignoreInit()
+              : builder.ignoreInit(ignoreInit as never);
+          builder =
+            ignoreUpdate === true
+              ? builder.ignoreUpdate()
+              : builder.ignoreUpdate(ignoreUpdate as never);
+
+          const toPass = fx({ dependentProp: builder });
 
           expectNoFailure(toPass);
 

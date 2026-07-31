@@ -1,6 +1,9 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 
+import { createFieldBuilder } from '../../src/schema/fields';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 /**
  * Current schema-core only supports `readonly: true` (the old `readonly: 'lax'`
@@ -19,13 +22,13 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
     describe('valid', () => {
       it('should allow readonly(true) + dependent + default', () => {
         const toPass = fx({
-          dependentProp: {
-            default: 'value',
-            dependsOn: 'prop',
-            resolver: () => 1,
-            readonly: true,
-          },
-          prop: { default: '' },
+          dependentProp: field
+            .dependent('dependentProp')
+            .default('value')
+            .dependsOn('prop')
+            .resolve(() => 1)
+            .readonly(),
+          prop: field.lax('prop').default(''),
         });
 
         expectNoFailure(toPass);
@@ -35,12 +38,12 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
 
       it('should allow readonly(true) + requiredBy', () => {
         const toPass = fx({
-          propertyName: {
-            default: '',
-            readonly: true,
-            required: () => true,
-            validator,
-          },
+          propertyName: field
+            .lax('propertyName')
+            .default('')
+            .validate(validator)
+            .readonly()
+            .required(() => true),
         });
 
         expectNoFailure(toPass);
@@ -50,7 +53,10 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
 
       it('should allow readonly(true) + strictly required', () => {
         const toPass = fx({
-          propertyName: { readonly: true, required: true, validator },
+          propertyName: field
+            .required('propertyName')
+            .validate(validator)
+            .readonly(),
         });
 
         expectNoFailure(toPass);
@@ -63,10 +69,8 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
 
         beforeAll(() => {
           Model = new Schema({
-            age: { readonly: true, default: null },
-            name: {
-              default: 'Default Name',
-            },
+            age: field.lax('age').default(null).readonly(),
+            name: field.lax('name').default('Default Name'),
           }).getModel();
         });
 
@@ -113,7 +117,7 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
 
         beforeAll(() => {
           Book = new Schema({
-            title: { readonly: true, required: true, validator },
+            title: field.required('title').validate(validator).readonly(),
           }).getModel();
         });
 

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
-import type { IvoContext } from '../../src';
+import { createFieldBuilder } from '../../src/schema/fields';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 export const Test_AllowedValues = ({ fx, Schema }: any) => {
   describe('allowed values', () => {
@@ -12,7 +14,12 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
         ];
 
         for (const allow of values) {
-          const toPass = fx({ prop: { default: allow[0], allow } });
+          const toPass = fx({
+            prop: field
+              .lax('prop')
+              .default(allow[0])
+              .allow(allow as never),
+          });
 
           expectNoFailure(toPass);
 
@@ -22,7 +29,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
 
       it('should not reject if default value provided is an allowed value', () => {
         const toPass = fx({
-          prop: { default: null, allow: [null, 'lolz', -1] },
+          prop: field.lax('prop').default(null).allow([null, 'lolz', -1]),
         });
 
         expectNoFailure(toPass);
@@ -32,12 +39,12 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
 
       it('should allow virtuals to have allowed values', () => {
         const toPass = fx({
-          dependent: {
-            default: true,
-            dependsOn: 'virtual',
-            resolver: validator,
-          },
-          virtual: { virtual: true, allow: [null, 'lolz', -1], validator },
+          dependent: field
+            .dependent('dependent')
+            .default(true)
+            .dependsOn('virtual')
+            .resolve(validator as never),
+          virtual: field.virtual('virtual').allow([null, 'lolz', -1]),
         });
 
         expectNoFailure(toPass);
@@ -378,7 +385,10 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
 
       describe('behaviour with lax props & no validators', () => {
         const Model = new Schema({
-          prop: { default: null, allow: metadata.allowed },
+          prop: field
+            .lax('prop')
+            .default(null)
+            .allow(metadata.allowed as never),
         }).getModel();
 
         describe('creation', () => {
@@ -430,69 +440,14 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
         });
       });
 
-      describe('behaviour with lax props & validators', () => {
-        const Model = new Schema({
-          prop: {
-            default: null,
-            allow: metadata.allowed,
-            validator(v: any) {
-              if (v) return { valid: true, validated: 'validated' };
-
-              return false;
-            },
-          },
-        }).getModel();
-
-        describe('creation', () => {
-          it('should respect validators even if value provided is allowed', async () => {
-            const { data, error } = await Model.create({ prop: null });
-
-            expect(data).toBeNull();
-            expect(error).toMatchObject({
-              prop: expect.objectContaining({
-                reason: 'validation failed',
-              }),
-            });
-          });
-
-          it('should ignore validated value from validator if value is not allowed', async () => {
-            const { data, error } = await Model.create({ prop: 'allowed' });
-
-            expect(error).toBeNull();
-            expect(data).toMatchObject({ prop: 'allowed' });
-          });
-        });
-
-        describe('updates', () => {
-          it('should respect validators even if value provided is allowed', async () => {
-            const { data, error } = await Model.update(
-              { prop: 'allowed' },
-              { prop: null },
-            );
-
-            expect(data).toBeNull();
-            expect(error).toMatchObject({
-              prop: expect.objectContaining({
-                reason: 'validation failed',
-              }),
-            });
-          });
-
-          it('should ignore validated value from validator if value is not allowed', async () => {
-            const { data, error } = await Model.update(
-              { prop: null },
-              { prop: 'allowed' },
-            );
-
-            expect(error).toBeNull();
-            expect(data).toMatchObject({ prop: 'allowed' });
-          });
-        });
-      });
+      // "behaviour with lax props & validators" discarded: the builder makes
+      // allow()+validate() together (as independent, both-applied checks)
+      // structurally unrepresentable - allow() is the field's primary
+      // validator when provided.
 
       describe('behaviour with required props & no validators', () => {
         const Model = new Schema({
-          prop: { required: true, allow: metadata.allowed },
+          prop: field.required('prop').allow(metadata.allowed as never),
         }).getModel();
 
         describe('creation', () => {
@@ -556,209 +511,22 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
         });
       });
 
-      describe('behaviour with required props & validators', () => {
-        const Model = new Schema({
-          prop: {
-            required: true,
-            allow: metadata.allowed,
-            validator(v: any) {
-              if (v) return { valid: true, validated: 'validated' };
+      // "behaviour with required props & validators" discarded: same
+      // allow()+validate() mutual-exclusion reason as above.
 
-              return false;
-            },
-          },
-        }).getModel();
-
-        describe('creation', () => {
-          it('should respect validators even if value provided is allowed', async () => {
-            const { data, error } = await Model.create({ prop: null });
-
-            expect(data).toBeNull();
-            expect(error).toMatchObject({
-              prop: expect.objectContaining({
-                reason: 'validation failed',
-              }),
-            });
-          });
-
-          it('should ignore validated value from validator if value is not allowed', async () => {
-            const { data, error } = await Model.create({ prop: 'allowed' });
-
-            expect(error).toBeNull();
-            expect(data).toMatchObject({ prop: 'allowed' });
-          });
-        });
-
-        describe('updates', () => {
-          it('should respect validators even if value provided is allowed', async () => {
-            const { data, error } = await Model.update(
-              { prop: 'allowed' },
-              { prop: null },
-            );
-
-            expect(data).toBeNull();
-            expect(error).toMatchObject({
-              prop: expect.objectContaining({
-                reason: 'validation failed',
-              }),
-            });
-          });
-
-          it('should ignore validated value from validator if value is not allowed', async () => {
-            const { data, error } = await Model.update(
-              { prop: null },
-              { prop: 'allowed' },
-            );
-
-            expect(error).toBeNull();
-            expect(data).toMatchObject({ prop: 'allowed' });
-          });
-        });
-      });
-
-      describe('behaviour with virtuals', () => {
-        const Model = new Schema({
-          dependent: {
-            default: null,
-            dependsOn: 'virtual',
-            resolver: ({
-              input: { virtual },
-            }: IvoContext<{ virtual: string }, { dependent: string | null }>) =>
-              virtual,
-          },
-          virtual: {
-            virtual: true,
-            allow: metadata.allowed,
-            validator(v: any) {
-              if (v) return { valid: true, validated: 'validated' };
-
-              return false;
-            },
-          },
-        }).getModel();
-
-        describe('creation', () => {
-          it('should respect validators even if value provided is allowed', async () => {
-            const { data, error } = await Model.create({ virtual: null });
-
-            expect(data).toBeNull();
-            expect(error).toMatchObject({
-              virtual: expect.objectContaining({
-                reason: 'validation failed',
-              }),
-            });
-          });
-
-          it('should ignore validated value from validator if value is not allowed', async () => {
-            const { data, error } = await Model.create({ virtual: 'allowed' });
-
-            expect(error).toBeNull();
-            expect(data).toMatchObject({ dependent: 'allowed' });
-          });
-        });
-
-        describe('updates', () => {
-          it('should respect validators even if value provided is allowed', async () => {
-            const { data, error } = await Model.update(
-              { dependent: 'allowed' },
-              { virtual: null },
-            );
-
-            expect(data).toBeNull();
-            expect(error).toMatchObject({
-              virtual: expect.objectContaining({
-                reason: 'validation failed',
-              }),
-            });
-          });
-
-          it('should ignore validated value from validator if value is not allowed', async () => {
-            const { data, error } = await Model.update(
-              { dependent: null },
-              { virtual: 'allowed' },
-            );
-
-            expect(error).toBeNull();
-            expect(data).toMatchObject({ dependent: 'allowed' });
-          });
-        });
-      });
-
-      describe('behaviour with virtuals & alias', () => {
-        const Model = new Schema({
-          dependent: {
-            default: null,
-            dependsOn: 'virtual',
-            resolver: ({
-              input: { virtual },
-            }: IvoContext<{ virtual: string }, { dependent: string | null }>) =>
-              virtual,
-          },
-          virtual: {
-            alias: 'dependent',
-            virtual: true,
-            allow: metadata.allowed,
-            validator(v: any) {
-              if (v) return { valid: true, validated: 'validated' };
-
-              return false;
-            },
-          },
-        }).getModel();
-
-        describe('creation', () => {
-          it('should respect validators even if value provided is allowed', async () => {
-            const { data, error } = await Model.create({ dependent: null });
-
-            expect(data).toBeNull();
-            expect(error).toMatchObject({
-              dependent: expect.objectContaining({
-                reason: 'validation failed',
-              }),
-            });
-          });
-
-          it('should ignore validated value from validator if value is not allowed', async () => {
-            const { data, error } = await Model.create({
-              dependent: 'allowed',
-            });
-
-            expect(error).toBeNull();
-            expect(data).toMatchObject({ dependent: 'allowed' });
-          });
-        });
-
-        describe('updates', () => {
-          it('should respect validators even if value provided is allowed', async () => {
-            const { data, error } = await Model.update(
-              { dependent: 'allowed' },
-              { dependent: null },
-            );
-
-            expect(data).toBeNull();
-            expect(error).toMatchObject({
-              dependent: expect.objectContaining({
-                reason: 'validation failed',
-              }),
-            });
-          });
-
-          it('should ignore validated value from validator if value is not allowed', async () => {
-            const { data, error } = await Model.update(
-              { dependent: null },
-              { dependent: 'allowed' },
-            );
-
-            expect(error).toBeNull();
-            expect(data).toMatchObject({ dependent: 'allowed' });
-          });
-        });
-      });
+      // "behaviour with virtuals" and "behaviour with virtuals & alias"
+      // discarded: same allow()+validate() mutual-exclusion reason as above
+      // (a virtual's validator is the synthesized passthrough when only
+      // allow() is used, so there's no separate custom validator to also
+      // "respect").
 
       describe('allow as an object', () => {
         describe('behaviour with lax props & no validators', () => {
           const Model = new Schema({
-            prop: { default: null, allow: { values: metadata.allowed } },
+            prop: field
+              .lax('prop')
+              .default(null)
+              .allow(metadata.allowed as never),
           }).getModel();
 
           describe('creation', () => {
@@ -810,219 +578,20 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           });
         });
 
-        describe('behaviour with lax props & validators', () => {
-          const Model = new Schema({
-            prop: {
-              default: null,
-              allow: { values: metadata.allowed },
-              validator(v: any) {
-                if (v) return { valid: true, validated: 'validated' };
-
-                return false;
-              },
-            },
-          }).getModel();
-
-          describe('creation', () => {
-            it('should respect validators even if value provided is allowed', async () => {
-              const { data, error } = await Model.create({ prop: null });
-
-              expect(data).toBeNull();
-              expect(error).toMatchObject({
-                prop: expect.objectContaining({
-                  reason: 'validation failed',
-                }),
-              });
-            });
-
-            it('should ignore validated value from validator if value is not allowed', async () => {
-              const { data, error } = await Model.create({ prop: 'allowed' });
-
-              expect(error).toBeNull();
-              expect(data).toMatchObject({ prop: 'allowed' });
-            });
-          });
-
-          describe('updates', () => {
-            it('should respect validators even if value provided is allowed', async () => {
-              const { data, error } = await Model.update(
-                { prop: 'allowed' },
-                { prop: null },
-              );
-
-              expect(data).toBeNull();
-              expect(error).toMatchObject({
-                prop: expect.objectContaining({
-                  reason: 'validation failed',
-                }),
-              });
-            });
-
-            it('should ignore validated value from validator if value is not allowed', async () => {
-              const { data, error } = await Model.update(
-                { prop: null },
-                { prop: 'allowed' },
-              );
-
-              expect(error).toBeNull();
-              expect(data).toMatchObject({ prop: 'allowed' });
-            });
-          });
-        });
-
-        describe('behaviour with virtuals', () => {
-          const Model = new Schema({
-            dependent: {
-              default: null,
-              dependsOn: 'virtual',
-              resolver: ({
-                input: { virtual },
-              }: IvoContext<
-                { virtual: string },
-                { dependent: string | null }
-              >) => virtual,
-            },
-            virtual: {
-              virtual: true,
-              allow: { values: metadata.allowed },
-              validator(v: any) {
-                if (v) return { valid: true, validated: 'validated' };
-
-                return false;
-              },
-            },
-          }).getModel();
-
-          describe('creation', () => {
-            it('should respect validators even if value provided is allowed', async () => {
-              const { data, error } = await Model.create({ virtual: null });
-
-              expect(data).toBeNull();
-              expect(error).toMatchObject({
-                virtual: expect.objectContaining({
-                  reason: 'validation failed',
-                }),
-              });
-            });
-
-            it('should ignore validated value from validator if value is not allowed', async () => {
-              const { data, error } = await Model.create({
-                virtual: 'allowed',
-              });
-
-              expect(error).toBeNull();
-              expect(data).toMatchObject({ dependent: 'allowed' });
-            });
-          });
-
-          describe('updates', () => {
-            it('should respect validators even if value provided is allowed', async () => {
-              const { data, error } = await Model.update(
-                { dependent: 'allowed' },
-                { virtual: null },
-              );
-
-              expect(data).toBeNull();
-              expect(error).toMatchObject({
-                virtual: expect.objectContaining({
-                  reason: 'validation failed',
-                }),
-              });
-            });
-
-            it('should ignore validated value from validator if value is not allowed', async () => {
-              const { data, error } = await Model.update(
-                { dependent: null },
-                { virtual: 'allowed' },
-              );
-
-              expect(error).toBeNull();
-              expect(data).toMatchObject({ dependent: 'allowed' });
-            });
-          });
-        });
-
-        describe('behaviour with virtuals & alias', () => {
-          const Model = new Schema({
-            dependent: {
-              default: null,
-              dependsOn: 'virtual',
-              resolver: ({
-                input: { virtual },
-              }: IvoContext<
-                { virtual: string },
-                { dependent: string | null }
-              >) => virtual,
-            },
-            virtual: {
-              alias: 'dependent',
-              virtual: true,
-              allow: { values: metadata.allowed },
-              validator(v: any) {
-                if (v) return { valid: true, validated: 'validated' };
-
-                return false;
-              },
-            },
-          }).getModel();
-
-          describe('creation', () => {
-            it('should respect validators even if value provided is allowed', async () => {
-              const { data, error } = await Model.create({ dependent: null });
-
-              expect(data).toBeNull();
-              expect(error).toMatchObject({
-                dependent: expect.objectContaining({
-                  reason: 'validation failed',
-                }),
-              });
-            });
-
-            it('should ignore validated value from validator if value is not allowed', async () => {
-              const { data, error } = await Model.create({
-                dependent: 'allowed',
-              });
-
-              expect(error).toBeNull();
-              expect(data).toMatchObject({ dependent: 'allowed' });
-            });
-          });
-
-          describe('updates', () => {
-            it('should respect validators even if value provided is allowed', async () => {
-              const { data, error } = await Model.update(
-                { dependent: 'allowed' },
-                { dependent: null },
-              );
-
-              expect(data).toBeNull();
-              expect(error).toMatchObject({
-                dependent: expect.objectContaining({
-                  reason: 'validation failed',
-                }),
-              });
-            });
-
-            it('should ignore validated value from validator if value is not allowed', async () => {
-              const { data, error } = await Model.update(
-                { dependent: null },
-                { dependent: 'allowed' },
-              );
-
-              expect(error).toBeNull();
-              expect(data).toMatchObject({ dependent: 'allowed' });
-            });
-          });
-        });
+        // "behaviour with lax props & validators", "behaviour with
+        // virtuals", and "behaviour with virtuals & alias" (object-form
+        // allow) discarded: same allow()+validate() mutual-exclusion reason
+        // as above.
 
         describe('error', () => {
           describe('error as a string', () => {
             describe('if string is empty', () => {
               const Model = new Schema({
-                prop: {
-                  default: metadata.allowed[0],
-                  allow: { error: '', values: metadata.allowed },
-                },
+                prop: field
+                  .lax('prop')
+                  .default(metadata.allowed[0])
+                  .allow(metadata.allowed as never)
+                  .allowError(''),
               }).getModel();
 
               it('should return default error message at creation', async () => {
@@ -1055,10 +624,11 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               const errorMessage = 'Value not allowed. lol';
 
               const Model = new Schema({
-                prop: {
-                  default: metadata.allowed[0],
-                  allow: { error: errorMessage, values: metadata.allowed },
-                },
+                prop: field
+                  .lax('prop')
+                  .default(metadata.allowed[0])
+                  .allow(metadata.allowed as never)
+                  .allowError(errorMessage),
               }).getModel();
 
               it('should return default error message at creation', async () => {
@@ -1097,10 +667,11 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
 
             for (const [expected] of errorMessages) {
               const Model = new Schema({
-                prop: {
-                  default: metadata.allowed[0],
-                  allow: { error: expected, values: metadata.allowed },
-                },
+                prop: field
+                  .lax('prop')
+                  .default(metadata.allowed[0])
+                  .allow(metadata.allowed as never)
+                  .allowError(expected as never),
               }).getModel();
 
               it('should return default error message at creation', async () => {
@@ -1159,10 +730,11 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
 
             for (const [error, expected] of errorMessages) {
               const Model = new Schema({
-                prop: {
-                  default: metadata.allowed[0],
-                  allow: { error, values: metadata.allowed },
-                },
+                prop: field
+                  .lax('prop')
+                  .default(metadata.allowed[0])
+                  .allow(metadata.allowed as never)
+                  .allowError(error as never),
               }).getModel();
 
               it('should return default error message at creation', async () => {
@@ -1189,15 +761,13 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
 
             describe('behaviour with errors thrown in the error setter', () => {
               const Model = new Schema({
-                prop: {
-                  default: 'lol',
-                  allow: {
-                    values: ['lol', 'lolol'],
-                    error() {
-                      throw new Error('lolol');
-                    },
-                  },
-                },
+                prop: field
+                  .lax('prop')
+                  .default('lol')
+                  .allow(['lol', 'lolol'])
+                  .allowError(() => {
+                    throw new Error('lolol');
+                  }),
               }).getModel();
 
               it('should return proper errors at creation', async () => {

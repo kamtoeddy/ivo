@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import type { IvoContext, ReadonlyIvoContext } from '../../src';
+import type { ReadonlyIvoContext } from '../../src';
+import { createFieldBuilder } from '../../src/schema/fields';
 import { DEFINITION_RULES, VIRTUAL_RULES } from '../../src/schema/types';
 
 import { expectFailure, expectNoFailure, validator } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 export const Test_VirtualProperties = ({ Schema, fx }: any) => {
   describe('virtual', () => {
@@ -11,17 +14,16 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
       describe('alias', () => {
         it('should allow alias', () => {
           const toPass = fx({
-            dependentProp: {
-              default: '',
-              dependsOn: 'propertyName',
-              resolver: () => '',
-            },
-            propertyName: {
-              alias: 'alias',
-              virtual: true,
-              sanitizer: () => '',
-              validator,
-            },
+            dependentProp: field
+              .dependent('dependentProp')
+              .default('')
+              .dependsOn('propertyName')
+              .resolve(() => ''),
+            propertyName: field
+              .virtual('propertyName')
+              .alias('alias')
+              .validate(validator)
+              .sanitize(() => ''),
           });
 
           expectNoFailure(toPass);
@@ -34,17 +36,16 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           const virtualProp = 'virtualProp';
 
           const toPass = fx({
-            [dependentProp]: {
-              default: '',
-              dependsOn: virtualProp,
-              resolver: () => '',
-            },
-            [virtualProp]: {
-              alias: dependentProp,
-              virtual: true,
-              sanitizer: () => '',
-              validator,
-            },
+            [dependentProp]: field
+              .dependent(dependentProp)
+              .default('')
+              .dependsOn(virtualProp)
+              .resolve(() => ''),
+            [virtualProp]: field
+              .virtual(virtualProp)
+              .alias(dependentProp)
+              .validate(validator)
+              .sanitize(() => ''),
           });
 
           expectNoFailure(toPass);
@@ -74,13 +75,19 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           }
 
           const Model = new Schema({
-            id: { constant: true, value: 1, onDelete: resolver },
-            quantity: {
-              default: 0.0,
-              dependsOn: 'setQuantity',
-              resolver,
-            },
-            setQuantity: { alias: 'qty', virtual: true, validator },
+            id: field
+              .constant('id')
+              .value(1)
+              .onDelete(resolver as never),
+            quantity: field
+              .dependent('quantity')
+              .default(0.0)
+              .dependsOn('setQuantity')
+              .resolve(resolver as never),
+            setQuantity: field
+              .virtual('setQuantity')
+              .alias('qty')
+              .validate(validator),
           }).getModel();
 
           beforeEach(() => {
@@ -98,18 +105,20 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
             it("should use default values of dependent props to be set if an alias with that prop's name exists on the same schema but initialization is blocked", async () => {
               const Model = new Schema({
-                id: { constant: true, value: 1, onDelete: resolver },
-                quantity: {
-                  default: 0.0,
-                  dependsOn: 'setQuantity',
-                  resolver,
-                },
-                setQuantity: {
-                  alias: 'quantity',
-                  virtual: true,
-                  ignoreInit: true,
-                  validator,
-                },
+                id: field
+                  .constant('id')
+                  .value(1)
+                  .onDelete(resolver as never),
+                quantity: field
+                  .dependent('quantity')
+                  .default(0.0)
+                  .dependsOn('setQuantity')
+                  .resolve(resolver as never),
+                setQuantity: field
+                  .virtual('setQuantity')
+                  .alias('quantity')
+                  .validate(validator)
+                  .ignoreInit(),
               }).getModel();
 
               const { data } = await Model.create({ quantity: 12 });
@@ -166,24 +175,22 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
           describe("availability of virtuals in ctx of 'required' method of virtual", () => {
             const Model = new Schema({
-              id: { constant: true, value: 1 },
-              note: { default: '' },
-              quantity: { default: 0.0, dependsOn: 'setQuantity', resolver },
-              setQuantity: {
-                alias: 'qty',
-                virtual: true,
-                required({
-                  input: { setQuantity },
-                }: ReadonlyIvoContext<
-                  { setQuantity?: number; note?: string },
-                  { id: number; note: string; quantity: number }
-                >) {
+              id: field.constant('id').value(1),
+              note: field.lax('note').default(''),
+              quantity: field
+                .dependent('quantity')
+                .default(0.0)
+                .dependsOn('setQuantity')
+                .resolve(resolver as never),
+              setQuantity: field
+                .virtual('setQuantity')
+                .alias('qty')
+                .validate(validator)
+                .required(({ input: { setQuantity } }: any) => {
                   contextRecord.setQuantity = setQuantity;
 
                   return true;
-                },
-                validator,
-              },
+                }),
             }).getModel();
 
             it("should make ctx.input available (keyed by the virtual's config name, not its alias) inside 'required' at creation", async () => {
@@ -211,30 +218,32 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           });
 
           describe("availability of virtuals in ctx of ignoreInit & ignoreUpdate methods of the virtual when it's alias is provided", () => {
-            type Input = { qty: number };
-            type Output = { id: number; quantity: number };
-
             const Model = new Schema({
-              id: { constant: true, value: 1, onDelete: resolver },
-              quantity: { default: 0.0, dependsOn: 'setQuantity', resolver },
-              setQuantity: {
-                alias: 'qty',
-                virtual: true,
-                ignoreInit({ input: { qty } }: IvoContext<Input, Output>) {
+              id: field
+                .constant('id')
+                .value(1)
+                .onDelete(resolver as never),
+              quantity: field
+                .dependent('quantity')
+                .default(0.0)
+                .dependsOn('setQuantity')
+                .resolve(resolver as never),
+              setQuantity: field
+                .virtual('setQuantity')
+                .alias('qty')
+                .validate(validator)
+                .ignoreInit(({ input: { qty } }: any) => {
                   contextRecord.setQuantity = qty;
 
                   return (qty ?? 0) <= 0;
-                },
-                ignoreUpdate({
-                  input: { qty },
-                  values: { quantity },
-                }: ReadonlyIvoContext<Input, Output>) {
-                  contextRecord.setQuantity = qty;
+                })
+                .ignoreUpdate(
+                  ({ input: { qty }, values: { quantity } }: any) => {
+                    contextRecord.setQuantity = qty;
 
-                  return (qty ?? 0) <= quantity;
-                },
-                validator,
-              },
+                    return (qty ?? 0) <= quantity;
+                  },
+                ),
             }).getModel();
 
             it("should respect 'ignoreInit' rule of virtual property even when alias is provided at creation", async () => {
@@ -280,17 +289,16 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
         describe('behaviour with validation & required errors and alias with different name', () => {
           const Model = new Schema({
-            dependent: {
-              default: 0.0,
-              dependsOn: '_virtual',
-              resolver: () => 1,
-            },
-            _virtual: {
-              alias: 'virtual',
-              virtual: true,
-              required: () => true,
-              validator: (v: any) => v === 'valid',
-            },
+            dependent: field
+              .dependent('dependent')
+              .default(0.0)
+              .dependsOn('_virtual')
+              .resolve(() => 1),
+            _virtual: field
+              .virtual('_virtual')
+              .alias('virtual')
+              .validate((v: any) => v === 'valid')
+              .required(() => true),
           }).getModel();
 
           describe('creation', () => {
@@ -338,17 +346,16 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
         describe('behaviour with validation & required errors and alias with name of dependent prop', () => {
           const Model = new Schema({
-            dependent: {
-              default: 0.0,
-              dependsOn: '_virtual',
-              resolver: () => 1,
-            },
-            _virtual: {
-              alias: 'dependent',
-              virtual: true,
-              required: () => true,
-              validator: (v: any) => v === 'valid',
-            },
+            dependent: field
+              .dependent('dependent')
+              .default(0.0)
+              .dependsOn('_virtual')
+              .resolve(() => 1),
+            _virtual: field
+              .virtual('_virtual')
+              .alias('dependent')
+              .validate((v: any) => v === 'valid')
+              .required(() => true),
           }).getModel();
 
           describe('creation', () => {
@@ -396,12 +403,15 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
       it('should allow sanitizer', () => {
         const toPass = fx({
-          dependentProp: {
-            default: '',
-            dependsOn: 'propertyName',
-            resolver: () => '',
-          },
-          propertyName: { virtual: true, sanitizer: () => '', validator },
+          dependentProp: field
+            .dependent('dependentProp')
+            .default('')
+            .dependsOn('propertyName')
+            .resolve(() => ''),
+          propertyName: field
+            .virtual('propertyName')
+            .validate(validator)
+            .sanitize(() => ''),
         });
 
         expectNoFailure(toPass);
@@ -411,16 +421,15 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
       it('should allow onFailure', () => {
         const toPass = fx({
-          dependentProp: {
-            default: '',
-            dependsOn: 'propertyName',
-            resolver: () => '',
-          },
-          propertyName: {
-            virtual: true,
-            onFailure: validator,
-            validator,
-          },
+          dependentProp: field
+            .dependent('dependentProp')
+            .default('')
+            .dependsOn('propertyName')
+            .resolve(() => ''),
+          propertyName: field
+            .virtual('propertyName')
+            .validate(validator)
+            .onFailure(validator as never),
         });
 
         expectNoFailure(toPass);
@@ -430,16 +439,15 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
       it('should allow requiredBy', () => {
         const toPass = fx({
-          dependentProp: {
-            default: '',
-            dependsOn: 'propertyName',
-            resolver: () => '',
-          },
-          propertyName: {
-            virtual: true,
-            required: () => true,
-            validator,
-          },
+          dependentProp: field
+            .dependent('dependentProp')
+            .default('')
+            .dependsOn('propertyName')
+            .resolve(() => ''),
+          propertyName: field
+            .virtual('propertyName')
+            .validate(validator)
+            .required(() => true),
         });
 
         expectNoFailure(toPass);
@@ -452,12 +460,18 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
         for (const ignoreInit of values) {
           const toPass = fx({
-            dependentProp: {
-              default: '',
-              dependsOn: 'propertyName',
-              resolver: () => '',
-            },
-            propertyName: { virtual: true, ignoreInit, validator },
+            dependentProp: field
+              .dependent('dependentProp')
+              .default('')
+              .dependsOn('propertyName')
+              .resolve(() => ''),
+            propertyName:
+              ignoreInit === true
+                ? field.virtual('propertyName').validate(validator).ignoreInit()
+                : field
+                    .virtual('propertyName')
+                    .validate(validator)
+                    .ignoreInit(ignoreInit as never),
           });
 
           expectNoFailure(toPass);
@@ -471,12 +485,15 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
         for (const onSuccess of values) {
           const toPass = fx({
-            dependentProp: {
-              default: '',
-              dependsOn: 'propertyName',
-              resolver: () => '',
-            },
-            propertyName: { virtual: true, onSuccess, validator },
+            dependentProp: field
+              .dependent('dependentProp')
+              .default('')
+              .dependsOn('propertyName')
+              .resolve(() => ''),
+            propertyName: field
+              .virtual('propertyName')
+              .validate(validator)
+              .onSuccess(onSuccess as never),
           });
 
           expectNoFailure(toPass);
@@ -491,72 +508,53 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         const sanitizedValues: Record<string, unknown> = {};
 
         const User = new Schema({
-          dependentSideInit: {
-            default: '',
-            dependsOn: ['virtualInit', 'virtualWithSanitizer'],
-            resolver({
-              input: { virtualInit, virtualWithSanitizer },
-            }: ReadonlyIvoContext<
-              {
-                virtualInit?: boolean;
-                virtualNoInit?: boolean;
-                virtualWithSanitizer?: boolean;
-                virtualWithSanitizerNoInit?: boolean;
-              },
-              {
-                name: string;
-                dependentSideInit: string;
-                dependentSideNoInit: string;
-              }
-            >) {
-              return virtualInit && virtualWithSanitizer ? 'both' : 'one';
-            },
-            onSuccess: onSuccess('dependentSideInit'),
-          },
-          dependentSideNoInit: {
-            default: '',
-            dependsOn: ['virtualNoInit', 'virtualWithSanitizerNoInit'],
-            resolver: () => 'changed',
-            onSuccess: onSuccess('dependentSideNoInit'),
-          },
-          name: { default: '' },
-          virtualInit: {
-            virtual: true,
-            onSuccess: onSuccess('virtualInit'),
-            validator: validateBoolean,
-          },
-          virtualNoInit: {
-            virtual: true,
-            ignoreInit: true,
-            onSuccess: [
+          dependentSideInit: field
+            .dependent('dependentSideInit')
+            .default('')
+            .dependsOn(['virtualInit', 'virtualWithSanitizer'])
+            .resolve(({ input: { virtualInit, virtualWithSanitizer } }: any) =>
+              virtualInit && virtualWithSanitizer ? 'both' : 'one',
+            )
+            .onSuccess(onSuccess('dependentSideInit')),
+          dependentSideNoInit: field
+            .dependent('dependentSideNoInit')
+            .default('')
+            .dependsOn(['virtualNoInit', 'virtualWithSanitizerNoInit'])
+            .resolve(() => 'changed')
+            .onSuccess(onSuccess('dependentSideNoInit')),
+          name: field.lax('name').default(''),
+          virtualInit: field
+            .virtual('virtualInit')
+            .validate(validateBoolean as never)
+            .onSuccess(onSuccess('virtualInit')),
+          virtualNoInit: field
+            .virtual('virtualNoInit')
+            .validate(validateBoolean as never)
+            .ignoreInit()
+            .onSuccess([
               onSuccess('virtualNoInit'),
               incrementOnSuccessStats('virtualNoInit'),
-            ],
-            validator: validateBoolean,
-          },
-          virtualWithSanitizer: {
-            virtual: true,
-            onSuccess: [
+            ]),
+          virtualWithSanitizer: field
+            .virtual('virtualWithSanitizer')
+            .validate(validateBoolean as never)
+            .sanitize(sanitizerOf('virtualWithSanitizer', 'sanitized'))
+            .onSuccess([
               onSuccess('virtualWithSanitizer'),
               incrementOnSuccessStats('virtualWithSanitizer'),
               incrementOnSuccessStats('virtualWithSanitizer'),
-            ],
-            sanitizer: sanitizerOf('virtualWithSanitizer', 'sanitized'),
-            validator: validateBoolean,
-          },
-          virtualWithSanitizerNoInit: {
-            virtual: true,
-            ignoreInit: true,
-            onSuccess: [
+            ]),
+          virtualWithSanitizerNoInit: field
+            .virtual('virtualWithSanitizerNoInit')
+            .validate(validateBoolean as never)
+            .ignoreInit()
+            .sanitize(
+              sanitizerOf('virtualWithSanitizerNoInit', 'sanitized no init'),
+            )
+            .onSuccess([
               onSuccess('virtualWithSanitizerNoInit'),
               incrementOnSuccessStats('virtualWithSanitizerNoInit'),
-            ],
-            sanitizer: sanitizerOf(
-              'virtualWithSanitizerNoInit',
-              'sanitized no init',
-            ),
-            validator: validateBoolean,
-          },
+            ]),
         }).getModel();
 
         function sanitizerOf(prop: string, value: any) {
@@ -720,23 +718,20 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
         describe('behaviour with errors thrown in the sanitizer', () => {
           const Model = new Schema({
-            dependent: {
-              default: '',
-              dependsOn: 'virtual',
-              resolver: (
-                context: ReadonlyIvoContext<
-                  { virtual?: any },
-                  { dependent: string }
-                >,
-              ) => context.input?.virtual ?? context.rawInput?.virtual,
-            },
-            virtual: {
-              virtual: true,
-              sanitizer() {
+            dependent: field
+              .dependent('dependent')
+              .default('')
+              .dependsOn('virtual')
+              .resolve(
+                (context: any) =>
+                  context.input?.virtual ?? context.rawInput?.virtual,
+              ),
+            virtual: field
+              .virtual('virtual')
+              .validate(() => true)
+              .sanitize(() => {
                 throw new Error('lolol');
-              },
-              validator: () => true,
-            },
+              }),
           }).getModel();
 
           const values = [null, '', 1, 0, -1, true, false, [], {}];

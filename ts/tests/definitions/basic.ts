@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 
+import { createFieldBuilder } from '../../src/schema/fields';
 import { ERRORS, expectFailure } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
   describe('Schema definitions', () => {
@@ -99,10 +102,14 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
     it('should allow access to reservedKeys of valid schemas', () => {
       const schema = new Schema(
         {
-          id: { constant: true, value: 1 },
-          dependent: { default: '', dependsOn: 'virtual', resolver: () => '' },
-          lax: { default: true },
-          virtual: { virtual: true, validator: () => true },
+          id: field.constant('id').value(1),
+          dependent: field
+            .dependent('dependent')
+            .default('')
+            .dependsOn('virtual')
+            .resolve(() => ''),
+          lax: field.lax('lax').default(true),
+          virtual: field.virtual('virtual').validate(() => true),
         },
         { timestamps: { createdAt: 'c_At' } },
       );
@@ -122,12 +129,10 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
 
   describe('behaviour of schema when errors thrown in setter of default values', () => {
     const Model = new Schema({
-      prop: {
-        default() {
-          throw new Error('lolol');
-        },
-      },
-      prop1: { default: '' },
+      prop: field.lax('prop').default(() => {
+        throw new Error('lolol');
+      }),
+      prop1: field.lax('prop1').default(''),
     }).getModel();
 
     it('should set value as default on error generating default value at creation', async () => {

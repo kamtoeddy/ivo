@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, test } from 'bun:test';
 import type { ReadonlyIvoContext } from '../../src';
+import { createFieldBuilder } from '../../src/schema/fields';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
   describe('life cycle handlers', () => {
-    const rules = ['onDelete', 'onFailure', 'onSuccess'];
+    const rules = ['onDelete', 'onFailure', 'onSuccess'] as const;
 
     describe('valid', () => {
       test('valid', () => {
@@ -18,11 +21,11 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         for (const rule of rules)
           for (const value of values) {
             const toPass = fx({
-              propertyName: {
-                default: '',
-                [rule]: value,
-                validator,
-              },
+              propertyName: field
+                .lax('propertyName')
+                .default('')
+                .validate(validator)
+                [rule](value as never),
             });
 
             expectNoFailure(toPass);
@@ -97,33 +100,29 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       const validator = (value: unknown) => ({ valid: !!value });
 
       const Model = new Schema({
-        constant: {
-          constant: true,
-          value: 'constant',
-          onDelete: handle('onDelete', 'constant'),
-          onSuccess: handle('onSuccess', 'constant'),
-        },
-        prop1: {
-          required: true,
-          onDelete: handle('onDelete', 'prop1'),
-          onFailure: handle('onFailure', 'prop1'),
-          onSuccess: handle('onSuccess', 'prop1'),
-          validator,
-        },
-        prop2: {
-          required: true,
-          onDelete: handle('onDelete', 'prop2'),
-          onFailure: handle('onFailure', 'prop2'),
-          onSuccess: handle('onSuccess', 'prop2'),
-          validator,
-        },
-        prop3: {
-          required: true,
-          onDelete: handle('onDelete', 'prop3'),
-          onFailure: handle('onFailure', 'prop3'),
-          onSuccess: handle('onSuccess', 'prop3'),
-          validator,
-        },
+        constant: field
+          .constant('constant')
+          .value('constant')
+          .onDelete(handle('onDelete', 'constant'))
+          .onSuccess(handle('onSuccess', 'constant')),
+        prop1: field
+          .required('prop1')
+          .validate(validator)
+          .onDelete(handle('onDelete', 'prop1'))
+          .onFailure(handle('onFailure', 'prop1'))
+          .onSuccess(handle('onSuccess', 'prop1')),
+        prop2: field
+          .required('prop2')
+          .validate(validator)
+          .onDelete(handle('onDelete', 'prop2'))
+          .onFailure(handle('onFailure', 'prop2'))
+          .onSuccess(handle('onSuccess', 'prop2')),
+        prop3: field
+          .required('prop3')
+          .validate(validator)
+          .onDelete(handle('onDelete', 'prop3'))
+          .onFailure(handle('onFailure', 'prop3'))
+          .onSuccess(handle('onSuccess', 'prop3')),
       }).getModel();
 
       beforeEach(() => {
@@ -207,14 +206,22 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       const validator = () => ({ valid: false });
 
       const Model = new Schema({
-        constant: {
-          constant: true,
-          value: 'constant',
-          onDelete: onDelete('constant'),
-        },
-        prop1: { required: true, onDelete: onDelete('prop1'), validator },
-        prop2: { required: true, onDelete: onDelete('prop2'), validator },
-        prop3: { required: true, onDelete: onDelete('prop3'), validator },
+        constant: field
+          .constant('constant')
+          .value('constant')
+          .onDelete(onDelete('constant')),
+        prop1: field
+          .required('prop1')
+          .validate(validator)
+          .onDelete(onDelete('prop1')),
+        prop2: field
+          .required('prop2')
+          .validate(validator)
+          .onDelete(onDelete('prop2')),
+        prop3: field
+          .required('prop3')
+          .validate(validator)
+          .onDelete(onDelete('prop3')),
       }).getModel();
 
       beforeEach(() => {
@@ -303,33 +310,31 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         const validator = () => ({ valid: false });
 
         const Model = new Schema({
-          prop1: {
-            default: true,
-            onFailure: incrementOnFailureCountOf('prop1'),
-            validator,
-          },
-          prop2: {
-            required: true,
-            onFailure: [
+          prop1: field
+            .lax('prop1')
+            .default(true)
+            .validate(validator)
+            .onFailure(incrementOnFailureCountOf('prop1')),
+          prop2: field
+            .required('prop2')
+            .validate(validator)
+            .onFailure([
               incrementOnFailureCountOf('prop2'),
               incrementOnFailureCountOf('prop2'),
-            ],
-            validator,
-          },
-          dependentProp: {
-            default: '',
-            dependsOn: 'virtualProp',
-            resolver: () => '',
-          },
-          virtualProp: {
-            virtual: true,
-            onFailure: [
+            ]),
+          dependentProp: field
+            .dependent('dependentProp')
+            .default('')
+            .dependsOn('virtualProp')
+            .resolve(() => ''),
+          virtualProp: field
+            .virtual('virtualProp')
+            .validate(validator)
+            .onFailure([
               incrementOnFailureCountOf('virtualProp'),
               incrementOnFailureCountOf('virtualProp'),
               incrementOnFailureCountOf('virtualProp'),
-            ],
-            validator,
-          },
+            ]),
         }).getModel();
 
         beforeEach(() => {
@@ -476,30 +481,32 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       const validator = () => ({ valid: true });
 
       const Model = new Schema({
-        dependent: {
-          default: false,
-          dependsOn: 'readonlyLax',
-          onSuccess: onSuccess('dependent'),
-          resolver: () => true,
-        },
-        lax: { default: '', onSuccess: onSuccess('lax'), validator },
-        requiredReadonly: {
-          required: true,
-          readonly: true,
-          onSuccess: onSuccess('requiredReadonly'),
-          validator,
-        },
-        readonlyLax: {
-          default: '',
-          readonly: true,
-          onSuccess: onSuccess('readonlyLax'),
-          validator,
-        },
-        required: {
-          required: true,
-          onSuccess: onSuccess('required'),
-          validator,
-        },
+        dependent: field
+          .dependent('dependent')
+          .default(false)
+          .dependsOn('readonlyLax')
+          .resolve(() => true)
+          .onSuccess(onSuccess('dependent')),
+        lax: field
+          .lax('lax')
+          .default('')
+          .validate(validator)
+          .onSuccess(onSuccess('lax')),
+        requiredReadonly: field
+          .required('requiredReadonly')
+          .validate(validator)
+          .readonly()
+          .onSuccess(onSuccess('requiredReadonly')),
+        readonlyLax: field
+          .lax('readonlyLax')
+          .default('')
+          .validate(validator)
+          .readonly()
+          .onSuccess(onSuccess('readonlyLax')),
+        required: field
+          .required('required')
+          .validate(validator)
+          .onSuccess(onSuccess('required')),
       }).getModel();
 
       beforeEach(() => {

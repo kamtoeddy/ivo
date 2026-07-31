@@ -1,21 +1,21 @@
 import type { ObjectType } from '../../utils';
-import { type ArrayOfMinSizeOne, BUILD, type NS, type TypeOf } from '../types';
+import { type ArrayOfMinSizeOne, BUILD, type NS } from '../types';
 
 export { type BlankConstantBuilder, ConstantBuilder };
 
 interface BlankConstantBuilder<
-  K extends keyof Output,
+  Value extends Output[keyof Output],
   Input,
   Output,
   CtxOptions extends ObjectType,
 > {
   value(
-    value: TypeOf<Output[K]> | NS.Setter<Output[K], Input, Output, CtxOptions>,
-  ): BuildableConstantConfig<K, Input, Output, CtxOptions>;
+    value: Value | NS.Resolver<Value, Input, Output, CtxOptions>,
+  ): BuildableConstantConfig<Value, Input, Output, CtxOptions>;
 }
 
 type BuildableConstantConfig<
-  K extends keyof Output,
+  Value extends Output[keyof Output],
   Input,
   Output,
   CtxOptions extends ObjectType,
@@ -23,7 +23,7 @@ type BuildableConstantConfig<
   HasOnDelete extends boolean = false,
   HasOnSuccess extends boolean = false,
 > = {
-  [BUILD](): NS.ConstantField<K, Input, Output, CtxOptions>;
+  [BUILD](): NS.ConstantField<Value, Input, Output, CtxOptions>;
 } & (HasOnDelete extends true
   ? {}
   : {
@@ -32,7 +32,7 @@ type BuildableConstantConfig<
           | NS.DeleteHandler<Output, CtxOptions>
           | ArrayOfMinSizeOne<NS.DeleteHandler<Output, CtxOptions>>,
       ): BuildableConstantConfig<
-        K,
+        Value,
         Input,
         Output,
         CtxOptions,
@@ -49,7 +49,7 @@ type BuildableConstantConfig<
             | NS.SuccessHandler<Input, Output, CtxOptions>
             | ArrayOfMinSizeOne<NS.SuccessHandler<Input, Output, CtxOptions>>,
         ): BuildableConstantConfig<
-          K,
+          Value,
           Input,
           Output,
           CtxOptions,
@@ -60,21 +60,20 @@ type BuildableConstantConfig<
       });
 
 class ConstantBuilder<
-  K extends keyof Output,
+  Value extends Output[keyof Output],
   Input,
   Output,
   CtxOptions extends ObjectType,
 > implements
-    BlankConstantBuilder<K, Input, Output, CtxOptions>,
-    BuildableConstantConfig<K, Input, Output, CtxOptions>
+    BlankConstantBuilder<Value, Input, Output, CtxOptions>,
+    BuildableConstantConfig<Value, Input, Output, CtxOptions>
 {
-  private config: Partial<NS.ConstantField<K, Input, Output, CtxOptions>> = {
-    constant: true,
-  };
+  private config: Partial<NS.ConstantField<Value, Input, Output, CtxOptions>> =
+    {
+      type: 'constant',
+    };
 
-  value(
-    value: TypeOf<Output[K]> | NS.Setter<Output[K], Input, Output, CtxOptions>,
-  ) {
+  value(value: Value | NS.Resolver<Value, Input, Output, CtxOptions>) {
     this.config.value = value;
     return this as never;
   }
@@ -98,6 +97,6 @@ class ConstantBuilder<
   }
 
   [BUILD]() {
-    return this.config as NS.ConstantField<K, Input, Output, CtxOptions>;
+    return this.config as NS.ConstantField<Value, Input, Output, CtxOptions>;
   }
 }

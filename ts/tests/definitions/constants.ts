@@ -1,7 +1,10 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 
 import type { ReadonlyIvoContext } from '../../src';
+import { createFieldBuilder } from '../../src/schema/fields';
 import { expectFailure, expectNoFailure } from '../_utils';
+
+const field = createFieldBuilder<any, any>();
 
 export const Test_ConstantProperties = ({ Schema, fx }: any) => {
   describe('constant', () => {
@@ -10,10 +13,9 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
 
       beforeAll(async () => {
         User = new Schema({
-          asyncConstant: { constant: true, value: asyncSetter },
-          id: {
-            constant: true,
-            value: (
+          asyncConstant: field.constant('asyncConstant').value(asyncSetter),
+          id: field.constant('id').value(
+            (
               ctx: ReadonlyIvoContext<
                 { id?: string | number },
                 {
@@ -24,9 +26,9 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
                 }
               >,
             ) => (ctx?.input?.id === 'id' ? 'id-2' : 'id'),
-          },
-          parentId: { constant: true, value: 'parent id' },
-          laxProp: { default: 0 },
+          ),
+          parentId: field.constant('parentId').value('parent id'),
+          laxProp: field.lax('laxProp').default(0),
         }).getModel();
 
         function asyncSetter() {
@@ -64,7 +66,9 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
         const values = ['', 'value', 1, null, false, true, {}, [], () => 1];
 
         for (const value of values) {
-          const toPass = fx({ propertyName: { constant: true, value } });
+          const toPass = fx({
+            propertyName: field.constant('propertyName').value(value),
+          });
 
           expectNoFailure(toPass);
 
@@ -77,7 +81,10 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
 
         for (const onDelete of values) {
           const toPass = fx({
-            propertyName: { constant: true, value: '', onDelete },
+            propertyName: field
+              .constant('propertyName')
+              .value('')
+              .onDelete(onDelete as never),
           });
 
           expectNoFailure(toPass);
@@ -91,7 +98,10 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
 
         for (const onSuccess of values) {
           const toPass = fx({
-            propertyName: { constant: true, value: '', onSuccess },
+            propertyName: field
+              .constant('propertyName')
+              .value('')
+              .onSuccess(onSuccess as never),
           });
 
           expectNoFailure(toPass);
@@ -220,12 +230,9 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
 
     describe('behaviour with errors thrown in the value generator', () => {
       const Model = new Schema({
-        constant: {
-          constant: true,
-          value() {
-            throw new Error('lolol');
-          },
-        },
+        constant: field.constant('constant').value(() => {
+          throw new Error('lolol');
+        }),
       }).getModel();
 
       it('should set value of constant to null if value could not be generated properly', async () => {
