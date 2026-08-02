@@ -7,7 +7,7 @@ use crate::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 ComputableRequiredError, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-                IntoRequiredErrorResolver, IntoSuccessHandler, IsFieldProvisionEnabled,
+                IntoInitRequiredErrorResolver, IntoSuccessHandler, IsFieldProvisionEnabled,
                 UniformValidator,
             },
         },
@@ -31,7 +31,7 @@ pub struct RequiredFieldBuilder<
     HasFailure = No,
     HasSuccess = No,
 > {
-    required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
+    required_error: Option<ComputableRequiredError<I, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
@@ -204,7 +204,7 @@ impl<
         resolver: R,
     ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasValidator, HasRevalidator, Yes>
     where
-        R: IntoRequiredErrorResolver<I, O, CtxOptions>,
+        R: IntoInitRequiredErrorResolver<I, O, CtxOptions>,
     {
         RequiredFieldBuilder {
             validator: self.validator,

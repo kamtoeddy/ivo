@@ -1,4 +1,4 @@
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoModel, IvoStruct};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -394,7 +394,7 @@ async fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
             f.field(
                 "required",
                 IvoField::REQUIRED
-                    .required_error_fn(|_, _| REQUIRED_ERROR.to_string())
+                    .required_error_fn(|_, _| ready(REQUIRED_ERROR.to_string()))
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )
         },

@@ -2,7 +2,7 @@
 
 use futures::future::{BoxFuture, FutureExt};
 
-use std::future::{ready, Future};
+use std::future::Future;
 
 use crate::{
     __private_types::{types::BooleanResolver, ValidatorResponse},
@@ -110,16 +110,18 @@ where
     }
 }
 
-pub trait IntoRequiredErrorResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
-    fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions>;
+pub trait IntoInitRequiredErrorResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
+    fn into_resolver(self) -> InitRequiredResolver<I, CtxOptions>;
 }
 
-impl<F, I: IvoStruct, O: IvoStruct, CtxOptions> IntoRequiredErrorResolver<I, O, CtxOptions> for F
+impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoInitRequiredErrorResolver<I, O, CtxOptions>
+    for F
 where
-    F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> String + Send + Sync + 'static,
+    F: Fn(IvoSharedInput<I>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = String> + Send + 'static,
 {
-    fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions> {
-        Box::new(move |ctx, o| Box::pin(ready(Some(self(ctx, o)))))
+    fn into_resolver(self) -> InitRequiredResolver<I, CtxOptions> {
+        Box::new(move |raw_input, o| Box::pin(self(raw_input, o)))
     }
 }
 
@@ -230,12 +232,19 @@ pub enum IsFieldProvisionEnabled<I: IvoStruct, O: IvoStruct, CtxOptions> {
     Func(BooleanResolver<I, O, CtxOptions>),
 }
 
-pub enum ComputableRequiredError<I: IvoStruct, O: IvoStruct, CtxOptions> {
+pub enum ComputableRequiredError<I: IvoStruct, CtxOptions> {
     Static(&'static str),
-    Func(RequiredResolver<I, O, CtxOptions>),
+    Func(InitRequiredResolver<I, CtxOptions>),
 }
 
 pub type RequiredError = Option<String>;
+
+pub type InitRequiredResolver<I: IvoStruct, CtxOptions> = Box<
+    dyn Fn(IvoSharedInput<I>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, String>
+        + Send
+        + Sync
+        + 'static,
+>;
 
 pub type RequiredResolver<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
     dyn Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, RequiredError>

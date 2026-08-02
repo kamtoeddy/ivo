@@ -47,7 +47,7 @@ pub struct FieldConfig<
     pub depends_on: Option<Vec<&'static str>>,
     pub value: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,
     pub required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
-    pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
+    pub required_error: Option<ComputableRequiredError<I, CtxOptions>>,
     pub resolver: Option<Resolver<T, I, O, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitizer<T, I, O, CtxOptions>>,
     pub validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,

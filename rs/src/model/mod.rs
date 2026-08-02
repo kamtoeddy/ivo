@@ -14,6 +14,7 @@ use fields_collection::FieldInfoCollection;
 use crate::__private_types::types::{BooleanResolver, IgnoreUpdateOptionResolver};
 use crate::__private_types::IvoErrorPayload;
 use crate::__private_types::{types::PartialErrorsMethods, IvoInputStruct};
+use crate::schema::fields::types::InitRequiredResolver;
 use crate::schema::options::types::{
     IgnoreOptionConfig, IgnoreUpdateOptionConfig, UniformIgnoreResolver,
 };
@@ -1366,11 +1367,11 @@ impl<
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<(), IvoErrorPayload<ErrorSanitizer::Metadata>> {
         let mut error_tool = ErrorTool::new();
-        let mut resolvers = vec![];
+        let mut tasks = vec![];
         let is_update = ctx.is_update();
 
-        for (field_name, config) in self.field_configs.iter() {
-            if fields_collection.is_relevant_config_name(field_name) {
+        for (config_name, config) in self.field_configs.iter() {
+            if fields_collection.is_relevant_config_name(config_name) {
                 continue;
             }
 
@@ -1383,7 +1384,7 @@ impl<
                     match required_error {
                         Some(ComputableRequiredError::Static(msg)) => {
                             error_tool.set(
-                                field_name,
+                                config_name,
                                 FieldError {
                                     reason: msg.to_string(),
                                     metadata: None,
@@ -1391,13 +1392,25 @@ impl<
                             );
                         }
                         Some(ComputableRequiredError::Func(resolver)) => {
-                            resolvers.push((field_name, resolver));
+                            tasks.push(
+                                <InitRequiredResolver<I, CtxOptions> as UniformRequiredResolver<
+                                    I,
+                                    O,
+                                    CtxOptions,
+                                    ErrorSanitizer,
+                                >>::resolve(
+                                    resolver,
+                                    HashSet::from([*config_name]),
+                                    Arc::clone(&ctx),
+                                    Arc::clone(&options),
+                                ),
+                            );
                         }
                         _ => {
                             error_tool.set(
-                                field_name,
+                                config_name,
                                 FieldError {
-                                    reason: format!("\"{field_name}\" is required!"),
+                                    reason: format!("\"{config_name}\" is required!"),
                                     metadata: None,
                                 },
                             );
@@ -1410,37 +1423,61 @@ impl<
                     field_type: FieldType::Lax,
                     required_fn: Some(resolver),
                     ..
-                } => resolvers.push((field_name, resolver)),
+                } => tasks.push(
+                    <RequiredResolver<I, O, CtxOptions> as UniformRequiredResolver<
+                        I,
+                        O,
+                        CtxOptions,
+                        ErrorSanitizer,
+                    >>::resolve(
+                        resolver,
+                        HashSet::from([*config_name]),
+                        Arc::clone(&ctx),
+                        Arc::clone(&options),
+                    ),
+                ),
                 InternalFieldConfig {
                     alias,
                     field_type: FieldType::Virtual,
                     required_fn: Some(resolver),
                     ..
-                } => resolvers.push((alias.as_ref().unwrap_or(field_name), resolver)),
+                } => tasks.push(
+                    <RequiredResolver<I, O, CtxOptions> as UniformRequiredResolver<
+                        I,
+                        O,
+                        CtxOptions,
+                        ErrorSanitizer,
+                    >>::resolve(
+                        resolver,
+                        HashSet::from([*alias.as_ref().unwrap_or(config_name)]),
+                        Arc::clone(&ctx),
+                        Arc::clone(&options),
+                    ),
+                ),
                 _ => (),
             }
         }
 
-        let mut tasks = resolvers
-            .iter()
-            .map(|(field_name, resolver)| {
-                let field_info = fields_collection.get(field_name);
+        // let mut tasks = tasks;
+        // .iter()
+        // .map(|(field_name, resolver)| {
+        //     let field_info = fields_collection.get(field_name);
 
-                let r = <RequiredResolver<I, O, CtxOptions> as UniformRequiredResolver<
-                    I,
-                    O,
-                    CtxOptions,
-                    ErrorSanitizer,
-                >>::resolve(
-                    resolver,
-                    HashSet::from([field_info.name]),
-                    Arc::clone(&ctx),
-                    Arc::clone(&options),
-                );
+        //     let r = <RequiredResolver<I, O, CtxOptions> as UniformRequiredResolver<
+        //         I,
+        //         O,
+        //         CtxOptions,
+        //         ErrorSanitizer,
+        //     >>::resolve(
+        //         resolver,
+        //         HashSet::from([field_info.name]),
+        //         Arc::clone(&ctx),
+        //         Arc::clone(&options),
+        //     );
 
-                r
-            })
-            .collect::<Vec<_>>();
+        //     r
+        // })
+        // .collect::<Vec<_>>();
 
         if let Some(ref configs) = self.options.required {
             for config in configs {
