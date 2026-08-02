@@ -8,7 +8,7 @@ use std::{
 use chrono::{DateTime, Utc};
 use ivo::{
     validate_email, FutureExt, IvoContext, IvoField, IvoInputStruct, IvoModel, IvoRwCtxOptions,
-    IvoShared, IvoSharedInput, IvoStruct,
+    IvoShared, IvoStruct,
 };
 
 use crate::slugify::{slugify, SlugifiedString};

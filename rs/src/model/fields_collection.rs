@@ -17,7 +17,7 @@ pub(super) struct FieldInfoCollection<
     CtxOptions: Clone,
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > {
-    fields: HashMap<&'a str, FieldInfo<'a>>,
+    fields: HashMap<&'a str, InputFieldInfo<'a>>,
     fields_provided: HashSet<String>,
     relevant_fields_provided: HashSet<String>,
     relevant_dependent_config_names: HashSet<String>,
@@ -63,7 +63,7 @@ impl<
 
             config_names.insert(info.config_name.to_string());
 
-            if info.is_output {
+            if !info.is_virtual {
                 output_fields_changed.insert(field_name.clone());
             }
         }
@@ -116,13 +116,13 @@ impl<
     }
 
     #[inline(always)]
-    pub fn get(&'a self, field_name: &str) -> &'a FieldInfo<'a> {
+    pub fn get(&'a self, field_name: &str) -> &'a InputFieldInfo<'a> {
         self.fields.get(field_name).unwrap()
     }
 
     fn parse_fields(
         field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
-    ) -> HashMap<&'a str, FieldInfo<'a>> {
+    ) -> HashMap<&'a str, InputFieldInfo<'a>> {
         let mut fields = HashMap::new();
 
         for (config_name, config) in field_configs.iter() {
@@ -134,33 +134,30 @@ impl<
                 } => {
                     fields.insert(
                         *config_name,
-                        FieldInfo {
+                        InputFieldInfo {
                             config_name,
-                            is_input: true,
-                            is_output: false,
                             name: config_name,
+                            is_virtual: true,
                         },
                     );
 
                     if let Some(name) = alias {
                         fields.insert(
                             *name,
-                            FieldInfo {
+                            InputFieldInfo {
                                 config_name,
-                                is_input: true,
-                                is_output: false,
                                 name,
+                                is_virtual: true,
                             },
                         );
 
                         // necessary for group validations and resolvers
                         fields.insert(
                             *config_name,
-                            FieldInfo {
+                            InputFieldInfo {
                                 config_name,
-                                is_input: true,
-                                is_output: false,
                                 name,
+                                is_virtual: true,
                             },
                         );
                     }
@@ -171,11 +168,10 @@ impl<
                 } => {
                     fields.insert(
                         *config_name,
-                        FieldInfo {
+                        InputFieldInfo {
                             config_name,
-                            is_input: true,
-                            is_output: true,
                             name: config_name,
+                            is_virtual: false,
                         },
                     );
                 }
@@ -210,9 +206,8 @@ impl<
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct FieldInfo<'a> {
+pub(super) struct InputFieldInfo<'a> {
     pub name: &'a str,
     pub config_name: &'a str,
-    pub is_input: bool,
-    pub is_output: bool,
+    pub is_virtual: bool,
 }

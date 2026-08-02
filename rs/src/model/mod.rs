@@ -440,7 +440,7 @@ impl<
         for field_name in fields_collection.relevant_fields_provided() {
             let field_info = fields_collection.get(field_name);
 
-            if !field_info.is_output {
+            if field_info.is_virtual {
                 relevant_fields_provided.insert(field_name.clone());
 
                 continue;
@@ -618,17 +618,14 @@ impl<
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
+                    validated_inputs.ivo_internal_set(field_name, &value);
 
-                    if field_info.is_input {
-                        validated_inputs.ivo_internal_set(field_name, &value);
-                    }
-
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         validated_outputs.ivo_internal_set(field_name, &value);
                     }
                 }
                 Ok(None) => {
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         has_updates = true;
 
                         validated_outputs.ivo_internal_set(
@@ -707,12 +704,9 @@ impl<
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
+                    validated_inputs.ivo_internal_set(field_name, &value);
 
-                    if field_info.is_input {
-                        validated_inputs.ivo_internal_set(field_name, &value);
-                    }
-
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         validated_outputs.ivo_internal_set(field_name, &value);
                     }
                 }
@@ -805,12 +799,9 @@ impl<
                             }
 
                             has_updates = true;
+                            validated_inputs.ivo_internal_set(field_info.name, &value);
 
-                            if field_info.is_input {
-                                validated_inputs.ivo_internal_set(field_info.name, &value);
-                            }
-
-                            if field_info.is_output {
+                            if !field_info.is_virtual {
                                 validated_outputs.ivo_internal_set(field_info.name, &value);
                             }
                         }
@@ -867,12 +858,9 @@ impl<
                         }
 
                         has_updates = true;
+                        validated_inputs.ivo_internal_set(field_info.name, &value);
 
-                        if field_info.is_input {
-                            validated_inputs.ivo_internal_set(field_info.name, &value);
-                        }
-
-                        if field_info.is_output {
+                        if !field_info.is_virtual {
                             validated_outputs.ivo_internal_set(field_info.name, &value);
                         }
                     }
@@ -1125,12 +1113,12 @@ impl<
             for (field_name, value) in input_values.ivo_internal_enumerate_fields_available() {
                 let field_info = fields_collection.get(&field_name);
 
-                if (field_info.is_input && !field_info.is_output)
+                if (field_info.is_virtual)
                     || !previous_values.ivo_internal_is_value_equal(&field_name, &value)
                 {
                     relevant_fields_provided.insert(field_name.clone());
 
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         output.ivo_internal_set(
                             &field_name,
                             &input.ivo_internal_get_erased_value(&field_name),
@@ -1146,7 +1134,7 @@ impl<
             for field_name in input_values.ivo_internal_fields_available() {
                 let field_info = fields_collection.get(&field_name);
 
-                if field_info.is_output {
+                if !field_info.is_virtual {
                     output.ivo_internal_set(
                         &field_name,
                         &input.ivo_internal_get_erased_value(&field_name),
@@ -1222,7 +1210,7 @@ impl<
                         input.ivo_internal_unset(field_name);
                         relevant_fields_provided.remove(field_name);
 
-                        if field_info.is_output {
+                        if !field_info.is_virtual {
                             output.ivo_internal_unset(field_name);
                         }
                     }
@@ -1249,7 +1237,7 @@ impl<
                                 input.ivo_internal_unset(field_name);
                                 relevant_fields_provided.remove(field_name);
 
-                                if field_info.is_output {
+                                if !field_info.is_virtual {
                                     output.ivo_internal_unset(field_name);
                                 }
                             }
@@ -1261,7 +1249,7 @@ impl<
                         input.ivo_internal_unset(field_name);
                         relevant_fields_provided.remove(field_name);
 
-                        if field_info.is_output {
+                        if !field_info.is_virtual {
                             output.ivo_internal_unset(field_name);
                         }
                     }
@@ -1342,7 +1330,7 @@ impl<
                     input.ivo_internal_unset(field_name);
                     relevant_fields_provided.remove(field_name);
 
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         output.ivo_internal_unset(field_name);
                     }
 
