@@ -129,15 +129,17 @@ impl<
             match config {
                 InternalFieldConfig {
                     alias,
-                    field_type: FieldType::Virtual,
+                    field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
                     ..
                 } => {
+                    let is_virtual = matches!(config.field_type, FieldType::Virtual);
+
                     fields.insert(
                         *config_name,
                         InputFieldInfo {
                             config_name,
                             name: config_name,
-                            is_virtual: true,
+                            is_virtual,
                         },
                     );
 
@@ -147,7 +149,7 @@ impl<
                             InputFieldInfo {
                                 config_name,
                                 name,
-                                is_virtual: true,
+                                is_virtual,
                             },
                         );
 
@@ -157,23 +159,10 @@ impl<
                             InputFieldInfo {
                                 config_name,
                                 name,
-                                is_virtual: true,
+                                is_virtual,
                             },
                         );
                     }
-                }
-                InternalFieldConfig {
-                    field_type: FieldType::Lax | FieldType::Required,
-                    ..
-                } => {
-                    fields.insert(
-                        *config_name,
-                        InputFieldInfo {
-                            config_name,
-                            name: config_name,
-                            is_virtual: false,
-                        },
-                    );
                 }
                 _ => {
                     continue;
