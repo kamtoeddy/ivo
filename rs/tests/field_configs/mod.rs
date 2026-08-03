@@ -2,7 +2,7 @@ mod dependents;
 mod timestamps;
 mod virtuals;
 
-use ivo::{IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{IvoField, IvoInputStruct, IvoModel, IvoStruct};
 use std::future::ready;
 
 #[test]

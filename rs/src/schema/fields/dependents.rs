@@ -6,9 +6,8 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                IntoDeleteHandler, IntoSuccessHandler, IntoUniformResolver,
-                IntoValueResolverWithSharedInput, IsFieldProvisionEnabled,
-                ValueResolverWithSharedInput,
+                DefaultValue, IntoDefaultValueResolver, IntoDeleteHandler,
+                IntoSuccessHandler, IntoUniformResolver, IsFieldProvisionEnabled,
             },
         },
         types::{
@@ -36,7 +35,7 @@ pub struct DependentFieldBuilder<
     HasDelete = No,
     HasSuccess = No,
 > {
-    default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
+    default: Option<DefaultValue<ErasedValue, I, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
     resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
     ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
@@ -184,7 +183,7 @@ impl<
         value: T,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         DependentFieldBuilder {
-            default: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
+            default: Some(DefaultValue::Static(erase_value(value))),
             ..Default::default()
         }
     }
@@ -194,12 +193,10 @@ impl<
         default_fn: F,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, YesComputed>
     where
-        F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
+        F: IntoDefaultValueResolver<T, I, CtxOptions>,
     {
         DependentFieldBuilder {
-            default: Some(ValueResolverWithSharedInput::Func(
-                default_fn.into_uniform(),
-            )),
+            default: Some(DefaultValue::Func(default_fn.into_uniform())),
             ..Default::default()
         }
     }

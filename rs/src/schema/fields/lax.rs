@@ -8,10 +8,9 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                IntoBooleanResolver, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-                IntoRequiredResolver, IntoSuccessHandler, IntoValueResolverWithSharedInput,
-                IsFieldProvisionEnabled, RequiredResolver, UniformValidator,
-                ValueResolverWithSharedInput,
+                DefaultValue, IntoBooleanResolver, IntoDefaultValueResolver,
+                IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver,
+                IntoSuccessHandler, IsFieldProvisionEnabled, RequiredResolver, UniformValidator,
             },
         },
         types::{
@@ -43,7 +42,7 @@ pub struct LaxFieldBuilder<
     HasFailure = No,
     HasSuccess = No,
 > {
-    default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
+    default: Option<DefaultValue<ErasedValue, I, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
@@ -232,7 +231,7 @@ impl<
 {
     pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         LaxFieldBuilder {
-            default: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
+            default: Some(DefaultValue::Static(erase_value(value))),
             ..Default::default()
         }
     }
@@ -242,12 +241,10 @@ impl<
         default_fn: F,
     ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, YesComputed>
     where
-        F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
+        F: IntoDefaultValueResolver<T, I, CtxOptions>,
     {
         LaxFieldBuilder {
-            default: Some(ValueResolverWithSharedInput::Func(
-                default_fn.into_uniform(),
-            )),
+            default: Some(DefaultValue::Func(default_fn.into_uniform())),
             ..Default::default()
         }
     }

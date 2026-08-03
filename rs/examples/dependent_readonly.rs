@@ -1,6 +1,6 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, IvoModel};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 const DEFAULT_DEPENDENT: i32 = 1;
 const DEFAULT_USERNAME: &str = "default-username";

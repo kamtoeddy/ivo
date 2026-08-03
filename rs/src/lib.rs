@@ -17,4 +17,7 @@ pub use schema::fields::IvoField;
 pub use types::internal::{
     DefaultErrorSanitizer, IvoErrorPayload, IvoErrorSanitizer, IvoInputStruct, IvoStruct,
 };
-pub use types::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, IvoShared, IvoSharedInput, IvoModel};
+pub use types::{
+    IvoConstantCtx, IvoContext, IvoCtxOptions, IvoDefaultContext, IvoModel, IvoRwCtxOptions,
+    IvoShared, IvoSharedInput,
+};

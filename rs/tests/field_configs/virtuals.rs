@@ -1,4 +1,4 @@
-use ivo::{IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{IvoField, IvoInputStruct, IvoModel, IvoStruct};
 use std::{future::ready, panic};
 
 #[test]

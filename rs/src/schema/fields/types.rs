@@ -7,8 +7,11 @@ use std::future::Future;
 use crate::{
     __private_types::{types::BooleanResolver, ValidatorResponse},
     schema::types::{DeleteHandler, FailureHandler, FieldValue, SuccessHandler},
-    types::internal::types::{erase_value, parse_or_panic, ErasedValue},
-    IvoContext, IvoErrorSanitizer, IvoRwCtxOptions, IvoShared, IvoSharedInput, IvoStruct,
+    types::{
+        internal::types::{erase_value, parse_or_panic, ErasedValue},
+        IvoConstantCtx, IvoDefaultCtx,
+    },
+    IvoContext, IvoErrorSanitizer, IvoRwCtxOptions, IvoShared, IvoStruct,
 };
 
 pub type TimestampResolver<T: FieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
@@ -156,17 +159,57 @@ where
     }
 }
 
-pub trait IntoValueResolverWithSharedInput<T, I: IvoStruct, CtxOptions> {
-    fn into_uniform(self) -> UniformValueResolverWithSharedInput<I, CtxOptions>;
+pub type DefaultValueResolver<I: IvoStruct, CtxOptions> = Box<
+    dyn Fn(IvoDefaultCtx<I>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, ErasedValue>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub enum DefaultValue<T, I: IvoStruct, CtxOptions> {
+    Static(T),
+    Func(DefaultValueResolver<I, CtxOptions>),
 }
 
-impl<F, Fut, T, I: IvoStruct, CtxOptions> IntoValueResolverWithSharedInput<T, I, CtxOptions> for F
+pub trait IntoDefaultValueResolver<T, I: IvoStruct, CtxOptions> {
+    fn into_uniform(self) -> DefaultValueResolver<I, CtxOptions>;
+}
+
+impl<F, Fut, T, I: IvoStruct, CtxOptions> IntoDefaultValueResolver<T, I, CtxOptions> for F
 where
     T: FieldValue,
-    F: Fn(IvoSharedInput<I>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoDefaultCtx<I>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_uniform(self) -> UniformValueResolverWithSharedInput<I, CtxOptions> {
+    fn into_uniform(self) -> DefaultValueResolver<I, CtxOptions> {
+        Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|v| erase_value(v))))
+    }
+}
+
+pub type ConstantValueResolver<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
+    dyn Fn(IvoConstantCtx<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, ErasedValue>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub enum ConstantValue<T, I: IvoStruct, O: IvoStruct, CtxOptions> {
+    Static(T),
+    Func(ConstantValueResolver<I, O, CtxOptions>),
+}
+
+pub trait IntoConstantValueResolver<T, I: IvoStruct, O: IvoStruct, CtxOptions> {
+    fn into_uniform(self) -> ConstantValueResolver<I, O, CtxOptions>;
+}
+
+impl<F, Fut, T, I: IvoStruct, O: IvoStruct, CtxOptions>
+    IntoConstantValueResolver<T, I, O, CtxOptions> for F
+where
+    T: FieldValue,
+    F: Fn(IvoConstantCtx<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = T> + Send + 'static,
+{
+    fn into_uniform(self) -> ConstantValueResolver<I, O, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|v| erase_value(v))))
     }
 }
@@ -213,18 +256,6 @@ pub type UniformResolver<I, O, CtxOptions> = Box<
         + Sync
         + 'static,
 >;
-
-pub type UniformValueResolverWithSharedInput<I, CtxOptions> = Box<
-    dyn Fn(IvoSharedInput<I>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, ErasedValue>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub enum ValueResolverWithSharedInput<T, I: IvoStruct, CtxOptions> {
-    Static(T),
-    Func(UniformValueResolverWithSharedInput<I, CtxOptions>),
-}
 
 pub enum IsFieldProvisionEnabled<I: IvoStruct, O: IvoStruct, CtxOptions> {
     False,

@@ -14,17 +14,14 @@ use fields_collection::FieldInfoCollection;
 use crate::__private_types::types::{BooleanResolver, IgnoreUpdateOptionResolver};
 use crate::__private_types::IvoErrorPayload;
 use crate::__private_types::{types::PartialErrorsMethods, IvoInputStruct};
-use crate::schema::fields::types::InitRequiredResolver;
+use crate::schema::fields::types::{ConstantValue, InitRequiredResolver};
 use crate::schema::options::types::{
     IgnoreOptionConfig, IgnoreUpdateOptionConfig, UniformIgnoreResolver,
 };
 use crate::schema::{
     fields::{
         base::{FieldType, InternalFieldConfig},
-        types::{
-            ComputableRequiredError, IsFieldProvisionEnabled, RequiredResolver,
-            ValueResolverWithSharedInput,
-        },
+        types::{ComputableRequiredError, DefaultValue, IsFieldProvisionEnabled, RequiredResolver},
         TimestampConfig,
     },
     options::types::{
@@ -38,6 +35,7 @@ use crate::types::{
     },
     InternalIvoContext,
 };
+use crate::types::{IvoConstantContext, IvoDefaultContext};
 use crate::{IvoContext, IvoCtxOptions, IvoModel, IvoRwCtxOptions};
 
 type AsyncHandlerTrigger<'a> = Box<dyn FnOnce() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
@@ -76,13 +74,13 @@ impl<
             )
             .await;
 
+        Arc::make_mut(&mut ctx).set_input(input).set_changes(output);
+
         let output = self
-            .attach_default_values(output, &input, Arc::clone(&shared_rw_options))
+            .attach_default_values(Arc::clone(&ctx), Arc::clone(&shared_rw_options))
             .await;
 
-        Arc::make_mut(&mut ctx)
-            .set_input(input.clone())
-            .set_changes(output);
+        Arc::make_mut(&mut ctx).set_changes(output);
 
         match self
             .evaluate_missing_required_fields(
@@ -228,7 +226,7 @@ impl<
         }
 
         let output = self
-            .attach_constant_values(ctx.values(), &input, Arc::clone(&shared_rw_options))
+            .attach_constant_values(Arc::clone(&ctx), Arc::clone(&shared_rw_options))
             .await;
 
         Arc::make_mut(&mut ctx).set_changes(output);
@@ -965,7 +963,7 @@ impl<
                     // handle readonly during updates
                     if let InternalFieldConfig {
                         field_type: FieldType::Dependent,
-                        default: Some(ValueResolverWithSharedInput::Static(default_value)),
+                        default: Some(DefaultValue::Static(default_value)),
                         ignore_update: Some(IsFieldProvisionEnabled::Readonly),
                         ..
                     } = config
@@ -1018,11 +1016,11 @@ impl<
 
     async fn attach_constant_values(
         &self,
-        mut output: O::Partial,
-        input: &I::Partial,
+        ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> O::Partial {
         let mut resolvers = vec![];
+        let mut output = ctx.values();
 
         for (field_name, config) in self.field_configs.iter() {
             if let InternalFieldConfig {
@@ -1032,12 +1030,12 @@ impl<
             } = config
             {
                 match value {
-                    Some(ValueResolverWithSharedInput::Static(value)) => {
+                    Some(ConstantValue::Static(value)) => {
                         output.ivo_internal_set(field_name, value);
 
                         continue;
                     }
-                    Some(ValueResolverWithSharedInput::Func(resolver)) => {
+                    Some(ConstantValue::Func(resolver)) => {
                         resolvers.push((field_name.to_string(), resolver));
                         continue;
                     }
@@ -1050,12 +1048,16 @@ impl<
             return output;
         }
 
-        let shared_input = Arc::new(input.clone());
+        let ctx = Arc::new(IvoConstantContext::new(
+            ctx.input(),
+            ctx.raw_input(),
+            ctx.values(),
+        ));
 
         let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
             (
                 field_name.clone(),
-                resolver(Arc::clone(&shared_input), Arc::clone(&options)).await,
+                resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
             )
         });
 
@@ -1068,11 +1070,12 @@ impl<
 
     async fn attach_default_values(
         &self,
-        mut output: O::Partial,
-        input: &I::Partial,
+        ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> O::Partial {
         let mut resolvers = vec![];
+        let mut output = ctx.values();
+        let input = ctx.input();
         let fields_provided = input.ivo_internal_fields_available();
 
         for (field_name, config) in self.field_configs.iter() {
@@ -1089,10 +1092,10 @@ impl<
                 }
 
                 match default {
-                    ValueResolverWithSharedInput::Static(value) => {
+                    DefaultValue::Static(value) => {
                         output.ivo_internal_set(field_name, value);
                     }
-                    ValueResolverWithSharedInput::Func(resolver) => {
+                    DefaultValue::Func(resolver) => {
                         resolvers.push((field_name.to_string(), resolver));
                     }
                 }
@@ -1103,12 +1106,12 @@ impl<
             return output;
         }
 
-        let shared_input = Arc::new(input.clone());
+        let ctx = Arc::new(IvoDefaultContext::new(ctx.input(), ctx.raw_input()));
 
         let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
             (
                 field_name.clone(),
-                resolver(Arc::clone(&shared_input), Arc::clone(&options)).await,
+                resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
             )
         });
 
@@ -1267,7 +1270,7 @@ impl<
                         ));
                     }
                     Some(IsFieldProvisionEnabled::Readonly) if is_update => {
-                        if let Some(ValueResolverWithSharedInput::Static(default_value)) = default {
+                        if let Some(DefaultValue::Static(default_value)) = default {
                             // readonly means: only allow update if value prev_value == default_value
 
                             if !previous_values

@@ -1,4 +1,4 @@
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoModel, IvoStruct};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;

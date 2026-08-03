@@ -17,7 +17,9 @@ pub type IvoShared<T> = Arc<T>;
 pub type IvoCtxOptions<CtxOptions> = IvoShared<CtxOptions>;
 pub type IvoRwCtxOptions<CtxOptions> = IvoShared<IvoRwLock<CtxOptions>>;
 pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoContext<I, O>>;
-pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>;
+pub type IvoConstantCtx<I: IvoStruct, O: IvoStruct = I> = IvoShared<IvoConstantContext<I, O>>;
+pub type IvoDefaultCtx<I: IvoStruct> = IvoShared<IvoDefaultContext<I>>;
+pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>; // TODO: remove if no longer useful
 
 pub(crate) type InternalFieldConfigs<
     I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
@@ -193,5 +195,34 @@ impl<I: IvoStruct, O: IvoStruct> InternalIvoContext<I, O> {
             } => Some(previous_values.clone()),
             _ => None,
         }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct IvoConstantContext<I: IvoStruct, O: IvoStruct> {
+    pub input: I::Partial,
+    pub raw_input: I::Partial,
+    pub values: O::Partial,
+}
+
+impl<I: IvoStruct, O: IvoStruct> IvoConstantContext<I, O> {
+    pub(crate) fn new(input: I::Partial, raw_input: I::Partial, values: O::Partial) -> Self {
+        Self {
+            input,
+            raw_input,
+            values,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct IvoDefaultContext<I: IvoStruct> {
+    pub input: I::Partial,
+    pub raw_input: I::Partial,
+}
+
+impl<I: IvoStruct> IvoDefaultContext<I> {
+    pub(crate) fn new(input: I::Partial, raw_input: I::Partial) -> Self {
+        Self { input, raw_input }
     }
 }

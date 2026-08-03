@@ -5,8 +5,7 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                IntoDeleteHandler, IntoSuccessHandler, IntoValueResolverWithSharedInput,
-                ValueResolverWithSharedInput,
+                ConstantValue, IntoConstantValueResolver, IntoDeleteHandler, IntoSuccessHandler,
             },
         },
         types::{DeleteHandler, FieldValue, No, SuccessHandler, Yes},
@@ -28,7 +27,7 @@ pub struct ConstantFieldBuilder<
     HasDelete = No,
     HasSuccess = No,
 > {
-    value: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
+    value: Option<ConstantValue<ErasedValue, I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
     // markers...
@@ -113,7 +112,7 @@ impl<
 {
     pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         ConstantFieldBuilder {
-            value: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
+            value: Some(ConstantValue::Static(erase_value(value))),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
@@ -125,10 +124,10 @@ impl<
         resolver: F,
     ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes>
     where
-        F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
+        F: IntoConstantValueResolver<T, I, O, CtxOptions>,
     {
         ConstantFieldBuilder {
-            value: Some(ValueResolverWithSharedInput::Func(resolver.into_uniform())),
+            value: Some(ConstantValue::Func(resolver.into_uniform())),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
