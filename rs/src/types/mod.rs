@@ -19,7 +19,6 @@ pub type IvoRwCtxOptions<CtxOptions> = IvoShared<IvoRwLock<CtxOptions>>;
 pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoContext<I, O>>;
 pub type IvoConstantCtx<I: IvoStruct, O: IvoStruct = I> = IvoShared<IvoConstantContext<I, O>>;
 pub type IvoDefaultCtx<I: IvoStruct> = IvoShared<IvoDefaultContext<I>>;
-pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>; // TODO: remove if no longer useful
 
 pub(crate) type InternalFieldConfigs<
     I: IvoInputStruct<CtxOptions, ErrorSanitizer>,

@@ -19,5 +19,5 @@ pub use types::internal::{
 };
 pub use types::{
     IvoConstantCtx, IvoContext, IvoCtxOptions, IvoDefaultContext, IvoModel, IvoRwCtxOptions,
-    IvoShared, IvoSharedInput,
+    IvoShared,
 };
