@@ -5,7 +5,10 @@ use futures::future::{BoxFuture, FutureExt};
 use std::future::Future;
 
 use crate::{
-    __private_types::{types::BooleanResolver, ValidatorResponse},
+    __private_types::{
+        types::{BooleanResolver, InitBooleanResolver},
+        ValidatorResponse,
+    },
     schema::types::{DeleteHandler, FailureHandler, FieldValue, SuccessHandler},
     types::internal::types::{erase_value, parse_or_panic, ErasedValue},
     IvoContext, IvoErrorSanitizer, IvoRwCtxOptions, IvoShared, IvoSharedInput, IvoStruct,
@@ -117,7 +120,7 @@ pub trait IntoInitRequiredErrorResolver<I: IvoStruct, O: IvoStruct, CtxOptions> 
 impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoInitRequiredErrorResolver<I, O, CtxOptions>
     for F
 where
-    F: Fn(IvoSharedInput<I>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(I::Partial, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = String> + Send + 'static,
 {
     fn into_resolver(self) -> InitRequiredResolver<I, CtxOptions> {
@@ -229,6 +232,7 @@ pub enum ValueResolverWithSharedInput<T, I: IvoStruct, CtxOptions> {
 pub enum IsFieldProvisionEnabled<I: IvoStruct, O: IvoStruct, CtxOptions> {
     False,
     Readonly,
+    FuncInit(InitBooleanResolver<I, CtxOptions>),
     Func(BooleanResolver<I, O, CtxOptions>),
 }
 
@@ -240,7 +244,7 @@ pub enum ComputableRequiredError<I: IvoStruct, CtxOptions> {
 pub type RequiredError = Option<String>;
 
 pub type InitRequiredResolver<I: IvoStruct, CtxOptions> = Box<
-    dyn Fn(IvoSharedInput<I>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, String>
+    dyn Fn(I::Partial, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, String>
         + Send
         + Sync
         + 'static,

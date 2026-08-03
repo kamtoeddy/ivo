@@ -9,7 +9,6 @@ use crate::__private_types::types::{
 use crate::__private_types::{FieldError, IvoInputStruct};
 
 use crate::schema::fields::types::{InitRequiredResolver, RequiredResolver};
-use crate::IvoShared;
 use crate::{
     schema::types::SuccessHandler, types::internal::PostValidatorResponse, IvoContext,
     IvoErrorSanitizer, IvoRwCtxOptions, IvoStruct,
@@ -208,7 +207,7 @@ where
                 field_names.iter().next().unwrap().to_string(),
                 FieldError {
                     metadata: None,
-                    reason: self(IvoShared::new(ctx.raw_input()), o).await,
+                    reason: self(ctx.raw_input(), o).await,
                 },
             )])
         })

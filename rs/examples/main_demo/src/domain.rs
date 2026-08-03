@@ -97,7 +97,10 @@ pub static USER_MODEL: LazyLock<IvoModel<UserInput, User, UserCtxOptions, Timest
                     .field(
                         "username",
                         IvoField::REQUIRED
-                            .required_error("\"username\" was not provided!")
+                            // .required_error("\"username\" was not provided!")
+                            .required_error_fn(|_, _| {
+                                ready("\"username\" was not provided!".into())
+                            })
                             .validate(|v: String, _, _| {
                                 const MIN_LEN: usize = 4;
 
