@@ -8,16 +8,15 @@ type Output = { id: number; price: number; qty: number; total: number };
 const field = newFieldMaker<Input, Output>();
 
 const totalField = field
-  .dependent("total")
+  .dependent("total", ["price", "qty"])
   .default(0)
-  .dependsOn(["price", "qty"])
   .resolve(({ values }) => (values.price ?? 0) * (values.qty ?? 0));
 
-const schema = new Schema<Input, Output>((b) =>
+const schema = new Schema<Input, Output>((b, m) =>
   b
-    .field(field.constant("id").value(0))
-    .field(field.lax("price").default(0))
-    .field(field.lax("qty").default(0))
+    .field(m.constant("id", 0))
+    .field(m.lax("price").default(0))
+    .field(m.lax("qty").default(0))
     .field(totalField),
 );
 
@@ -31,40 +30,13 @@ describe("field builder prototype: dependent()", () => {
     expect(data?.total).toBe(30);
   });
 
-  it("should allow calling default()/dependsOn() in either order", async () => {
-    const swappedOrderField = field
-      .dependent("total")
-      .dependsOn(["price", "qty"])
-      .default(0)
-      .resolve(({ values }) => (values.price ?? 0) * (values.qty ?? 0));
-
-    const swappedSchema = new Schema<Input, Output>((b) =>
-      b
-        .field(field.lax("price").default(0))
-        .field(field.lax("qty").default(0))
-        .field(swappedOrderField),
-    );
-
-    const { data, error } = await swappedSchema.getModel().create(
-      {
-        price: 4,
-        qty: 5,
-      },
-      {},
-    );
-
-    expect(error).toBeNull();
-    expect(data?.total).toBe(20);
-  });
-
   it("should allow the optional readonly()/onDelete()/onSuccess() calls once buildable", async () => {
     let deleted = false;
     let succeeded = false;
 
     const decoratedField = field
-      .dependent("total")
+      .dependent("total", ["price", "qty"])
       .default(0)
-      .dependsOn(["price", "qty"])
       .resolve(({ values }) => (values.price ?? 0) * (values.qty ?? 0))
       .readonly()
       .onDelete(() => {
@@ -74,19 +46,16 @@ describe("field builder prototype: dependent()", () => {
         succeeded = true;
       });
 
-    const decoratedSchema = new Schema<Input, Output>((b) =>
+    const decoratedSchema = new Schema<Input, Output>((b, m) =>
       b
-        .field(field.lax("price").default(0))
-        .field(field.lax("qty").default(0))
+        .field(m.lax("price").default(0))
+        .field(m.lax("qty").default(0))
         .field(decoratedField),
     );
 
     const decoratedModel = decoratedSchema.getModel();
     const { data, handleSuccess } = await decoratedModel.create(
-      {
-        price: 2,
-        qty: 6,
-      },
+      { price: 2, qty: 6 },
       {},
     );
 
@@ -104,9 +73,8 @@ describe("field builder prototype: dependent()", () => {
     const succeededBy: string[] = [];
 
     const decoratedField = field
-      .dependent("total")
+      .dependent("total", ["price", "qty"])
       .default(0)
-      .dependsOn(["price", "qty"])
       .resolve(({ values }) => (values.price ?? 0) * (values.qty ?? 0))
       .onDelete([
         () => {
@@ -125,10 +93,10 @@ describe("field builder prototype: dependent()", () => {
         },
       ]);
 
-    const decoratedSchema = new Schema<Input, Output>((b) =>
+    const decoratedSchema = new Schema<Input, Output>((b, m) =>
       b
-        .field(field.lax("price").default(0))
-        .field(field.lax("qty").default(0))
+        .field(m.lax("price").default(0))
+        .field(m.lax("qty").default(0))
         .field(decoratedField),
     );
 
@@ -152,40 +120,28 @@ describe("field builder prototype: dependent()", () => {
 
   describe("invalid usage (compile-time only - nothing here is meant to run)", () => {
     it("should never expose a callable .build()", () => {
-      const builder = field.dependent("total");
+      const builder = field.dependent("total", ["price", "qty"]);
 
       // @ts-expect-error - build() doesn't exist before resolve() has run
       builder.build?.();
 
-      const finished = builder
-        .default(0)
-        .dependsOn(["price", "qty"])
-        .resolve(() => 0);
+      const finished = builder.default(0).resolve(() => 0);
 
       // @ts-expect-error - build() doesn't exist even on the finished builder; it's resolved internally by Schema only
       finished.build?.();
     });
 
     it("should reject calling resolve() before its preconditions are met", () => {
-      const builder = field.dependent("total");
+      const builder = field.dependent("total", ["price", "qty"]);
 
       // @ts-expect-error - resolve() isn't available until default() and dependsOn() have both been set
       builder.resolve(() => 0);
-
-      const withDefaultOnly = builder.default(0);
-      // @ts-expect-error - resolve() still isn't available; dependsOn() hasn't been set yet
-      withDefaultOnly.resolve(() => 0);
-
-      const readyToResolve = withDefaultOnly.dependsOn(["price", "qty"]);
-      // @ts-expect-error - default() was already provided transitioning into readyToResolve's state; it's not offered again
-      readyToResolve.default(0);
     });
 
     it("should reject a second call to readonly()/onDelete()/onSuccess() - each is single-call", () => {
       const finished = field
-        .dependent("total")
+        .dependent("total", ["price", "qty"])
         .default(0)
-        .dependsOn(["price", "qty"])
         .resolve(() => 0);
 
       const decorated = finished

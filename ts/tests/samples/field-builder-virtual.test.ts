@@ -16,16 +16,14 @@ const dependent = newFieldMaker<Input, Output>();
 
 const gradeDependent = () =>
   dependent
-    .dependent("grade")
+    .dependent("grade", "rawGrade")
     .default(0)
-    .dependsOn("rawGrade")
     .resolve(({ input }) => (input.rawGrade as number) ?? 0);
 
 const statusDependent = () =>
   dependent
-    .dependent("status")
+    .dependent("status", "rawStatus")
     .default("unknown")
-    .dependsOn("rawStatus")
     .resolve(({ input }) => (input.rawStatus as string) ?? "unknown");
 
 describe("field builder prototype: virtual()", () => {
@@ -257,9 +255,8 @@ describe("field builder prototype: virtual()", () => {
         // limitation.
         .field(
           aliasDependent
-            .dependent("result")
+            .dependent("result", "g" as never)
             .default(0)
-            .dependsOn("g" as never)
             .resolve(({ input }) => input.grade ?? 0),
         ),
     );

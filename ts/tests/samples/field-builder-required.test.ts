@@ -304,13 +304,6 @@ describe("field builder prototype: required()", () => {
       withValidator.allowError?.("nope");
     });
 
-    it("never exposes a callable .build(), at any stage", () => {
-      const validated = field.required("email").validate(() => true);
-
-      // @ts-expect-error - build() doesn't exist; it's resolved internally by Schema only
-      validated.build?.();
-    });
-
     it("should reject a second call to allowError()/reValidate()", () => {
       const decorated = field
         .required("role")

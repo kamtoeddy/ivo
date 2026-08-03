@@ -9,9 +9,8 @@ describe("readonly", () => {
         b
           .field(
             m
-              .dependent("dependentField")
+              .dependent("dependentField", "field")
               .default("value")
-              .dependsOn("field")
               .resolve(() => 1)
               .readonly(),
           )

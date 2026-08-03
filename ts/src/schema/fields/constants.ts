@@ -1,23 +1,12 @@
-import type { ObjectType } from '../../utils';
+import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
-  BUILD,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
   type NS,
-} from '../types';
+} from "../types";
 
-export { type BlankConstantBuilder, ConstantBuilder };
-
-interface BlankConstantBuilder<
-  Value extends Output[keyof Output],
-  Input,
-  Output,
-  CtxOptions extends ObjectType,
-> {
-  value(
-    v: Value | NS.Resolver<Value, Input, Output, CtxOptions>,
-  ): BuildableConstantConfig<Value, Input, Output, CtxOptions>;
-}
+export { ConstantBuilder };
 
 type BuildableConstantConfig<
   Value extends Output[keyof Output],
@@ -68,22 +57,16 @@ class ConstantBuilder<
   Input,
   Output,
   CtxOptions extends ObjectType,
-> implements
-    BlankConstantBuilder<Value, Input, Output, CtxOptions>,
-    BuildableConstantConfig<Value, Input, Output, CtxOptions>
-{
-  name: string;
+> implements BuildableConstantConfig<Value, Input, Output, CtxOptions> {
   private config: Partial<NS.ConstantField<Value, Input, Output, CtxOptions>> =
-    { type: 'constant' };
+    { type: "constant" };
 
-  constructor(name: string) {
-    this.name = name;
+  constructor(
+    name: string,
+    value: Value | NS.ConstantResolver<Value, Input, Output, CtxOptions>,
+  ) {
     this.config.name = name;
-  }
-
-  value(v: Value | NS.Resolver<Value, Input, Output, CtxOptions>) {
-    this.config.value = v;
-    return this as never;
+    this.config.value = value;
   }
 
   onDelete(
@@ -104,7 +87,7 @@ class ConstantBuilder<
     return this as never;
   }
 
-  [BUILD]() {
+  [FIELD_CONFIG_BUILD_METHOD_NAME]() {
     return this.config as NS.ConstantField<Value, Input, Output, CtxOptions>;
   }
 }

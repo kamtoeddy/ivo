@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it } from "bun:test";
 
-import { Schema } from '../../src';
+import { Schema } from "../../src";
 import {
   ERRORS,
   expectFailure,
@@ -8,17 +8,17 @@ import {
   getValidSchema,
   makeFx,
   validator,
-} from '../_utils';
+} from "../_utils";
 
-describe('Schema.options.onDelete', () => {
-  describe('behaviour', () => {
+describe("Schema.options.onDelete", () => {
+  describe("behaviour", () => {
     type BookInput = { _setPrice?: number; name?: string };
     type BookOutput = { id: number; name: string; price: number | null };
 
-    const values: BookOutput = { id: 1, name: 'Book name', price: 100 };
+    const values: BookOutput = { id: 1, name: "Book name", price: 100 };
     let deletedValues: Record<string, unknown> = {};
 
-    function onDelete_(field = '') {
+    function onDelete_(field = "") {
       return (data: Readonly<BookOutput>) => {
         deletedValues[field] = data;
       };
@@ -28,27 +28,26 @@ describe('Schema.options.onDelete', () => {
       deletedValues = {};
     });
 
-    describe('behaviour with other delete handlers', () => {
+    describe("behaviour with other delete handlers", () => {
       const Book = new Schema<BookInput, BookOutput>(
         (b, m) =>
           b
-            .field(m.constant('id').value(1).onDelete(onDelete_('id')))
+            .field(m.constant("id", 1).onDelete(onDelete_("id")))
             .field(
               m
-                .required('name')
+                .required("name")
                 .validate(validator)
-                .onDelete(onDelete_('name')),
+                .onDelete(onDelete_("name")),
             )
             .field(
               m
-                .dependent('price')
+                .dependent("price", "_setPrice")
                 .default(null)
-                .dependsOn('_setPrice')
                 .resolve((ctx) => ctx.input._setPrice!)
-                .onDelete(onDelete_('price')),
+                .onDelete(onDelete_("price")),
             )
-            .field(m.virtual('_setPrice').validate(validator)),
-        { onDelete: onDelete_('global') },
+            .field(m.virtual("_setPrice").validate(validator)),
+        { onDelete: onDelete_("global") },
       ).getModel();
 
       it("should trigger all 'delete' handlers on properties an global handlers", async () => {
@@ -63,21 +62,20 @@ describe('Schema.options.onDelete', () => {
       });
     });
 
-    describe('behaviour without other delete handlers', () => {
+    describe("behaviour without other delete handlers", () => {
       const Book = new Schema<BookInput, BookOutput>(
         (b, m) =>
           b
-            .field(m.constant('id').value(1))
-            .field(m.required('name').validate(validator))
+            .field(m.constant("id", 1))
+            .field(m.required("name").validate(validator))
             .field(
               m
-                .dependent('price')
+                .dependent("price", "_setPrice")
                 .default(null)
-                .dependsOn('_setPrice')
                 .resolve((ctx) => ctx.input._setPrice!),
             )
-            .field(m.virtual('_setPrice').validate(validator)),
-        { onDelete: [onDelete_('global'), onDelete_('global-1')] },
+            .field(m.virtual("_setPrice").validate(validator)),
+        { onDelete: [onDelete_("global"), onDelete_("global-1")] },
       ).getModel();
 
       it("should trigger all global 'delete' handlers", async () => {
@@ -85,13 +83,13 @@ describe('Schema.options.onDelete', () => {
 
         expect(deletedValues).toMatchObject({
           global: values,
-          'global-1': values,
+          "global-1": values,
         });
       });
     });
   });
 
-  describe('valid', () => {
+  describe("valid", () => {
     it("should allow 'onDelete' as (() => any) | ((() => any)[])", () => {
       const values = [() => {}, [() => {}]];
 
@@ -105,7 +103,7 @@ describe('Schema.options.onDelete', () => {
     });
   });
 
-  describe('invalid', () => {
+  describe("invalid", () => {
     it("should reject 'onDelete' other than (() => any) | ((() => any)[])", () => {
       const invalidValues = [
         1,
@@ -113,8 +111,8 @@ describe('Schema.options.onDelete', () => {
         -14,
         true,
         false,
-        'invalid',
-        '',
+        "invalid",
+        "",
         null,
         undefined,
       ];

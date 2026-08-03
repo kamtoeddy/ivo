@@ -1,11 +1,11 @@
-import { afterEach, describe, expect, it } from 'bun:test';
-import { type ReadonlyIvoContext, Schema } from '../../src';
-import { expectFailure, expectNoFailure, makeFx } from '../_utils';
+import { afterEach, describe, expect, it } from "bun:test";
+import { type ReadonlyIvoContext, Schema } from "../../src";
+import { expectFailure, expectNoFailure, makeFx } from "../_utils";
 
-describe('dependent', () => {
+describe("dependent", () => {
   const resolver = () => 1;
 
-  describe('behaviour', () => {
+  describe("behaviour", () => {
     let onDeleteStats = {} as Record<string, number | undefined>;
     let onSuccessStats = {} as Record<string, number | undefined>;
     let resolversCalledStats = {} as Record<string, number | undefined>;
@@ -27,72 +27,68 @@ describe('dependent', () => {
 
     const Model = new Schema<SampleInput, SampleOutput>((b, m) =>
       b
-        .field(m.lax('laxField').default(''))
-        .field(m.lax('laxField_1').default(''))
+        .field(m.lax("laxField").default(""))
+        .field(m.lax("laxField_1").default(""))
         .field(
           m
 
             // @ts-expect-error ikr
-            .lax('laxField_2')
-            .default('')
-            .onDelete(incrementOnDeleteCountOf('laxField_2')),
+            .lax("laxField_2")
+            .default("")
+            .onDelete(incrementOnDeleteCountOf("laxField_2")),
         )
         .field(
           m
-            .dependent('dependentField')
+            .dependent("dependentField", ["laxField", "laxField_1"])
             .default(0)
-            .dependsOn(['laxField', 'laxField_1'])
             .resolve(resolverOfDependentField as never)
             .onDelete([
-              incrementOnDeleteCountOf('dependentField'),
-              incrementOnDeleteCountOf('dependentField'),
+              incrementOnDeleteCountOf("dependentField"),
+              incrementOnDeleteCountOf("dependentField"),
             ])
             .onSuccess([
-              incrementOnSuccessCountOf('dependentField'),
-              incrementOnSuccessCountOf('dependentField'),
-              incrementOnSuccessCountOf('dependentField'),
-              incrementOnSuccessCountOf('dependentField'),
+              incrementOnSuccessCountOf("dependentField"),
+              incrementOnSuccessCountOf("dependentField"),
+              incrementOnSuccessCountOf("dependentField"),
+              incrementOnSuccessCountOf("dependentField"),
             ]),
         )
         .field(
           m
-            .dependent('dependentField_1')
+            .dependent("dependentField_1", "dependentField")
             .default(0)
-            .dependsOn('dependentField')
             .resolve(resolverOfDependentField_1 as never)
-            .onDelete(incrementOnDeleteCountOf('dependentField_1'))
-            .onSuccess(incrementOnSuccessCountOf('dependentField_1')),
+            .onDelete(incrementOnDeleteCountOf("dependentField_1"))
+            .onSuccess(incrementOnSuccessCountOf("dependentField_1")),
         )
         .field(
           m
             // @ts-expect-error ikr
-            .dependent('dependentField_2')
+            .dependent("dependentField_2", "dependentField")
             .default(0)
-            .dependsOn('dependentField')
-            .resolve(asyncResolver('dependentField_2') as never)
+            .resolve(asyncResolver("dependentField_2") as never)
             .readonly()
             .onDelete([
-              incrementOnDeleteCountOf('dependentField_2'),
-              incrementOnDeleteCountOf('dependentField_2'),
+              incrementOnDeleteCountOf("dependentField_2"),
+              incrementOnDeleteCountOf("dependentField_2"),
             ])
             .onSuccess([
-              incrementOnSuccessCountOf('dependentField_2'),
-              incrementOnSuccessCountOf('dependentField_2'),
-              incrementOnSuccessCountOf('dependentField_2'),
+              incrementOnSuccessCountOf("dependentField_2"),
+              incrementOnSuccessCountOf("dependentField_2"),
+              incrementOnSuccessCountOf("dependentField_2"),
             ]),
         )
         .field(
           m
             // @ts-expect-error ikr
-            .dependent('dependentField_3')
+            .dependent("dependentField_3", "laxField_2")
             .default(0)
-            .dependsOn('laxField_2')
-            .resolve(asyncResolver('dependentField_3') as never)
+            .resolve(asyncResolver("dependentField_3") as never)
             .onDelete([
-              incrementOnDeleteCountOf('dependentField_3'),
-              incrementOnDeleteCountOf('dependentField_3'),
+              incrementOnDeleteCountOf("dependentField_3"),
+              incrementOnDeleteCountOf("dependentField_3"),
             ])
-            .onSuccess([incrementOnSuccessCountOf('dependentField_3')]),
+            .onSuccess([incrementOnSuccessCountOf("dependentField_3")]),
         ),
     ).getModel();
 
@@ -121,7 +117,7 @@ describe('dependent', () => {
     function resolverOfDependentField(
       ctx: ReadonlyIvoContext<SampleInput, SampleOutput, {}>,
     ) {
-      incrementResolveCountOf('dependentField');
+      incrementResolveCountOf("dependentField");
       const laxField =
         ctx.rawInput.laxField ?? ctx.input.laxField ?? ctx.values.laxField;
       const laxField_1 =
@@ -135,7 +131,7 @@ describe('dependent', () => {
     function resolverOfDependentField_1(
       ctx: ReadonlyIvoContext<SampleInput, SampleOutput, {}>,
     ) {
-      incrementResolveCountOf('dependentField_1');
+      incrementResolveCountOf("dependentField_1");
 
       return ctx.values.dependentField + 1;
     }
@@ -154,24 +150,27 @@ describe('dependent', () => {
       resolversCalledStats = {};
     });
 
-    describe('creation', () => {
-      it('should resolve dependent properties correctly at creation', async () => {
-        const { data, handleSuccess } = await Model.create({
-          // @ts-expect-error ikr
-          laxField_2: 'value based pricing',
-          dependentField: 25,
-          dependentField_1: 34,
-          dependentField_2: 17,
-          dependentField_3: 1,
-        });
+    describe("creation", () => {
+      it("should resolve dependent properties correctly at creation", async () => {
+        const { data, handleSuccess } = await Model.create(
+          {
+            // @ts-expect-error ikr
+            laxField_2: "value based pricing",
+            dependentField: 25,
+            dependentField_1: 34,
+            dependentField_2: 17,
+            dependentField_3: 1,
+          },
+          {},
+        );
 
         await handleSuccess?.();
 
         expect(data).toEqual({
-          laxField: '',
-          laxField_1: '',
+          laxField: "",
+          laxField_1: "",
           // @ts-expect-error ikr
-          laxField_2: 'value based pricing',
+          laxField_2: "value based pricing",
           dependentField: 0,
           dependentField_1: 0,
           dependentField_2: 0,
@@ -182,23 +181,26 @@ describe('dependent', () => {
         expect(onSuccessStats).toEqual(successCountOfDependentFields);
       });
 
-      it('should resolve dependencies of dependent properties if provided at creation', async () => {
-        const { data, handleSuccess } = await Model.create({
-          laxField: '',
-          laxField_1: 'hello',
-          // @ts-expect-error ikr
-          dependentField: 0,
-          dependentField_1: 0,
-          dependentField_2: 0,
-        });
+      it("should resolve dependencies of dependent properties if provided at creation", async () => {
+        const { data, handleSuccess } = await Model.create(
+          {
+            laxField: "",
+            laxField_1: "hello",
+            // @ts-expect-error ikr
+            dependentField: 0,
+            dependentField_1: 0,
+            dependentField_2: 0,
+          },
+          {},
+        );
 
         await handleSuccess?.();
 
         expect(data).toEqual({
-          laxField: '',
-          laxField_1: 'hello',
+          laxField: "",
+          laxField_1: "hello",
           // @ts-expect-error ikr
-          laxField_2: '',
+          laxField_2: "",
           dependentField: 5,
           dependentField_1: 6,
           dependentField_2: 7,
@@ -215,57 +217,59 @@ describe('dependent', () => {
       });
     });
 
-    describe('updates', () => {
-      it('should have all correct properties and values after updates', async () => {
+    describe("updates", () => {
+      it("should have all correct properties and values after updates", async () => {
         const { data: updates, handleSuccess } = await Model.update(
           {
-            laxField: '',
-            laxField_1: '',
+            laxField: "",
+            laxField_1: "",
             // @ts-expect-error ikr
-            laxField_2: 'value based pricing',
+            laxField_2: "value based pricing",
             dependentField: 0,
             dependentField_1: 0,
             dependentField_2: 0,
             dependentField_3: 2,
           },
           {
-            laxField_2: 'hey',
+            laxField_2: "hey",
             dependentField: 74,
             dependentField_1: 235,
             dependentField_2: 72,
             dependentField_3: 702,
           },
+          {},
         );
 
         await handleSuccess?.();
 
-        expect(updates).toMatchObject({ laxField_2: 'hey' });
+        expect(updates).toMatchObject({ laxField_2: "hey" });
 
         expect(resolversCalledStats).toEqual({ dependentField_3: 1 });
 
         expect(onSuccessStats).toEqual({});
       });
 
-      it('should resolve dependencies of dependent properties if provided during updates', async () => {
+      it("should resolve dependencies of dependent properties if provided during updates", async () => {
         const { data, handleSuccess } = await Model.update(
           {
-            laxField: '',
-            laxField_1: '',
+            laxField: "",
+            laxField_1: "",
             // @ts-expect-error ikr
-            laxField_2: '',
+            laxField_2: "",
             dependentField: 0,
             dependentField_1: 0,
             dependentField_2: 0,
             dependentField_3: 0,
           },
-          { laxField: 'hello', laxField_1: 'world' },
+          { laxField: "hello", laxField_1: "world" },
+          {},
         );
 
         await handleSuccess?.();
 
         expect(data).toEqual({
-          laxField: 'hello',
-          laxField_1: 'world',
+          laxField: "hello",
+          laxField_1: "world",
           dependentField: 10,
           dependentField_1: 11,
           // @ts-expect-error ikr
@@ -283,25 +287,26 @@ describe('dependent', () => {
         expect(onSuccessStats).toEqual(stats);
       });
 
-      it('should not resolve readonly dependent properties that have changed if provided during updates', async () => {
+      it("should not resolve readonly dependent properties that have changed if provided during updates", async () => {
         const { data, handleSuccess } = await Model.update(
           {
-            laxField: 'hello',
-            laxField_1: 'world',
+            laxField: "hello",
+            laxField_1: "world",
             dependentField: 10,
             dependentField_1: 11,
             // @ts-expect-error ikr
             dependentField_2: 12,
             dependentField_3: 0,
           },
-          { laxField: '', laxField_1: 'hey' },
+          { laxField: "", laxField_1: "hey" },
+          {},
         );
 
         await handleSuccess?.();
 
         expect(data).toEqual({
-          laxField: '',
-          laxField_1: 'hey',
+          laxField: "",
+          laxField_1: "hey",
           dependentField: 3,
           dependentField_1: 4,
         });
@@ -319,23 +324,24 @@ describe('dependent', () => {
         });
       });
 
-      it('should not consider new resolved values of dependent properties if they are not different from previous values during updates', async () => {
+      it("should not consider new resolved values of dependent properties if they are not different from previous values during updates", async () => {
         const { data, handleSuccess } = await Model.update(
           {
-            laxField: 'hello',
-            laxField_1: 'world',
+            laxField: "hello",
+            laxField_1: "world",
             dependentField: 3,
             dependentField_1: 4,
             // @ts-expect-error ikr
             dependentField_2: 12,
             dependentField_3: 0,
           },
-          { laxField: '', laxField_1: 'hey' },
+          { laxField: "", laxField_1: "hey" },
+          {},
         );
 
         await handleSuccess?.();
 
-        expect(data).toEqual({ laxField: '', laxField_1: 'hey' });
+        expect(data).toEqual({ laxField: "", laxField_1: "hey" });
 
         expect(resolversCalledStats).toEqual({ dependentField: 1 });
 
@@ -343,18 +349,19 @@ describe('dependent', () => {
       });
     });
 
-    describe('deletion', () => {
-      it('should have all correct properties and values at creation', async () => {
+    describe("deletion", () => {
+      it("should have all correct properties and values at creation", async () => {
         await Model.delete({
-          laxField: '',
-          laxField_1: '',
+          laxField: "",
+          laxField_1: "",
           // @ts-expect-error ikr
-          laxField_2: 'value based pricing',
+          laxField_2: "value based pricing",
           dependentField: 0,
           dependentField_1: 0,
           dependentField_2: 0,
           dependentField_3: 2,
-        });
+        }
+        {},);
 
         expect(onDeleteStats).toEqual({
           laxField_2: 1,
@@ -372,11 +379,10 @@ describe('dependent', () => {
       let resolverRunCount = 0;
 
       const Model = new Schema<any>((b, m) =>
-        b.field(m.lax('parent').default('')).field(
+        b.field(m.lax("parent").default("")).field(
           m
-            .dependent('child')
+            .dependent("child", "parent")
             .default(0)
-            .dependsOn('parent')
             .resolve(() => {
               resolverRunCount++;
               return 1;
@@ -385,117 +391,118 @@ describe('dependent', () => {
         ),
       ).getModel();
 
-      it('does not run the resolver at creation if the parent was not provided (value stays at the raw static default)', async () => {
+      it("does not run the resolver at creation if the parent was not provided (value stays at the raw static default)", async () => {
         resolverRunCount = 0;
-        const { data } = await Model.create({});
+        const { data } = await Model.create({}, {});
 
-        expect(data).toEqual({ parent: '', child: 0 });
+        expect(data).toEqual({ parent: "", child: 0 });
         expect(resolverRunCount).toBe(0);
       });
 
-      it('runs the resolver once creation is given the parent explicitly, moving the value off the default', async () => {
+      it("runs the resolver once creation is given the parent explicitly, moving the value off the default", async () => {
         resolverRunCount = 0;
-        const { data } = await Model.create({ parent: 'x' });
+        const { data } = await Model.create({ parent: "x" }
+          {},);
 
-        expect(data).toEqual({ parent: 'x', child: 1 });
+        expect(data).toEqual({ parent: "x", child: 1 });
         expect(resolverRunCount).toBe(1);
       });
 
-      it('re-runs the resolver on the first update while the value still equals the default', async () => {
+      it("re-runs the resolver on the first update while the value still equals the default", async () => {
         resolverRunCount = 0;
         const { data } = await Model.update(
-          { parent: '', child: 0 },
-          { parent: 'x' },
+          { parent: "", child: 0 },
+          { parent: "x" },
+          {},
         );
 
-        expect(data).toEqual({ parent: 'x', child: 1 });
+        expect(data).toEqual({ parent: "x", child: 1 });
         expect(resolverRunCount).toBe(1);
       });
 
-      it('freezes permanently once the value has diverged from the default, even if the parent changes again', async () => {
+      it("freezes permanently once the value has diverged from the default, even if the parent changes again", async () => {
         resolverRunCount = 0;
         const { data } = await Model.update(
-          { parent: 'x', child: 1 },
-          { parent: 'y' },
+          { parent: "x", child: 1 },
+          { parent: "y" },
+          {},
         );
 
-        expect(data).toEqual({ parent: 'y' });
+        expect(data).toEqual({ parent: "y" });
         expect(resolverRunCount).toBe(0);
       });
     });
 
-    describe('behaviour with errors thrown in the resolver', () => {
+    describe("behaviour with errors thrown in the resolver", () => {
       const Model = new Schema<any>((b, m) =>
         b
-          .field(m.lax('field').default(''))
+          .field(m.lax("field").default(""))
           .field(
             m
-              .dependent('dependent')
-              .default('')
-              .dependsOn('field')
+              .dependent("dependent", "field")
+              .default("")
               .resolve(() => {
-                throw new Error('lolol');
+                throw new Error("lolol");
               }),
           )
           .field(
             m
-              .dependent('dependent1')
-              .default('')
-              .dependsOn('dependent')
+              .dependent("dependent1", "dependent")
+              .default("")
               .resolve(() => {
-                throw new Error('lolol');
+                throw new Error("lolol");
               }),
           )
           .field(
             m
-              .dependent('dependent2')
-              .default('')
-              .dependsOn('dependent')
+              .dependent("dependent2", "dependent")
+              .default("")
               .resolve(() => {
-                throw new Error('lolol');
+                throw new Error("lolol");
               }),
           ),
       ).getModel();
 
       it("should set dependent to null if error occurred resolving at creation'", async () => {
-        const { data, error } = await Model.create({ field: 'test' });
+        const { data, error } = await Model.create({ field: "test" },
+          {},);
 
         expect(error).toBeNull();
         expect(data).toEqual({
           dependent: null,
           dependent1: null,
           dependent2: null,
-          field: 'test',
+          field: "test",
         });
       });
 
-      it('should ignore dependent properties that error when resolving during updates', async () => {
+      it("should ignore dependent properties that error when resolving during updates", async () => {
         const { data, error } = await Model.update(
-          { dependent: '', dependent1: '', dependent2: '', field: '' },
-          { field: 'updated' },
+          { dependent: "", dependent1: "", dependent2: "", field: "" },
+          { field: "updated" },
+          {},
         );
 
         expect(error).toBeNull();
-        expect(data).toEqual({ field: 'updated' });
+        expect(data).toEqual({ field: "updated" });
       });
     });
   });
 
-  describe('valid', () => {
-    it('should accept dependent & default(any | function)', () => {
-      const values = ['', 1, false, true, null, {}, []];
+  describe("valid", () => {
+    it("should accept dependent & default(any | function)", () => {
+      const values = ["", 1, false, true, null, {}, []];
 
       for (const value of values) {
         const toPass = makeFx((b, m) =>
           b
             .field(
               m
-                .dependent('dependentField')
+                .dependent("dependentField", "field")
                 .default(value)
-                .dependsOn('field')
                 .resolve(resolver),
             )
-            .field(m.lax('field').default('')),
+            .field(m.lax("field").default("")),
         );
 
         expectNoFailure(toPass);
@@ -504,17 +511,16 @@ describe('dependent', () => {
       }
     });
 
-    it('should allow dependsOn + resolver & no dependent', () => {
+    it("should allow dependsOn + resolver & no dependent", () => {
       const toPass = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependentField')
-              .default('')
-              .dependsOn('field')
+              .dependent("dependentField", "field")
+              .default("")
               .resolve(resolver),
           )
-          .field(m.lax('field').default('')),
+          .field(m.lax("field").default("")),
       );
 
       expectNoFailure(toPass);
@@ -523,7 +529,7 @@ describe('dependent', () => {
     });
 
     it("should accept life cycle listeners except 'onFailure'", () => {
-      const lifeCycles = ['onDelete', 'onSuccess'] as const;
+      const lifeCycles = ["onDelete", "onSuccess"] as const;
       const values = [() => {}, () => ({}), [() => {}, () => ({})]];
 
       for (const lifeCycle of lifeCycles) {
@@ -532,13 +538,12 @@ describe('dependent', () => {
             b
               .field(
                 m
-                  .dependent('dependentField')
+                  .dependent("dependentField", "field")
                   .default(value)
-                  .dependsOn('field')
                   .resolve(resolver)
                   [lifeCycle](value as never),
               )
-              .field(m.lax('field').default('')),
+              .field(m.lax("field").default("")),
           );
 
           expectNoFailure(toPass);
@@ -548,27 +553,26 @@ describe('dependent', () => {
       }
     });
 
-    it('should accept dependsOn & resolver', () => {
+    it("should accept dependsOn & resolver", () => {
       const values = [
-        'field',
-        ['field', 'prop1'],
-        ['field', 'prop1', 'prop2', 'prop3'],
-      ];
+        "field",
+        ["field", "prop1"],
+        ["field", "prop1", "prop2", "prop3"],
+      ] as const;
 
       for (const dependsOn of values) {
         const toPass = makeFx((b, m) =>
           b
             .field(
               m
-                .dependent('dependentField')
-                .default('')
-                .dependsOn(dependsOn as never)
+                .dependent("dependentField", dependsOn)
+                .default("")
                 .resolve(resolver),
             )
-            .field(m.lax('field').default(''))
-            .field(m.lax('prop1').default(''))
-            .field(m.lax('prop2').default(''))
-            .field(m.lax('prop3').default('')),
+            .field(m.lax("field").default(""))
+            .field(m.lax("prop1").default(""))
+            .field(m.lax("prop2").default(""))
+            .field(m.lax("prop3").default("")),
         );
 
         expectNoFailure(toPass);
@@ -577,24 +581,22 @@ describe('dependent', () => {
       }
     });
 
-    it('should allow a dependent field to depend on another dependent field (non-circular)', () => {
+    it("should allow a dependent field to depend on another dependent field (non-circular)", () => {
       const toPass = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependentField1')
-              .default('')
-              .dependsOn('field')
+              .dependent("dependentField1", "field")
+              .default("")
               .resolve(resolver),
           )
           .field(
             m
-              .dependent('dependentField2')
-              .default('')
-              .dependsOn('dependentField1')
+              .dependent("dependentField2", "dependentField1")
+              .default("")
               .resolve(resolver),
           )
-          .field(m.lax('field').default('')),
+          .field(m.lax("field").default("")),
       );
 
       expectNoFailure(toPass);
@@ -602,17 +604,16 @@ describe('dependent', () => {
       toPass();
     });
 
-    it('should allow a dependency on virtuals', () => {
+    it("should allow a dependency on virtuals", () => {
       const toPass = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependentField')
-              .default('')
-              .dependsOn('virtualField')
+              .dependent("dependentField", "virtualField")
+              .default("")
               .resolve(resolver),
           )
-          .field(m.virtual('virtualField').validate(() => true)),
+          .field(m.virtual("virtualField").validate(() => true)),
       );
 
       expectNoFailure(toPass);
@@ -621,16 +622,15 @@ describe('dependent', () => {
     });
   });
 
-  describe('invalid', () => {
-    it('should reject dependency on non-properties', () => {
-      const invalidField = 'invalidField';
+  describe("invalid", () => {
+    it("should reject dependency on non-properties", () => {
+      const invalidField = "invalidField";
 
       const toFail = makeFx((b, m) =>
         b.field(
           m
-            .dependent('dependentField')
-            .default('')
-            .dependsOn(invalidField as never)
+            .dependent("dependentField", invalidField as never)
+            .default("")
             .resolve(resolver),
         ),
       );
@@ -650,13 +650,12 @@ describe('dependent', () => {
       }
     });
 
-    it('should not allow property to depend on itself', () => {
+    it("should not allow property to depend on itself", () => {
       const toFail = makeFx((b, m) =>
         b.field(
           m
-            .dependent('dependentField')
-            .default('')
-            .dependsOn('dependentField' as never)
+            .dependent("dependentField", "dependentField" as never)
+            .default("")
             .resolve(resolver),
         ),
       );
@@ -669,20 +668,19 @@ describe('dependent', () => {
         expect(err.payload).toMatchObject(
           expect.objectContaining({
             dependentField: expect.arrayContaining([
-              'A property cannot depend on itself',
+              "A property cannot depend on itself",
             ]),
           }),
         );
       }
     });
 
-    it('should not allow property to depend on a constant property', () => {
+    it("should not allow property to depend on a constant property", () => {
       const toFail = makeFx((b, m) =>
-        b.field(m.constant('constantField').value('')).field(
+        b.field(m.constant("constantField", "")).field(
           m
-            .dependent('dependentField')
-            .default('')
-            .dependsOn('constantField' as never)
+            .dependent("dependentField", "constantField" as never)
+            .default("")
             .resolve(resolver),
         ),
       );
@@ -695,59 +693,53 @@ describe('dependent', () => {
         expect(err.payload).toMatchObject(
           expect.objectContaining({
             dependentField: expect.arrayContaining([
-              'A property cannot depend on a constant property',
+              "A property cannot depend on a constant property",
             ]),
           }),
         );
       }
     });
 
-    it('should identify circular dependencies and reject', () => {
+    it("should identify circular dependencies and reject", () => {
       const toFail = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('A')
-              .default('')
-              .dependsOn(['B', 'C', 'D'] as never)
+              .dependent("A", ["B", "C", "D"] as never)
+              .default("")
               .resolve(resolver),
           )
           .field(
             m
-              .dependent('B')
-              .default('')
-              .dependsOn(['A', 'C', 'E'] as never)
+              .dependent("B", ["A", "C", "E"] as never)
+              .default("")
               .resolve(resolver),
           )
           .field(
             m
-              .dependent('C')
-              .default('')
-              .dependsOn(['A'] as never)
+              .dependent("C", ["A"] as never)
+              .default("")
               .resolve(resolver),
           )
           .field(
             m
-              .dependent('D')
-              .default('')
-              .dependsOn('E' as never)
+              .dependent("D", "E" as never)
+              .default("")
               .resolve(resolver),
           )
           .field(
             m
-              .dependent('E')
-              .default('')
-              .dependsOn('A' as never)
+              .dependent("E", "A" as never)
+              .default("")
               .resolve(resolver),
           )
           .field(
             m
-              .dependent('F')
-              .default('')
-              .dependsOn('field' as never)
+              .dependent("F", "field" as never)
+              .default("")
               .resolve(resolver),
           )
-          .field(m.lax('field').default('')),
+          .field(m.lax("field").default("")),
       );
 
       expectFailure(toFail);
@@ -781,38 +773,34 @@ describe('dependent', () => {
       }
     });
 
-    it('should identify redundant dependencies and reject', () => {
+    it("should identify redundant dependencies and reject", () => {
       const toFail = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('A')
-              .default('')
-              .dependsOn('field' as never)
+              .dependent("A", "field" as never)
+              .default("")
               .resolve(resolver),
           )
           .field(
             m
-              .dependent('B')
-              .default('')
-              .dependsOn(['A', 'field'] as never)
+              .dependent("B", ["A", "field"] as never)
+              .default("")
               .resolve(resolver),
           )
           .field(
             m
-              .dependent('C')
-              .default('')
-              .dependsOn('A' as never)
+              .dependent("C", "A" as never)
+              .default("")
               .resolve(resolver),
           )
           .field(
             m
-              .dependent('D')
-              .default('')
-              .dependsOn(['field', 'C'] as never)
+              .dependent("D", ["field", "C"] as never)
+              .default("")
               .resolve(resolver),
           )
-          .field(m.lax('field').default('')),
+          .field(m.lax("field").default("")),
       );
 
       expectFailure(toFail);
@@ -832,18 +820,5 @@ describe('dependent', () => {
         );
       }
     });
-
-    // "should reject dependent + missing dependsOn" and "should reject
-    // dependent + missing resolver" discarded: `.resolve()` (the only way
-    // to reach a Buildable) doesn't exist on `DependentBuilder` until both
-    // `.default()` and `.dependsOn()` have already been called - a
-    // dependent missing either is structurally unrepresentable.
-
-    // "should reject dependent & ignoreInit", "... & virtual", "... &
-    // validator", "... & required", and "... + requiredBy" discarded:
-    // `DependentBuilder` never exposes `.ignoreInit()`, `.validate()`, or
-    // `.required()` methods, and there is no way to mark a single field
-    // builder chain as both dependent and virtual - all structurally
-    // unrepresentable through the builder by design.
   });
 });

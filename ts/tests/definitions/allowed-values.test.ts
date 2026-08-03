@@ -1,20 +1,20 @@
-import { describe, expect, it } from 'bun:test';
-import { Schema } from '../../src';
-import { expectFailure, expectNoFailure, makeFx, validator } from '../_utils';
+import { describe, expect, it } from "bun:test";
+import { Schema } from "../../src";
+import { expectFailure, expectNoFailure, makeFx, validator } from "../_utils";
 
-describe('allowed values', () => {
-  describe('valid', () => {
-    it('should not reject if allowed values provided are >= 2', () => {
+describe("allowed values", () => {
+  describe("valid", () => {
+    it("should not reject if allowed values provided are >= 2", () => {
       const values = [
-        ['lol', 2],
-        ['lol', 2, 3],
+        ["lol", 2],
+        ["lol", 2, 3],
       ];
 
       for (const allow of values) {
         const toPass = makeFx((b, m) =>
           b.field(
             m
-              .lax('field')
+              .lax("field")
               .default(allow[0])
               .allow(allow as never),
           ),
@@ -26,10 +26,10 @@ describe('allowed values', () => {
       }
     });
 
-    it('should not reject if default value provided is an allowed value', () => {
+    it("should not reject if default value provided is an allowed value", () => {
       const toPass = makeFx((b, m) =>
         // @ts-expect-error cannot properly infer type of allowed values
-        b.field(m.lax('field').default(null).allow([null, 'lolz', -1])),
+        b.field(m.lax("field").default(null).allow([null, "lolz", -1])),
       );
 
       expectNoFailure(toPass);
@@ -37,18 +37,17 @@ describe('allowed values', () => {
       toPass();
     });
 
-    it('should allow virtuals to have allowed values', () => {
+    it("should allow virtuals to have allowed values", () => {
       const toPass = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependent')
+              .dependent("dependent", "virtual")
               .default(true)
-              .dependsOn('virtual')
               .resolve(validator as never),
           )
           // @ts-expect-error cannot properly infer type of allowed values
-          .field(m.virtual('virtual').allow([null, 'lolz', -1])),
+          .field(m.virtual("virtual").allow([null, "lolz", -1])),
       );
 
       expectNoFailure(toPass);
@@ -56,14 +55,14 @@ describe('allowed values', () => {
       toPass();
     });
 
-    describe('allow as an object', () => {
+    describe("allow as an object", () => {
       it('should not reject if "values" is the only key provided', () => {
         const toPass = makeFx((b, m) =>
           b.field(
             m
-              .lax('dependent')
+              .lax("dependent")
               .default(null)
-              .allow({ values: [null, 'lolz', -1] } as never),
+              .allow({ values: [null, "lolz", -1] } as never),
           ),
         );
 
@@ -76,11 +75,11 @@ describe('allowed values', () => {
         const toPass = makeFx((b, m) =>
           b.field(
             m
-              .lax('dependent')
+              .lax("dependent")
               .default(null)
               .allow({
-                error: 'value not allowed',
-                values: [null, 'lolz', -1],
+                error: "value not allowed",
+                values: [null, "lolz", -1],
               } as never),
           ),
         );
@@ -98,8 +97,8 @@ describe('allowed values', () => {
     });
   });
 
-  describe('invalid', () => {
-    it('should reject if non-array value is provided', () => {
+  describe("invalid", () => {
+    it("should reject if non-array value is provided", () => {
       const values = [
         null,
         undefined,
@@ -117,7 +116,7 @@ describe('allowed values', () => {
         const toFail = makeFx((b, m) =>
           b.field(
             m
-              .lax('field')
+              .lax("field")
               .default(null)
               .allow(allow as never),
           ),
@@ -129,26 +128,26 @@ describe('allowed values', () => {
           toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject({
-            field: ['Allowed values must be an array'],
+            field: ["Allowed values must be an array"],
           });
         }
       }
     });
 
-    it('should reject if allowed values provided are not unique', () => {
+    it("should reject if allowed values provided are not unique", () => {
       const values = [
         [1, 2, 2, 4, 5],
-        ['lol', 59, 'lol', null],
+        ["lol", 59, "lol", null],
         [true, false, true],
         [{}, {}],
-        [{ id: 'lol' }, { id: 'lol' }],
+        [{ id: "lol" }, { id: "lol" }],
       ];
 
       for (const allow of values) {
         const toFail = makeFx((b, m) =>
           b.field(
             m
-              .lax('field')
+              .lax("field")
               .default(null)
               .allow(allow as never),
           ),
@@ -160,20 +159,20 @@ describe('allowed values', () => {
           toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject({
-            field: ['Allowed values must be an array of unique values'],
+            field: ["Allowed values must be an array of unique values"],
           });
         }
       }
     });
 
-    it('should reject if allowed values provided are less than 2', () => {
-      const values = [[], ['lol']];
+    it("should reject if allowed values provided are less than 2", () => {
+      const values = [[], ["lol"]];
 
       for (const allow of values) {
         const toFail = makeFx((b, m) =>
           b.field(
             m
-              .lax('field')
+              .lax("field")
               .default(null)
               .allow(allow as never),
           ),
@@ -185,23 +184,23 @@ describe('allowed values', () => {
           toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject({
-            field: ['Allowed values must have at least 2 values'],
+            field: ["Allowed values must have at least 2 values"],
           });
         }
       }
     });
 
-    it('should reject if default value provided is not an allowed value', () => {
+    it("should reject if default value provided is not an allowed value", () => {
       const values = [
-        ['lol', [null, 'lolz', -1]],
-        [null, [1, 4, 'lol', undefined]],
+        ["lol", [null, "lolz", -1]],
+        [null, [1, 4, "lol", undefined]],
       ];
 
       for (const [_default, allow] of values) {
         const toFail = makeFx((b, m) =>
           b.field(
             m
-              .lax('field')
+              .lax("field")
               .default(_default)
               .allow(allow as never),
           ),
@@ -213,18 +212,18 @@ describe('allowed values', () => {
           toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject({
-            field: ['The default value must be an allowed value'],
+            field: ["The default value must be an allowed value"],
           });
         }
       }
     });
 
-    describe('allow as an object', () => {
-      it('should reject if values array is not provided', () => {
+    describe("allow as an object", () => {
+      it("should reject if values array is not provided", () => {
         const toFail = makeFx((b, m) =>
           b.field(
             m
-              .lax('field')
+              .lax("field")
               .default(null)
               .allow({} as never),
           ),
@@ -236,12 +235,12 @@ describe('allowed values', () => {
           toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject({
-            field: ['Allowed values must be an array'],
+            field: ["Allowed values must be an array"],
           });
         }
       });
 
-      it('should reject if non-array value is provided', () => {
+      it("should reject if non-array value is provided", () => {
         const invalidValues = [
           null,
           undefined,
@@ -259,7 +258,7 @@ describe('allowed values', () => {
           const toFail = makeFx((b, m) =>
             b.field(
               m
-                .lax('field')
+                .lax("field")
                 .default(null)
                 .allow({ values } as never),
             ),
@@ -271,26 +270,26 @@ describe('allowed values', () => {
             toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject({
-              field: ['Allowed values must be an array'],
+              field: ["Allowed values must be an array"],
             });
           }
         }
       });
 
-      it('should reject if allowed values provided are not unique', () => {
+      it("should reject if allowed values provided are not unique", () => {
         const invalidValues = [
           [1, 2, 2, 4, 5],
-          ['lol', 59, 'lol', null],
+          ["lol", 59, "lol", null],
           [true, false, true],
           [{}, {}],
-          [{ id: 'lol' }, { id: 'lol' }],
+          [{ id: "lol" }, { id: "lol" }],
         ];
 
         for (const values of invalidValues) {
           const toFail = makeFx((b, m) =>
             b.field(
               m
-                .lax('field')
+                .lax("field")
                 .default(null)
                 .allow({ values } as never),
             ),
@@ -302,20 +301,20 @@ describe('allowed values', () => {
             toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject({
-              field: ['Allowed values must be an array of unique values'],
+              field: ["Allowed values must be an array of unique values"],
             });
           }
         }
       });
 
-      it('should reject if allowed values provided are less than 2', () => {
-        const invalidValues = [[], ['lol']];
+      it("should reject if allowed values provided are less than 2", () => {
+        const invalidValues = [[], ["lol"]];
 
         for (const values of invalidValues) {
           const toFail = makeFx((b, m) =>
             b.field(
               m
-                .lax('field')
+                .lax("field")
                 .default(null)
                 .allow({ values } as never),
             ),
@@ -327,23 +326,23 @@ describe('allowed values', () => {
             toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject({
-              field: ['Allowed values must have at least 2 values'],
+              field: ["Allowed values must have at least 2 values"],
             });
           }
         }
       });
 
-      it('should reject if default value provided is not an allowed value', () => {
+      it("should reject if default value provided is not an allowed value", () => {
         const data = [
-          ['lol', [null, 'lolz', -1]],
-          [null, [1, 4, 'lol', undefined]],
+          ["lol", [null, "lolz", -1]],
+          [null, [1, 4, "lol", undefined]],
         ];
 
         for (const [_default, values] of data) {
           const toFail = makeFx((b, m) =>
             b.field(
               m
-                .lax('field')
+                .lax("field")
                 .default(_default)
                 .allow({ values } as never),
             ),
@@ -355,33 +354,33 @@ describe('allowed values', () => {
             toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject({
-              field: ['The default value must be an allowed value'],
+              field: ["The default value must be an allowed value"],
             });
           }
         }
       });
 
-      it('should reject if error is provided and is of invalid type', () => {
+      it("should reject if error is provided and is of invalid type", () => {
         const errors = [
           null,
           true,
           false,
           {},
-          { key: 'value' },
+          { key: "value" },
           -1,
           0,
           1,
           [],
-          [[], null, true, false, {}, { key: 'value' }, -1, 0, 1],
+          [[], null, true, false, {}, { key: "value" }, -1, 0, 1],
         ];
 
         for (const error of errors) {
           const toFail = makeFx((b, m) =>
             b.field(
               m
-                .lax('field')
+                .lax("field")
                 .default(null)
-                .allow({ error, values: [null, 'lolz', -1] } as never),
+                .allow({ error, values: [null, "lolz", -1] } as never),
             ),
           );
 
@@ -399,13 +398,13 @@ describe('allowed values', () => {
         }
       });
 
-      it('should reject if an invalid config key is passed', () => {
+      it("should reject if an invalid config key is passed", () => {
         const toFail = makeFx((b, m) =>
           b.field(
             m
-              .lax('field')
+              .lax("field")
               .default(null)
-              .allow({ key: 'value', values: [null, 'lolz', -1] } as never),
+              .allow({ key: "value", values: [null, "lolz", -1] } as never),
           ),
         );
 
@@ -424,61 +423,63 @@ describe('allowed values', () => {
     });
   });
 
-  describe('behaviour', () => {
-    const metadata = { allowed: [null, 'allowed'] };
+  describe("behaviour", () => {
+    const metadata = { allowed: [null, "allowed"] };
 
-    describe('behaviour with lax props & no validators', () => {
+    describe("behaviour with lax props & no validators", () => {
       const Model = new Schema<any>((b, m) =>
         b.field(
           m
-            .lax('field')
+            .lax("field")
             .default(null)
             .allow(metadata.allowed as never),
         ),
       ).getModel();
 
-      describe('creation', () => {
-        it('should allow if value provided is allowed', async () => {
-          const { data, error } = await Model.create({ field: 'allowed' });
+      describe("creation", () => {
+        it("should allow if value provided is allowed", async () => {
+          const { data, error } = await Model.create({ field: "allowed" }, {});
 
           expect(error).toBeNull();
-          expect(data).toMatchObject({ field: 'allowed' });
+          expect(data).toMatchObject({ field: "allowed" });
         });
 
-        it('should reject if value provided is not allowed', async () => {
-          const { data, error } = await Model.create({ field: true });
+        it("should reject if value provided is not allowed", async () => {
+          const { data, error } = await Model.create({ field: true }, {});
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
             field: expect.objectContaining({
-              reason: 'value not allowed',
+              reason: "value not allowed",
               metadata,
             }),
           });
         });
       });
 
-      describe('updates', () => {
-        it('should allow if value provided is allowed', async () => {
+      describe("updates", () => {
+        it("should allow if value provided is allowed", async () => {
           const { data, error } = await Model.update(
-            { field: 'allowed' },
+            { field: "allowed" },
             { field: null },
+            {},
           );
 
           expect(error).toBeNull();
           expect(data).toMatchObject({ field: null });
         });
 
-        it('should reject if value provided is not allowed', async () => {
+        it("should reject if value provided is not allowed", async () => {
           const { data, error } = await Model.update(
             { field: null },
             { field: true },
+            {},
           );
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
             field: expect.objectContaining({
-              reason: 'value not allowed',
+              reason: "value not allowed",
               metadata,
             }),
           });
@@ -491,65 +492,67 @@ describe('allowed values', () => {
     // structurally unrepresentable - allow() is the field's primary
     // validator when provided.
 
-    describe('behaviour with required props & no validators', () => {
+    describe("behaviour with required props & no validators", () => {
       const Model = new Schema<any>((b, m) =>
-        b.field(m.required('field').allow(metadata.allowed as never)),
+        b.field(m.required("field").allow(metadata.allowed as never)),
       ).getModel();
 
-      describe('creation', () => {
-        it('should accept allowed values if provided', async () => {
-          const { data, error } = await Model.create({ field: null });
+      describe("creation", () => {
+        it("should accept allowed values if provided", async () => {
+          const { data, error } = await Model.create({ field: null }, {});
 
           expect(error).toBeNull();
           expect(data).toEqual({ field: null });
         });
 
-        it('should reject non-allowed values if provided', async () => {
-          const { data, error } = await Model.create({ field: 'lolz' });
+        it("should reject non-allowed values if provided", async () => {
+          const { data, error } = await Model.create({ field: "lolz" }, {});
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
             field: expect.objectContaining({
-              reason: 'value not allowed',
+              reason: "value not allowed",
               metadata,
             }),
           });
         });
 
-        it('should reject if no value is provided', async () => {
-          const { data, error } = await Model.create({});
+        it("should reject if no value is provided", async () => {
+          const { data, error } = await Model.create({}, {});
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
             field: expect.objectContaining({
-              reason: 'value not allowed',
+              reason: "value not allowed",
               metadata,
             }),
           });
         });
       });
 
-      describe('updates', () => {
-        it('should accept allowed values if provided', async () => {
+      describe("updates", () => {
+        it("should accept allowed values if provided", async () => {
           const { data, error } = await Model.update(
-            { field: 'allowed' },
+            { field: "allowed" },
             { field: null },
+            {},
           );
 
           expect(error).toBeNull();
           expect(data).toEqual({ field: null });
         });
 
-        it('should reject non-allowed values if provided', async () => {
+        it("should reject non-allowed values if provided", async () => {
           const { data, error } = await Model.update(
-            { field: 'allowed' },
-            { field: 'whatever' },
+            { field: "allowed" },
+            { field: "whatever" },
+            {},
           );
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
             field: expect.objectContaining({
-              reason: 'value not allowed',
+              reason: "value not allowed",
               metadata,
             }),
           });
@@ -566,59 +569,64 @@ describe('allowed values', () => {
     // allow() is used, so there's no separate custom validator to also
     // "respect").
 
-    describe('allow as an object', () => {
-      describe('behaviour with lax props & no validators', () => {
+    describe("allow as an object", () => {
+      describe("behaviour with lax props & no validators", () => {
         const Model = new Schema<any>((b, m) =>
           b.field(
             m
-              .lax('field')
+              .lax("field")
               .default(null)
               .allow(metadata.allowed as never),
           ),
         ).getModel();
 
-        describe('creation', () => {
-          it('should allow if value provided is allowed', async () => {
-            const { data, error } = await Model.create({ field: 'allowed' });
+        describe("creation", () => {
+          it("should allow if value provided is allowed", async () => {
+            const { data, error } = await Model.create(
+              { field: "allowed" },
+              {},
+            );
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ field: 'allowed' });
+            expect(data).toMatchObject({ field: "allowed" });
           });
 
-          it('should reject if value provided is not allowed', async () => {
-            const { data, error } = await Model.create({ field: true });
+          it("should reject if value provided is not allowed", async () => {
+            const { data, error } = await Model.create({ field: true }, {});
 
             expect(data).toBeNull();
             expect(error).toMatchObject({
               field: expect.objectContaining({
-                reason: 'value not allowed',
+                reason: "value not allowed",
                 metadata,
               }),
             });
           });
         });
 
-        describe('updates', () => {
-          it('should allow if value provided is allowed', async () => {
+        describe("updates", () => {
+          it("should allow if value provided is allowed", async () => {
             const { data, error } = await Model.update(
-              { field: 'allowed' },
+              { field: "allowed" },
               { field: null },
+              {},
             );
 
             expect(error).toBeNull();
             expect(data).toMatchObject({ field: null });
           });
 
-          it('should reject if value provided is not allowed', async () => {
+          it("should reject if value provided is not allowed", async () => {
             const { data, error } = await Model.update(
               { field: null },
               { field: true },
+              {},
             );
 
             expect(data).toBeNull();
             expect(error).toMatchObject({
               field: expect.objectContaining({
-                reason: 'value not allowed',
+                reason: "value not allowed",
                 metadata,
               }),
             });
@@ -631,60 +639,67 @@ describe('allowed values', () => {
       // allow) discarded: same allow()+validate() mutual-exclusion reason
       // as above.
 
-      describe('error', () => {
-        describe('error as a string', () => {
-          describe('if string is empty', () => {
+      describe("error", () => {
+        describe("error as a string", () => {
+          describe("if string is empty", () => {
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax('field')
+                  .lax("field")
                   .default(metadata.allowed[0])
                   .allow(metadata.allowed as never)
-                  .allowError(''),
+                  .allowError(""),
               ),
             ).getModel();
 
-            it('should return default error message at creation', async () => {
-              const { data, error } = await Model.create({ field: 'Invalid' });
-
-              expect(data).toBeNull();
-              expect(error).toMatchObject({
-                field: expect.objectContaining({
-                  reason: 'value not allowed',
-                }),
-              });
-            });
-
-            it('should return default error message during updates', async () => {
-              const { data, error } = await Model.update(
-                { field: metadata.allowed[0] },
-                { field: 'Invalid' },
+            it("should return default error message at creation", async () => {
+              const { data, error } = await Model.create(
+                { field: "Invalid" },
+                {},
               );
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
                 field: expect.objectContaining({
-                  reason: 'value not allowed',
+                  reason: "value not allowed",
+                }),
+              });
+            });
+
+            it("should return default error message during updates", async () => {
+              const { data, error } = await Model.update(
+                { field: metadata.allowed[0] },
+                { field: "Invalid" },
+                {},
+              );
+
+              expect(data).toBeNull();
+              expect(error).toMatchObject({
+                field: expect.objectContaining({
+                  reason: "value not allowed",
                 }),
               });
             });
           });
 
-          describe('if string is not empty', () => {
-            const errorMessage = 'Value not allowed. lol';
+          describe("if string is not empty", () => {
+            const errorMessage = "Value not allowed. lol";
 
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax('field')
+                  .lax("field")
                   .default(metadata.allowed[0])
                   .allow(metadata.allowed as never)
                   .allowError(errorMessage),
               ),
             ).getModel();
 
-            it('should return default error message at creation', async () => {
-              const { data, error } = await Model.create({ field: 'Invalid' });
+            it("should return default error message at creation", async () => {
+              const { data, error } = await Model.create(
+                { field: "Invalid" },
+                {},
+              );
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
@@ -692,10 +707,11 @@ describe('allowed values', () => {
               });
             });
 
-            it('should return default error message during updates', async () => {
+            it("should return default error message during updates", async () => {
               const { data, error } = await Model.update(
                 { field: metadata.allowed[0] },
-                { field: 'Invalid' },
+                { field: "Invalid" },
+                {},
               );
 
               expect(data).toBeNull();
@@ -706,12 +722,12 @@ describe('allowed values', () => {
           });
         });
 
-        describe('error as InputFieldError', () => {
+        describe("error as InputFieldError", () => {
           const errorMessages = [
-            [{ reason: 'Invalid lol' }],
+            [{ reason: "Invalid lol" }],
             [
               {
-                reason: 'failed again',
+                reason: "failed again",
                 metadata: { allowed: metadata.allowed },
               },
             ],
@@ -721,15 +737,18 @@ describe('allowed values', () => {
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax('field')
+                  .lax("field")
                   .default(metadata.allowed[0])
                   .allow(metadata.allowed as never)
                   .allowError(expected as never),
               ),
             ).getModel();
 
-            it('should return default error message at creation', async () => {
-              const { data, error } = await Model.create({ field: 'Invalid' });
+            it("should return default error message at creation", async () => {
+              const { data, error } = await Model.create(
+                { field: "Invalid" },
+                {},
+              );
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
@@ -737,10 +756,11 @@ describe('allowed values', () => {
               });
             });
 
-            it('should return default error message during updates', async () => {
+            it("should return default error message during updates", async () => {
               const { data, error } = await Model.update(
                 { field: metadata.allowed[0] },
-                { field: 'Invalid' },
+                { field: "Invalid" },
+                {},
               );
 
               expect(data).toBeNull();
@@ -751,10 +771,10 @@ describe('allowed values', () => {
           }
         });
 
-        describe('error as function', () => {
-          const reason = 'value not allowed';
+        describe("error as function", () => {
+          const reason = "value not allowed";
           const errorMessages = [
-            [() => '', { reason }],
+            [() => "", { reason }],
             [() => ({}), { reason }],
             [() => null, { reason }],
             [() => undefined, { reason }],
@@ -763,20 +783,20 @@ describe('allowed values', () => {
             [() => 1, { reason }],
             [() => true, { reason }],
             [() => false, { reason }],
-            [() => 'Invalid lol', { reason: 'Invalid lol' }],
-            [() => ['invalid as array', 'Invalid lol'], { reason }],
+            [() => "Invalid lol", { reason: "Invalid lol" }],
+            [() => ["invalid as array", "Invalid lol"], { reason }],
             [
               () => ({ metadata: { valid: false } }),
               { metadata: { valid: false } },
             ],
-            [() => ({ reason: 'Invalid lol' }), { reason: 'Invalid lol' }],
+            [() => ({ reason: "Invalid lol" }), { reason: "Invalid lol" }],
             [
               () => ({
-                reason: 'failed again',
+                reason: "failed again",
                 metadata: { allowed: metadata.allowed },
               }),
               {
-                reason: 'failed again',
+                reason: "failed again",
                 metadata: { allowed: metadata.allowed },
               },
             ],
@@ -786,15 +806,18 @@ describe('allowed values', () => {
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax('field')
+                  .lax("field")
                   .default(metadata.allowed[0])
                   .allow(metadata.allowed as never)
                   .allowError(error as never),
               ),
             ).getModel();
 
-            it('should return default error message at creation', async () => {
-              const { data, error } = await Model.create({ field: 'Invalid' });
+            it("should return default error message at creation", async () => {
+              const { data, error } = await Model.create(
+                { field: "Invalid" },
+                {},
+              );
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
@@ -802,10 +825,11 @@ describe('allowed values', () => {
               });
             });
 
-            it('should return default error message during updates', async () => {
+            it("should return default error message during updates", async () => {
               const { data, error } = await Model.update(
                 { field: metadata.allowed[0] },
-                { field: 'Invalid' },
+                { field: "Invalid" },
+                {},
               );
 
               expect(data).toBeNull();
@@ -815,40 +839,41 @@ describe('allowed values', () => {
             });
           }
 
-          describe('behaviour with errors thrown in the error setter', () => {
+          describe("behaviour with errors thrown in the error setter", () => {
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax('field')
-                  .default('lol')
-                  .allow(['lol', 'lolol'])
+                  .lax("field")
+                  .default("lol")
+                  .allow(["lol", "lolol"])
                   .allowError(() => {
-                    throw new Error('lolol');
+                    throw new Error("lolol");
                   }),
               ),
             ).getModel();
 
-            it('should return proper errors at creation', async () => {
-              const { data, error } = await Model.create({ field: '' });
+            it("should return proper errors at creation", async () => {
+              const { data, error } = await Model.create({ field: "" }, {});
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
                 field: expect.objectContaining({
-                  reason: 'value not allowed',
+                  reason: "value not allowed",
                 }),
               });
             });
 
-            it('should return proper errors during updates', async () => {
+            it("should return proper errors during updates", async () => {
               const { data, error } = await Model.update(
-                { field: 'lol' },
-                { field: '' },
+                { field: "lol" },
+                { field: "" },
+                {},
               );
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
                 field: expect.objectContaining({
-                  reason: 'value not allowed',
+                  reason: "value not allowed",
                 }),
               });
             });

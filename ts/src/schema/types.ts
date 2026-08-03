@@ -14,6 +14,7 @@ export type {
   InvalidValidatorResponse,
   IvoContext,
   IvoErrorPayload,
+  IvoSuccessContext,
   KeyOf,
   NotAllowedError,
   NS,
@@ -34,7 +35,7 @@ export type {
 
 export {
   ALLOWED_OPTIONS,
-  BUILD,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   CONSTANT_RULES,
   DEFINITION_RULES,
   LIFE_CYCLES,
@@ -49,12 +50,12 @@ type ReadonlyIvoContext<
   | Readonly<
       WithReadonlyCtxOptions<
         {
-          changes: null;
-          rawInput: Partial<RealType<Input>>;
-          input: Partial<RealType<Input>>;
-          isUpdate: false;
-          previousValues: null;
-          values: Readonly<Output>;
+          readonly changes: null;
+          readonly input: Partial<RealType<Input>>;
+          readonly rawInput: Partial<RealType<Input>>;
+          readonly isUpdate: false;
+          readonly previousValues: null;
+          readonly values: Partial<RealType<Output>>;
         },
         CtxOptions
       >
@@ -62,12 +63,12 @@ type ReadonlyIvoContext<
   | Readonly<
       WithReadonlyCtxOptions<
         {
-          changes: Partial<RealType<Output>>;
-          rawInput: Partial<RealType<Input>>;
-          input: Partial<RealType<Input>>;
-          isUpdate: true;
-          previousValues: Readonly<Output>;
-          values: Readonly<Output>;
+          readonly changes: Partial<RealType<Output>>;
+          readonly input: Partial<RealType<Input>>;
+          readonly rawInput: Partial<RealType<Input>>;
+          readonly isUpdate: true;
+          readonly previousValues: RealType<Output>;
+          readonly values: RealType<Output>;
         },
         CtxOptions
       >
@@ -78,12 +79,12 @@ type IvoContext<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
   | Readonly<
       WithCtxOptions<
         {
-          changes: null;
-          rawInput: Partial<RealType<Input>>;
-          input: Partial<RealType<Input>>;
-          isUpdate: false;
-          previousValues: null;
-          values: Readonly<Partial<Output>>;
+          readonly changes: null;
+          readonly input: Partial<RealType<Input>>;
+          readonly rawInput: Partial<RealType<Input>>;
+          readonly isUpdate: false;
+          readonly previousValues: null;
+          readonly values: Partial<RealType<Output>>;
         },
         CtxOptions
       >
@@ -91,26 +92,106 @@ type IvoContext<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
   | Readonly<
       WithCtxOptions<
         {
-          changes: Partial<RealType<Output>>;
-          rawInput: Partial<RealType<Input>>;
-          input: Partial<RealType<Input>>;
-          isUpdate: true;
-          previousValues: Readonly<Output>;
-          values: Readonly<Output>;
+          readonly changes: Partial<RealType<Output>>;
+          readonly input: Partial<RealType<Input>>;
+          readonly rawInput: Partial<RealType<Input>>;
+          readonly isUpdate: true;
+          readonly previousValues: RealType<Output>;
+          readonly values: RealType<Output>;
         },
         CtxOptions
       >
     >
 ) & {};
 
+type IvoSuccessContext<
+  Input,
+  Output = Input,
+  CtxOptions extends ObjectType = {},
+> = (
+  | Readonly<
+      WithReadonlyCtxOptions<
+        {
+          readonly changes: null;
+          readonly input: Partial<RealType<Input>>;
+          readonly rawInput: Partial<RealType<Input>>;
+          readonly isUpdate: false;
+          readonly previousValues: null;
+          readonly values: RealType<Output>;
+        },
+        CtxOptions
+      >
+    >
+  | Readonly<
+      WithReadonlyCtxOptions<
+        {
+          readonly changes: Partial<RealType<Output>>;
+          readonly input: Partial<RealType<Input>>;
+          readonly rawInput: Partial<RealType<Input>>;
+          readonly isUpdate: true;
+          readonly previousValues: RealType<Output>;
+          readonly values: RealType<Output>;
+        },
+        CtxOptions
+      >
+    >
+) & {};
+
+export type ConstantResolverCtx<
+  Input,
+  Output = Input,
+  CtxOptions extends ObjectType = {},
+> = Readonly<
+  WithCtxOptions<
+    {
+      readonly input: Partial<RealType<Input>>;
+      readonly rawInput: Partial<RealType<Input>>;
+      readonly values: Partial<Output>;
+    },
+    CtxOptions
+  >
+> & {};
+
+export type InitResolverCtx<
+  Input,
+  CtxOptions extends ObjectType = {},
+> = Readonly<
+  WithCtxOptions<
+    {
+      readonly input: Partial<RealType<Input>>;
+      readonly rawInput: Partial<RealType<Input>>;
+    },
+    CtxOptions
+  >
+> & {};
+
+export type UpdateResolverCtx<
+  Input,
+  Output,
+  CtxOptions extends ObjectType = {},
+> = Readonly<
+  WithCtxOptions<
+    {
+      readonly input: Partial<RealType<Input>>;
+      readonly rawInput: Partial<RealType<Input>>;
+      readonly previousValues: RealType<Output>;
+    },
+    CtxOptions
+  >
+> & {};
+
+export type RequiredErrorResolver<Input, CtxOptions extends ObjectType> = (
+  ctx: InitResolverCtx<Input, CtxOptions>,
+) => string;
+
 type WithReadonlyCtxOptions<T, CtxOptions extends ObjectType> = T & {
-  options: Readonly<CtxOptions>;
+  readonly options: CtxOptions;
 };
 
 type WithCtxOptions<T, CtxOptions extends ObjectType> = WithReadonlyCtxOptions<
   T,
   CtxOptions
-> & { updateOptions: (updates: Partial<CtxOptions>) => void } & {};
+> & { readonly updateOptions: (updates: Partial<CtxOptions>) => void } & {};
 
 type TypeOf<T> = Exclude<T, undefined>;
 
@@ -210,7 +291,7 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType = {},
   > = (
-    ctx: ReadonlyIvoContext<Input, Output, CtxOptions>,
+    ctx: IvoSuccessContext<Input, Output, CtxOptions>,
   ) => unknown | Promise<unknown>;
 
   export type OnSuccessConfigObject<
@@ -240,12 +321,21 @@ namespace NS {
     ctx: IvoContext<Input, Output, CtxOptions>,
   ) => TypeOf<T> | Promise<TypeOf<T>>;
 
+  export type ConstantResolver<
+    T,
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+  > = (
+    ctx: ConstantResolverCtx<Input, Output, CtxOptions>,
+  ) => TypeOf<T> | Promise<TypeOf<T>>;
+
+  export type DefaultValueResolver<T, Input, CtxOptions extends ObjectType> = (
+    ctx: InitResolverCtx<Input, CtxOptions>,
+  ) => TypeOf<T> | Promise<TypeOf<T>>;
+
   export type IgnoreInitResolver<Input, CtxOptions extends ObjectType = {}> = (
-    rawInput: Partial<Input>,
-    o: {
-      options: CtxOptions;
-      updateOptions: (updates: Partial<CtxOptions>) => void;
-    },
+    ctx: InitResolverCtx<Input, CtxOptions>,
   ) => boolean | Promise<boolean>;
 
   export type IgnoreUpdateResolver<
@@ -253,12 +343,7 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType = {},
   > = (
-    input: Partial<Input>,
-    previousValues: Output,
-    o: {
-      options: CtxOptions;
-      updateOptions: (updates: Partial<CtxOptions>) => void;
-    },
+    ctx: UpdateResolverCtx<Input, Output, CtxOptions>,
   ) => boolean | Promise<boolean>;
 
   export type VirtualResolver<
@@ -336,10 +421,10 @@ namespace NS {
     CtxOptions extends ObjectType,
     Metadata,
   > =
-    | Buildable<LaxField<any, Input, Output, CtxOptions, Metadata>>
-    | Buildable<RequiredField<any, Input, Output, CtxOptions, Metadata>>
     | Buildable<ConstantField<any, Input, Output, CtxOptions>>
     | Buildable<DependentField<any, Input, Output, CtxOptions>>
+    | Buildable<LaxField<any, Input, Output, CtxOptions, Metadata>>
+    | Buildable<RequiredField<any, Input, Output, CtxOptions, Metadata>>
     | Buildable<VirtualField<any, any, Input, Output, CtxOptions, Metadata>>;
 
   export type Definitions<
@@ -395,7 +480,7 @@ namespace NS {
   > = {
     name: string;
     type: "constant";
-    value: Value | Resolver<Value, Input, Output, CtxOptions>;
+    value: Value | ConstantResolver<Value, Input, Output, CtxOptions>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
@@ -491,6 +576,9 @@ namespace NS {
                 allowedValues: ArrayOfMinSizeOne<Value>,
               ) => NotAllowedError<Metadata>);
         };
+    requiredError?:
+      | string
+      | ((ctx: InitResolverCtx<Input, CtxOptions>) => string);
     readonly?: true;
     ignoreUpdate?: true | IgnoreUpdateResolver<Input, Output, CtxOptions>;
     validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
@@ -555,16 +643,24 @@ namespace NS {
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
-    onSuccess?:
-      | SuccessHandler<Input, Output, CtxOptions>
-      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-    postValidate?: PostValidationConfig<
-      KeyOf<Input>,
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata
-    >[];
+    onSuccess?: OnSuccessConfigOption<Input, Output, CtxOptions>;
+    postValidate?:
+      | PostValidationConfig<
+          KeyOf<Input>,
+          Input,
+          Output,
+          CtxOptions,
+          ErrorMetadata
+        >
+      | ArrayOfMinSizeOne<
+          PostValidationConfig<
+            KeyOf<Input>,
+            Input,
+            Output,
+            CtxOptions,
+            ErrorMetadata
+          >
+        >;
     ignore?: IgnoreConfigOption<Input, Output, CtxOptions>;
     ignoreUpdate?: IgnoreUpdateConfigOption<Input, Output, CtxOptions>;
     required?: RequiredConfigOption<Input, Output, CtxOptions, ErrorMetadata>;
@@ -779,22 +875,11 @@ type RealType<T> = {
   [K in keyof T]: TypeFromPromise<Exclude<T[K], Function> | RealType_<T[K]>>;
 } & {};
 
-/**
- * Symbol-keyed hook a field-builder chain (see schema/field-builder.ts) uses
- * to expose its resolved config to `Schema` internals only. It's not part of
- * `Buildable`'s public surface - there is no `.build()` a user can reach - so
- * `field.dependent(...).default(...).dependsOn(...).resolve(...)` can be
- * dropped straight into a `Definitions` object literal, and only `Schema`
- * (via `materializeFieldBuilders`, the sole holder of this symbol reference)
- * can unwrap it.
- */
-const BUILD: unique symbol = Symbol("ivo.build");
+const FIELD_CONFIG_BUILD_METHOD_NAME: unique symbol = Symbol(
+  "ivo.field-config-build-method-name",
+);
 
-/**
- * Structural marker for a field-builder result: any value exposing the
- * hidden `[BUILD]` hook can stand in for a plain `T` field definition.
- */
-type Buildable<T> = { name: string; [BUILD]: () => T };
+type Buildable<T> = { [FIELD_CONFIG_BUILD_METHOD_NAME]: () => T };
 
 type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 

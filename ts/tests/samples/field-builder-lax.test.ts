@@ -18,7 +18,7 @@ describe("field builder prototype: lax()", () => {
       b.field(field.lax("name").default("anonymous")),
     );
 
-    const { data, error } = await schema.getModel().create({});
+    const { data, error } = await schema.getModel().create({}, {});
 
     expect(error).toBeNull();
     expect(data?.name).toBe("anonymous");
@@ -205,7 +205,7 @@ describe("field builder prototype: lax()", () => {
 
     const Model = schema.getModel();
 
-    const missing = await Model.create({});
+    const missing = await Model.create({}, {});
     expect(missing.error).toMatchObject({
       name: expect.objectContaining({ reason: "'name' is required" }),
     });
@@ -264,7 +264,7 @@ describe("field builder prototype: lax()", () => {
       ),
     ).getModel();
 
-    const { data, handleSuccess } = await Model.create({});
+    const { data, handleSuccess } = await Model.create({}, {});
 
     // @ts-expect-error - data should be non-null with default value
     expect(data).toEqual({ name: defaultName });
@@ -275,9 +275,12 @@ describe("field builder prototype: lax()", () => {
     expect(failedBy).toEqual([]);
     expect(succeededBy).toEqual(["first", "second"]);
 
-    const { data: data2, handleFailure } = await Model.create({
-      name: "invalid",
-    });
+    const { data: data2, handleFailure } = await Model.create(
+      {
+        name: "invalid",
+      },
+      {},
+    );
     expect(data2).toEqual(null);
 
     await handleFailure?.();

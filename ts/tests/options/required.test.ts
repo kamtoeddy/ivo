@@ -1,25 +1,25 @@
-import { describe, expect, it } from 'bun:test';
-import { Schema } from '../../src';
-import { expectFailure, expectNoFailure, makeFx, validator } from '../_utils';
+import { describe, expect, it } from "bun:test";
+import { Schema } from "../../src";
+import { expectFailure, expectNoFailure, makeFx, validator } from "../_utils";
 
-describe('Schema.options.required', () => {
-  describe('signature', () => {
-    it('should allow a config object or array of config objects', () => {
+describe("Schema.options.required", () => {
+  describe("signature", () => {
+    it("should allow a config object or array of config objects", () => {
       const values = [
-        { fields: ['a', 'b'], handler: () => undefined },
+        { fields: ["a", "b"], handler: () => undefined },
         {
-          fields: ['a', 'b'],
+          fields: ["a", "b"],
           handler: [() => undefined, () => undefined],
         },
-        [{ fields: ['a', 'b'], handler: () => undefined }],
+        [{ fields: ["a", "b"], handler: () => undefined }],
       ];
 
       for (const required of values) {
         const toPass = makeFx(
           (b, m) =>
             b
-              .field(m.lax('a').default(1).validate(validator))
-              .field(m.lax('b').default(2).validate(validator)),
+              .field(m.lax("a").default(1).validate(validator))
+              .field(m.lax("b").default(2).validate(validator)),
           { required },
         );
 
@@ -28,21 +28,20 @@ describe('Schema.options.required', () => {
       }
     });
 
-    it('should allow requiredBy (conditionally-required) and virtual fields in a group', () => {
+    it("should allow requiredBy (conditionally-required) and virtual fields in a group", () => {
       const toPass = makeFx(
         (b, m) =>
           b
-            .field(m.lax('a').default(1).validate(validator))
+            .field(m.lax("a").default(1).validate(validator))
             .field(
               m
-                .dependent('dependentField')
+                .dependent("dependentField", "virtualField")
                 .default(0)
-                .dependsOn('virtualField')
                 .resolve(() => 1),
             )
-            .field(m.virtual('virtualField').validate(validator)),
+            .field(m.virtual("virtualField").validate(validator)),
         {
-          required: { fields: ['a', 'virtualField'], handler: () => undefined },
+          required: { fields: ["a", "virtualField"], handler: () => undefined },
         },
       );
 
@@ -51,23 +50,23 @@ describe('Schema.options.required', () => {
     });
   });
 
-  describe('invalid', () => {
-    it('should reject invalid config shapes', () => {
+  describe("invalid", () => {
+    it("should reject invalid config shapes", () => {
       const invalidValues = [
         123,
-        'invalid_string',
+        "invalid_string",
         {},
-        { fields: ['a', 'b'] },
+        { fields: ["a", "b"] },
         { handler: () => undefined },
-        { fields: 'a,b', handler: () => undefined },
+        { fields: "a,b", handler: () => undefined },
       ];
 
       for (const required of invalidValues) {
         const toFail = makeFx(
           (b, m) =>
             b
-              .field(m.lax('a').default(1).validate(validator))
-              .field(m.lax('b').default(2).validate(validator)),
+              .field(m.lax("a").default(1).validate(validator))
+              .field(m.lax("b").default(2).validate(validator)),
           { required },
         );
 
@@ -75,13 +74,13 @@ describe('Schema.options.required', () => {
       }
     });
 
-    it('should reject fewer than 2 fields', () => {
+    it("should reject fewer than 2 fields", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax('a').default(1).validate(validator))
-            .field(m.lax('b').default(2).validate(validator)),
-        { required: { fields: ['a'], handler: () => undefined } },
+            .field(m.lax("a").default(1).validate(validator))
+            .field(m.lax("b").default(2).validate(validator)),
+        { required: { fields: ["a"], handler: () => undefined } },
       );
 
       expectFailure(toFail);
@@ -92,20 +91,20 @@ describe('Schema.options.required', () => {
         expect(err.payload).toEqual(
           expect.objectContaining({
             required: expect.arrayContaining([
-              'grouped required expects at least 2 fields',
+              "grouped required expects at least 2 fields",
             ]),
           }),
         );
       }
     });
 
-    it('should reject duplicate fields', () => {
+    it("should reject duplicate fields", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax('a').default(1).validate(validator))
-            .field(m.lax('b').default(2).validate(validator)),
-        { required: { fields: ['a', 'a'], handler: () => undefined } },
+            .field(m.lax("a").default(1).validate(validator))
+            .field(m.lax("b").default(2).validate(validator)),
+        { required: { fields: ["a", "a"], handler: () => undefined } },
       );
 
       expectFailure(toFail);
@@ -123,13 +122,13 @@ describe('Schema.options.required', () => {
       }
     });
 
-    it('should reject fields that do not exist on the schema', () => {
+    it("should reject fields that do not exist on the schema", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax('a').default(1).validate(validator))
-            .field(m.lax('b').default(2).validate(validator)),
-        { required: { fields: ['a', 'z'], handler: () => undefined } },
+            .field(m.lax("a").default(1).validate(validator))
+            .field(m.lax("b").default(2).validate(validator)),
+        { required: { fields: ["a", "z"], handler: () => undefined } },
       );
 
       expectFailure(toFail);
@@ -147,15 +146,15 @@ describe('Schema.options.required', () => {
       }
     });
 
-    it('should reject constant, dependent, and strictly-required fields', () => {
+    it("should reject constant, dependent, and strictly-required fields", () => {
       const schemas = [
         makeFx(
           (b, m) =>
             b
-              .field(m.constant('a').value(1))
-              .field(m.lax('b').default(2).validate(validator)),
+              .field(m.constant("a", 1))
+              .field(m.lax("b").default(2).validate(validator)),
           {
-            required: { fields: ['a', 'b'], handler: () => undefined },
+            required: { fields: ["a", "b"], handler: () => undefined },
           },
         ),
 
@@ -164,23 +163,22 @@ describe('Schema.options.required', () => {
             b
               .field(
                 m
-                  .dependent('a')
+                  .dependent("a", "b")
                   .default(0)
-                  .dependsOn('b')
                   .resolve(() => 1),
               )
-              .field(m.lax('b').default(2).validate(validator)),
+              .field(m.lax("b").default(2).validate(validator)),
           {
-            required: { fields: ['a', 'b'], handler: () => undefined },
+            required: { fields: ["a", "b"], handler: () => undefined },
           },
         ),
         makeFx(
           (b, m) =>
             b
-              .field(m.required('a').validate(validator))
-              .field(m.lax('b').default(2).validate(validator)),
+              .field(m.required("a").validate(validator))
+              .field(m.lax("b").default(2).validate(validator)),
           {
-            required: { fields: ['a', 'b'], handler: () => undefined },
+            required: { fields: ["a", "b"], handler: () => undefined },
           },
         ),
       ];
@@ -202,16 +200,16 @@ describe('Schema.options.required', () => {
       }
     });
 
-    it('should reject timestamp fields', () => {
+    it("should reject timestamp fields", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax('a').default(1).validate(validator))
-            .field(m.lax('b').default(2).validate(validator)),
+            .field(m.lax("a").default(1).validate(validator))
+            .field(m.lax("b").default(2).validate(validator)),
         {
           timestamps: true,
           required: {
-            fields: ['a', 'createdAt'],
+            fields: ["a", "createdAt"],
             handler: () => undefined,
           },
         },
@@ -232,23 +230,22 @@ describe('Schema.options.required', () => {
       }
     });
 
-    it('should reject an alias; the virtual field name must be used instead', () => {
+    it("should reject an alias; the virtual field name must be used instead", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax('b').default(2).validate(validator))
+            .field(m.lax("b").default(2).validate(validator))
             .field(
               m
-                .dependent('dependentField')
+                .dependent("dependentField", "virtualField")
                 .default(0)
-                .dependsOn('virtualField')
                 .resolve(() => 1),
             )
             .field(
-              m.virtual('virtualField').alias('vAlias').validate(validator),
+              m.virtual("virtualField").alias("vAlias").validate(validator),
             ),
         {
-          required: { fields: ['vAlias', 'b'], handler: () => undefined },
+          required: { fields: ["vAlias", "b"], handler: () => undefined },
         },
       );
 
@@ -268,126 +265,125 @@ describe('Schema.options.required', () => {
     });
   });
 
-  describe('behaviour', () => {
+  describe("behaviour", () => {
     const Model = new Schema<{ email: string; phone: string }>(
       (b, m) =>
-        b.field(m.lax('email').default('')).field(m.lax('phone').default('')),
+        b.field(m.lax("email").default("")).field(m.lax("phone").default("")),
       {
         required: {
-          fields: ['email', 'phone'],
+          fields: ["email", "phone"],
           handler: () => ({
-            email: 'either email or phone is required',
-            phone: 'either email or phone is required',
+            email: "either email or phone is required",
+            phone: "either email or phone is required",
           }),
         },
       },
     ).getModel();
 
-    it('should not run the handler (and not fail creation) when at least one field in the group is provided', async () => {
-      const withEmail = await Model.create({ email: 'a@b.com' });
+    it("should not run the handler (and not fail creation) when at least one field in the group is provided", async () => {
+      const withEmail = await Model.create({ email: "a@b.com" }, {});
       expect(withEmail.error).toBeNull();
-      expect(withEmail.data).toEqual({ email: 'a@b.com', phone: '' });
+      expect(withEmail.data).toEqual({ email: "a@b.com", phone: "" });
 
-      const withPhone = await Model.create({ phone: '123' });
+      const withPhone = await Model.create({ phone: "123" }, {});
       expect(withPhone.error).toBeNull();
-      expect(withPhone.data).toEqual({ email: '', phone: '123' });
+      expect(withPhone.data).toEqual({ email: "", phone: "123" });
     });
 
-    it('should run the handler and reject creation when none of the fields in the group were provided', async () => {
-      const { data, error } = await Model.create({});
+    it("should run the handler and reject creation when none of the fields in the group were provided", async () => {
+      const { data, error } = await Model.create({}, {});
 
       expect(data).toBeNull();
       expect(error).toEqual({
         email: {
-          reason: 'either email or phone is required',
+          reason: "either email or phone is required",
           metadata: null,
         },
         phone: {
-          reason: 'either email or phone is required',
+          reason: "either email or phone is required",
           metadata: null,
         },
       });
     });
 
-    it('should drop errors returned for fields outside the group', async () => {
+    it("should drop errors returned for fields outside the group", async () => {
       const Model = new Schema<any>(
         (b, m) =>
           b
-            .field(m.lax('a').default(undefined))
-            .field(m.lax('b').default(undefined))
-            .field(m.lax('c').default(2)),
+            .field(m.lax("a").default(undefined))
+            .field(m.lax("b").default(undefined))
+            .field(m.lax("c").default(2)),
         {
           required: {
-            fields: ['a', 'b'],
+            fields: ["a", "b"],
             handler: () => ({
-              a: 'a is required',
-              b: 'b is required',
-              c: 'should be dropped, c is not in this group',
+              a: "a is required",
+              b: "b is required",
+              c: "should be dropped, c is not in this group",
             }),
           },
         },
       ).getModel();
 
-      const { data, error } = await Model.create({});
+      const { data, error } = await Model.create({}, {});
 
       expect(data).toBeNull();
       expect(error).toEqual({
-        a: { reason: 'a is required', metadata: null },
-        b: { reason: 'b is required', metadata: null },
+        a: { reason: "a is required", metadata: null },
+        b: { reason: "b is required", metadata: null },
       });
     });
 
-    it('should keep errors by alias for aliased virtual fields', async () => {
+    it("should keep errors by alias for aliased virtual fields", async () => {
       const Model = new Schema<
         { name: string; y2: number },
         { name: string; y: number }
       >(
         (b, m) =>
           b
-            .field(m.lax('name').default(''))
+            .field(m.lax("name").default(""))
             .field(
               m
-                .dependent('y')
+                .dependent("y", "setX")
                 .default(0)
-                .dependsOn('setX')
                 .resolve((ctx) => ctx.input.y2 ?? 0),
             )
-            .field(m.virtual('setX').alias('y2').validate(validator)),
+            .field(m.virtual("setX").alias("y2").validate(validator)),
         {
           required: {
-            fields: ['name', 'setX'],
+            fields: ["name", "setX"],
             handler: () =>
-              ({ y2: 'setX (aliased as y2) is required' }) as never,
+              ({ y2: "setX (aliased as y2) is required" }) as never,
           },
         },
       ).getModel();
 
-      const { data, error } = await Model.create({});
+      const { data, error } = await Model.create({}, {});
 
       expect(data).toBeNull();
       expect(error).toEqual({
-        y2: { reason: 'setX (aliased as y2) is required', metadata: null },
+        y2: { reason: "setX (aliased as y2) is required", metadata: null },
       });
 
-      const { data: data2, error: error2 } = await Model.create({ y2: 5 });
+      const { data: data2, error: error2 } = await Model.create({ y2: 5 }, {});
 
       expect(error2).toBeNull();
-      expect(data2).toEqual({ name: '', y: 5 });
+      expect(data2).toEqual({ name: "", y: 5 });
     });
 
-    it('should evaluate on both creation and updates', async () => {
+    it("should evaluate on both creation and updates", async () => {
       const Model = new Schema<{ email: string; name: string; phone: string }>(
         (b, m) =>
           b
-            .field(m.lax('email').default(''))
-            .field(m.lax('phone').default(''))
-            .field(m.lax('name').default('')),
+            .field(m.lax("email").default(""))
+            .field(m.lax("phone").default(""))
+            .field(m.lax("name").default("")),
         {
           required: {
-            fields: ['email', 'phone'],
+            fields: ["email", "phone"],
             handler: () => ({
-              email: 'either email or phone is required',
-              phone: 'either email or phone is required',
+              email: "either email or phone is required",
+              phone: "either email or phone is required",
             }),
           },
         },
@@ -396,63 +392,64 @@ describe('Schema.options.required', () => {
       // a genuine update (changing `name`) that leaves the `email`/`phone`
       // group untouched — the group's handler should still run and reject.
       const { data, error } = await Model.update(
-        { name: '', email: '', phone: '' },
-        { name: 'bob' },
+        { name: "", email: "", phone: "" },
+        { name: "bob" },
+        {},
       );
 
       expect(data).toBeNull();
       expect(error).toEqual({
         email: {
-          reason: 'either email or phone is required',
+          reason: "either email or phone is required",
           metadata: null,
         },
         phone: {
-          reason: 'either email or phone is required',
+          reason: "either email or phone is required",
           metadata: null,
         },
       });
     });
 
-    it('should run every handler in an array and merge their results', async () => {
+    it("should run every handler in an array and merge their results", async () => {
       const Model = new Schema<any>(
         (b, m) =>
           b
-            .field(m.lax('a').default(undefined))
-            .field(m.lax('b').default(undefined)),
+            .field(m.lax("a").default(undefined))
+            .field(m.lax("b").default(undefined)),
         {
           required: {
-            fields: ['a', 'b'],
-            handler: [() => ({ a: 'a missing' }), () => ({ b: 'b missing' })],
+            fields: ["a", "b"],
+            handler: [() => ({ a: "a missing" }), () => ({ b: "b missing" })],
           },
         },
       ).getModel();
 
-      const { data, error } = await Model.create({});
+      const { data, error } = await Model.create({}, {});
 
       expect(data).toBeNull();
       expect(error).toEqual({
-        a: { reason: 'a missing', metadata: null },
-        b: { reason: 'b missing', metadata: null },
+        a: { reason: "a missing", metadata: null },
+        b: { reason: "b missing", metadata: null },
       });
     });
 
-    it('should treat a thrown handler as satisfied (no error), matching the swallow-errors convention', async () => {
+    it("should treat a thrown handler as satisfied (no error), matching the swallow-errors convention", async () => {
       const Model = new Schema<any>(
         (b, m) =>
           b
-            .field(m.lax('a').default(undefined))
-            .field(m.lax('b').default(undefined)),
+            .field(m.lax("a").default(undefined))
+            .field(m.lax("b").default(undefined)),
         {
           required: {
-            fields: ['a', 'b'],
+            fields: ["a", "b"],
             handler: () => {
-              throw new Error('boom');
+              throw new Error("boom");
             },
           },
         },
       ).getModel();
 
-      const { data, error } = await Model.create({});
+      const { data, error } = await Model.create({}, {});
 
       expect(error).toBeNull();
       expect(data).toEqual({});

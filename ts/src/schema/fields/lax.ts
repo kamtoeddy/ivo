@@ -1,15 +1,16 @@
-import type { ObjectType } from '../../utils';
+import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
-  BUILD,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
   type NotAllowedError,
   type NS,
   type RequiredHandler,
   type ReValidator,
   type Validator,
-} from '../types';
+} from "../types";
+import { extractAllowedValues } from "./_utils";
 
 export { type BlankLaxBuilder, LaxBuilder };
 
@@ -40,7 +41,7 @@ type BuildableLaxConfig<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-  ValidationState extends 'allow' | 'none' | 'validate' = 'none',
+  ValidationState extends "allow" | "none" | "validate" = "none",
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
   HasRequired extends boolean = false,
@@ -52,7 +53,7 @@ type BuildableLaxConfig<
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
 > = Buildable<NS.LaxField<Value, Input, Output, CtxOptions, Metadata>> &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {
         allow<const V extends Value>(
           values: ArrayOfMinSizeTwo<V>,
@@ -62,7 +63,7 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
-          'allow',
+          "allow",
           HasAllowError,
           HasReValidate,
           HasRequired,
@@ -82,7 +83,7 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
-          'validate',
+          "validate",
           HasAllowError,
           HasReValidate,
           HasRequired,
@@ -96,7 +97,7 @@ type BuildableLaxConfig<
         >;
       }
     : {}) &
-  (ValidationState extends 'allow'
+  (ValidationState extends "allow"
     ? HasAllowError extends true
       ? {}
       : {
@@ -113,7 +114,7 @@ type BuildableLaxConfig<
             Output,
             CtxOptions,
             Metadata,
-            'allow',
+            "allow",
             true,
             HasReValidate,
             HasRequired,
@@ -127,7 +128,7 @@ type BuildableLaxConfig<
           >;
         }
     : {}) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasReValidate extends true
       ? {}
@@ -356,17 +357,16 @@ class LaxBuilder<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-> implements
+>
+  implements
     BlankLaxBuilder<Value, Input, Output, CtxOptions, Metadata>,
     BuildableLaxConfig<Value, Input, Output, CtxOptions, Metadata>
 {
-  name: string;
   private config: Partial<
     NS.LaxField<Value, Input, Output, CtxOptions, Metadata>
-  > = { type: 'lax' };
+  > = { type: "lax" };
 
   constructor(name: string) {
-    this.name = name;
     this.config.name = name;
   }
 
@@ -458,7 +458,7 @@ class LaxBuilder<
     return this as never;
   }
 
-  [BUILD]() {
+  [FIELD_CONFIG_BUILD_METHOD_NAME]() {
     return this.config as NS.LaxField<
       Value,
       Input,
@@ -467,15 +467,4 @@ class LaxBuilder<
       Metadata
     >;
   }
-}
-
-/**
- * `Array.isArray` doesn't narrow a union containing a readonly tuple (like
- * `ArrayOfMinSizeTwo`'s `readonly [T, T, ...T[]]` branch) cleanly, so this
- * narrows from `unknown` instead of the generic union directly.
- */
-function extractAllowedValues(allow: unknown) {
-  if (allow == null) return undefined;
-
-  return Array.isArray(allow) ? allow : (allow as { values: unknown }).values;
 }

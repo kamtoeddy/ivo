@@ -2,17 +2,44 @@ import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
-  BUILD,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
   type NotAllowedError,
   type NS,
   type ReValidator,
   type Validator,
+  InitResolverCtx,
 } from "../types";
+import { extractAllowedValues } from "./_utils";
 
 export { type BlankRequiredBuilder, RequiredBuilder };
 
 interface BlankRequiredBuilder<
+  Value extends Output[keyof Output],
+  Input,
+  Output,
+  CtxOptions extends ObjectType,
+  Metadata,
+> {
+  allow<const V extends Value>(
+    values: ArrayOfMinSizeTwo<V>,
+  ): BuildableRequiredConfig<V, Input, Output, CtxOptions, Metadata, "allow">;
+  requiredError(
+    error: string | ((ctx: InitResolverCtx<Input, CtxOptions>) => string),
+  ): HasRequiredError<Value, Input, Output, CtxOptions, Metadata>;
+  validate(
+    validator: Validator<Value, Input, Output, CtxOptions, Metadata>,
+  ): BuildableRequiredConfig<
+    Value,
+    Input,
+    Output,
+    CtxOptions,
+    Metadata,
+    "validate"
+  >;
+}
+
+interface HasRequiredError<
   Value extends Output[keyof Output],
   Input,
   Output,
@@ -274,13 +301,11 @@ class RequiredBuilder<
     BlankRequiredBuilder<Value, Input, Output, CtxOptions, Metadata>,
     BuildableRequiredConfig<Value, Input, Output, CtxOptions, Metadata, "allow">
 {
-  name: string;
   private config: Partial<
     NS.RequiredField<Value, Input, Output, CtxOptions, Metadata>
   > = { type: "required" };
 
   constructor(name: string) {
-    this.name = name;
     this.config.name = name;
   }
 
@@ -300,6 +325,13 @@ class RequiredBuilder<
     const values = extractAllowedValues(this.config.allow);
 
     this.config.allow = { values, error } as never;
+    return this as never;
+  }
+
+  requiredError(
+    error: string | ((ctx: InitResolverCtx<Input, CtxOptions>) => string),
+  ) {
+    this.config.requiredError = error;
     return this as never;
   }
 
@@ -352,7 +384,7 @@ class RequiredBuilder<
     return this as never;
   }
 
-  [BUILD]() {
+  [FIELD_CONFIG_BUILD_METHOD_NAME]() {
     return this.config as NS.RequiredField<
       Value,
       Input,
@@ -361,15 +393,4 @@ class RequiredBuilder<
       Metadata
     >;
   }
-}
-
-/**
- * `Array.isArray` doesn't narrow a union containing a readonly tuple (like
- * `ArrayOfMinSizeTwo`'s `readonly [T, T, ...T[]]` branch) cleanly, so this
- * narrows from `unknown` instead of the generic union directly.
- */
-function extractAllowedValues(allow: unknown) {
-  if (allow == null) return undefined;
-
-  return Array.isArray(allow) ? allow : (allow as { values: unknown }).values;
 }

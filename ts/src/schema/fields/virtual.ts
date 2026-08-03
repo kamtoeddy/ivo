@@ -1,15 +1,16 @@
-import type { ObjectType } from '../../utils';
+import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
-  BUILD,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
   type NotAllowedError,
   type NS,
   type RequiredHandler,
   type ReValidator,
   type Validator,
-} from '../types';
+} from "../types";
+import { extractAllowedValues } from "./_utils";
 
 export { type BlankVirtualBuilder, VirtualBuilder };
 
@@ -25,7 +26,7 @@ interface BlankVirtualBuilder<
   ): BlankVirtualBuilder<Input[Alias], Input, Output, CtxOptions, Metadata>;
   allow<const V extends Value>(
     values: ArrayOfMinSizeTwo<V>,
-  ): BuildableVirtualConfig<V, Input, Output, CtxOptions, Metadata, 'allow'>;
+  ): BuildableVirtualConfig<V, Input, Output, CtxOptions, Metadata, "allow">;
   validate(
     validator: Validator<Value, Input, Output, CtxOptions, Metadata>,
   ): BuildableVirtualConfig<
@@ -34,7 +35,7 @@ interface BlankVirtualBuilder<
     Output,
     CtxOptions,
     Metadata,
-    'validate'
+    "validate"
   >;
 }
 
@@ -51,22 +52,22 @@ type BuildableVirtualConfig<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-  ValidationState extends 'allow' | 'none' | 'validate' = 'none',
+  ValidationState extends "allow" | "none" | "validate" = "none",
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
   HasRequired extends boolean = false,
   HasSanitizer extends boolean = false,
   HasIgnore extends boolean = false,
-  HasIgnoreInit extends boolean = false,
-  HasIgnoreUpdate extends boolean = false,
+  HasIgnoreInit extends "yes" | "yes-computed" | "no" = "no",
+  HasIgnoreUpdate extends "yes" | "yes-computed" | "no" = "no",
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
-> = (ValidationState extends 'none'
+> = (ValidationState extends "none"
   ? {}
   : Buildable<
       NS.VirtualField<never, Value, Input, Output, CtxOptions, Metadata>
     >) &
-  (ValidationState extends 'allow'
+  (ValidationState extends "allow"
     ? HasAllowError extends true
       ? {}
       : {
@@ -83,7 +84,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
-            'allow',
+            "allow",
             true,
             HasReValidate,
             HasRequired,
@@ -96,7 +97,7 @@ type BuildableVirtualConfig<
           >;
         }
     : {}) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasReValidate extends true
       ? {}
@@ -121,7 +122,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasRequired extends true
       ? {}
@@ -146,7 +147,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasSanitizer extends true
       ? {}
@@ -171,7 +172,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasIgnore extends true
       ? {}
@@ -196,13 +197,30 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasIgnoreInit extends true
       ? {}
       : {
+          ignoreInit(): BuildableVirtualConfig<
+            Value,
+            Input,
+            Output,
+            CtxOptions,
+            Metadata,
+            ValidationState,
+            HasAllowError,
+            HasReValidate,
+            HasRequired,
+            HasSanitizer,
+            HasIgnore,
+            "yes",
+            HasIgnoreUpdate,
+            HasOnFailure,
+            HasOnSuccess
+          >;
           ignoreInit(
-            resolver?: NS.IgnoreInitResolver<Input, CtxOptions>,
+            resolver: NS.IgnoreInitResolver<Input, CtxOptions>,
           ): BuildableVirtualConfig<
             Value,
             Input,
@@ -215,38 +233,13 @@ type BuildableVirtualConfig<
             HasRequired,
             HasSanitizer,
             HasIgnore,
-            true,
+            "yes-computed",
             HasIgnoreUpdate,
             HasOnFailure,
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends 'none'
-    ? {}
-    : HasIgnoreUpdate extends true
-      ? {}
-      : {
-          ignoreUpdate(
-            resolver?: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>,
-          ): BuildableVirtualConfig<
-            Value,
-            Input,
-            Output,
-            CtxOptions,
-            Metadata,
-            ValidationState,
-            HasAllowError,
-            HasReValidate,
-            HasRequired,
-            HasSanitizer,
-            HasIgnore,
-            HasIgnoreInit,
-            true,
-            HasOnFailure,
-            HasOnSuccess
-          >;
-        }) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasOnFailure extends true
       ? {}
@@ -273,7 +266,7 @@ type BuildableVirtualConfig<
             HasOnSuccess
           >;
         }) &
-  (ValidationState extends 'none'
+  (ValidationState extends "none"
     ? {}
     : HasOnSuccess extends true
       ? {}
@@ -307,17 +300,16 @@ class VirtualBuilder<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-> implements
+>
+  implements
     BlankVirtualBuilder<Value, Input, Output, CtxOptions, Metadata>,
-    BuildableVirtualConfig<Value, Input, Output, CtxOptions, Metadata, 'allow'>
+    BuildableVirtualConfig<Value, Input, Output, CtxOptions, Metadata, "allow">
 {
-  name: string;
   private config: Partial<
     NS.VirtualField<never, Value, Input, Output, CtxOptions, Metadata>
-  > = { type: 'virtual' };
+  > = { type: "virtual" };
 
   constructor(name: string) {
-    this.name = name;
     this.config.name = name;
   }
 
@@ -401,7 +393,7 @@ class VirtualBuilder<
     return this as never;
   }
 
-  [BUILD]() {
+  [FIELD_CONFIG_BUILD_METHOD_NAME]() {
     return this.config as never as NS.VirtualField<
       never,
       Value,
@@ -411,15 +403,4 @@ class VirtualBuilder<
       Metadata
     >;
   }
-}
-
-/**
- * `Array.isArray` doesn't narrow a union containing a readonly tuple (like
- * `ArrayOfMinSizeTwo`'s `readonly [T, T, ...T[]]` branch) cleanly, so this
- * narrows from `unknown` instead of the generic union directly.
- */
-function extractAllowedValues(allow: unknown) {
-  if (allow == null) return undefined;
-
-  return Array.isArray(allow) ? allow : (allow as { values: unknown }).values;
 }

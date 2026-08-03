@@ -1,7 +1,7 @@
-import { expect } from 'bun:test';
-import { type FieldMaker, Schema } from '../src/schema';
-import { ERRORS } from '../src/schema/utils/constants';
-import { isEqual, type ObjectType } from '../src/utils';
+import { expect } from "bun:test";
+import { type FieldMaker, Schema } from "../src/schema";
+import { ERRORS } from "../src/schema/utils/constants";
+import { isEqual, type ObjectType } from "../src/utils";
 
 export {
   ERRORS,
@@ -32,7 +32,7 @@ function findBy<T>(list: T[], determinant: any): T | undefined {
 
 function getDeepValue(data: ObjectType, key: string): any {
   // @ts-expect-error lol
-  return key.split('.').reduce((prev, next) => prev?.[next], data);
+  return key.split(".").reduce((prev, next) => prev?.[next], data);
 }
 
 function getSubObject(obj: ObjectType, sampleSub: ObjectType) {
@@ -46,21 +46,14 @@ function getSubObject(obj: ObjectType, sampleSub: ObjectType) {
   return _obj;
 }
 
-/**
- * Builder-closure equivalent of the old `{ fieldName1: {...}, fieldName2: {...}, ...extraFields }`
- * flat-map helper. `extendField1` can further decorate fieldName1's builder
- * chain (e.g. `(b) => b.onSuccess(handler)`); `extraFields` are additional
- * already-built fields (e.g. `field.constant('id').value(1)`) to include
- * alongside fieldName1/fieldName2.
- */
 function getValidSchema(
   extendField1: (b: any) => any = (b) => b,
   extraFields: any[] = [],
 ) {
   return (b: any, { lax }: FieldMaker<any>) => {
     b.field(
-      extendField1(lax('fieldName1').default('').validate(validator)),
-    ).field(lax('fieldName2').default('').validate(validator));
+      extendField1(lax("fieldName1").default("").validate(validator)),
+    ).field(lax("fieldName2").default("").validate(validator));
 
     for (const extraField of extraFields) b.field(extraField);
 

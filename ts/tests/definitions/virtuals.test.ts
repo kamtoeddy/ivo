@@ -1,27 +1,26 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it } from "bun:test";
 
-import { type ReadonlyIvoContext, Schema } from '../../src';
-import { expectFailure, expectNoFailure, makeFx, validator } from '../_utils';
+import { type ReadonlyIvoContext, Schema } from "../../src";
+import { expectFailure, expectNoFailure, makeFx, validator } from "../_utils";
 
-describe('virtual', () => {
-  describe('valid', () => {
-    describe('alias', () => {
-      it('should allow alias', () => {
+describe("virtual", () => {
+  describe("valid", () => {
+    describe("alias", () => {
+      it("should allow alias", () => {
         const toPass = makeFx((b, m) =>
           b
             .field(
               m
-                .dependent('dependentField')
-                .default('')
-                .dependsOn('fieldName')
-                .resolve(() => ''),
+                .dependent("dependentField", "fieldName")
+                .default("")
+                .resolve(() => ""),
             )
             .field(
               m
-                .virtual('fieldName')
-                .alias('alias')
+                .virtual("fieldName")
+                .alias("alias")
                 .validate(validator)
-                .sanitize(() => ''),
+                .sanitize(() => ""),
             ),
         );
 
@@ -30,25 +29,24 @@ describe('virtual', () => {
         toPass();
       });
 
-      it('should allow alias if it is the same as a related dependency of the virtual', () => {
-        const dependentField = 'dependentField';
-        const virtualField = 'virtualField';
+      it("should allow alias if it is the same as a related dependency of the virtual", () => {
+        const dependentField = "dependentField";
+        const virtualField = "virtualField";
 
         const toPass = makeFx((b, m) =>
           b
             .field(
               m
-                .dependent(dependentField)
-                .default('')
-                .dependsOn(virtualField)
-                .resolve(() => ''),
+                .dependent(dependentField, virtualField)
+                .default("")
+                .resolve(() => ""),
             )
             .field(
               m
                 .virtual(virtualField)
                 .alias(dependentField)
                 .validate(validator)
-                .sanitize(() => ''),
+                .sanitize(() => ""),
             ),
         );
 
@@ -57,7 +55,7 @@ describe('virtual', () => {
         toPass();
       });
 
-      describe('behaviour', () => {
+      describe("behaviour", () => {
         let contextRecord = {} as Record<string, number | undefined>;
 
         type QuantityInput = { qty?: number };
@@ -73,37 +71,31 @@ describe('virtual', () => {
 
         function validator(v: any) {
           const _type = typeof v;
-          return _type === 'number'
+          return _type === "number"
             ? { valid: true, validated: v }
-            : { valid: false, reason: 'Invalid quantity' };
+            : { valid: false, reason: "Invalid quantity" };
         }
 
         const Model = new Schema<any>((b, m) =>
           b
+            .field(m.constant("id", 1).onDelete(resolver as never))
             .field(
               m
-                .constant('id')
-                .value(1)
-                .onDelete(resolver as never),
-            )
-            .field(
-              m
-                .dependent('quantity')
+                .dependent("quantity", "setQuantity")
                 .default(0.0)
-                .dependsOn('setQuantity')
                 .resolve(resolver as never),
             )
-            .field(m.virtual('setQuantity').alias('qty').validate(validator)),
+            .field(m.virtual("setQuantity").alias("qty").validate(validator)),
         ).getModel();
 
         beforeEach(() => {
           contextRecord = {};
         });
 
-        describe('creation', () => {
-          it('should respect alias if provided at creation', async () => {
+        describe("creation", () => {
+          it("should respect alias if provided at creation", async () => {
             const qty = 12;
-            const { data } = await Model.create({ qty });
+            const { data } = await Model.create({ qty }, {});
 
             expect(data).toMatchObject({ id: 1, quantity: qty });
             expect(contextRecord).toEqual({ qty });
@@ -112,40 +104,34 @@ describe('virtual', () => {
           it("should use default values of dependent props to be set if an alias with that field's name exists on the same schema but initialization is blocked", async () => {
             const Model = new Schema<any>((b, m) =>
               b
+                .field(m.constant("id", 1).onDelete(resolver as never))
                 .field(
                   m
-                    .constant('id')
-                    .value(1)
-                    .onDelete(resolver as never),
-                )
-                .field(
-                  m
-                    .dependent('quantity')
+                    .dependent("quantity", "setQuantity")
                     .default(0.0)
-                    .dependsOn('setQuantity')
                     .resolve(resolver as never),
                 )
                 .field(
                   m
-                    .virtual('setQuantity')
-                    .alias('quantity')
+                    .virtual("setQuantity")
+                    .alias("quantity")
                     .validate(validator)
                     .ignoreInit(),
                 ),
             ).getModel();
 
-            const { data } = await Model.create({ quantity: 12 });
+            const { data } = await Model.create({ quantity: 12 }, {});
 
             expect(data).toMatchObject({ id: 1, quantity: 0 });
             expect(contextRecord).toEqual({});
           });
 
-          it('should return alias errors with alias name in error payload at creation', async () => {
-            const { error } = await Model.create({ qty: '12' });
+          it("should return alias errors with alias name in error payload at creation", async () => {
+            const { error } = await Model.create({ qty: "12" }, {});
 
             expect(error).toMatchObject({
               qty: {
-                reason: 'Invalid quantity',
+                reason: "Invalid quantity",
                 metadata: null,
               },
             });
@@ -153,34 +139,36 @@ describe('virtual', () => {
           });
         });
 
-        describe('delete', () => {
-          it('aliases should not be available in context during deletion', async () => {
-            await Model.delete({ id: 1, quantity: 12, qty: 1000 });
+        describe("delete", () => {
+          it("aliases should not be available in context during deletion", async () => {
+            await Model.delete({ id: 1, quantity: 12, qty: 1000 }, {});
 
             expect(contextRecord).toEqual({});
           });
         });
 
-        describe('update', () => {
-          it('should respect alias if provided during updates', async () => {
+        describe("update", () => {
+          it("should respect alias if provided during updates", async () => {
             const qty = 5;
             const { data } = await Model.update(
               { id: 1, quantity: 12 },
               { qty },
+              {},
             );
 
             expect(data).toMatchObject({ quantity: qty });
             expect(contextRecord).toEqual({ qty });
           });
 
-          it('should return alias errors with alias name in error payload during updates', async () => {
+          it("should return alias errors with alias name in error payload during updates", async () => {
             const { error } = await Model.update(
               { id: 1, quantity: 12 },
-              { qty: '2' },
+              { qty: "2" },
+              {},
             );
 
             expect(error).toMatchObject({
-              qty: { reason: 'Invalid quantity', metadata: null },
+              qty: { reason: "Invalid quantity", metadata: null },
             });
             expect(contextRecord).toEqual({});
           });
@@ -189,19 +177,18 @@ describe('virtual', () => {
         describe("availability of virtuals in ctx of 'required' method of virtual", () => {
           const Model = new Schema<any>((b, m) =>
             b
-              .field(m.constant('id').value(1))
-              .field(m.lax('note').default(''))
+              .field(m.constant("id", 1))
+              .field(m.lax("note").default(""))
               .field(
                 m
-                  .dependent('quantity')
+                  .dependent("quantity", "setQuantity")
                   .default(0.0)
-                  .dependsOn('setQuantity')
                   .resolve(resolver as never),
               )
               .field(
                 m
-                  .virtual('setQuantity')
-                  .alias('qty')
+                  .virtual("setQuantity")
+                  .alias("qty")
                   .validate(validator)
                   .required(({ input: { setQuantity } }: any) => {
                     contextRecord.setQuantity = setQuantity;
@@ -212,7 +199,7 @@ describe('virtual', () => {
           ).getModel();
 
           it("should make ctx.input available (keyed by the virtual's config name, not its alias) inside 'required' at creation", async () => {
-            const operation = await Model.create({ id: 1 });
+            const operation = await Model.create({ id: 1 }, {});
 
             expect(contextRecord).toEqual({ setQuantity: undefined });
             expect(operation.data).toBe(null);
@@ -222,10 +209,10 @@ describe('virtual', () => {
           });
 
           it("should make ctx.input available (keyed by the virtual's config name, not its alias) inside 'required' during updates", async () => {
-            const entity = { id: 1, note: '', quantity: 100 };
+            const entity = { id: 1, note: "", quantity: 100 };
             // a genuine, unrelated change so the update isn't a no-op —
             // `qty` itself stays unprovided, so `required` still fires for it.
-            const operation = await Model.update(entity, { note: 'hey' });
+            const operation = await Model.update(entity, { note: "hey" }, {});
 
             expect(contextRecord).toEqual({ setQuantity: undefined });
             expect(operation.data).toBe(null);
@@ -238,23 +225,17 @@ describe('virtual', () => {
         describe("availability of virtuals in ctx of ignoreInit & ignoreUpdate methods of the virtual when it's alias is provided", () => {
           const Model = new Schema<any>((b, m) =>
             b
+              .field(m.constant("id", 1).onDelete(resolver as never))
               .field(
                 m
-                  .constant('id')
-                  .value(1)
-                  .onDelete(resolver as never),
-              )
-              .field(
-                m
-                  .dependent('quantity')
+                  .dependent("quantity", "setQuantity")
                   .default(0.0)
-                  .dependsOn('setQuantity')
                   .resolve(resolver as never),
               )
               .field(
                 m
-                  .virtual('setQuantity')
-                  .alias('qty')
+                  .virtual("setQuantity")
+                  .alias("qty")
                   .validate(validator)
                   .ignoreInit(({ qty }) => {
                     contextRecord.setQuantity = qty;
@@ -273,7 +254,7 @@ describe('virtual', () => {
 
           it("should respect 'ignoreInit' rule of virtual property even when alias is provided at creation", async () => {
             let qty = -75;
-            const operation1 = await Model.create({ id: 1, qty });
+            const operation1 = await Model.create({ id: 1, qty }, {});
 
             expect(contextRecord).toEqual({ setQuantity: -75 });
             expect(operation1.error).toBe(null);
@@ -281,7 +262,7 @@ describe('virtual', () => {
 
             qty = 75;
 
-            const operation2 = await Model.create({ id: 1, qty });
+            const operation2 = await Model.create({ id: 1, qty }, {});
 
             expect(contextRecord).toEqual({ qty, setQuantity: qty });
             expect(operation2.error).toBe(null);
@@ -293,6 +274,7 @@ describe('virtual', () => {
             const operation1 = await Model.update(
               { id: 1, quantity: 75 },
               { qty },
+              {},
             );
 
             expect(contextRecord).toEqual({ setQuantity: qty });
@@ -304,6 +286,7 @@ describe('virtual', () => {
             const operation2 = await Model.update(
               { id: 1, quantity: 75 },
               { qty },
+              {},
             );
 
             expect(contextRecord).toEqual({ qty, setQuantity: qty });
@@ -313,40 +296,39 @@ describe('virtual', () => {
         });
       });
 
-      describe('behaviour with validation & required errors and alias with different name', () => {
+      describe("behaviour with validation & required errors and alias with different name", () => {
         const Model = new Schema<any>((b, m) =>
           b
             .field(
               m
-                .dependent('dependent')
+                .dependent("dependent", "_virtual")
                 .default(0.0)
-                .dependsOn('_virtual')
                 .resolve(() => 1),
             )
             .field(
               m
-                .virtual('_virtual')
-                .alias('virtual')
-                .validate((v: any) => v === 'valid')
+                .virtual("_virtual")
+                .alias("virtual")
+                .validate((v: any) => v === "valid")
                 .required(() => true),
             ),
         ).getModel();
 
-        describe('creation', () => {
-          it('should return alias name as error key if provided and validation fails at creation', async () => {
-            const { error } = await Model.create({ virtual: '5' });
+        describe("creation", () => {
+          it("should return alias name as error key if provided and validation fails at creation", async () => {
+            const { error } = await Model.create({ virtual: "5" }, {});
 
             expect(error).toMatchObject({
               virtual: {
-                reason: 'validation failed',
+                reason: "validation failed",
                 metadata: null,
               },
             });
             expect(error?._virtual).toBeUndefined();
           });
 
-          it('should return alias name as error key in case of required error at creation', async () => {
-            const { error } = await Model.create({});
+          it("should return alias name as error key in case of required error at creation", async () => {
+            const { error } = await Model.create({}, {});
 
             expect(error).toMatchObject({
               virtual: {
@@ -358,15 +340,19 @@ describe('virtual', () => {
           });
         });
 
-        describe('updates', () => {
+        describe("updates", () => {
           const validData = { dependent: 20 };
 
-          it('should return alias name as error key if provided and validation fails during updates', async () => {
-            const { error } = await Model.update(validData, { virtual: '5' });
+          it("should return alias name as error key if provided and validation fails during updates", async () => {
+            const { error } = await Model.update(
+              validData,
+              { virtual: "5" },
+              {},
+            );
 
             expect(error).toMatchObject({
               virtual: {
-                reason: 'validation failed',
+                reason: "validation failed",
                 metadata: null,
               },
             });
@@ -375,40 +361,39 @@ describe('virtual', () => {
         });
       });
 
-      describe('behaviour with validation & required errors and alias with name of dependent field', () => {
+      describe("behaviour with validation & required errors and alias with name of dependent field", () => {
         const Model = new Schema<any>((b, m) =>
           b
             .field(
               m
-                .dependent('dependent')
+                .dependent("dependent", "_virtual")
                 .default(0.0)
-                .dependsOn('_virtual')
                 .resolve(() => 1),
             )
             .field(
               m
-                .virtual('_virtual')
-                .alias('dependent')
-                .validate((v: any) => v === 'valid')
+                .virtual("_virtual")
+                .alias("dependent")
+                .validate((v: any) => v === "valid")
                 .required(() => true),
             ),
         ).getModel();
 
-        describe('creation', () => {
-          it('should return alias name as error key if provided and validation fails at creation', async () => {
-            const { error } = await Model.create({ dependent: '5' });
+        describe("creation", () => {
+          it("should return alias name as error key if provided and validation fails at creation", async () => {
+            const { error } = await Model.create({ dependent: "5" }, {});
 
             expect(error).toMatchObject({
               dependent: {
-                reason: 'validation failed',
+                reason: "validation failed",
                 metadata: null,
               },
             });
             expect(error?._virtual).toBeUndefined();
           });
 
-          it('should return alias name as error key in case of required error at creation', async () => {
-            const { error } = await Model.create({});
+          it("should return alias name as error key in case of required error at creation", async () => {
+            const { error } = await Model.create({}, {});
 
             expect(error).toMatchObject({
               dependent: {
@@ -420,16 +405,20 @@ describe('virtual', () => {
           });
         });
 
-        describe('updates', () => {
+        describe("updates", () => {
           const validData = { dependent: 20 };
 
-          it('should return alias name as error key if provided and validation fails during updates', async () => {
-            const { error } = await Model.update(validData, {
-              dependent: '5',
-            });
+          it("should return alias name as error key if provided and validation fails during updates", async () => {
+            const { error } = await Model.update(
+              validData,
+              {
+                dependent: "5",
+              },
+              {},
+            );
 
             expect(error).toMatchObject({
-              dependent: { reason: 'validation failed', metadata: null },
+              dependent: { reason: "validation failed", metadata: null },
             });
             expect(error?._virtual).toBeUndefined();
           });
@@ -437,21 +426,20 @@ describe('virtual', () => {
       });
     });
 
-    it('should allow sanitizer', () => {
+    it("should allow sanitizer", () => {
       const toPass = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependentField')
-              .default('')
-              .dependsOn('fieldName')
-              .resolve(() => ''),
+              .dependent("dependentField", "fieldName")
+              .default("")
+              .resolve(() => ""),
           )
           .field(
             m
-              .virtual('fieldName')
+              .virtual("fieldName")
               .validate(validator)
-              .sanitize(() => ''),
+              .sanitize(() => ""),
           ),
       );
 
@@ -460,19 +448,18 @@ describe('virtual', () => {
       toPass();
     });
 
-    it('should allow onFailure', () => {
+    it("should allow onFailure", () => {
       const toPass = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependentField')
-              .default('')
-              .dependsOn('fieldName')
-              .resolve(() => ''),
+              .dependent("dependentField", "fieldName")
+              .default("")
+              .resolve(() => ""),
           )
           .field(
             m
-              .virtual('fieldName')
+              .virtual("fieldName")
               .validate(validator)
               .onFailure(validator as never),
           ),
@@ -483,19 +470,18 @@ describe('virtual', () => {
       toPass();
     });
 
-    it('should allow requiredBy', () => {
+    it("should allow requiredBy", () => {
       const toPass = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependentField')
-              .default('')
-              .dependsOn('fieldName')
-              .resolve(() => ''),
+              .dependent("dependentField", "fieldName")
+              .default("")
+              .resolve(() => ""),
           )
           .field(
             m
-              .virtual('fieldName')
+              .virtual("fieldName")
               .validate(validator)
               .required(() => true),
           ),
@@ -506,7 +492,7 @@ describe('virtual', () => {
       toPass();
     });
 
-    it('should allow ignoreInit(true|()=>boolean) + validator', () => {
+    it("should allow ignoreInit(true|()=>boolean) + validator", () => {
       const values = [true, () => false, () => true];
 
       for (const ignoreInit of values) {
@@ -514,16 +500,15 @@ describe('virtual', () => {
           b
             .field(
               m
-                .dependent('dependentField')
-                .default('')
-                .dependsOn('fieldName')
-                .resolve(() => ''),
+                .dependent("dependentField", "fieldName")
+                .default("")
+                .resolve(() => ""),
             )
             .field(
               ignoreInit === true
-                ? m.virtual('fieldName').validate(validator).ignoreInit()
+                ? m.virtual("fieldName").validate(validator).ignoreInit()
                 : m
-                    .virtual('fieldName')
+                    .virtual("fieldName")
                     .validate(validator)
                     .ignoreInit(ignoreInit as never),
             ),
@@ -535,7 +520,7 @@ describe('virtual', () => {
       }
     });
 
-    it('should allow onSuccess + validator', () => {
+    it("should allow onSuccess + validator", () => {
       const values = [[], () => ({})];
 
       for (const onSuccess of values) {
@@ -543,14 +528,13 @@ describe('virtual', () => {
           b
             .field(
               m
-                .dependent('dependentField')
-                .default('')
-                .dependsOn('fieldName')
-                .resolve(() => ''),
+                .dependent("dependentField", "fieldName")
+                .default("")
+                .resolve(() => ""),
             )
             .field(
               m
-                .virtual('fieldName')
+                .virtual("fieldName")
                 .validate(validator)
                 .onSuccess(onSuccess as never),
             ),
@@ -562,7 +546,7 @@ describe('virtual', () => {
       }
     });
 
-    describe('behaviour', () => {
+    describe("behaviour", () => {
       const onSuccessValues: Record<string, unknown> = {};
       const onSuccessStats: Record<string, number> = {};
       const sanitizedValues: Record<string, unknown> = {};
@@ -571,62 +555,66 @@ describe('virtual', () => {
         b
           .field(
             m
-              .dependent('dependentSideInit')
-              .default('')
-              .dependsOn(['virtualInit', 'virtualWithSanitizer'])
+              .dependent("dependentSideInit", [
+                "virtualInit",
+                "virtualWithSanitizer",
+              ])
+              .default("")
               .resolve(
                 ({ input: { virtualInit, virtualWithSanitizer } }: any) =>
-                  virtualInit && virtualWithSanitizer ? 'both' : 'one',
+                  virtualInit && virtualWithSanitizer ? "both" : "one",
               )
-              .onSuccess(onSuccess('dependentSideInit')),
+              .onSuccess(onSuccess("dependentSideInit")),
           )
           .field(
             m
-              .dependent('dependentSideNoInit')
-              .default('')
-              .dependsOn(['virtualNoInit', 'virtualWithSanitizerNoInit'])
-              .resolve(() => 'changed')
-              .onSuccess(onSuccess('dependentSideNoInit')),
+              .dependent("dependentSideNoInit", [
+                "virtualNoInit",
+                "virtualWithSanitizerNoInit",
+              ])
+              .default("")
+              .resolve(() => "changed")
+              .onSuccess(onSuccess("dependentSideNoInit")),
           )
-          .field(m.lax('name').default(''))
+          .field(m.lax("name").default(""))
           .field(
             m
-              .virtual('virtualInit')
+              .virtual("virtualInit")
               .validate(validateBoolean as never)
-              .onSuccess(onSuccess('virtualInit')),
+              .onSuccess(onSuccess("virtualInit")),
           )
           .field(
             m
-              .virtual('virtualNoInit')
+              .virtual("virtualNoInit")
               .validate(validateBoolean as never)
               .ignoreInit()
               .onSuccess([
-                onSuccess('virtualNoInit'),
-                incrementOnSuccessStats('virtualNoInit'),
+                onSuccess("virtualNoInit"),
+                incrementOnSuccessStats("virtualNoInit"),
               ]),
           )
           .field(
             m
-              .virtual('virtualWithSanitizer')
+              .virtual("virtualWithSanitizer")
               .validate(validateBoolean as never)
-              .sanitize(sanitizerOf('virtualWithSanitizer', 'sanitized'))
+              .sanitize(sanitizerOf("virtualWithSanitizer", "sanitized"))
               .onSuccess([
-                onSuccess('virtualWithSanitizer'),
-                incrementOnSuccessStats('virtualWithSanitizer'),
-                incrementOnSuccessStats('virtualWithSanitizer'),
+                onSuccess("virtualWithSanitizer"),
+                incrementOnSuccessStats("virtualWithSanitizer"),
+                incrementOnSuccessStats("virtualWithSanitizer"),
               ]),
           )
           .field(
             m
-              .virtual('virtualWithSanitizerNoInit')
+              .virtual("virtualWithSanitizerNoInit")
               .validate(validateBoolean as never)
               .ignoreInit()
               .sanitize(
-                sanitizerOf('virtualWithSanitizerNoInit', 'sanitized no init'),
+                sanitizerOf("virtualWithSanitizerNoInit", "sanitized no init"),
               )
               .onSuccess([
-                onSuccess('virtualWithSanitizerNoInit'),
-                incrementOnSuccessStats('virtualWithSanitizerNoInit'),
+                onSuccess("virtualWithSanitizerNoInit"),
+                incrementOnSuccessStats("virtualWithSanitizerNoInit"),
               ]),
           ),
       ).getModel();
@@ -681,53 +669,59 @@ describe('virtual', () => {
           delete sanitizedValues[key];
       });
 
-      describe('creation', () => {
-        it('should not sanitize virtuals nor resolve their dependencies if not provided', async () => {
-          const { data } = await User.create({ name: 'Peter' });
+      describe("creation", () => {
+        it("should not sanitize virtuals nor resolve their dependencies if not provided", async () => {
+          const { data } = await User.create({ name: "Peter" }, {});
 
           expect(data).toEqual({
-            dependentSideInit: '',
-            dependentSideNoInit: '',
-            name: 'Peter',
+            dependentSideInit: "",
+            dependentSideNoInit: "",
+            name: "Peter",
           });
 
           expect(sanitizedValues).toEqual({});
         });
 
-        it('should respect sanitizer at creation', async () => {
-          const { data } = await User.create({
-            name: 'Peter',
-            virtualWithSanitizer: true,
-            virtualWithSanitizerNoInit: true,
-          });
+        it("should respect sanitizer at creation", async () => {
+          const { data } = await User.create(
+            {
+              name: "Peter",
+              virtualWithSanitizer: true,
+              virtualWithSanitizerNoInit: true,
+            },
+            {},
+          );
 
           expect(data).toEqual({
-            dependentSideInit: 'one',
-            dependentSideNoInit: '',
-            name: 'Peter',
+            dependentSideInit: "one",
+            dependentSideNoInit: "",
+            name: "Peter",
           });
 
           expect(sanitizedValues).toEqual({
-            virtualWithSanitizer: 'sanitized',
+            virtualWithSanitizer: "sanitized",
           });
         });
 
-        it('should respect virtualInits & virtualNoInit at creation', async () => {
-          const { data: user, handleSuccess } = await User.create({
-            dependentSideNoInit: '',
-            dependentSideInit: true,
-            name: 'Peter',
-            virtualInit: true,
-            virtualWithSanitizer: true,
-            virtualWithSanitizerNoInit: true,
-          });
+        it("should respect virtualInits & virtualNoInit at creation", async () => {
+          const { data: user, handleSuccess } = await User.create(
+            {
+              dependentSideNoInit: "",
+              dependentSideInit: true,
+              name: "Peter",
+              virtualInit: true,
+              virtualWithSanitizer: true,
+              virtualWithSanitizerNoInit: true,
+            },
+            {},
+          );
 
           await handleSuccess?.();
 
           expect(user).toEqual({
-            dependentSideInit: 'both',
-            dependentSideNoInit: '',
-            name: 'Peter',
+            dependentSideInit: "both",
+            dependentSideNoInit: "",
+            name: "Peter",
           });
 
           expect(onSuccessStats).toEqual({
@@ -738,35 +732,36 @@ describe('virtual', () => {
           });
 
           expect(onSuccessValues).toEqual({
-            dependentSideInit: 'both',
-            dependentSideNoInit: '',
+            dependentSideInit: "both",
+            dependentSideNoInit: "",
             virtualInit: true,
-            virtualWithSanitizer: 'sanitized',
+            virtualWithSanitizer: "sanitized",
           });
 
           expect(sanitizedValues).toEqual({
-            virtualWithSanitizer: 'sanitized',
+            virtualWithSanitizer: "sanitized",
           });
         });
       });
 
-      describe('updating', () => {
-        it('should respect sanitizer of all virtuals provided during updates', async () => {
+      describe("updating", () => {
+        it("should respect sanitizer of all virtuals provided during updates", async () => {
           const { data, handleSuccess } = await User.update(
-            { name: 'Peter' },
+            { name: "Peter" },
             {
-              name: 'John',
+              name: "John",
               virtualWithSanitizer: true,
               virtualWithSanitizerNoInit: true,
             },
+            {},
           );
 
           await handleSuccess?.();
 
           expect(data).toEqual({
-            name: 'John',
-            dependentSideInit: 'one',
-            dependentSideNoInit: 'changed',
+            name: "John",
+            dependentSideInit: "one",
+            dependentSideNoInit: "changed",
           });
 
           expect(onSuccessStats).toEqual({
@@ -777,27 +772,26 @@ describe('virtual', () => {
           });
 
           expect(onSuccessValues).toEqual({
-            dependentSideInit: 'one',
-            dependentSideNoInit: 'changed',
-            virtualWithSanitizer: 'sanitized',
-            virtualWithSanitizerNoInit: 'sanitized no init',
+            dependentSideInit: "one",
+            dependentSideNoInit: "changed",
+            virtualWithSanitizer: "sanitized",
+            virtualWithSanitizerNoInit: "sanitized no init",
           });
 
           expect(sanitizedValues).toEqual({
-            virtualWithSanitizer: 'sanitized',
-            virtualWithSanitizerNoInit: 'sanitized no init',
+            virtualWithSanitizer: "sanitized",
+            virtualWithSanitizerNoInit: "sanitized no init",
           });
         });
       });
 
-      describe('behaviour with errors thrown in the sanitizer', () => {
+      describe("behaviour with errors thrown in the sanitizer", () => {
         const Model = new Schema<any>((b, m) =>
           b
             .field(
               m
-                .dependent('dependent')
-                .default('')
-                .dependsOn('virtual')
+                .dependent("dependent", "virtual")
+                .default("")
                 .resolve(
                   (context: any) =>
                     context.input?.virtual ?? context.rawInput?.virtual,
@@ -805,30 +799,31 @@ describe('virtual', () => {
             )
             .field(
               m
-                .virtual('virtual')
+                .virtual("virtual")
                 .validate(() => true)
                 .sanitize(() => {
-                  throw new Error('lolol');
+                  throw new Error("lolol");
                 }),
             ),
         ).getModel();
 
-        const values = [null, '', 1, 0, -1, true, false, [], {}];
+        const values = [null, "", 1, 0, -1, true, false, [], {}];
 
-        it('should use the validated value at creation', async () => {
+        it("should use the validated value at creation", async () => {
           for (const virtual of values) {
-            const { data, error } = await Model.create({ virtual });
+            const { data, error } = await Model.create({ virtual }, {});
 
             expect(error).toBeNull();
             expect(data).toMatchObject({ dependent: virtual });
           }
         });
 
-        it('should use the validated value during updates', async () => {
+        it("should use the validated value during updates", async () => {
           for (const virtual of values) {
             const { data, error } = await Model.update(
-              { dependent: 'lolol' },
+              { dependent: "lolol" },
               { virtual },
+              {},
             );
 
             expect(error).toBeNull();
@@ -839,29 +834,28 @@ describe('virtual', () => {
     });
   });
 
-  describe('invalid', () => {
+  describe("invalid", () => {
     // "should reject alias if definition does not have the virtual
     // keyword" discarded: `.alias()` only exists on `VirtualBuilder` -
     // there's no way to call it on a required/readonly/lax/dependent
     // builder chain at all, so a non-virtualm having an alias is
     // structurally unrepresentable.
-    describe('alias', () => {
-      it('should reject alias if non-empty string is provided', () => {
-        const values = [-1, 1, true, false, undefined, '', null, [], {}];
+    describe("alias", () => {
+      it("should reject alias if non-empty string is provided", () => {
+        const values = [-1, 1, true, false, undefined, "", null, [], {}];
 
         for (const alias of values) {
           const toFail = makeFx((b, m) =>
             b
               .field(
                 m
-                  .dependent('dependentField')
-                  .default('')
-                  .dependsOn('fieldName')
-                  .resolve(() => ''),
+                  .dependent("dependentField", "fieldName")
+                  .default("")
+                  .resolve(() => ""),
               )
               .field(
                 m
-                  .virtual('fieldName')
+                  .virtual("fieldName")
                   .alias(alias as never)
                   .validate(validator),
               ),
@@ -875,7 +869,7 @@ describe('virtual', () => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 fieldName: expect.arrayContaining([
-                  'An alias must be a string with at least 1 character',
+                  "An alias must be a string with at least 1 character",
                 ]),
               }),
             );
@@ -884,16 +878,15 @@ describe('virtual', () => {
       });
 
       it("should reject alias if it's same as the virtual property", () => {
-        const virtualField = 'virtualField';
+        const virtualField = "virtualField";
 
         const toFail = makeFx((b, m) =>
           b
             .field(
               m
-                .dependent('dependentField')
-                .default('')
-                .dependsOn(virtualField)
-                .resolve(() => ''),
+                .dependent("dependentField", virtualField)
+                .default("")
+                .resolve(() => ""),
             )
             .field(
               m
@@ -911,25 +904,24 @@ describe('virtual', () => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               [virtualField]: expect.arrayContaining([
-                'An alias cannot be the same as the virtual property',
+                "An alias cannot be the same as the virtual property",
               ]),
             }),
           );
         }
       });
 
-      it('should reject alias if already used by another virtual', () => {
-        const alias = 'alias';
-        const virtualField = 'virtualField';
+      it("should reject alias if already used by another virtual", () => {
+        const alias = "alias";
+        const virtualField = "virtualField";
 
         const toFail = makeFx((b, m) =>
           b
             .field(
               m
-                .dependent('dependentField')
-                .default('')
-                .dependsOn([virtualField, 'virtualField1'])
-                .resolve(() => ''),
+                .dependent("dependentField", [virtualField, "virtualField1"])
+                .default("")
+                .resolve(() => ""),
             )
             .field(
               m
@@ -939,7 +931,7 @@ describe('virtual', () => {
             )
             .field(
               m
-                .virtual('virtualField1')
+                .virtual("virtualField1")
                 .alias(alias as never)
                 .validate(validator),
             ),
@@ -960,18 +952,17 @@ describe('virtual', () => {
         }
       });
 
-      it('should reject alias if it is the same as the name of existing virtual', () => {
-        const alias = 'virtualField1';
-        const virtualField = 'virtualField';
+      it("should reject alias if it is the same as the name of existing virtual", () => {
+        const alias = "virtualField1";
+        const virtualField = "virtualField";
 
         const toFail = makeFx((b, m) =>
           b
             .field(
               m
-                .dependent('dependentField')
-                .default('')
-                .dependsOn([virtualField, 'virtualField1'])
-                .resolve(() => ''),
+                .dependent("dependentField", [virtualField, "virtualField1"])
+                .default("")
+                .resolve(() => ""),
             )
             .field(
               m
@@ -979,7 +970,7 @@ describe('virtual', () => {
                 .alias(alias as never)
                 .validate(validator),
             )
-            .field(m.virtual('virtualField1').validate(validator)),
+            .field(m.virtual("virtualField1").validate(validator)),
         );
 
         expectFailure(toFail);
@@ -997,18 +988,17 @@ describe('virtual', () => {
         }
       });
 
-      it('should reject alias if it is the same as the name of existing property', () => {
-        const laxField = 'laxField';
-        const virtualField = 'virtualField';
+      it("should reject alias if it is the same as the name of existing property", () => {
+        const laxField = "laxField";
+        const virtualField = "virtualField";
 
         const toFail = makeFx((b, m) =>
           b
             .field(
               m
-                .dependent('dependentField')
-                .default('')
-                .dependsOn(virtualField)
-                .resolve(() => ''),
+                .dependent("dependentField", virtualField)
+                .default("")
+                .resolve(() => ""),
             )
             .field(
               m
@@ -1034,33 +1024,31 @@ describe('virtual', () => {
         }
       });
 
-      it('should reject alias if it is the same as an unrelated dependent property', () => {
-        const dependentField = 'dependentField';
-        const virtualField = 'virtualField';
+      it("should reject alias if it is the same as an unrelated dependent property", () => {
+        const dependentField = "dependentField";
+        const virtualField = "virtualField";
 
         const toFail = makeFx((b, m) =>
           b
             .field(
               m
-                .dependent(dependentField)
-                .default('')
-                .dependsOn(virtualField)
-                .resolve(() => ''),
+                .dependent(dependentField, virtualField)
+                .default("")
+                .resolve(() => ""),
             )
             .field(
               m
                 .virtual(virtualField)
-                .alias('dependentField1' as never)
+                .alias("dependentField1" as never)
                 .validate(validator),
             )
             .field(
               m
-                .dependent('dependentField1')
-                .default('')
-                .dependsOn('virtualField1')
-                .resolve(() => ''),
+                .dependent("dependentField1", "virtualField1")
+                .default("")
+                .resolve(() => ""),
             )
-            .field(m.virtual('virtualField1').validate(validator)),
+            .field(m.virtual("virtualField1").validate(validator)),
         );
 
         expectFailure(toFail);
@@ -1079,8 +1067,8 @@ describe('virtual', () => {
       });
     });
 
-    describe('sanitizers', () => {
-      it('should reject invalid sanitizer', () => {
+    describe("sanitizers", () => {
+      it("should reject invalid sanitizer", () => {
         const values = [-1, 1, true, false, undefined, null, [], {}];
 
         for (const sanitizer of values) {
@@ -1088,14 +1076,13 @@ describe('virtual', () => {
             b
               .field(
                 m
-                  .dependent('dependentField')
-                  .default('')
-                  .dependsOn('fieldName')
-                  .resolve(() => ''),
+                  .dependent("dependentField", "fieldName")
+                  .default("")
+                  .resolve(() => ""),
               )
               .field(
                 m
-                  .virtual('fieldName')
+                  .virtual("fieldName")
                   .validate(validator)
                   .sanitize(sanitizer as never),
               ),
@@ -1122,9 +1109,9 @@ describe('virtual', () => {
       // call it on a laxm builder chain at all.
     });
 
-    it('should reject virtual & no dependent property ', () => {
+    it("should reject virtual & no dependent property ", () => {
       const toFail = makeFx((b, m) =>
-        b.field(m.virtual('fieldName').validate(validator)),
+        b.field(m.virtual("fieldName").validate(validator)),
       );
 
       expectFailure(toFail);
@@ -1135,7 +1122,7 @@ describe('virtual', () => {
         expect(err.payload).toEqual(
           expect.objectContaining({
             fieldName: [
-              'A virtual property must have at least one property that depends on it',
+              "A virtual property must have at least one property that depends on it",
             ],
           }),
         );
@@ -1147,19 +1134,18 @@ describe('virtual', () => {
     // `VirtualBuilder`, so a virtual with neither is structurally
     // unrepresentable.
 
-    it('should reject requiredBy + ignoreInit', () => {
+    it("should reject requiredBy + ignoreInit", () => {
       const toFail = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependentField')
-              .default('')
-              .dependsOn('fieldName')
-              .resolve(() => ''),
+              .dependent("dependentField", "fieldName")
+              .default("")
+              .resolve(() => ""),
           )
           .field(
             m
-              .virtual('fieldName')
+              .virtual("fieldName")
               .validate(validator)
               .ignoreInit(true as never)
               .required(() => true),
@@ -1174,26 +1160,25 @@ describe('virtual', () => {
         expect(err.payload).toEqual(
           expect.objectContaining({
             fieldName: expect.arrayContaining([
-              'Required virtuals cannot have initialization blocked',
+              "Required virtuals cannot have initialization blocked",
             ]),
           }),
         );
       }
     });
 
-    it('should reject required(true)', () => {
+    it("should reject required(true)", () => {
       const toFail = makeFx((b, m) =>
         b
           .field(
             m
-              .dependent('dependentField')
-              .default('')
-              .dependsOn('fieldName')
-              .resolve(() => ''),
+              .dependent("dependentField", "fieldName")
+              .default("")
+              .resolve(() => ""),
           )
           .field(
             m
-              .virtual('fieldName')
+              .virtual("fieldName")
               .validate(validator)
               .required(true as never),
           ),
@@ -1207,7 +1192,7 @@ describe('virtual', () => {
         expect(err.payload).toEqual(
           expect.objectContaining({
             fieldName: expect.arrayContaining([
-              'Callable required properties must have required as a function',
+              "Callable required fields must have required as a function",
             ]),
           }),
         );

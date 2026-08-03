@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { Schema } from '../src';
+import { describe, expect, it } from "bun:test";
+import { Schema } from "../src";
 
 /**
  * Stress & pathological inputs tests
@@ -13,8 +13,8 @@ import { Schema } from '../src';
  * you may reduce the sizes below.
  */
 
-describe('Stress tests — pathological input shapes', () => {
-  it('handles very deep nested objects without throwing', async () => {
+describe("Stress tests — pathological input shapes", () => {
+  it("handles very deep nested objects without throwing", async () => {
     // build a deep nested object (depth configurable)
     const makeDeep = (depth: number) => {
       const root: Record<string, any> = {};
@@ -32,83 +32,83 @@ describe('Stress tests — pathological input shapes', () => {
     const Model = new Schema<{ payload: {} }>((b, m) =>
       b.field(
         m
-          .lax('payload')
+          .lax("payload")
           .default({})
           .validate((v) =>
-            typeof v === 'object' && v !== null
+            typeof v === "object" && v !== null
               ? { valid: true, validated: v }
-              : { valid: false, reasons: ['Expected object'] },
+              : { valid: false, reasons: ["Expected object"] },
           ),
       ),
     ).getModel();
 
-    const { data, error } = await Model.create({ payload: deepObj });
+    const { data, error } = await Model.create({ payload: deepObj }, {});
     expect(error).toBeNull();
     expect(data).not.toBeNull();
   });
 
-  it('handles very large arrays without throwing and preserves length', async () => {
+  it("handles very large arrays without throwing and preserves length", async () => {
     const largeCount = 20_000; // moderate large array for CI; increase for local stress runs
-    const bigArray = new Array(largeCount).fill('x');
+    const bigArray = new Array(largeCount).fill("x");
 
     const Model = new Schema<{ payload: string[] }>((b, m) =>
       b.field(
         m
-          .lax('payload')
+          .lax("payload")
           .default([])
           .validate((v) =>
             Array.isArray(v)
               ? { valid: true, validated: v }
-              : { valid: false, reasons: ['Expected array'] },
+              : { valid: false, reasons: ["Expected array"] },
           ),
       ),
     ).getModel();
 
-    const { data, error } = await Model.create({ payload: bigArray });
+    const { data, error } = await Model.create({ payload: bigArray }, {});
     expect(error).toBeNull();
     expect(data).toBeDefined();
     expect(Array.isArray(data!.payload)).toBeTruthy();
     expect(data!.payload.length).toBe(largeCount);
   });
 
-  it('handles very long strings without throwing and returns validated value', async () => {
+  it("handles very long strings without throwing and returns validated value", async () => {
     const longLen = 20_000;
     // const longLen = 2_147_483_647; // 200k chars (reduce for restrictive CI)
-    const longStr = 'a'.repeat(longLen);
+    const longStr = "a".repeat(longLen);
 
     const Model = new Schema<{ text: string }>((b, m) =>
       b.field(
         m
-          .lax('text')
-          .default('')
+          .lax("text")
+          .default("")
           .validate((v) =>
-            typeof v === 'string'
+            typeof v === "string"
               ? { valid: true, validated: v }
-              : { valid: false, reasons: ['Expected string'] },
+              : { valid: false, reasons: ["Expected string"] },
           ),
       ),
     ).getModel();
 
-    const { data, error } = await Model.create({ text: longStr });
+    const { data, error } = await Model.create({ text: longStr }, {});
     expect(error).toBeNull();
     expect(data).toBeDefined();
-    expect(typeof data!.text).toBe('string');
+    expect(typeof data!.text).toBe("string");
     expect((data!.text as string).length).toBe(longLen);
   });
 
-  it('handles circular references without crashing (structuredClone-capable environments)', async () => {
-    const circular: any = { name: 'root' };
+  it("handles circular references without crashing (structuredClone-capable environments)", async () => {
+    const circular: any = { name: "root" };
     circular.self = circular; // circular reference
 
     const Model = new Schema<{ payload: {} }>((b, m) =>
       b.field(
         m
-          .lax('payload')
+          .lax("payload")
           .default({})
           .validate((v) =>
-            typeof v === 'object' && v !== null
+            typeof v === "object" && v !== null
               ? { valid: true, validated: v }
-              : { valid: false, reasons: ['Expected object'] },
+              : { valid: false, reasons: ["Expected object"] },
           ),
       ),
     ).getModel();
@@ -118,7 +118,7 @@ describe('Stress tests — pathological input shapes', () => {
     // or fall back to JSON methods; the latter will throw for circular refs.
     // The test will therefore highlight environments or code paths that don't
     // safely handle circular inputs.
-    const { data, error } = await Model.create({ payload: circular });
+    const { data, error } = await Model.create({ payload: circular }, {});
     expect(error).toBeNull();
     expect(data).not.toBeNull();
   });

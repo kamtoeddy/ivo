@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'bun:test';
-import { Schema } from '../../src';
-import { expectFailure, makeFx } from '../_utils';
+import { describe, expect, it } from "bun:test";
+import { Schema } from "../../src";
+import { expectFailure, makeFx } from "../_utils";
 
-describe('Schema definitions', () => {
+describe("Schema definitions", () => {
   // "should reject if property definitions is not an object" discarded:
   // the builder closure always resolves to a real `SchemaFieldBuilder`
   // whose FIELD_BUILDER_DEFINITIONS getter always returns an object, so
@@ -10,7 +10,7 @@ describe('Schema definitions', () => {
   // the public API - passing a non-function first argument to `Schema`
   // fails earlier (and differently) as `builder is not a function`.
 
-  it('should reject if property definitions has no property', () => {
+  it("should reject if property definitions has no property", () => {
     const toFail = makeFx((b: any) => b);
 
     expectFailure(toFail);
@@ -19,7 +19,7 @@ describe('Schema definitions', () => {
       toFail();
     } catch (err: any) {
       expect(err.payload).toMatchObject({
-        'schema fields': ['Insufficient Schema fields'],
+        "schema fields": ["Insufficient Schema fields"],
       });
     }
   });
@@ -33,51 +33,50 @@ describe('Schema definitions', () => {
   // validation, so these malformed-shape scenarios are structurally
   // unrepresentable through the builder by design.
 
-  it('should allow access to reservedKeys of valid schemas', () => {
+  it("should allow access to reservedKeys of valid schemas", () => {
     const schema = new Schema<any>(
       (b, m) =>
         b
-          .field(m.constant('id').value(1))
+          .field(m.constant("id", 1))
           .field(
             m
-              .dependent('dependent')
-              .default('')
-              .dependsOn('virtual')
-              .resolve(() => ''),
+              .dependent("dependent", "virtual")
+              .default("")
+              .resolve(() => ""),
           )
-          .field(m.lax('lax').default(true))
-          .field(m.virtual('virtual').validate(() => true)),
-      { timestamps: { createdAt: 'c_At' } },
+          .field(m.lax("lax").default(true))
+          .field(m.virtual("virtual").validate(() => true)),
+      { timestamps: { createdAt: "c_At" } },
     );
 
     expect(schema.reservedKeys).toEqual(
       expect.arrayContaining([
-        'c_At',
-        'dependent',
-        'id',
-        'lax',
-        'updatedAt',
-        'virtual',
+        "c_At",
+        "dependent",
+        "id",
+        "lax",
+        "updatedAt",
+        "virtual",
       ]),
     );
   });
 });
 
-describe('behaviour of schema when errors thrown in setter of default values', () => {
+describe("behaviour of schema when errors thrown in setter of default values", () => {
   const Model = new Schema<any>((b, m) =>
     b
       .field(
-        m.lax('field').default(() => {
-          throw new Error('lolol');
+        m.lax("field").default(() => {
+          throw new Error("lolol");
         }),
       )
-      .field(m.lax('prop1').default('')),
+      .field(m.lax("prop1").default("")),
   ).getModel();
 
-  it('should set value as default on error generating default value at creation', async () => {
-    const { data, error } = await Model.create({});
+  it("should set value as null on error generating default value at creation", async () => {
+    const { data, error } = await Model.create({}, {});
 
     expect(error).toBeNull();
-    expect(data).toMatchObject({ field: null, prop1: '' });
+    expect(data).toMatchObject({ field: null, prop1: "" });
   });
 });
