@@ -8,9 +8,9 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                DefaultValue, IntoBooleanResolver, IntoDefaultValueResolver,
-                IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver,
-                IntoSuccessHandler, IsFieldProvisionEnabled, RequiredResolver, UniformValidator,
+                DefaultValue, IntoBooleanResolver, IntoDefaultValueResolver, IntoDeleteHandler,
+                IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver, IntoSuccessHandler,
+                IsFieldProvisionEnabled, RequiredResolver, UniformValidator,
             },
         },
         types::{
@@ -46,7 +46,7 @@ pub struct LaxFieldBuilder<
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
-    should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
+    ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
@@ -107,7 +107,7 @@ impl<
             validator: None,
             re_validator: None,
             required_fn: None,
-            should_ignore: None,
+            ignore: None,
             ignore_init: None,
             ignore_update: None,
             on_delete_fns: None,
@@ -210,7 +210,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            ignore: self.should_ignore,
+            ignore: self.ignore,
             ignore_init: self.ignore_init,
             ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
@@ -371,7 +371,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore: Some(resolver.into_resolver()),
+            ignore: Some(resolver.into_resolver()),
             ..Default::default()
         }
     }
@@ -478,7 +478,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore: self.should_ignore,
+            ignore: self.ignore,
             ignore_init: self.ignore_init,
             ignore_update: Some(IsFieldProvisionEnabled::Readonly),
             ..Default::default()
@@ -552,7 +552,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore: self.should_ignore,
+            ignore: self.ignore,
             ignore_init: self.ignore_init,
             ignore_update: self.ignore_update,
             on_delete_fns: Some(match self.on_delete_fns {
@@ -638,7 +638,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore: self.should_ignore,
+            ignore: self.ignore,
             ignore_init: self.ignore_init,
             ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
@@ -724,7 +724,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore: self.should_ignore,
+            ignore: self.ignore,
             ignore_init: self.ignore_init,
             ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
