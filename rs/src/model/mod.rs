@@ -76,9 +76,8 @@ impl<
             )
             .await;
 
-        // Resolve constants & defaults
         let output = self
-            .attach_constants_and_defaults(output, &input, Arc::clone(&shared_rw_options))
+            .attach_default_values(output, &input, Arc::clone(&shared_rw_options))
             .await;
 
         Arc::make_mut(&mut ctx)
@@ -227,6 +226,12 @@ impl<
 
             Arc::make_mut(&mut ctx).set_changes(validated_outputs);
         }
+
+        let output = self
+            .attach_constant_values(ctx.values(), &input, Arc::clone(&shared_rw_options))
+            .await;
+
+        Arc::make_mut(&mut ctx).set_changes(output);
 
         // Generate and set timestamps
         let (values, should_update_ctx) = self.attach_timestamps(ctx.values(), false);
@@ -1011,28 +1016,22 @@ impl<
         Some((updated_values, fields_changed))
     }
 
-    async fn attach_constants_and_defaults(
+    async fn attach_constant_values(
         &self,
         mut output: O::Partial,
         input: &I::Partial,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> O::Partial {
         let mut resolvers = vec![];
-        let fields_provided = input.ivo_internal_fields_available();
 
         for (field_name, config) in self.field_configs.iter() {
-            if matches!(config.field_type, FieldType::Lax)
-                && fields_provided.contains(&field_name.to_string())
+            if let InternalFieldConfig {
+                field_type: FieldType::Constant,
+                value,
+                ..
+            } = config
             {
-                continue;
-            }
-
-            match config {
-                InternalFieldConfig {
-                    field_type: FieldType::Constant,
-                    value,
-                    ..
-                } => match value {
+                match value {
                     Some(ValueResolverWithSharedInput::Static(value)) => {
                         output.ivo_internal_set(field_name, value);
 
@@ -1043,20 +1042,60 @@ impl<
                         continue;
                     }
                     _ => {}
-                },
-                InternalFieldConfig {
-                    field_type: FieldType::Dependent | FieldType::Lax,
-                    default: Some(default),
-                    ..
-                } => match default {
+                }
+            }
+        }
+
+        if resolvers.is_empty() {
+            return output;
+        }
+
+        let shared_input = Arc::new(input.clone());
+
+        let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
+            (
+                field_name.clone(),
+                resolver(Arc::clone(&shared_input), Arc::clone(&options)).await,
+            )
+        });
+
+        for (field_name, value) in join_all(tasks).await {
+            output.ivo_internal_set(&field_name, &value);
+        }
+
+        output
+    }
+
+    async fn attach_default_values(
+        &self,
+        mut output: O::Partial,
+        input: &I::Partial,
+        options: IvoRwCtxOptions<CtxOptions>,
+    ) -> O::Partial {
+        let mut resolvers = vec![];
+        let fields_provided = input.ivo_internal_fields_available();
+
+        for (field_name, config) in self.field_configs.iter() {
+            if let InternalFieldConfig {
+                field_type: FieldType::Dependent | FieldType::Lax,
+                default: Some(default),
+                ..
+            } = config
+            {
+                if matches!(config.field_type, FieldType::Lax)
+                    && fields_provided.contains(&field_name.to_string())
+                {
+                    continue;
+                }
+
+                match default {
                     ValueResolverWithSharedInput::Static(value) => {
                         output.ivo_internal_set(field_name, value);
                     }
                     ValueResolverWithSharedInput::Func(resolver) => {
                         resolvers.push((field_name.to_string(), resolver));
                     }
-                },
-                _ => {}
+                }
             }
         }
 
