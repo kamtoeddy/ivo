@@ -1,7 +1,7 @@
-use std::marker::PhantomData;
+use std::{future::Future, marker::PhantomData};
 
 use crate::{
-    __private_types::types::IntoIgnoreUpdateResolver,
+    __private_types::types::BooleanResolver,
     schema::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
@@ -14,7 +14,7 @@ use crate::{
         types::{DeleteHandler, FailureHandler, FieldValue, No, SuccessHandler, Yes},
     },
     types::internal::IvoErrorSanitizer,
-    IvoStruct,
+    IvoRwCtxOptions, IvoStruct,
 };
 
 pub struct RequiredFieldBuilder<
@@ -540,5 +540,20 @@ impl<
             }),
             ..Default::default()
         }
+    }
+}
+
+pub trait IntoIgnoreUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions>;
+}
+
+impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoIgnoreUpdateResolver<I, O, CtxOptions>
+    for F
+where
+    F: Fn(I::Partial, O, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = bool> + Send + 'static,
+{
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
+        Box::new(move |ctx, o| Box::pin(self(ctx.input(), ctx.full_values().unwrap(), o)))
     }
 }

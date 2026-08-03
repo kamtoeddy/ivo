@@ -11,9 +11,7 @@ use std::sync::Arc;
 use error_tool::ErrorTool;
 use fields_collection::FieldInfoCollection;
 
-use crate::__private_types::types::{
-    BooleanResolver, IgnoreUpdateOptionResolver, InitBooleanResolver,
-};
+use crate::__private_types::types::{BooleanResolver, IgnoreUpdateOptionResolver};
 use crate::__private_types::IvoErrorPayload;
 use crate::__private_types::{types::PartialErrorsMethods, IvoInputStruct};
 use crate::schema::fields::types::InitRequiredResolver;
@@ -1216,19 +1214,6 @@ impl<
                             output.ivo_internal_unset(field_name);
                         }
                     }
-                    // Some(IsFieldProvisionEnabled::FuncInit(resolver)) => {
-                    //     tasks.push((
-                    //         vec![field_info.name],
-                    //         <InitBooleanResolver<I, CtxOptions> as UniformIgnoreResolver<
-                    //             I,
-                    //             O,
-                    //             CtxOptions,
-                    //             ErrorSanitizer,
-                    //         >>::resolve(
-                    //             resolver, Arc::clone(&ctx), Arc::clone(&options)
-                    //         ),
-                    //     ));
-                    // }
                     Some(IsFieldProvisionEnabled::Func(resolver)) => {
                         tasks.push((
                             vec![field_info.name],

@@ -5,10 +5,7 @@ use futures::future::{BoxFuture, FutureExt};
 use std::future::Future;
 
 use crate::{
-    __private_types::{
-        types::{BooleanResolver, InitBooleanResolver},
-        ValidatorResponse,
-    },
+    __private_types::{types::BooleanResolver, ValidatorResponse},
     schema::types::{DeleteHandler, FailureHandler, FieldValue, SuccessHandler},
     types::internal::types::{erase_value, parse_or_panic, ErasedValue},
     IvoContext, IvoErrorSanitizer, IvoRwCtxOptions, IvoShared, IvoSharedInput, IvoStruct,
@@ -232,7 +229,6 @@ pub enum ValueResolverWithSharedInput<T, I: IvoStruct, CtxOptions> {
 pub enum IsFieldProvisionEnabled<I: IvoStruct, O: IvoStruct, CtxOptions> {
     False,
     Readonly,
-    FuncInit(InitBooleanResolver<I, CtxOptions>),
     Func(BooleanResolver<I, O, CtxOptions>),
 }
 
