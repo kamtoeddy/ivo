@@ -1,11 +1,11 @@
-import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
   FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
   type NS,
   type TypeOf,
-} from "../types";
+  ObjectType,
+} from "../../utils/types";
 
 export { type HasDependsOn, DependentBuilder };
 
@@ -110,7 +110,8 @@ class DependentBuilder<
       | ArrayOfMinSizeOne<NS.Dependables<K, Input, Output>>,
   ) {
     this.config.name = name;
-    this.config.dependsOn = dependsOn;
+    // @ts-expect-error ikr
+    this.config.dependsOn = Array.isArray(dependsOn) ? dependsOn : [dependsOn];
   }
 
   default(

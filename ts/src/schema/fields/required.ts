@@ -9,7 +9,7 @@ import {
   type ReValidator,
   type Validator,
   InitResolverCtx,
-} from "../types";
+} from "../../types";
 import { extractAllowedValues } from "./_utils";
 
 export { type BlankRequiredBuilder, RequiredBuilder };

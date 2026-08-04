@@ -1,10 +1,3 @@
-import type { ObjectType } from "../utils";
-import type {
-  DefaultFieldErrorMetadata,
-  FieldError,
-  InputFieldError,
-} from "./utils";
-
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
@@ -18,6 +11,7 @@ export type {
   KeyOf,
   NotAllowedError,
   NS,
+  ObjectType,
   PostValidationConfig,
   PostValidator,
   ReadonlyIvoContext,
@@ -31,6 +25,10 @@ export type {
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
+  DefaultFieldErrorMetadata,
+  FieldError,
+  InputFieldError,
+  InputPayload,
 };
 
 export {
@@ -41,6 +39,26 @@ export {
   LIFE_CYCLES,
   VIRTUAL_RULES,
 };
+
+type ObjectType<T = Record<string, unknown>> = T extends object
+  ? T extends unknown[]
+    ? never
+    : T & {}
+  : never;
+
+type DefaultFieldErrorMetadata = Record<string, unknown>;
+
+type FieldError<Metadata = DefaultFieldErrorMetadata> = {
+  reason: string;
+  metadata: Metadata | null;
+};
+
+type InputFieldError<Metadata> =
+  | FieldError<Metadata>
+  | { reason: FieldError["reason"] }
+  | { metadata: FieldError<Metadata>["metadata"] };
+
+type InputPayload = Record<string, string | FieldError>;
 
 type ReadonlyIvoContext<
   Input,
@@ -503,9 +521,7 @@ namespace NS {
     name: string;
     type: "dependent";
     default: TypeOf<Output[K]> | Resolver<Output[K], Input, Output, CtxOptions>;
-    dependsOn:
-      | Dependables<K, Input, Output>
-      | ArrayOfMinSizeOne<Dependables<K, Input, Output>>;
+    dependsOn: ArrayOfMinSizeOne<Dependables<K, Input, Output>>;
     resolver: Resolver<Output[K], Input, Output, CtxOptions>;
     readonly?: true;
     onDelete?:
@@ -638,39 +654,14 @@ namespace NS {
     CtxOptions extends ObjectType,
     ErrorMetadata = DefaultFieldErrorMetadata,
     ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
-  > = {
-    equalityDepth: number;
-    onDelete?:
-      | DeleteHandler<Output, CtxOptions>
-      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
-    onSuccess?: OnSuccessConfigOption<Input, Output, CtxOptions>;
-    postValidate?:
-      | PostValidationConfig<
-          KeyOf<Input>,
-          Input,
-          Output,
-          CtxOptions,
-          ErrorMetadata
-        >
-      | ArrayOfMinSizeOne<
-          PostValidationConfig<
-            KeyOf<Input>,
-            Input,
-            Output,
-            CtxOptions,
-            ErrorMetadata
-          >
-        >;
-    ignore?: IgnoreConfigOption<Input, Output, CtxOptions>;
-    ignoreUpdate?: IgnoreUpdateConfigOption<Input, Output, CtxOptions>;
-    required?: RequiredConfigOption<Input, Output, CtxOptions, ErrorMetadata>;
+  > = Omit<
+    Options<Input, Output, CtxOptions, ErrorMetadata, ErrorPayload>,
+    "sanitizeError" | "timestamps"
+  > & {
     sanitizeError: (
       payload: IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
       ctxOptions: CtxOptions,
     ) => ErrorPayload;
-    timestamps?:
-      | boolean
-      | { createdAt?: boolean | string; updatedAt?: boolean | string };
   };
 
   export type Options<

@@ -1,4 +1,4 @@
-export { Schema } from './schema';
+export { Schema } from "./schema";
 
 export type {
   ArrayOfMinSizeOne,
@@ -10,13 +10,9 @@ export type {
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
-} from './schema/types';
-export type { FieldError, InputFieldError, InputPayload } from './schema/utils';
-export {
-  isFieldError,
-  isInputFieldError,
-  makeFieldError,
-} from './schema/utils';
+} from "./utils/types";
+export type { FieldError, InputFieldError, InputPayload } from "./utils/types";
+export { isFieldError, isInputFieldError, makeFieldError } from "./utils";
 export {
   getKeysAsProps,
   isEqual,
@@ -25,7 +21,6 @@ export {
   isOneOf,
   isPropertyOf,
   isRecordLike,
-  type ObjectType,
   toArray,
-} from './utils';
-export * from './validators';
+} from "./utils";
+export * from "./validators";

@@ -1,10 +1,6 @@
-import type {
-  ArrayOfMinSizeTwo,
-  ValidationResponse,
-  XOR,
-} from "./schema/types";
-import { deepCloneValue } from "./schema/utils";
+import { deepCloneValue } from "./utils";
 import { getUniqueBy, isNullOrUndefined, isOneOf, makeResponse } from "./utils";
+import { ArrayOfMinSizeTwo, ValidationResponse, XOR } from "./utils/types";
 
 export type {
   ArrayValidatorOptions,

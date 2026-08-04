@@ -1,11 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 
-import type { ObjectType } from "../utils";
 import {
   getKeysAsProps,
   getUnique,
-  hasAnyOf,
-  isEqual,
   isFunctionLike,
   isOneOf,
   isPropertyOf,
@@ -18,17 +15,13 @@ import {
   type DefinitionRule,
   type IvoErrorPayload,
   type KeyOf,
-  LIFE_CYCLES,
-  type NS as ns,
+  type NS,
   type PostValidationConfig,
   type PostValidator,
-} from "./types";
-import {
   type DefaultFieldErrorMetadata,
-  isInputFieldError,
-  SchemaErrorTool,
-  TimeStampTool,
-} from "./utils";
+  ObjectType,
+} from "../utils/types";
+import { isInputFieldError, SchemaErrorTool, TimeStampTool } from "../utils";
 
 export {
   defaultOptions,
@@ -38,7 +31,7 @@ export {
   SchemaCore,
 };
 
-const defaultOptions: ns.Options<unknown, unknown, never, never> = {
+const defaultOptions: NS.Options<unknown, unknown, never, never> = {
   equalityDepth: 1,
   sanitizeError: (p) => p,
   ignore: undefined,
@@ -53,13 +46,13 @@ abstract class SchemaCore<
   ErrorMetadata = DefaultFieldErrorMetadata,
   ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
 > {
-  protected _definitions = {} as ns.Definitions_<
+  protected _definitions = {} as NS.Definitions_<
     Input,
     Output,
     CtxOptions,
     ErrorMetadata
   >;
-  protected _options: ns.InternalOptions<
+  protected _options: NS.InternalOptions<
     Input,
     Output,
     CtxOptions,
@@ -70,10 +63,10 @@ abstract class SchemaCore<
   protected defaults: Partial<Output> = {};
 
   // maps
-  protected readonly aliasToVirtualMap: ns.AliasToVirtualMap<Input> = {};
-  protected readonly dependencyMap: ns.DependencyMap<Input> = {};
+  protected readonly aliasToVirtualMap: NS.AliasToVirtualMap<Input> = {};
+  protected readonly dependencyMap: NS.DependencyMap<Input> = {};
   protected readonly propsWithSecondaryValidators = new Set<string>();
-  protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {};
+  protected readonly virtualToAliasMap: NS.AliasToVirtualMap<Input> = {};
   protected readonly postValidationConfigMap = new Map<
     string,
     {
@@ -93,7 +86,7 @@ abstract class SchemaCore<
   >();
   protected readonly onSuccessConfigMap = new Map<
     string,
-    { index: number; handlers: ns.SuccessHandler<Input, Output, CtxOptions>[] }
+    { index: number; handlers: NS.SuccessHandler<Input, Output, CtxOptions>[] }
   >();
 
   // props
@@ -110,8 +103,8 @@ abstract class SchemaCore<
   protected timestampTool: TimeStampTool;
 
   constructor(
-    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>,
-    options: ns.Options<
+    definitions: NS.Definitions_<Input, Output, CtxOptions, ErrorMetadata>,
+    options: NS.Options<
       Input,
       Output,
       CtxOptions,
@@ -144,7 +137,7 @@ abstract class SchemaCore<
     propertyB = property,
     visitedNodes = [],
   }: {
-    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>;
+    definitions: NS.Definitions_<Input, Output, CtxOptions, ErrorMetadata>;
     property: KeyOf<Input>;
     propertyB?: KeyOf<Input>;
     visitedNodes?: KeyOf<Input>[];
@@ -181,7 +174,7 @@ abstract class SchemaCore<
     definitions,
     property,
   }: {
-    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>;
+    definitions: NS.Definitions_<Input, Output, CtxOptions, ErrorMetadata>;
     property: KeyOf<Input>;
   }) => {
     const redundantParentProps: [string, string][] = [];
@@ -210,7 +203,7 @@ abstract class SchemaCore<
     prop,
     parentProp,
   }: {
-    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>;
+    definitions: NS.Definitions_<Input, Output, CtxOptions, ErrorMetadata>;
     prop: KeyOf<Input>;
     parentProp: KeyOf<Input>;
   }): boolean => {
@@ -228,23 +221,12 @@ abstract class SchemaCore<
     );
   };
 
-  private _setDependencies = (
-    prop: KeyOf<Input>,
-    dependsOn: KeyOf<Input> | KeyOf<Input>[],
-  ) => {
-    const _dependsOn = toArray(dependsOn) as KeyOf<Input>[];
-
-    for (const _prop of _dependsOn)
-      if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop);
-      else this.dependencyMap[_prop] = [prop];
-  };
-
   private _areHandlersOk = ({
     handlers: _handlers,
     lifeCycle,
   }: {
     handlers: unknown;
-    lifeCycle: ns.LifeCycle;
+    lifeCycle: NS.LifeCycle;
   }) => {
     const reasons: string[] = [],
       handlers = toArray(_handlers);
@@ -262,14 +244,14 @@ abstract class SchemaCore<
   };
 
   protected _checkOptions = (
-    options: ns.Options<Input, Output, CtxOptions, ErrorMetadata, ErrorPayload>,
+    options: NS.Options<Input, Output, CtxOptions, ErrorMetadata, ErrorPayload>,
   ) => {
     const error = new SchemaErrorTool();
 
     if (!isRecordLike(options))
       error.add("schema options", "Must be an object").throw();
 
-    const optionsProvided = Object.keys(options) as ns.OptionsKey<
+    const optionsProvided = Object.keys(options) as NS.OptionsKey<
       Output,
       Input
     >[];
@@ -347,7 +329,7 @@ abstract class SchemaCore<
   };
 
   protected _checkPropDefinitions = (
-    definitions: ns.Definitions_<Input, Output, CtxOptions, ErrorMetadata>,
+    definitions: NS.Definitions_<Input, Output, CtxOptions, ErrorMetadata>,
   ) => {
     const error = new SchemaErrorTool();
 
@@ -374,13 +356,6 @@ abstract class SchemaCore<
           prop,
           "A virtual property must have at least one property that depends on it",
         );
-    }
-
-    // make sure aliases respect the second validation rules
-    for (const [alias, prop] of Object.entries(this.aliasToVirtualMap)) {
-      const isValid = this.__isVirtualAliasOk2(alias);
-
-      if (!isValid.valid) error.add(prop, isValid.reason);
     }
 
     // make sure every virtual has at least one dependency
@@ -487,12 +462,12 @@ abstract class SchemaCore<
   protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
     Object.freeze(Object.assign({}, data)) as Readonly<T>;
 
-  protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>
+  protected _getHandlers = <T>(prop: string, lifeCycle: NS.LifeCycle) =>
     // @ts-expect-error ikr
     toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as never) as T[];
 
   private __hasAllowedValues = (
-    definition: ns.Definitions_<
+    definition: NS.Definitions_<
       Input,
       Output,
       CtxOptions,
@@ -554,247 +529,6 @@ abstract class SchemaCore<
       return { reason: "The default value must be an allowed value", valid };
 
     return { valid: true };
-  };
-
-  private __isDependentProp = (
-    prop: KeyOf<Input>,
-    definition: ns.Definitions_<
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata
-    >[KeyOf<Input>],
-  ) => {
-    const { default: _default, dependsOn } = definition as any;
-
-    const valid = false;
-
-    if (!dependsOn?.length)
-      return {
-        valid,
-        reason: "Dependent fields must depend on at least one property",
-      };
-
-    if (toArray(dependsOn).includes(prop as KeyOf<Input>))
-      return { valid, reason: "A property cannot depend on itself" };
-
-    return { valid: true };
-  };
-
-  private __isPropDefinitionOk = (
-    prop: KeyOf<Input>,
-    definition: ns.Definitions_<
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata
-    >[KeyOf<Input>],
-  ) => {
-    let reasons: string[] = [];
-
-    if (isPropertyOf("allow", definition)) {
-      const { valid, reason } = this.__hasAllowedValues(definition);
-
-      if (!valid) reasons.push(reason!);
-    }
-
-    if (isPropertyOf("alias", definition)) {
-      const { valid, reason } = this.__isVirtualAliasOk(prop, definition);
-
-      if (valid) {
-        const alias = (definition as any).alias!;
-
-        this.aliasToVirtualMap[alias] = prop;
-        this.virtualToAliasMap[prop] = alias as KeyOf<Input>;
-      } else reasons.push(reason!);
-    }
-
-    if ((definition as any)?.type === "constant")
-      this.constants.add(prop as never);
-
-    if (hasAnyOf(definition, ["dependsOn", "resolver"])) {
-      const { valid, reason } = this.__isDependentProp(prop, definition);
-
-      if (valid) {
-        this.dependents.add(prop as never);
-        this._setDependencies(prop, (definition as any).dependsOn!);
-      } else reasons.push(reason!);
-    }
-
-    if ((definition as any)?.type === "required") {
-      const { valid, reason } = this.__isRequired(definition);
-
-      valid ? this.requiredProps.add(prop) : reasons.push(reason!);
-    }
-
-    if ((definition as any)?.type === "virtual") this.virtuals.add(prop);
-
-    // onDelete, onFailure, & onSuccess
-    for (const rule of LIFE_CYCLES) {
-      if (!isPropertyOf(rule, definition)) continue;
-
-      const isValid = this._areHandlersOk({
-        handlers: definition[rule],
-        lifeCycle: rule,
-      });
-
-      if (!isValid.valid) reasons = reasons.concat(isValid.reasons!);
-    }
-
-    if (this.__isLax(definition)) this.laxProps.add(prop);
-
-    const hasDefaultRule = isPropertyOf("default", definition);
-
-    if (
-      !hasDefaultRule &&
-      !this._isConstant(prop) &&
-      !this._isDependentProp(prop) &&
-      !this._isLaxProp(prop) &&
-      !this._isReadonly(prop) &&
-      !this._isRequired(prop) &&
-      !this._isVirtual(prop) &&
-      !reasons.length
-    ) {
-      reasons.push(
-        "A property should at least be readonly, required, or have a default value",
-      );
-    }
-
-    const valid = reasons.length <= 0;
-
-    if (valid && !this._isVirtual(prop)) {
-      this.props.add(prop as never);
-
-      if (hasDefaultRule && typeof (definition as any).default !== "function")
-        this.defaults[prop as unknown as KeyOf<Output>] = (definition as any)
-          .default as never;
-    }
-
-    return { reasons, valid };
-  };
-
-  private __isRequiredCommon = (
-    definition: ns.Definitions_<
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata
-    >[KeyOf<Input>],
-  ) => {
-    const valid = false;
-
-    if (isPropertyOf("dependsOn", definition))
-      return { valid, reason: "Required fields cannot be dependent" };
-
-    return { valid: true };
-  };
-
-  private __isRequired = (
-    definition: ns.Definitions_<
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata
-    >[KeyOf<Input>],
-  ) => {
-    const valid = false;
-
-    if ((definition as any)?.type !== "required")
-      return {
-        valid,
-        reason: "Required fields must have required as 'true'",
-      };
-
-    if (
-      !isPropertyOf("allow", definition) &&
-      !isPropertyOf("validator", definition)
-    )
-      return { valid, reason: "Required fields must have a validator" };
-
-    const isRequiredCommon = this.__isRequiredCommon(definition);
-
-    if (!isRequiredCommon.valid) return isRequiredCommon;
-
-    return { valid: true };
-  };
-
-  private __isVirtualAliasOk = (
-    prop: KeyOf<Input>,
-    definition: ns.Definitions_<
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata
-    >[KeyOf<Input>],
-  ) => {
-    const valid = false;
-
-    const { alias } = definition as any;
-
-    if ((definition as any)?.type !== "virtual")
-      return { valid, reason: "Only virtual fields can have aliases" };
-
-    if (typeof alias !== "string" || !alias.length)
-      return {
-        valid,
-        reason: "An alias must be a string with at least 1 character",
-      };
-
-    if (alias === prop)
-      return {
-        valid,
-        reason: "An alias cannot be the same as the virtual property",
-      };
-
-    const isTakenBy = this._getVirtualByAlias(alias);
-    if (isTakenBy)
-      return {
-        valid,
-        reason: `Sorry, alias provided '${alias}' already belongs to property '${isTakenBy}'`,
-      };
-
-    return { valid: true };
-  };
-
-  private __isVirtualAliasOk2 = (alias: string | KeyOf<Input>) => {
-    const prop = this._getVirtualByAlias(alias)!;
-
-    const invalidResponse = {
-      valid: false,
-      reason: `'${alias}' cannot be used as the alias of '${prop}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
-    };
-
-    const isDependentOnVirtual = (
-      this.dependencyMap[prop as KeyOf<Input>] ?? []
-    )?.includes(alias as KeyOf<Input>);
-
-    return (this._isProp(alias) && !isDependentOnVirtual) ||
-      this._isVirtual(alias)
-      ? invalidResponse
-      : ({ valid: true } as typeof invalidResponse);
-  };
-
-  private __isLax = (
-    definition: ns.Definitions_<
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata
-    >[KeyOf<Input>],
-  ) => {
-    // Lax fields must have a default value nor setter
-    if (isEqual((definition as any)?.default, undefined)) return false;
-
-    // Lax fields cannot be dependent
-    if (isPropertyOf("dependent", definition)) return false;
-
-    // Lax fields cannot be required
-    if (isPropertyOf("required", definition)) return false;
-
-    // Lax fields cannot be virtual
-    if (isPropertyOf("virtual", definition)) return false;
-
-    return true;
   };
 
   private _isPostValidateSingleConfigOk(value: unknown, index?: number) {
@@ -1101,7 +835,7 @@ abstract class SchemaCore<
    */
   private _isRequiredOptionOk(
     val: unknown,
-    timestamps: ns.Options<Input, Output>["timestamps"],
+    timestamps: NS.Options<Input, Output>["timestamps"],
   ) {
     if (val === undefined) return { valid: true };
 
@@ -1207,7 +941,7 @@ abstract class SchemaCore<
   }
 
   private _registerSuccessConfig(
-    config: ns.OnSuccessConfigOption<Input, Output, CtxOptions>,
+    config: NS.OnSuccessConfigOption<Input, Output, CtxOptions>,
     index: number,
   ) {
     const configObj = config as any;
@@ -1231,7 +965,7 @@ abstract class SchemaCore<
   }
 
   private _isOnSuccessOptionOk(
-    option: ns.Options<
+    option: NS.Options<
       Input,
       Output,
       CtxOptions,
@@ -1248,7 +982,7 @@ abstract class SchemaCore<
 
     if (isObject) return this.__isOnSuccessSingleConfigOk(option);
 
-    const configs: ns.OnSuccessConfigOption<Input, Output, CtxOptions>[] =
+    const configs: NS.OnSuccessConfigOption<Input, Output, CtxOptions>[] =
       option;
     let reasons: string[] = [];
 
@@ -1275,7 +1009,7 @@ abstract class SchemaCore<
   }
 
   private _isPostValidateOptionOk(
-    option: ns.Options<
+    option: NS.Options<
       Input,
       Output,
       CtxOptions,
@@ -1330,7 +1064,7 @@ abstract class SchemaCore<
   }
 
   private _isTimestampsOptionOk(
-    timestamps: ns.Options<Input, Output>["timestamps"],
+    timestamps: NS.Options<Input, Output>["timestamps"],
   ) {
     const valid = false;
 
@@ -1344,8 +1078,8 @@ abstract class SchemaCore<
     if (!Object.keys(timestamps!).length)
       return { valid, reason: "cannot be an empty object" };
 
-    const createdAt = timestamps?.createdAt as string;
-    let updatedAt = timestamps?.updatedAt as string;
+    const createdAt = timestamps.createdAt as string;
+    let updatedAt = timestamps.updatedAt as string;
 
     if (typeof createdAt === "string" && !createdAt.trim().length)
       return { valid, reason: "'createdAt' cannot be an empty string" };
@@ -1355,6 +1089,7 @@ abstract class SchemaCore<
 
     if (typeof timestamps.updatedAt === "object") {
       const updatedAtConfig = timestamps.updatedAt;
+
       const keys = Object.keys(updatedAtConfig).filter((prop) =>
         isOneOf(prop, ["key", "nullable"]),
       );
@@ -1381,12 +1116,6 @@ abstract class SchemaCore<
           reason: "'updatedAt.nullable' must be a boolean",
         };
     }
-
-    const reservedKeys = [...this.props, ...this.virtuals] as string[];
-
-    for (const key of [createdAt, updatedAt])
-      if (key && reservedKeys?.includes(key))
-        return { valid, reason: `'${key}' already belongs to your schema` };
 
     if (createdAt === updatedAt)
       return { valid, reason: "createdAt & updatedAt cannot be same" };

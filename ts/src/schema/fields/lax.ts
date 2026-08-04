@@ -9,7 +9,7 @@ import {
   type RequiredHandler,
   type ReValidator,
   type Validator,
-} from "../types";
+} from "../../types";
 import { extractAllowedValues } from "./_utils";
 
 export { type BlankLaxBuilder, LaxBuilder };

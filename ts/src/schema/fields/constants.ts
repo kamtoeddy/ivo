@@ -4,7 +4,7 @@ import {
   FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
   type NS,
-} from "../types";
+} from "../../types";
 
 export { ConstantBuilder };
 
