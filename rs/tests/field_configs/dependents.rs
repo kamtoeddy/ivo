@@ -532,17 +532,17 @@ fn should_reject_any_deeply_circular_dependencies() {
                     .resolve(|_, _| ready(4)),
             )
             .field(
-                "b",
-                IvoField::DEPENDENT
-                    .default(2)
-                    .depends_on(["c"])
-                    .resolve(|_, _| ready(4)),
-            )
-            .field(
                 "c",
                 IvoField::DEPENDENT
                     .default(2)
                     .depends_on(["a", "d"])
+                    .resolve(|_, _| ready(4)),
+            )
+            .field(
+                "b",
+                IvoField::DEPENDENT
+                    .default(2)
+                    .depends_on(["c"])
                     .resolve(|_, _| ready(4)),
             )
             .field("d", IvoField::LAX.default(1))

@@ -283,13 +283,11 @@ impl<
 
                                 break;
                             }
-
-                            continue;
                         }
                     }
 
                     if !has_sufficent_dependencies {
-                        panic!("\n{STYLE_COLOR_RED}[{field_name}]: virtual fields are expected to have at least one dependency, but found none{STYLE_RESET}\n");
+                        panic!("\n{STYLE_COLOR_RED}[{field_name}]: Virtual fields are expected to have at least one dependency, but found none{STYLE_RESET}\n");
                     }
 
                     continue;
@@ -398,11 +396,12 @@ impl<
                        );
             }
 
-            if let Some(chain) = Self::get_circular_dependency_chain(
+            if let Some(mut chain) = Self::get_circular_dependency_chain(
                 field_name,
                 parent_fields,
                 &dependent_field_to_parent_fields,
             ) {
+                chain.sort();
                 let chain = chain.join(" <-> ");
 
                 panic!(

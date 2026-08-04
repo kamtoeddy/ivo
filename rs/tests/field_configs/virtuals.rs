@@ -3,7 +3,7 @@ use std::{future::ready, panic};
 
 #[test]
 #[should_panic(
-    expected = "[virtual_field]: virtual fields are expected to have at least one dependency, but found none"
+    expected = "[virtual_field]: Virtual fields are expected to have at least one dependency, but found none"
 )]
 fn should_reject_if_virtual_field_does_not_have_any_dependency() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
