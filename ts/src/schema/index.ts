@@ -299,6 +299,149 @@ class ModelTool<
     super(schema.definitions as never, schema.options as never);
   }
 
+  async create(input: Partial<I>, options: CtxOptions) {
+    if (!areValuesOk(input)) input = {};
+
+    this._initContext({
+      isUpdate: false,
+      rawInput: this._cleanInput(input),
+      previousValues: null,
+      options,
+    });
+
+    const fieldsCollection = await this._filterInputFieldsAllowed();
+
+    await this._attachDefaultValues(fieldsCollection);
+
+    const requiredError =
+      await this._evaluateMissingRequiredFields(fieldsCollection);
+    if (requiredError.hasErrors) return this._handleError(requiredError);
+
+    const primaryError = await this._runPrimaryValidators(fieldsCollection);
+
+    if (primaryError.hasErrors) return this._handleError(primaryError);
+
+    const secondaryError =
+      await this._handleSecondaryValidations(fieldsCollection);
+    if (secondaryError.hasErrors) return this._handleError(secondaryError);
+
+    const postValidationError =
+      await this._handlePostValidations(fieldsCollection);
+
+    if (postValidationError.hasErrors)
+      return this._handleError(postValidationError);
+
+    await this._handleSanitizationOfVirtuals(fieldsCollection);
+
+    let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
+
+    while (collection.relevantDependentConfigNames.size > 0)
+      collection = await this._resolveDependentChanges(collection);
+
+    this._attachTimestamps();
+
+    const data = (await this._attachConstantValues()) as O;
+
+    return {
+      data,
+      error: null,
+      handleFailure: null,
+      handleSuccess: this._makeHandleSuccess(fieldsCollection),
+      options: this._getReadonlyCtx().options,
+    };
+  }
+
+  async delete(data: O, options: CtxOptions) {
+    if (!areValuesOk(data)) return;
+
+    let handlers: NS.DeleteHandler<O, CtxOptions>[] = this._options.onDelete
+      ? toArray(this._options.onDelete)
+      : [];
+
+    for (const prop of getSetValuesAsProps(this.props)) {
+      const handlers_ = this._getHandlers<NS.DeleteHandler<O, CtxOptions>>(
+        prop,
+        "onDelete",
+      );
+
+      if (handlers_.length) handlers = handlers.concat(handlers_);
+    }
+
+    await Promise.allSettled(
+      handlers.map(
+        async (h) =>
+          await Promise.try(
+            h,
+            this._getFrozenCopy(data),
+            this._getFrozenCopy(options),
+          ),
+      ),
+    );
+  }
+
+  async update(values: O, changes: Partial<I>, options: CtxOptions) {
+    const emptyErrorTool = new ErrorTool<ErrorMetadata>();
+
+    if (!areValuesOk(values) || !areValuesOk(changes))
+      return this._handleUpdateError(emptyErrorTool);
+
+    this._initContext({
+      isUpdate: true,
+      rawInput: this._cleanInput(changes),
+      previousValues: values,
+      options,
+    });
+
+    const fieldsCollection = await this._filterInputFieldsAllowed();
+
+    if (!fieldsCollection.relevantConfigNames.size)
+      return this._handleUpdateError(emptyErrorTool);
+
+    const requiredError =
+      await this._evaluateMissingRequiredFields(fieldsCollection);
+
+    if (requiredError.hasErrors) return this._handleUpdateError(requiredError);
+
+    const primaryError = await this._runPrimaryValidators(fieldsCollection);
+
+    if (primaryError.hasErrors) return this._handleUpdateError(primaryError);
+
+    fieldsCollection.relevantFieldsProvided =
+      this._evaluateUpdateValidity(fieldsCollection);
+
+    if (!fieldsCollection.relevantFieldsProvided.size)
+      return this._handleUpdateError(emptyErrorTool);
+
+    const secondaryError =
+      await this._handleSecondaryValidations(fieldsCollection);
+
+    if (secondaryError.hasErrors)
+      return this._handleUpdateError(secondaryError);
+
+    const postValidationError =
+      await this._handlePostValidations(fieldsCollection);
+
+    if (postValidationError.hasErrors)
+      return this._handleUpdateError(postValidationError);
+
+    await this._handleSanitizationOfVirtuals(fieldsCollection);
+
+    let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
+
+    while (collection.relevantDependentConfigNames.size > 0)
+      collection = await this._resolveDependentChanges(collection);
+
+    const data = this._attachTimestamps();
+
+    return {
+      data,
+      error: null,
+      options: this._getReadonlyCtx().options,
+      handleFailure: null,
+      handleSuccess: this._makeHandleSuccess(fieldsCollection),
+    };
+  }
+
   private _getFieldInfoCollection(): FieldInfoCollection {
     const fields: Map<string, InputFieldInfo> = new Map();
 
@@ -1741,163 +1884,21 @@ class ModelTool<
 
   private _handleUpdateError(errorTool: ErrorTool<ErrorMetadata, KeyOf<I>>) {
     const options = this._getReadonlyCtx().options;
-    const isValidationError = errorTool.hasErrors;
+    const isNothingToUpdate = !errorTool.hasErrors;
 
-    if (!isValidationError) this._setCxtValues({});
+    if (isNothingToUpdate) this._setCxtValues({});
 
     return {
-      isErr: true as const,
       data: null,
-      error: isValidationError
-        ? this._options.sanitizeError(errorTool.payload, options)
-        : null,
+      error: isNothingToUpdate
+        ? ({ isNothingToUpdate, payload: null } as const)
+        : ({
+            isNothingToUpdate: false,
+            payload: this._options.sanitizeError(errorTool.payload, options),
+          } as const),
       options,
       handleFailure: this._makeHandleFailure(),
       handleSuccess: null,
-    };
-  }
-
-  async create(input: Partial<I>, options: CtxOptions) {
-    if (!areValuesOk(input)) input = {};
-
-    this._initContext({
-      isUpdate: false,
-      rawInput: this._cleanInput(input),
-      previousValues: null,
-      options,
-    });
-
-    const fieldsCollection = await this._filterInputFieldsAllowed();
-
-    await this._attachDefaultValues(fieldsCollection);
-
-    const requiredError =
-      await this._evaluateMissingRequiredFields(fieldsCollection);
-    if (requiredError.hasErrors) return this._handleError(requiredError);
-
-    const primaryError = await this._runPrimaryValidators(fieldsCollection);
-
-    if (primaryError.hasErrors) return this._handleError(primaryError);
-
-    const secondaryError =
-      await this._handleSecondaryValidations(fieldsCollection);
-    if (secondaryError.hasErrors) return this._handleError(secondaryError);
-
-    const postValidationError =
-      await this._handlePostValidations(fieldsCollection);
-
-    if (postValidationError.hasErrors)
-      return this._handleError(postValidationError);
-
-    await this._handleSanitizationOfVirtuals(fieldsCollection);
-
-    let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
-
-    while (collection.relevantDependentConfigNames.size > 0)
-      collection = await this._resolveDependentChanges(collection);
-
-    this._attachTimestamps();
-
-    const data = (await this._attachConstantValues()) as O;
-
-    return {
-      data,
-      error: null,
-      handleFailure: null,
-      handleSuccess: this._makeHandleSuccess(fieldsCollection),
-      options: this._getReadonlyCtx().options,
-    };
-  }
-
-  async delete(data: O, options: CtxOptions) {
-    if (!areValuesOk(data)) return;
-
-    let handlers: NS.DeleteHandler<O, CtxOptions>[] = this._options.onDelete
-      ? toArray(this._options.onDelete)
-      : [];
-
-    for (const prop of getSetValuesAsProps(this.props)) {
-      const handlers_ = this._getHandlers<NS.DeleteHandler<O, CtxOptions>>(
-        prop,
-        "onDelete",
-      );
-
-      if (handlers_.length) handlers = handlers.concat(handlers_);
-    }
-
-    await Promise.allSettled(
-      handlers.map(
-        async (h) =>
-          await Promise.try(
-            h,
-            this._getFrozenCopy(data),
-            this._getFrozenCopy(options),
-          ),
-      ),
-    );
-  }
-
-  async update(values: O, changes: Partial<I>, options: CtxOptions) {
-    const emptyErrorTool = new ErrorTool<ErrorMetadata>();
-
-    if (!areValuesOk(values) || !areValuesOk(changes))
-      return this._handleUpdateError(emptyErrorTool);
-
-    this._initContext({
-      isUpdate: true,
-      rawInput: this._cleanInput(changes),
-      previousValues: values,
-      options,
-    });
-
-    const fieldsCollection = await this._filterInputFieldsAllowed();
-
-    if (!fieldsCollection.relevantConfigNames.size)
-      return this._handleUpdateError(emptyErrorTool);
-
-    const requiredError =
-      await this._evaluateMissingRequiredFields(fieldsCollection);
-
-    if (requiredError.hasErrors) return this._handleUpdateError(requiredError);
-
-    const primaryError = await this._runPrimaryValidators(fieldsCollection);
-
-    if (primaryError.hasErrors) return this._handleUpdateError(primaryError);
-
-    fieldsCollection.relevantFieldsProvided =
-      this._evaluateUpdateValidity(fieldsCollection);
-
-    if (!fieldsCollection.relevantFieldsProvided.size)
-      return this._handleUpdateError(emptyErrorTool);
-
-    const secondaryError =
-      await this._handleSecondaryValidations(fieldsCollection);
-
-    if (secondaryError.hasErrors)
-      return this._handleUpdateError(secondaryError);
-
-    const postValidationError =
-      await this._handlePostValidations(fieldsCollection);
-
-    if (postValidationError.hasErrors)
-      return this._handleUpdateError(postValidationError);
-
-    await this._handleSanitizationOfVirtuals(fieldsCollection);
-
-    let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
-
-    while (collection.relevantDependentConfigNames.size > 0)
-      collection = await this._resolveDependentChanges(collection);
-
-    const data = this._attachTimestamps();
-
-    return {
-      isErr: false as const,
-      data,
-      error: null,
-      options: this._getReadonlyCtx().options,
-      handleFailure: null,
-      handleSuccess: this._makeHandleSuccess(fieldsCollection),
     };
   }
 }
