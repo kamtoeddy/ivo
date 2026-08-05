@@ -1,4 +1,3 @@
-import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
@@ -9,7 +8,8 @@ import {
   type RequiredHandler,
   type ReValidator,
   type Validator,
-} from "../../types";
+  ObjectType,
+} from "../../utils/types";
 import { extractAllowedValues } from "./_utils";
 
 export { type BlankVirtualBuilder, VirtualBuilder };

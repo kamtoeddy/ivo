@@ -1,10 +1,10 @@
-import type { ObjectType } from "../../utils";
 import {
   type ArrayOfMinSizeOne,
   FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
   type NS,
-} from "../../types";
+  ObjectType,
+} from "../../utils/types";
 
 export { ConstantBuilder };
 

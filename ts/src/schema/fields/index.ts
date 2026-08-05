@@ -1,6 +1,9 @@
-import type { ObjectType } from "../../utils";
-import { ArrayOfMinSizeOne, NS } from "../../types";
-import type { DefaultFieldErrorMetadata } from "../../utils";
+import {
+  ArrayOfMinSizeOne,
+  NS,
+  DefaultFieldErrorMetadata,
+  ObjectType,
+} from "../../utils/types";
 import { ConstantBuilder } from "./constants";
 import { type HasDependsOn, DependentBuilder } from "./dependents";
 import { type BlankLaxBuilder, LaxBuilder } from "./lax";

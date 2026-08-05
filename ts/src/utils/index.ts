@@ -15,7 +15,6 @@ import type {
 
 export * from "./error-tool";
 export * from "./schema-error";
-export * from "./timestamp-tool";
 
 export {
   getKeysAsProps,
@@ -143,7 +142,9 @@ function isFieldError(data: unknown): data is FieldError {
   return typeof data?.reason === "string";
 }
 
-function isInputFieldError(data: unknown): data is Partial<FieldError> {
+function isInputFieldError<Metadata>(
+  data: unknown,
+): data is InputFieldError<Metadata> {
   if (isFieldError(data)) return true;
 
   if (!isRecordLike(data) || isEqual({}, data)) return false;

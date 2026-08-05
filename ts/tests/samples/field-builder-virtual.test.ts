@@ -26,7 +26,7 @@ const statusDependent = () =>
     .default("unknown")
     .resolve(({ input }) => (input.rawStatus as string) ?? "unknown");
 
-describe("field builder prototype: virtual()", () => {
+describe("field builder: virtual()", () => {
   it("should allow validate() as the primary validator, feeding a dependent field", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b

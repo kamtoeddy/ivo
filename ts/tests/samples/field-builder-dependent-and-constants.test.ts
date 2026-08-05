@@ -22,7 +22,7 @@ const schema = new Schema<Input, Output>((b, m) =>
 
 const Model = schema.getModel();
 
-describe("field builder prototype: dependent()", () => {
+describe("field builder: dependent()", () => {
   it("produces a field definition the runtime accepts and resolves correctly", async () => {
     const { data, error } = await Model.create({ price: 10, qty: 3 }, {});
 

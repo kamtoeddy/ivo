@@ -12,7 +12,7 @@ type Output = Input;
 
 const field = newFieldMaker<Input, Output>();
 
-describe("field builder prototype: lax()", () => {
+describe("field builder: lax()", () => {
   it("should allow a bare default() with no validation", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b.field(field.lax("name").default("anonymous")),

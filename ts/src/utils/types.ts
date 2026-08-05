@@ -1,3 +1,5 @@
+import { isEqual } from ".";
+
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
@@ -29,6 +31,7 @@ export type {
   FieldError,
   InputFieldError,
   InputPayload,
+  RequiredHandlerRes,
 };
 
 export {
@@ -38,6 +41,7 @@ export {
   DEFINITION_RULES,
   LIFE_CYCLES,
   VIRTUAL_RULES,
+  TimeStampTool,
 };
 
 type ObjectType<T = Record<string, unknown>> = T extends object
@@ -243,10 +247,7 @@ type PostValidator<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-> = (
-  ctx: IvoContext<Input, Output, CtxOptions>,
-  propertiesProvided: InputKeys[],
-) =>
+> = (ctx: IvoContext<Input, Output, CtxOptions>) =>
   | undefined
   | true
   | void
@@ -323,17 +324,21 @@ namespace NS {
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
   };
 
-  export type OnSuccessConfigOption<
+  export type OnSuccessConfigOptionItem<
     Input,
     Output,
     CtxOptions extends ObjectType,
   > =
     | SuccessHandler<Input, Output, CtxOptions>
-    | OnSuccessConfigObject<Input, Output, CtxOptions>
-    | ArrayOfMinSizeOne<
-        | SuccessHandler<Input, Output, CtxOptions>
-        | OnSuccessConfigObject<Input, Output, CtxOptions>
-      >;
+    | OnSuccessConfigObject<Input, Output, CtxOptions>;
+
+  export type OnSuccessConfigOption<
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+  > =
+    | OnSuccessConfigOptionItem<Input, Output, CtxOptions>
+    | ArrayOfMinSizeOne<OnSuccessConfigOptionItem<Input, Output, CtxOptions>>;
 
   export type Resolver<T, Input, Output, CtxOptions extends ObjectType> = (
     ctx: IvoContext<Input, Output, CtxOptions>,
@@ -380,14 +385,21 @@ namespace NS {
     resolver: Resolver<boolean, Input, Output, CtxOptions>;
   };
 
-  export type IgnoreConfigOption<
+  export type IgnoreConfigOptionItem<
     Input,
     Output,
     CtxOptions extends ObjectType,
   > =
     | Resolver<boolean, Input, Output, CtxOptions>
-    | IgnoreConfigObject<Input, Output, CtxOptions>
-    | ArrayOfMinSizeOne<IgnoreConfigObject<Input, Output, CtxOptions>>;
+    | IgnoreConfigObject<Input, Output, CtxOptions>;
+
+  export type IgnoreConfigOption<
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+  > =
+    | IgnoreConfigOptionItem<Input, Output, CtxOptions>
+    | ArrayOfMinSizeOne<IgnoreConfigOptionItem<Input, Output, CtxOptions>>;
 
   export type IgnoreUpdateConfigObject<
     Input,
@@ -398,14 +410,23 @@ namespace NS {
     resolver: IgnoreUpdateResolver<Input, Output, CtxOptions>;
   };
 
-  export type IgnoreUpdateConfigOption<
+  export type IgnoreUpdateConfigOptionItem<
     Input,
     Output,
     CtxOptions extends ObjectType,
   > =
     | IgnoreUpdateResolver<Input, Output, CtxOptions>
-    | IgnoreUpdateConfigObject<Input, Output, CtxOptions>
-    | ArrayOfMinSizeOne<IgnoreUpdateConfigObject<Input, Output, CtxOptions>>;
+    | IgnoreUpdateConfigObject<Input, Output, CtxOptions>;
+
+  export type IgnoreUpdateConfigOption<
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+  > =
+    | IgnoreUpdateConfigOptionItem<Input, Output, CtxOptions>
+    | ArrayOfMinSizeOne<
+        IgnoreUpdateConfigOptionItem<Input, Output, CtxOptions>
+      >;
 
   export type RequiredConfigObject<
     Input,
@@ -414,11 +435,7 @@ namespace NS {
     Metadata,
   > = {
     fields: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
-    handler:
-      | RequiredOptionHandler<Input, Output, CtxOptions, Metadata>
-      | ArrayOfMinSizeOne<
-          RequiredOptionHandler<Input, Output, CtxOptions, Metadata>
-        >;
+    handler: RequiredOptionHandler<Input, Output, CtxOptions, Metadata>;
   };
 
   export type RequiredConfigOption<
@@ -446,31 +463,6 @@ namespace NS {
     | Buildable<VirtualField<any, any, Input, Output, CtxOptions, Metadata>>;
 
   export type Definitions<
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-    Metadata,
-  > = PrettyType<
-    {
-      [K in keyof Input | keyof Output]?: FieldDefinition<
-        K,
-        Input,
-        Output,
-        CtxOptions,
-        Metadata
-      >;
-    } & {
-      [K: string]: FieldDefinition<
-        keyof Input | keyof Output,
-        Input,
-        Output,
-        CtxOptions,
-        Metadata
-      >;
-    }
-  >;
-
-  export type Definitions_<
     Input,
     Output,
     CtxOptions extends ObjectType,
@@ -654,14 +646,29 @@ namespace NS {
     CtxOptions extends ObjectType,
     ErrorMetadata = DefaultFieldErrorMetadata,
     ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
-  > = Omit<
-    Options<Input, Output, CtxOptions, ErrorMetadata, ErrorPayload>,
-    "sanitizeError" | "timestamps"
-  > & {
+  > = {
+    equalityDepth: number;
+    ignore?: IgnoreConfigOptionItem<Input, Output, CtxOptions>[];
+    ignoreUpdate?: IgnoreUpdateConfigOptionItem<Input, Output, CtxOptions>[];
+    onDelete?: DeleteHandler<Output, CtxOptions>[];
+    onSuccess?: (
+      | SuccessHandler<Input, Output, CtxOptions>
+      | OnSuccessConfigObject<Input, Output, CtxOptions>
+    )[];
+    postValidate?: PostValidationConfig<
+      // @ts-expect-error ikr
+      string,
+      Input,
+      Output,
+      CtxOptions,
+      ErrorMetadata
+    >[];
+    required?: RequiredConfigObject<Input, Output, CtxOptions, ErrorMetadata>[];
     sanitizeError: (
       payload: IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
       ctxOptions: CtxOptions,
     ) => ErrorPayload;
+    timestamps?: TimeStampTool;
   };
 
   export type Options<
@@ -858,10 +865,6 @@ type TypeFromPromise<T> = T extends Promise<infer I> ? I : T;
 
 type RealType_<T> = T extends (...args: never) => infer I ? I : T;
 
-type PrettyType<T> = {
-  [K in keyof T]: T[K];
-} & {};
-
 type RealType<T> = {
   [K in keyof T]: TypeFromPromise<Exclude<T[K], Function> | RealType_<T[K]>>;
 } & {};
@@ -877,3 +880,74 @@ type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 type XOR<T, U> = (T | U extends object
   ? (Without<T, U> & U) | ((Without<U, T> & T) & {})
   : T | U) & {};
+
+type TimestampKey = KeyOf<NS.Timestamp>;
+
+const IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT = true;
+
+class TimeStampTool {
+  private _keys: TimestampKey[];
+  private timestamps: NS.Timestamp;
+  private nullable: boolean;
+
+  constructor(timestamps: NS.Options<any, any, any>["timestamps"]) {
+    this.timestamps = this._makeTimestamps(timestamps);
+    this.nullable =
+      typeof timestamps === "object" &&
+      typeof timestamps?.updatedAt === "object"
+        ? (timestamps.updatedAt.nullable ??
+          IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT)
+        : IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT;
+
+    this._keys = Object.keys(this.timestamps).filter(
+      (key) => key.length > 0,
+    ) as TimestampKey[];
+  }
+
+  private _makeTimestamps(timestamps: NS.Options<any, any, any>["timestamps"]) {
+    if (isEqual(timestamps, undefined)) return { createdAt: "", updatedAt: "" };
+
+    let createdAt = "createdAt",
+      updatedAt = "updatedAt";
+
+    if (!timestamps || timestamps === true)
+      return timestamps
+        ? { createdAt, updatedAt }
+        : { createdAt: "", updatedAt: "" };
+
+    const custom_createdAt = timestamps?.createdAt;
+    const custom_updatedAt =
+      typeof timestamps?.updatedAt === "object"
+        ? timestamps?.updatedAt?.key
+        : timestamps?.updatedAt;
+
+    if (custom_createdAt && typeof custom_createdAt === "string")
+      createdAt = custom_createdAt.trim();
+
+    if (custom_createdAt === false) createdAt = "";
+
+    if (custom_updatedAt && typeof custom_updatedAt === "string")
+      updatedAt = custom_updatedAt.trim();
+
+    if (custom_updatedAt === false) updatedAt = "";
+
+    return { createdAt, updatedAt };
+  }
+
+  getKeys() {
+    return {
+      createdAt: this.timestamps.createdAt,
+      updatedAt: this.timestamps.updatedAt,
+    };
+  }
+
+  isTimestampKey = (key: string) => this._keys.includes(key as TimestampKey);
+
+  get isNullable() {
+    return this.nullable;
+  }
+
+  get withTimestamps() {
+    return !!(this.timestamps.createdAt || this.timestamps.updatedAt);
+  }
+}

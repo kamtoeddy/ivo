@@ -351,17 +351,19 @@ describe("dependent", () => {
 
     describe("deletion", () => {
       it("should have all correct properties and values at creation", async () => {
-        await Model.delete({
-          laxField: "",
-          laxField_1: "",
-          // @ts-expect-error ikr
-          laxField_2: "value based pricing",
-          dependentField: 0,
-          dependentField_1: 0,
-          dependentField_2: 0,
-          dependentField_3: 2,
-        }
-        {},);
+        await Model.delete(
+          {
+            laxField: "",
+            laxField_1: "",
+            // @ts-expect-error ikr
+            laxField_2: "value based pricing",
+            dependentField: 0,
+            dependentField_1: 0,
+            dependentField_2: 0,
+            dependentField_3: 2,
+          },
+          {},
+        );
 
         expect(onDeleteStats).toEqual({
           laxField_2: 1,
@@ -401,8 +403,7 @@ describe("dependent", () => {
 
       it("runs the resolver once creation is given the parent explicitly, moving the value off the default", async () => {
         resolverRunCount = 0;
-        const { data } = await Model.create({ parent: "x" }
-          {},);
+        const { data } = await Model.create({ parent: "x" }, {});
 
         expect(data).toEqual({ parent: "x", child: 1 });
         expect(resolverRunCount).toBe(1);
@@ -464,8 +465,7 @@ describe("dependent", () => {
       ).getModel();
 
       it("should set dependent to null if error occurred resolving at creation'", async () => {
-        const { data, error } = await Model.create({ field: "test" },
-          {},);
+        const { data, error } = await Model.create({ field: "test" }, {});
 
         expect(error).toBeNull();
         expect(data).toEqual({

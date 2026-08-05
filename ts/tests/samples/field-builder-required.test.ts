@@ -12,7 +12,7 @@ type Output = Input;
 
 const field = newFieldMaker<Input, Output>();
 
-describe("field builder prototype: required()", () => {
+describe("field builder: required()", () => {
   it("should allow validate() as the primary validator", async () => {
     const schema = new Schema<Input, Output>((b) =>
       b
