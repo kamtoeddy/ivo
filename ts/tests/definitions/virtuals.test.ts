@@ -178,7 +178,7 @@ describe("virtual", () => {
           const Model = new Schema<any>((b, m) =>
             b
               .field(m.constant("id", 1))
-              .field(m.lax("note").default(""))
+              .field(m.lax("note", ""))
               .field(
                 m
                   .dependent("quantity", "setQuantity")
@@ -576,7 +576,7 @@ describe("virtual", () => {
               .resolve(() => "changed")
               .onSuccess(onSuccess("dependentSideNoInit")),
           )
-          .field(m.lax("name").default(""))
+          .field(m.lax("name", ""))
           .field(
             m
               .virtual("virtualInit")
@@ -1006,7 +1006,7 @@ describe("virtual", () => {
                 .alias(laxField as never)
                 .validate(validator),
             )
-            .field(m.lax(laxField).default(true)),
+            .field(m.lax(laxField, true)),
         );
 
         expectFailure(toFail);

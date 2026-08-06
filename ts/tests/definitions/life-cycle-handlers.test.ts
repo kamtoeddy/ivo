@@ -14,8 +14,7 @@ describe("life cycle handlers", () => {
           const toPass = makeFx((b, m) =>
             b.field(
               m
-                .lax("fieldName")
-                .default("")
+                .lax("fieldName", "")
                 .validate(validator)
                 [rule](value as never),
             ),
@@ -37,8 +36,7 @@ describe("life cycle handlers", () => {
           const toFail = makeFx((b, m) =>
             b.field(
               m
-                .lax("fieldName")
-                .default("")
+                .lax("fieldName", "")
                 .validate(validator)
                 [rule](value as never),
             ),
@@ -274,12 +272,7 @@ describe("life cycle handlers", () => {
   describe("onFailure", () => {
     it("should reject onFailure & no validator", () => {
       const toFail = makeFx((b, m) =>
-        b.field(
-          m
-            .lax("field")
-            .default("")
-            .onFailure(() => {}),
-        ),
+        b.field(m.lax("field", "").onFailure(() => {})),
       );
 
       expectFailure(toFail);
@@ -324,8 +317,7 @@ describe("life cycle handlers", () => {
         b
           .field(
             m
-              .lax("prop1")
-              .default(true)
+              .lax("prop1", true)
               .validate(validator)
               .onFailure(incrementOnFailureCountOf("prop1")),
           )
@@ -508,13 +500,7 @@ describe("life cycle handlers", () => {
             .resolve(() => true)
             .onSuccess(onSuccess("dependent")),
         )
-        .field(
-          m
-            .lax("lax")
-            .default("")
-            .validate(validator)
-            .onSuccess(onSuccess("lax")),
-        )
+        .field(m.lax("lax", "").validate(validator).onSuccess(onSuccess("lax")))
         .field(
           m
             .required("requiredReadonly")
@@ -524,8 +510,7 @@ describe("life cycle handlers", () => {
         )
         .field(
           m
-            .lax("readonlyLax")
-            .default("")
+            .lax("readonlyLax", "")
             .validate(validator)
             .readonly()
             .onSuccess(onSuccess("readonlyLax")),

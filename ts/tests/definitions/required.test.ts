@@ -49,7 +49,7 @@ describe("required runtime enforcement (strictly required, i.e. required: true)"
   const Book = new Schema<any>((b, m) =>
     b
       .field(m.required("bookId").validate(validator))
-      .field(m.lax("isPublished").default(false).validate(validator)),
+      .field(m.lax("isPublished", false).validate(validator)),
   ).getModel();
 
   it("should reject creation if a strictly required m is missing, with the default message", async () => {
@@ -106,11 +106,10 @@ describe("requiredBy", () => {
     const Book = new Schema<any>((b, m) =>
       b
         .field(m.required("bookId").validate(validator))
-        .field(m.lax("isPublished").default(false).validate(validator))
+        .field(m.lax("isPublished", false).validate(validator))
         .field(
           m
-            .lax("price")
-            .default(null)
+            .lax("price", null)
             .validate(validatePrice as never)
             .required((ctx: any) => {
               const isPublished =
@@ -126,8 +125,7 @@ describe("requiredBy", () => {
         )
         .field(
           m
-            .lax("priceReadonly")
-            .default(null)
+            .lax("priceReadonly", null)
             .validate(validatePrice as never)
             .readonly()
             .required((ctx: any) => {
@@ -147,8 +145,7 @@ describe("requiredBy", () => {
         )
         .field(
           m
-            .lax("priceRequiredWithoutMessage")
-            .default(null)
+            .lax("priceRequiredWithoutMessage", null)
             .validate(validatePrice as never)
             .readonly()
             .required((ctx: any) => {
@@ -351,12 +348,11 @@ describe("requiredBy", () => {
       const Book = new Schema<any>((b, m) =>
         b
           .field(m.required("bookId").validate(validator))
-          .field(m.lax("isPublished").default(false).validate(validator))
-          .field(m.lax("name").default("").validate(validator))
+          .field(m.lax("isPublished", false).validate(validator))
+          .field(m.lax("name", "").validate(validator))
           .field(
             m
-              .lax("price")
-              .default(null)
+              .lax("price", null)
               .validate(validator)
               .required((() => {}) as never),
           ),
@@ -409,12 +405,11 @@ describe("requiredBy", () => {
           const Book = new Schema<any>((b, m) =>
             b
               .field(m.required("bookId").validate(validator))
-              .field(m.lax("isPublished").default(false).validate(validator))
-              .field(m.lax("name").default("").validate(validator))
+              .field(m.lax("isPublished", false).validate(validator))
+              .field(m.lax("name", "").validate(validator))
               .field(
                 m
-                  .lax("price")
-                  .default(null)
+                  .lax("price", null)
                   .validate(validator)
                   .required((): never => [true, provided] as never),
               ),
@@ -459,12 +454,11 @@ describe("requiredBy", () => {
           const Book = new Schema<any>((b, m) =>
             b
               .field(m.required("bookId").validate(validator))
-              .field(m.lax("isPublished").default(false).validate(validator))
-              .field(m.lax("name").default("").validate(validator))
+              .field(m.lax("isPublished", false).validate(validator))
+              .field(m.lax("name", "").validate(validator))
               .field(
                 m
-                  .lax("price")
-                  .default(null)
+                  .lax("price", null)
                   .validate(validator)
                   .required((): never => [true, message] as never),
               ),
@@ -523,12 +517,11 @@ describe("requiredBy", () => {
         const Book = new Schema<any>((b, m) =>
           b
             .field(m.required("bookId").validate(validator))
-            .field(m.lax("isPublished").default(false).validate(validator))
-            .field(m.lax("name").default("").validate(validator))
+            .field(m.lax("isPublished", false).validate(validator))
+            .field(m.lax("name", "").validate(validator))
             .field(
               m
-                .lax("price")
-                .default(null)
+                .lax("price", null)
                 .validate(validator)
                 .required((): never => response as never),
             ),
@@ -565,7 +558,7 @@ describe("requiredBy", () => {
       describe("when value of virtual is not provided", () => {
         const Book = new Schema<any>((b, m) =>
           b
-            .field(m.lax("name").default(""))
+            .field(m.lax("name", ""))
             .field(
               m
                 .dependent("price", "_price")
@@ -620,7 +613,7 @@ describe("requiredBy", () => {
       describe("when value of virtual is not provided and required at creation only", () => {
         const Book = new Schema<any>((b, m) =>
           b
-            .field(m.lax("name").default(""))
+            .field(m.lax("name", ""))
             .field(
               m
                 .dependent("price", "_price")
@@ -671,7 +664,7 @@ describe("requiredBy", () => {
       describe("when value of virtual is not provided and required at creation and update is blocked", () => {
         const Book = new Schema<any>((b, m) =>
           b
-            .field(m.lax("name").default(""))
+            .field(m.lax("name", ""))
             .field(
               m
                 .dependent("price", "_price")
@@ -725,7 +718,7 @@ describe("requiredBy", () => {
       const book = { name: "book name", price: 10 };
       const Book = new Schema<any>((b, m) =>
         b
-          .field(m.lax("name").default(""))
+          .field(m.lax("name", ""))
           .field(
             m
               .dependent("price", "_price")
@@ -797,10 +790,9 @@ describe("requiredBy", () => {
 
     describe("behaviour with errors thrown in required setter", () => {
       const Model = new Schema<any>((b, m) =>
-        b.field(m.lax("prop1").default("")).field(
+        b.field(m.lax("prop1", "")).field(
           m
-            .lax("field")
-            .default(null)
+            .lax("field", null)
             .validate(validator)
             .required(() => {
               throw new Error("lolol");
@@ -836,8 +828,7 @@ describe("requiredBy", () => {
         const toPass = makeFx((b, m) =>
           b.field(
             m
-              .lax("fieldName")
-              .default(value)
+              .lax("fieldName", value)
               .validate(validator)
               .required(() => true),
           ),
@@ -853,8 +844,7 @@ describe("requiredBy", () => {
       const toPass = makeFx((b, m) =>
         b.field(
           m
-            .lax("fieldName")
-            .default("")
+            .lax("fieldName", "")
             .validate(validator)
             .readonly()
             .required(() => true),
@@ -870,8 +860,7 @@ describe("requiredBy", () => {
       const toPass = makeFx((b, m) =>
         b.field(
           m
-            .lax("fieldName")
-            .default("")
+            .lax("fieldName", "")
             .validate(validator)
             .readonly()
             .ignoreInit(() => true)

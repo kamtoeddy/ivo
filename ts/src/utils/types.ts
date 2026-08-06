@@ -357,10 +357,6 @@ namespace NS {
     ctx: InitResolverCtx<Input, CtxOptions>,
   ) => TypeOf<T> | Promise<TypeOf<T>>;
 
-  export type IgnoreInitResolver<Input, CtxOptions extends ObjectType = {}> = (
-    ctx: InitResolverCtx<Input, CtxOptions>,
-  ) => boolean | Promise<boolean>;
-
   export type IgnoreUpdateResolver<
     Input,
     Output,
@@ -547,8 +543,8 @@ namespace NS {
         };
     readonly?: true;
     ignore?: Resolver<boolean, Input, Output, CtxOptions>;
-    ignoreInit?: true | IgnoreInitResolver<Input, CtxOptions>;
-    ignoreUpdate?: true | IgnoreUpdateResolver<Input, Output, CtxOptions>;
+    ignoreInit?: true;
+    ignoreUpdate?: true;
     validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
     reValidator?: ReValidator<Value, Input, Output, CtxOptions, Metadata>;
     required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
@@ -587,7 +583,6 @@ namespace NS {
     requiredError?:
       | string
       | ((ctx: InitResolverCtx<Input, CtxOptions>) => string);
-    readonly?: true;
     ignoreUpdate?: true | IgnoreUpdateResolver<Input, Output, CtxOptions>;
     validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
     reValidator?: ReValidator<Value, Input, Output, CtxOptions, Metadata>;
@@ -630,8 +625,8 @@ namespace NS {
               ) => NotAllowedError<Metadata>);
         };
     ignore?: Resolver<boolean, Input, Output, CtxOptions>;
-    ignoreInit?: true | IgnoreInitResolver<Input, CtxOptions>;
-    ignoreUpdate?: true | IgnoreUpdateResolver<Input, Output, CtxOptions>;
+    ignoreInit?: true;
+    ignoreUpdate?: true;
     onFailure?:
       | FailureHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;

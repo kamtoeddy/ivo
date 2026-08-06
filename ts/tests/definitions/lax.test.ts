@@ -1,24 +1,19 @@
-import { describe, it } from 'bun:test';
-import { expectNoFailure, makeFx } from '../_utils';
+import { describe, it } from "bun:test";
+import { expectNoFailure, makeFx } from "../_utils";
 
-describe('lax props', () => {
-  describe('valid', () => {
-    it('should allow default alone', () => {
-      const toPass = makeFx((b, m) => b.field(m.lax('fieldName').default('')));
+describe("lax props", () => {
+  describe("valid", () => {
+    it("should allow default alone", () => {
+      const toPass = makeFx((b, m) => b.field(m.lax("fieldName", "")));
 
       expectNoFailure(toPass);
 
       toPass();
     });
 
-    it('should allow default + validator', () => {
+    it("should allow default + validator", () => {
       const toPass = makeFx((b, m) =>
-        b.field(
-          m
-            .lax('fieldName')
-            .default('')
-            .validate(() => ({ valid: true })),
-        ),
+        b.field(m.lax("fieldName", "").validate(() => ({ valid: true }))),
       );
 
       expectNoFailure(toPass);

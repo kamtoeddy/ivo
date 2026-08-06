@@ -57,9 +57,7 @@ type BuildableVirtualConfig<
   HasReValidate extends boolean = false,
   HasRequired extends boolean = false,
   HasSanitizer extends boolean = false,
-  HasIgnore extends boolean = false,
-  HasIgnoreInit extends "yes" | "yes-computed" | "no" = "no",
-  HasIgnoreUpdate extends "yes" | "yes-computed" | "no" = "no",
+  HasIgnore extends "init" | "update" | "ignore" | "none" = "none",
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
 > = (ValidationState extends "none"
@@ -90,8 +88,6 @@ type BuildableVirtualConfig<
             HasRequired,
             HasSanitizer,
             HasIgnore,
-            HasIgnoreInit,
-            HasIgnoreUpdate,
             HasOnFailure,
             HasOnSuccess
           >;
@@ -116,8 +112,6 @@ type BuildableVirtualConfig<
             HasRequired,
             HasSanitizer,
             HasIgnore,
-            HasIgnoreInit,
-            HasIgnoreUpdate,
             HasOnFailure,
             HasOnSuccess
           >;
@@ -141,8 +135,6 @@ type BuildableVirtualConfig<
             true,
             HasSanitizer,
             HasIgnore,
-            HasIgnoreInit,
-            HasIgnoreUpdate,
             HasOnFailure,
             HasOnSuccess
           >;
@@ -166,17 +158,14 @@ type BuildableVirtualConfig<
             HasRequired,
             true,
             HasIgnore,
-            HasIgnoreInit,
-            HasIgnoreUpdate,
             HasOnFailure,
             HasOnSuccess
           >;
         }) &
   (ValidationState extends "none"
     ? {}
-    : HasIgnore extends true
-      ? {}
-      : {
+    : HasIgnore extends "none"
+      ? {
           ignore(
             resolver: NS.Resolver<boolean, Input, Output, CtxOptions>,
           ): BuildableVirtualConfig<
@@ -190,18 +179,10 @@ type BuildableVirtualConfig<
             HasReValidate,
             HasRequired,
             HasSanitizer,
-            true,
-            HasIgnoreInit,
-            HasIgnoreUpdate,
+            "ignore",
             HasOnFailure,
             HasOnSuccess
           >;
-        }) &
-  (ValidationState extends "none"
-    ? {}
-    : HasIgnoreInit extends true
-      ? {}
-      : {
           ignoreInit(): BuildableVirtualConfig<
             Value,
             Input,
@@ -213,15 +194,11 @@ type BuildableVirtualConfig<
             HasReValidate,
             HasRequired,
             HasSanitizer,
-            HasIgnore,
-            "yes",
-            HasIgnoreUpdate,
+            "init",
             HasOnFailure,
             HasOnSuccess
           >;
-          ignoreInit(
-            resolver: NS.IgnoreInitResolver<Input, CtxOptions>,
-          ): BuildableVirtualConfig<
+          ignoreUpdate(): BuildableVirtualConfig<
             Value,
             Input,
             Output,
@@ -232,13 +209,12 @@ type BuildableVirtualConfig<
             HasReValidate,
             HasRequired,
             HasSanitizer,
-            HasIgnore,
-            "yes-computed",
-            HasIgnoreUpdate,
+            "update",
             HasOnFailure,
             HasOnSuccess
           >;
-        }) &
+        }
+      : {}) &
   (ValidationState extends "none"
     ? {}
     : HasOnFailure extends true
@@ -260,8 +236,6 @@ type BuildableVirtualConfig<
             HasRequired,
             HasSanitizer,
             HasIgnore,
-            HasIgnoreInit,
-            HasIgnoreUpdate,
             true,
             HasOnSuccess
           >;
@@ -287,8 +261,6 @@ type BuildableVirtualConfig<
             HasRequired,
             HasSanitizer,
             HasIgnore,
-            HasIgnoreInit,
-            HasIgnoreUpdate,
             HasOnFailure,
             true
           >;
@@ -362,16 +334,22 @@ class VirtualBuilder<
 
   ignore(resolver: NS.Resolver<boolean, Input, Output, CtxOptions>) {
     this.config.ignore = resolver;
+    this.config.ignoreInit = undefined;
+    this.config.ignoreUpdate = undefined;
     return this as never;
   }
 
-  ignoreInit(resolver?: NS.IgnoreInitResolver<Input, CtxOptions>) {
-    this.config.ignoreInit = resolver ?? true;
+  ignoreInit() {
+    this.config.ignoreInit = true;
+    this.config.ignore = undefined;
+    this.config.ignoreUpdate = undefined;
     return this as never;
   }
 
-  ignoreUpdate(resolver?: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>) {
-    this.config.ignoreUpdate = resolver ?? true;
+  ignoreUpdate() {
+    this.config.ignoreUpdate = true;
+    this.config.ignore = undefined;
+    this.config.ignoreInit = undefined;
     return this as never;
   }
 

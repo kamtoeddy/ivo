@@ -8,9 +8,9 @@ describe("Values Parsing", () => {
 
   const User = new Schema<{ age: number; id: number; name: string }>((b, m) =>
     b
-      .field(m.lax("age").default(0))
+      .field(m.lax("age", 0))
       .field(m.constant("id", 1))
-      .field(m.lax("name").default("")),
+      .field(m.lax("name", "")),
   ).getModel();
 
   describe("valid data", () => {

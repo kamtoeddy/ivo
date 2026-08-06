@@ -50,8 +50,8 @@ describe("Schema.options.postValidate", () => {
             const toPass = makeFx(
               (b, m) =>
                 b
-                  .field(m.lax("fieldName1").default(""))
-                  .field(m.lax("fieldName2").default(""))
+                  .field(m.lax("fieldName1", ""))
+                  .field(m.lax("fieldName2", ""))
                   .field(
                     m
                       .dependent("dependent", ["virtual", "virtual2"])
@@ -114,10 +114,10 @@ describe("Schema.options.postValidate", () => {
           const toFail = makeFx(
             (b, m) =>
               b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default(""))
-                .field(m.lax("p1").default(""))
-                .field(m.lax("p2").default("")),
+                .field(m.lax("fieldName1", ""))
+                .field(m.lax("fieldName2", ""))
+                .field(m.lax("p1", ""))
+                .field(m.lax("p2", "")),
 
             {
               postValidate: {
@@ -190,8 +190,8 @@ describe("Schema.options.postValidate", () => {
             const toFail = makeFx(
               (b, m) =>
                 b
-                  .field(m.lax("fieldName1").default(""))
-                  .field(m.lax("fieldName2").default(""))
+                  .field(m.lax("fieldName1", ""))
+                  .field(m.lax("fieldName2", ""))
                   .field(
                     m
                       .dependent("dependent", ["fieldName1"])
@@ -232,8 +232,8 @@ describe("Schema.options.postValidate", () => {
             const toFail = makeFx(
               (b, m) =>
                 b
-                  .field(m.lax("fieldName1").default(""))
-                  .field(m.lax("fieldName2").default(""))
+                  .field(m.lax("fieldName1", ""))
+                  .field(m.lax("fieldName2", ""))
                   .field(
                     m
                       .dependent("dependent", "fieldName1")
@@ -295,8 +295,8 @@ describe("Schema.options.postValidate", () => {
             const toFail = makeFx(
               (b, m) =>
                 b
-                  .field(m.lax("fieldName1").default(""))
-                  .field(m.lax("fieldName2").default(""))
+                  .field(m.lax("fieldName1", ""))
+                  .field(m.lax("fieldName2", ""))
                   .field(
                     m
                       .dependent("dependent", "fieldName1")
@@ -345,8 +345,8 @@ describe("Schema.options.postValidate", () => {
             const toFail = makeFx(
               (b, m) =>
                 b
-                  .field(m.lax("fieldName1").default(""))
-                  .field(m.lax("fieldName2").default(""))
+                  .field(m.lax("fieldName1", ""))
+                  .field(m.lax("fieldName2", ""))
                   .field(
                     m
                       .dependent("dependent", "fieldName1")
@@ -416,17 +416,17 @@ describe("Schema.options.postValidate", () => {
           const toPass = makeFx(
             (b, m) =>
               b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default(""))
+                .field(m.lax("fieldName1", ""))
+                .field(m.lax("fieldName2", ""))
                 .field(
                   m
                     .dependent("dependent", ["v1", "v2"])
                     .default("")
                     .resolve(() => {}),
                 )
-                .field(m.lax("p1").default(""))
-                .field(m.lax("p2").default(""))
-                .field(m.lax("p3").default(""))
+                .field(m.lax("p1", ""))
+                .field(m.lax("p2", ""))
+                .field(m.lax("p3", ""))
                 .field(m.virtual("v1").validate(() => true))
                 .field(m.virtual("v2").validate(() => true)),
             {
@@ -500,16 +500,16 @@ describe("Schema.options.postValidate", () => {
           const toFail = makeFx(
             (b, m) =>
               b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default(""))
+                .field(m.lax("fieldName1", ""))
+                .field(m.lax("fieldName2", ""))
                 .field(
                   m
                     .dependent("dependent", "fieldName1")
                     .default("")
                     .resolve(() => {}),
                 )
-                .field(m.lax("p1").default(""))
-                .field(m.lax("p2").default("")),
+                .field(m.lax("p1", ""))
+                .field(m.lax("p2", "")),
             { postValidate: configs },
           );
 
@@ -555,8 +555,8 @@ describe("Schema.options.postValidate", () => {
           const toFail = makeFx(
             (b, m) =>
               b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default(""))
+                .field(m.lax("fieldName1", ""))
+                .field(m.lax("fieldName2", ""))
                 .field(
                   m
                     .dependent("dependent", "fieldName1")
@@ -616,8 +616,8 @@ describe("Schema.options.postValidate", () => {
           const toFail = makeFx(
             (b, m) =>
               b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default(""))
+                .field(m.lax("fieldName1", ""))
+                .field(m.lax("fieldName2", ""))
                 .field(
                   m
                     .dependent("dependent", "fieldName1")
@@ -666,8 +666,8 @@ describe("Schema.options.postValidate", () => {
           const toFail = makeFx(
             (b, m) =>
               b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default(""))
+                .field(m.lax("fieldName1", ""))
+                .field(m.lax("fieldName2", ""))
                 .field(
                   m
                     .dependent("dependent", "fieldName1")
@@ -768,8 +768,8 @@ describe("Schema.options.postValidate", () => {
           const toFail = makeFx(
             (b, m) =>
               b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default(""))
+                .field(m.lax("fieldName1", ""))
+                .field(m.lax("fieldName2", ""))
                 .field(
                   m
                     .dependent("dependent", ["virtual", "virtual2"])
@@ -800,15 +800,15 @@ describe("Schema.options.postValidate", () => {
             const toFail = makeFx(
               (b, m) =>
                 b
-                  .field(m.lax("fieldName1").default(""))
-                  .field(m.lax("fieldName2").default(""))
+                  .field(m.lax("fieldName1", ""))
+                  .field(m.lax("fieldName2", ""))
                   .field(
                     m
                       .dependent("dependent", "fieldName1")
                       .default("")
                       .resolve(() => {}),
                   )
-                  .field(m.lax("lax").default("")),
+                  .field(m.lax("lax", "")),
               {
                 postValidate: [
                   {
@@ -856,8 +856,8 @@ describe("Schema.options.postValidate", () => {
             const toFail = makeFx(
               (b, m) =>
                 b
-                  .field(m.lax("fieldName1").default(""))
-                  .field(m.lax("fieldName2").default(""))
+                  .field(m.lax("fieldName1", ""))
+                  .field(m.lax("fieldName2", ""))
                   .field(
                     m
                       .dependent("dependent", "fieldName1")
@@ -936,17 +936,17 @@ describe("Schema.options.postValidate", () => {
         const Model = new Schema<any>(
           (b, m) =>
             b
-              .field(m.lax("fieldName1").default(""))
-              .field(m.lax("fieldName2").default(""))
+              .field(m.lax("fieldName1", ""))
+              .field(m.lax("fieldName2", ""))
               .field(
                 m
                   .dependent("dependent", ["virtual", "virtual2"])
                   .default("")
                   .resolve(validator),
               )
-              .field(m.lax("lax").default(""))
+              .field(m.lax("lax", ""))
               .field(m.required("requiredReadonly").validate(() => true))
-              .field(m.lax("readonlyLax").default("").readonly())
+              .field(m.lax("readonlyLax", "").readonly())
               .field(m.required("required").validate(() => true))
               .field(m.virtual("virtual").validate(() => true))
               .field(m.virtual("virtual2").validate(() => true)),
@@ -1063,14 +1063,14 @@ describe("Schema.options.postValidate", () => {
                     .default("")
                     .resolve(validator),
                 )
-                .field(m.lax("lax").default(""))
+                .field(m.lax("lax", ""))
                 .field(
                   m
                     .required("requiredReadonly")
                     .validate(() => true)
                     .readonly(),
                 )
-                .field(m.lax("readonlyLax").default("").readonly())
+                .field(m.lax("readonlyLax", "").readonly())
                 .field(m.required("required").validate(() => true))
                 .field(m.virtual("virtual").validate(() => true))
                 .field(m.virtual("virtual2").validate(() => true)),
@@ -1179,14 +1179,14 @@ describe("Schema.options.postValidate", () => {
                   .default("")
                   .resolve(validator),
               )
-              .field(m.lax("lax").default(""))
+              .field(m.lax("lax", ""))
               .field(
                 m
                   .required("requiredReadonly")
                   .validate(() => true)
                   .readonly(),
               )
-              .field(m.lax("readonlyLax").default("").readonly())
+              .field(m.lax("readonlyLax", "").readonly())
               .field(m.required("required").validate(() => true))
               .field(m.virtual("virtual").validate(() => true))
               .field(m.virtual("virtual2").validate(() => true)),
@@ -1311,14 +1311,14 @@ describe("Schema.options.postValidate", () => {
                     .default("")
                     .resolve(validator),
                 )
-                .field(m.lax("lax").default(""))
+                .field(m.lax("lax", ""))
                 .field(
                   m
                     .required("requiredReadonly")
                     .validate(() => true)
                     .readonly(),
                 )
-                .field(m.lax("readonlyLax").default("").readonly())
+                .field(m.lax("readonlyLax", "").readonly())
                 .field(m.required("required").validate(() => true))
                 .field(m.virtual("virtual").validate(() => true))
                 .field(m.virtual("virtual2").validate(() => true)),
@@ -1444,8 +1444,7 @@ describe("Schema.options.postValidate", () => {
 
         for (const value of values) {
           const Model = new Schema<{ p1: string; p2: string }>(
-            (b, m) =>
-              b.field(m.lax("p1").default("")).field(m.lax("p2").default("")),
+            (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
             {
               // @ts-expect-error ikr
               postValidate: {
@@ -1499,10 +1498,10 @@ describe("Schema.options.postValidate", () => {
         const Model = new Schema<Input, Output>(
           (b, m) =>
             b
-              .field(m.lax("p1").default(""))
-              .field(m.lax("p2").default(""))
-              .field(m.lax("p3").default(""))
-              .field(m.lax("p4").default(""))
+              .field(m.lax("p1", ""))
+              .field(m.lax("p2", ""))
+              .field(m.lax("p3", ""))
+              .field(m.lax("p4", ""))
               .field(
                 // @ts-expect-error ikr
                 m.dependent("d1", "v").default("").resolve(resolver),
@@ -1666,8 +1665,7 @@ describe("Schema.options.postValidate", () => {
 
       it("should properly update revalidated values returned from post-validators", async () => {
         const Model = new Schema<{ p1: string; p2: string }>(
-          (b, m) =>
-            b.field(m.lax("p1").default("")).field(m.lax("p2").default("")),
+          (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
           {
             // @ts-expect-error ikr
             postValidate: {
@@ -1716,8 +1714,8 @@ describe("Schema.options.postValidate", () => {
         >(
           (b, m) =>
             b
-              .field(m.lax("p1").default(""))
-              .field(m.lax("p2").default(""))
+              .field(m.lax("p1", ""))
+              .field(m.lax("p2", ""))
               .field(
                 m
                   .dependent("dependent", ["v", "v1"])
@@ -1777,8 +1775,8 @@ describe("Schema.options.postValidate", () => {
         const Model = new Schema<Input, Output>(
           (b, m) =>
             b
-              .field(m.lax("p1").default(""))
-              .field(m.lax("p2").default(""))
+              .field(m.lax("p1", ""))
+              .field(m.lax("p2", ""))
               .field(
                 m
                   .dependent("dependent", ["v", "v1"])
@@ -1861,8 +1859,7 @@ describe("Schema.options.postValidate", () => {
 
           for (const value of values) {
             const Model = new Schema<any>(
-              (b, m) =>
-                b.field(m.lax("p1").default("")).field(m.lax("p2").default("")),
+              (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
               {
                 // @ts-expect-error ikr
                 postValidate: {
@@ -1922,10 +1919,10 @@ describe("Schema.options.postValidate", () => {
           const Model = new Schema<PVInput, PVOutput>(
             (b, m) =>
               b
-                .field(m.lax("p1").default(""))
-                .field(m.lax("p2").default(""))
-                .field(m.lax("p3").default(""))
-                .field(m.lax("p4").default(""))
+                .field(m.lax("p1", ""))
+                .field(m.lax("p2", ""))
+                .field(m.lax("p3", ""))
+                .field(m.lax("p4", ""))
                 .field(m.dependent("d1", "v").default("").resolve(resolver))
                 .field(m.dependent("d2", "v").default("").resolve(resolver))
                 .field(
@@ -2132,10 +2129,10 @@ describe("Schema.options.postValidate", () => {
                     // @ts-expect-error ikr
                     .resolve(resolver),
                 )
-                .field(m.lax("p1").default(""))
-                .field(m.lax("p2").default(""))
-                .field(m.lax("p3").default(""))
-                .field(m.lax("p4").default(""))
+                .field(m.lax("p1", ""))
+                .field(m.lax("p2", ""))
+                .field(m.lax("p3", ""))
+                .field(m.lax("p4", ""))
                 .field(m.virtual("v").alias("d1").validate(validator)),
             {
               postValidate: [
@@ -2348,8 +2345,7 @@ describe("Schema.options.postValidate", () => {
       type Data = { p1: string; p2: string };
 
       const Model = new Schema<Data>(
-        (b, m) =>
-          b.field(m.lax("p1").default("")).field(m.lax("p2").default("")),
+        (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
         {
           postValidate: {
             fields: ["p1", "p2"],
@@ -2406,8 +2402,7 @@ describe("Schema.options.postValidate", () => {
         });
         type Data = { p1: string; p2: string };
         const Model = new Schema<Data, Data, Record<string, unknown>>(
-          (b, m) =>
-            b.field(m.lax("p1").default("")).field(m.lax("p2").default("")),
+          (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
           {
             postValidate: {
               fields: ["p1", "p2"],

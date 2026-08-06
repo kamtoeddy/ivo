@@ -32,8 +32,7 @@ describe("Stress tests — pathological input shapes", () => {
     const Model = new Schema<{ payload: {} }>((b, m) =>
       b.field(
         m
-          .lax("payload")
-          .default({})
+          .lax("payload", {})
           .validate((v) =>
             typeof v === "object" && v !== null
               ? { valid: true, validated: v }
@@ -54,8 +53,7 @@ describe("Stress tests — pathological input shapes", () => {
     const Model = new Schema<{ payload: string[] }>((b, m) =>
       b.field(
         m
-          .lax("payload")
-          .default([])
+          .lax("payload", [])
           .validate((v) =>
             Array.isArray(v)
               ? { valid: true, validated: v }
@@ -79,8 +77,7 @@ describe("Stress tests — pathological input shapes", () => {
     const Model = new Schema<{ text: string }>((b, m) =>
       b.field(
         m
-          .lax("text")
-          .default("")
+          .lax("text", "")
           .validate((v) =>
             typeof v === "string"
               ? { valid: true, validated: v }
@@ -103,8 +100,7 @@ describe("Stress tests — pathological input shapes", () => {
     const Model = new Schema<{ payload: {} }>((b, m) =>
       b.field(
         m
-          .lax("payload")
-          .default({})
+          .lax("payload", {})
           .validate((v) =>
             typeof v === "object" && v !== null
               ? { valid: true, validated: v }

@@ -12,42 +12,20 @@ import {
 } from "../../utils/types";
 import { extractAllowedValues } from "./_utils";
 
-export { type BlankLaxBuilder, LaxBuilder };
+export { type BuildableLaxConfig, LaxBuilder };
 
-interface BlankLaxBuilder<
-  Value extends Output[keyof Output],
-  Input,
-  Output,
-  CtxOptions extends ObjectType,
-  Metadata,
-> {
-  default(
-    v: Value | NS.Resolver<Value, Input, Output, CtxOptions>,
-  ): BuildableLaxConfig<Value, Input, Output, CtxOptions, Metadata>;
-}
-
-/**
- * `.allow()` and `.validate()` are mutually exclusive - whichever is called
- * first becomes unavailable through the other, since `allow` serves as the
- * field's primary validator when provided. `.allowError()` only becomes
- * available once `.allow()` has been called, and `.reValidate()` only once
- * either `.allow()` or `.validate()` has (matching Rust's `re_validate`,
- * which requires `HasValidator: Yes`, extended here to also accept `allow`
- * as the primary).
- */
 type BuildableLaxConfig<
   Value extends Output[keyof Output],
   Input,
   Output,
   CtxOptions extends ObjectType,
   Metadata,
+  DefaultState extends "value" | "resolver" = "resolver",
   ValidationState extends "allow" | "none" | "validate" = "none",
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
   HasRequired extends boolean = false,
-  HasIgnore extends boolean = false,
-  HasIgnoreInit extends boolean = false,
-  HasIgnoreUpdate extends boolean = false,
+  HasIgnore extends "init" | "update" | "ignore" | "none" = "none",
   HasReadonly extends boolean = false,
   HasOnDelete extends boolean = false,
   HasOnFailure extends boolean = false,
@@ -63,13 +41,12 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
+          DefaultState,
           "allow",
           HasAllowError,
           HasReValidate,
           HasRequired,
           HasIgnore,
-          HasIgnoreInit,
-          HasIgnoreUpdate,
           HasReadonly,
           HasOnDelete,
           HasOnFailure,
@@ -83,13 +60,12 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
+          DefaultState,
           "validate",
           HasAllowError,
           HasReValidate,
           HasRequired,
           HasIgnore,
-          HasIgnoreInit,
-          HasIgnoreUpdate,
           HasReadonly,
           HasOnDelete,
           HasOnFailure,
@@ -114,13 +90,12 @@ type BuildableLaxConfig<
             Output,
             CtxOptions,
             Metadata,
+            DefaultState,
             "allow",
             true,
             HasReValidate,
             HasRequired,
             HasIgnore,
-            HasIgnoreInit,
-            HasIgnoreUpdate,
             HasReadonly,
             HasOnDelete,
             HasOnFailure,
@@ -141,13 +116,12 @@ type BuildableLaxConfig<
             Output,
             CtxOptions,
             Metadata,
+            DefaultState,
             ValidationState,
             HasAllowError,
             true,
             HasRequired,
             HasIgnore,
-            HasIgnoreInit,
-            HasIgnoreUpdate,
             HasReadonly,
             HasOnDelete,
             HasOnFailure,
@@ -165,113 +139,139 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
+          DefaultState,
           ValidationState,
           HasAllowError,
           HasReValidate,
           true,
           HasIgnore,
-          HasIgnoreInit,
-          HasIgnoreUpdate,
           HasReadonly,
           HasOnDelete,
           HasOnFailure,
           HasOnSuccess
         >;
       }) &
-  (HasIgnore extends true
+  (HasIgnore extends "none"
+    ? HasReadonly extends true
+      ? {}
+      : {
+          ignore(
+            resolver: NS.Resolver<boolean, Input, Output, CtxOptions>,
+          ): BuildableLaxConfig<
+            Value,
+            Input,
+            Output,
+            CtxOptions,
+            Metadata,
+            DefaultState,
+            ValidationState,
+            HasAllowError,
+            HasReValidate,
+            HasRequired,
+            "ignore",
+            HasReadonly,
+            HasOnDelete,
+            HasOnFailure,
+            HasOnSuccess
+          >;
+          ignoreInit(): BuildableLaxConfig<
+            Value,
+            Input,
+            Output,
+            CtxOptions,
+            Metadata,
+            DefaultState,
+            ValidationState,
+            HasAllowError,
+            HasReValidate,
+            HasRequired,
+            "init",
+            HasReadonly,
+            HasOnDelete,
+            HasOnFailure,
+            HasOnSuccess
+          >;
+          ignoreUpdate(): BuildableLaxConfig<
+            Value,
+            Input,
+            Output,
+            CtxOptions,
+            Metadata,
+            DefaultState,
+            ValidationState,
+            HasAllowError,
+            HasReValidate,
+            HasRequired,
+            "update",
+            HasReadonly,
+            HasOnDelete,
+            HasOnFailure,
+            HasOnSuccess
+          >;
+          readonly(): BuildableLaxConfig<
+            Value,
+            Input,
+            Output,
+            CtxOptions,
+            Metadata,
+            DefaultState,
+            ValidationState,
+            HasAllowError,
+            HasReValidate,
+            HasRequired,
+            HasIgnore,
+            true,
+            HasOnDelete,
+            HasOnFailure,
+            HasOnSuccess
+          >;
+        }
+    : {}) &
+  (DefaultState extends "resolver"
     ? {}
-    : {
-        ignore(
-          resolver: NS.Resolver<boolean, Input, Output, CtxOptions>,
-        ): BuildableLaxConfig<
-          Value,
-          Input,
-          Output,
-          CtxOptions,
-          Metadata,
-          ValidationState,
-          HasAllowError,
-          HasReValidate,
-          HasRequired,
-          true,
-          HasIgnoreInit,
-          HasIgnoreUpdate,
-          HasReadonly,
-          HasOnDelete,
-          HasOnFailure,
-          HasOnSuccess
-        >;
-      }) &
-  (HasIgnoreInit extends true
-    ? {}
-    : {
-        ignoreInit(
-          resolver?: NS.IgnoreInitResolver<Input, CtxOptions>,
-        ): BuildableLaxConfig<
-          Value,
-          Input,
-          Output,
-          CtxOptions,
-          Metadata,
-          ValidationState,
-          HasAllowError,
-          HasReValidate,
-          HasRequired,
-          HasIgnore,
-          true,
-          HasIgnoreUpdate,
-          HasReadonly,
-          HasOnDelete,
-          HasOnFailure,
-          HasOnSuccess
-        >;
-      }) &
-  (HasIgnoreUpdate extends true
-    ? {}
-    : {
-        ignoreUpdate(
-          resolver?: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>,
-        ): BuildableLaxConfig<
-          Value,
-          Input,
-          Output,
-          CtxOptions,
-          Metadata,
-          ValidationState,
-          HasAllowError,
-          HasReValidate,
-          HasRequired,
-          HasIgnore,
-          HasIgnoreInit,
-          true,
-          HasReadonly,
-          HasOnDelete,
-          HasOnFailure,
-          HasOnSuccess
-        >;
-      }) &
-  (HasReadonly extends true
-    ? {}
-    : {
-        readonly(): BuildableLaxConfig<
-          Value,
-          Input,
-          Output,
-          CtxOptions,
-          Metadata,
-          ValidationState,
-          HasAllowError,
-          HasReValidate,
-          HasRequired,
-          HasIgnore,
-          HasIgnoreInit,
-          HasIgnoreUpdate,
-          true,
-          HasOnDelete,
-          HasOnFailure,
-          HasOnSuccess
-        >;
-      }) &
+    : HasReadonly extends true
+      ? {
+          ignore(
+            resolver: NS.Resolver<boolean, Input, Output, CtxOptions>,
+          ): BuildableLaxConfig<
+            Value,
+            Input,
+            Output,
+            CtxOptions,
+            Metadata,
+            DefaultState,
+            ValidationState,
+            HasAllowError,
+            HasReValidate,
+            HasRequired,
+            "ignore",
+            HasReadonly,
+            HasOnDelete,
+            HasOnFailure,
+            HasOnSuccess
+          >;
+        }
+      : HasIgnore extends "init" | "update"
+        ? {}
+        : {
+            readonly(): BuildableLaxConfig<
+              Value,
+              Input,
+              Output,
+              CtxOptions,
+              Metadata,
+              DefaultState,
+              ValidationState,
+              HasAllowError,
+              HasReValidate,
+              HasRequired,
+              HasIgnore,
+              true,
+              HasOnDelete,
+              HasOnFailure,
+              HasOnSuccess
+            >;
+          }) &
   (HasOnDelete extends true
     ? {}
     : {
@@ -285,13 +285,12 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
+          DefaultState,
           ValidationState,
           HasAllowError,
           HasReValidate,
           HasRequired,
           HasIgnore,
-          HasIgnoreInit,
-          HasIgnoreUpdate,
           HasReadonly,
           true,
           HasOnFailure,
@@ -311,13 +310,12 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
+          DefaultState,
           ValidationState,
           HasAllowError,
           HasReValidate,
           HasRequired,
           HasIgnore,
-          HasIgnoreInit,
-          HasIgnoreUpdate,
           HasReadonly,
           HasOnDelete,
           true,
@@ -337,13 +335,12 @@ type BuildableLaxConfig<
           Output,
           CtxOptions,
           Metadata,
+          DefaultState,
           ValidationState,
           HasAllowError,
           HasReValidate,
           HasRequired,
           HasIgnore,
-          HasIgnoreInit,
-          HasIgnoreUpdate,
           HasReadonly,
           HasOnDelete,
           HasOnFailure,
@@ -357,22 +354,17 @@ class LaxBuilder<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
->
-  implements
-    BlankLaxBuilder<Value, Input, Output, CtxOptions, Metadata>,
-    BuildableLaxConfig<Value, Input, Output, CtxOptions, Metadata>
-{
+> implements BuildableLaxConfig<Value, Input, Output, CtxOptions, Metadata> {
   private config: Partial<
     NS.LaxField<Value, Input, Output, CtxOptions, Metadata>
   > = { type: "lax" };
 
-  constructor(name: string) {
+  constructor(
+    name: string,
+    defaultValue: Value | NS.Resolver<Value, Input, Output, CtxOptions>,
+  ) {
     this.config.name = name;
-  }
-
-  default(value: Value | NS.Resolver<Value, Input, Output, CtxOptions>) {
-    this.config.default = value;
-    return this as never;
+    this.config.default = defaultValue;
   }
 
   allow(values: ArrayOfMinSizeTwo<Value>) {
@@ -413,21 +405,31 @@ class LaxBuilder<
 
   ignore(resolver: NS.Resolver<boolean, Input, Output, CtxOptions>) {
     this.config.ignore = resolver;
+    this.config.ignoreInit = undefined;
+    this.config.ignoreUpdate = undefined;
     return this as never;
   }
 
-  ignoreInit(resolver?: NS.IgnoreInitResolver<Input, CtxOptions>) {
-    this.config.ignoreInit = resolver ?? true;
+  ignoreInit() {
+    this.config.ignoreInit = true;
+    this.config.ignore = undefined;
+    this.config.ignoreUpdate = undefined;
+    this.config.readonly = undefined;
     return this as never;
   }
 
-  ignoreUpdate(resolver?: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>) {
-    this.config.ignoreUpdate = resolver ?? true;
+  ignoreUpdate() {
+    this.config.ignoreUpdate = true;
+    this.config.ignore = undefined;
+    this.config.ignoreInit = undefined;
+    this.config.readonly = undefined;
     return this as never;
   }
 
   readonly() {
     this.config.readonly = true;
+    this.config.ignoreInit = undefined;
+    this.config.ignoreUpdate = undefined;
     return this as never;
   }
 

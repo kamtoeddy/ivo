@@ -15,8 +15,8 @@ const totalField = field
 const schema = new Schema<Input, Output>((b, m) =>
   b
     .field(m.constant("id", 0))
-    .field(m.lax("price").default(0))
-    .field(m.lax("qty").default(0))
+    .field(m.lax("price", 0))
+    .field(m.lax("qty", 0))
     .field(totalField),
 );
 
@@ -47,10 +47,7 @@ describe("field builder: dependent()", () => {
       });
 
     const decoratedSchema = new Schema<Input, Output>((b, m) =>
-      b
-        .field(m.lax("price").default(0))
-        .field(m.lax("qty").default(0))
-        .field(decoratedField),
+      b.field(m.lax("price", 0)).field(m.lax("qty", 0)).field(decoratedField),
     );
 
     const decoratedModel = decoratedSchema.getModel();
@@ -94,10 +91,7 @@ describe("field builder: dependent()", () => {
       ]);
 
     const decoratedSchema = new Schema<Input, Output>((b, m) =>
-      b
-        .field(m.lax("price").default(0))
-        .field(m.lax("qty").default(0))
-        .field(decoratedField),
+      b.field(m.lax("price", 0)).field(m.lax("qty", 0)).field(decoratedField),
     );
 
     const decoratedModel = decoratedSchema.getModel();

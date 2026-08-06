@@ -15,15 +15,12 @@ describe("ctx options threading", () => {
     (b, m) =>
       b
         .field(
-          m
-            .lax("name")
-            .default("")
-            .validate((v, ctx) => {
-              push("validator")(ctx);
-              // @ts-expect-error
-              ctx.options.log = ["lol"];
-              return { valid: true, validated: v as string };
-            }),
+          m.lax("name", "").validate((v, ctx) => {
+            push("validator")(ctx);
+            // @ts-expect-error
+            ctx.options.log = ["lol"];
+            return { valid: true, validated: v as string };
+          }),
         )
         .field(
           m
@@ -92,13 +89,10 @@ describe("ctx options threading", () => {
     type Input = { a: number };
     const Model = new Schema<Input, Input, CtxOpts>((b, m) =>
       b.field(
-        m
-          .lax("a")
-          .default(0)
-          .required((ctx) => {
-            ctx.updateOptions({ log: [...ctx.options.log, "should-not-run"] });
-            return false;
-          }),
+        m.lax("a", 0).required((ctx) => {
+          ctx.updateOptions({ log: [...ctx.options.log, "should-not-run"] });
+          return false;
+        }),
       ),
     ).getModel();
 
@@ -131,19 +125,16 @@ describe("ctx options threading", () => {
 
       const Model = new Schema<Input, Input, CtxOpts>((b, m) =>
         b.field(
-          m
-            .lax("a")
-            .default(0)
-            .required((ctx) => {
-              const options = ctx.options;
-              options.add("should not be set on ctx options");
-              options.setExternalMsg(messageFromCtxOptionSetExternalMsg);
-              ctx.updateOptions({
-                logs: [...ctx.options.logs, messageIvoUpdateOptionsAPI],
-              });
+          m.lax("a", 0).required((ctx) => {
+            const options = ctx.options;
+            options.add("should not be set on ctx options");
+            options.setExternalMsg(messageFromCtxOptionSetExternalMsg);
+            ctx.updateOptions({
+              logs: [...ctx.options.logs, messageIvoUpdateOptionsAPI],
+            });
 
-              return false;
-            }),
+            return false;
+          }),
         ),
       ).getModel();
 

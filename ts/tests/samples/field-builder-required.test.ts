@@ -331,10 +331,7 @@ describe("field builder: required()", () => {
       const decorated = field
         .required("role")
         .allow(["admin", "member"])
-        .ignoreUpdate();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.();
+        .ignoreUpdate(() => true);
 
       // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => true);
@@ -343,112 +340,67 @@ describe("field builder: required()", () => {
       decorated.ignoreUpdate?.(() => false);
     });
 
-    it("should reject a second call to ignoreUpdate(() => boolean)", () => {
+    it("should reject allow() + (ignoreUpdate() + readonly())", () => {
       const decorated = field
         .required("role")
         .allow(["admin", "member"])
-        .ignoreUpdate(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.();
+        .ignoreUpdate(() => true);
 
       // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => true);
 
       // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreUpdate() + readonly() should not be allowed
+      decorated.readonly();
     });
 
-    it("should reject ignoreUpdate()/readonly()", () => {
+    it("should reject allow() + (readonly() + ignoreUpdate())", () => {
       const decorated = field
         .required("role")
         .allow(["admin", "member"])
-        .ignoreUpdate();
-
-      // @ts-expect-error - ignoreUpdate() and readonly() should be rejected
-      decorated.readonly?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.();
-    });
-
-    it("should accept allow + ignoreUpdate(() => boolean)/readonly()", () => {
-      const decorated = field
-        .required("role")
-        .allow(["admin", "member"])
-        .ignoreUpdate(() => true)
         .readonly();
 
       // @ts-expect-error - readonly was already provided
       decorated.readonly();
 
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
+      // @ts-expect-error - readonly() + ignoreUpdate() should not be allowed
       decorated.ignoreUpdate?.(() => true);
 
-      // @ts-expect-error - ignoreUpdate was already provided
+      // @ts-expect-error - readonly() + ignoreUpdate() should not be allowed
       decorated.ignoreUpdate?.(() => false);
     });
 
-    it("should accept allow + readonly()/ignoreUpdate(() => boolean)", () => {
-      const decorated = field
-        .required("role")
-        .allow(["admin", "member"])
-        .readonly()
-        .ignoreUpdate(() => true);
-
-      // @ts-expect-error - readonly was already provided
-      decorated.readonly();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.(() => false);
-    });
-
-    it("should accept validate + ignoreUpdate(() => boolean)/readonly()", () => {
+    it("should reject validate() + (ignoreUpdate() + readonly())", () => {
       const decorated = field
         .required("role")
         .validate(() => true)
-        .ignoreUpdate(() => true)
+        .ignoreUpdate(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      decorated.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      decorated.ignoreUpdate?.(() => false);
+
+      // @ts-expect-error - ignoreUpdate() + readonly() should not be allowed
+      decorated.readonly();
+    });
+
+    it("should reject validate() + (readonly() + ignoreUpdate())", () => {
+      const decorated = field
+        .required("role")
+        .validate(() => true)
         .readonly();
 
       // @ts-expect-error - readonly was already provided
       decorated.readonly();
 
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
+      // @ts-expect-error - readonly() + ignoreUpdate() should not be allowed
       decorated.ignoreUpdate?.(() => true);
 
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.(() => false);
-    });
-
-    it("should accept validate + readonly()/ignoreUpdate(() => boolean)", () => {
-      const decorated = field
-        .required("role")
-        .validate(() => true)
-        .readonly()
-        .ignoreUpdate(() => true);
-
-      // @ts-expect-error - readonly was already provided
-      decorated.readonly();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      decorated.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
+      // @ts-expect-error - readonly() + ignoreUpdate() should not be allowed
       decorated.ignoreUpdate?.(() => false);
     });
   });

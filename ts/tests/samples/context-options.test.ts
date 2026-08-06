@@ -74,8 +74,7 @@ describe("Context options", () => {
     const Model = new Schema<Data, Data, CtxOptions>((b, m) =>
       b.field(
         m
-          .lax("name")
-          .default("")
+          .lax("name", "")
           .validate((_, { options }) => {
             options.ctxHandler();
             return true;

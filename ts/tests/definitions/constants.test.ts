@@ -26,7 +26,7 @@ describe("constants", () => {
             ),
           )
           .field(m.constant("parentId", "parent id"))
-          .field(m.lax("laxField").default(0)),
+          .field(m.lax("laxField", 0)),
       ).getModel();
 
       function asyncSetter() {

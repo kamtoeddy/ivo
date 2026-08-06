@@ -18,8 +18,8 @@ describe("Schema.options.required", () => {
         const toPass = makeFx(
           (b, m) =>
             b
-              .field(m.lax("a").default(1).validate(validator))
-              .field(m.lax("b").default(2).validate(validator)),
+              .field(m.lax("a", 1).validate(validator))
+              .field(m.lax("b", 2).validate(validator)),
           { required },
         );
 
@@ -32,7 +32,7 @@ describe("Schema.options.required", () => {
       const toPass = makeFx(
         (b, m) =>
           b
-            .field(m.lax("a").default(1).validate(validator))
+            .field(m.lax("a", 1).validate(validator))
             .field(
               m
                 .dependent("dependentField", "virtualField")
@@ -65,8 +65,8 @@ describe("Schema.options.required", () => {
         const toFail = makeFx(
           (b, m) =>
             b
-              .field(m.lax("a").default(1).validate(validator))
-              .field(m.lax("b").default(2).validate(validator)),
+              .field(m.lax("a", 1).validate(validator))
+              .field(m.lax("b", 2).validate(validator)),
           { required },
         );
 
@@ -78,8 +78,8 @@ describe("Schema.options.required", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax("a").default(1).validate(validator))
-            .field(m.lax("b").default(2).validate(validator)),
+            .field(m.lax("a", 1).validate(validator))
+            .field(m.lax("b", 2).validate(validator)),
         { required: { fields: ["a"], handler: () => undefined } },
       );
 
@@ -102,8 +102,8 @@ describe("Schema.options.required", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax("a").default(1).validate(validator))
-            .field(m.lax("b").default(2).validate(validator)),
+            .field(m.lax("a", 1).validate(validator))
+            .field(m.lax("b", 2).validate(validator)),
         { required: { fields: ["a", "a"], handler: () => undefined } },
       );
 
@@ -126,8 +126,8 @@ describe("Schema.options.required", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax("a").default(1).validate(validator))
-            .field(m.lax("b").default(2).validate(validator)),
+            .field(m.lax("a", 1).validate(validator))
+            .field(m.lax("b", 2).validate(validator)),
         { required: { fields: ["a", "z"], handler: () => undefined } },
       );
 
@@ -152,7 +152,7 @@ describe("Schema.options.required", () => {
           (b, m) =>
             b
               .field(m.constant("a", 1))
-              .field(m.lax("b").default(2).validate(validator)),
+              .field(m.lax("b", 2).validate(validator)),
           {
             required: { fields: ["a", "b"], handler: () => undefined },
           },
@@ -167,7 +167,7 @@ describe("Schema.options.required", () => {
                   .default(0)
                   .resolve(() => 1),
               )
-              .field(m.lax("b").default(2).validate(validator)),
+              .field(m.lax("b", 2).validate(validator)),
           {
             required: { fields: ["a", "b"], handler: () => undefined },
           },
@@ -176,7 +176,7 @@ describe("Schema.options.required", () => {
           (b, m) =>
             b
               .field(m.required("a").validate(validator))
-              .field(m.lax("b").default(2).validate(validator)),
+              .field(m.lax("b", 2).validate(validator)),
           {
             required: { fields: ["a", "b"], handler: () => undefined },
           },
@@ -204,8 +204,8 @@ describe("Schema.options.required", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax("a").default(1).validate(validator))
-            .field(m.lax("b").default(2).validate(validator)),
+            .field(m.lax("a", 1).validate(validator))
+            .field(m.lax("b", 2).validate(validator)),
         {
           timestamps: true,
           required: {
@@ -234,7 +234,7 @@ describe("Schema.options.required", () => {
       const toFail = makeFx(
         (b, m) =>
           b
-            .field(m.lax("b").default(2).validate(validator))
+            .field(m.lax("b", 2).validate(validator))
             .field(
               m
                 .dependent("dependentField", "virtualField")
@@ -267,8 +267,7 @@ describe("Schema.options.required", () => {
 
   describe("behaviour", () => {
     const Model = new Schema<{ email: string; phone: string }>(
-      (b, m) =>
-        b.field(m.lax("email").default("")).field(m.lax("phone").default("")),
+      (b, m) => b.field(m.lax("email", "")).field(m.lax("phone", "")),
       {
         required: {
           fields: ["email", "phone"],
@@ -310,9 +309,9 @@ describe("Schema.options.required", () => {
       const Model = new Schema<any>(
         (b, m) =>
           b
-            .field(m.lax("a").default(undefined))
-            .field(m.lax("b").default(undefined))
-            .field(m.lax("c").default(2)),
+            .field(m.lax("a", undefined))
+            .field(m.lax("b", undefined))
+            .field(m.lax("c", 2)),
         {
           required: {
             fields: ["a", "b"],
@@ -341,7 +340,7 @@ describe("Schema.options.required", () => {
       >(
         (b, m) =>
           b
-            .field(m.lax("name").default(""))
+            .field(m.lax("name", ""))
             .field(
               m
                 .dependent("y", "setX")
@@ -375,9 +374,9 @@ describe("Schema.options.required", () => {
       const Model = new Schema<{ email: string; name: string; phone: string }>(
         (b, m) =>
           b
-            .field(m.lax("email").default(""))
-            .field(m.lax("phone").default(""))
-            .field(m.lax("name").default("")),
+            .field(m.lax("email", ""))
+            .field(m.lax("phone", ""))
+            .field(m.lax("name", "")),
         {
           required: {
             fields: ["email", "phone"],
@@ -398,7 +397,7 @@ describe("Schema.options.required", () => {
       );
 
       expect(data).toBeNull();
-      expect(error).toEqual({
+      expect(error?.payload).toEqual({
         email: {
           reason: "either email or phone is required",
           metadata: null,
@@ -412,10 +411,7 @@ describe("Schema.options.required", () => {
 
     it("should run every handler in an array and merge their results", async () => {
       const Model = new Schema<any>(
-        (b, m) =>
-          b
-            .field(m.lax("a").default(undefined))
-            .field(m.lax("b").default(undefined)),
+        (b, m) => b.field(m.lax("a", undefined)).field(m.lax("b", undefined)),
         {
           required: {
             fields: ["a", "b"],
@@ -427,7 +423,7 @@ describe("Schema.options.required", () => {
       const { data, error } = await Model.create({}, {});
 
       expect(data).toBeNull();
-      expect(error).toEqual({
+      expect(error?.payload).toEqual({
         a: { reason: "a missing", metadata: null },
         b: { reason: "b missing", metadata: null },
       });
@@ -435,10 +431,7 @@ describe("Schema.options.required", () => {
 
     it("should treat a thrown handler as satisfied (no error), matching the swallow-errors convention", async () => {
       const Model = new Schema<any>(
-        (b, m) =>
-          b
-            .field(m.lax("a").default(undefined))
-            .field(m.lax("b").default(undefined)),
+        (b, m) => b.field(m.lax("a", undefined)).field(m.lax("b", undefined)),
         {
           required: {
             fields: ["a", "b"],

@@ -70,7 +70,6 @@ type BuildableRequiredConfig<
   ValidationState extends "allow" | "none" | "validate" = "none",
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
-  HasReadonly extends boolean = false,
   HasIgnoreUpdate extends "yes" | "yes-computed" | "no" = "no",
   HasOnDelete extends boolean = false,
   HasOnFailure extends boolean = false,
@@ -98,7 +97,6 @@ type BuildableRequiredConfig<
             "allow",
             true,
             HasReValidate,
-            HasReadonly,
             HasIgnoreUpdate,
             HasOnDelete,
             HasOnFailure,
@@ -122,104 +120,46 @@ type BuildableRequiredConfig<
             ValidationState,
             HasAllowError,
             true,
-            HasReadonly,
             HasIgnoreUpdate,
             HasOnDelete,
             HasOnFailure,
             HasOnSuccess
           >;
         }) &
-  (HasReadonly extends false
-    ? HasIgnoreUpdate extends "no"
-      ? {
-          readonly(): BuildableRequiredConfig<
-            Value,
-            Input,
-            Output,
-            CtxOptions,
-            Metadata,
-            ValidationState,
-            HasAllowError,
-            HasReValidate,
-            true,
-            HasIgnoreUpdate,
-            HasOnDelete,
-            HasOnFailure,
-            HasOnSuccess
-          >;
-          ignoreUpdate(): BuildableRequiredConfig<
-            Value,
-            Input,
-            Output,
-            CtxOptions,
-            Metadata,
-            ValidationState,
-            HasAllowError,
-            HasReValidate,
-            HasReadonly,
-            "yes",
-            HasOnDelete,
-            HasOnFailure,
-            HasOnSuccess
-          >;
-          ignoreUpdate(
-            resolver: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>,
-          ): BuildableRequiredConfig<
-            Value,
-            Input,
-            Output,
-            CtxOptions,
-            Metadata,
-            ValidationState,
-            HasAllowError,
-            HasReValidate,
-            HasReadonly,
-            "yes-computed",
-            HasOnDelete,
-            HasOnFailure,
-            HasOnSuccess
-          >;
-        }
-      : HasIgnoreUpdate extends "yes-computed"
-        ? {
-            readonly(): BuildableRequiredConfig<
-              Value,
-              Input,
-              Output,
-              CtxOptions,
-              Metadata,
-              ValidationState,
-              HasAllowError,
-              HasReValidate,
-              true,
-              HasIgnoreUpdate,
-              HasOnDelete,
-              HasOnFailure,
-              HasOnSuccess
-            >;
-          }
-        : {}
-    : HasIgnoreUpdate extends "no"
-      ? {
-          ignoreUpdate(
-            resolver: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>,
-          ): BuildableRequiredConfig<
-            Value,
-            Input,
-            Output,
-            CtxOptions,
-            Metadata,
-            ValidationState,
-            HasAllowError,
-            HasReValidate,
-            HasReadonly,
-            "yes-computed",
-            HasOnDelete,
-            HasOnFailure,
-            HasOnSuccess
-          >;
-        }
-      : {}) &
+  (HasIgnoreUpdate extends "no"
+    ? {
+        readonly(): BuildableRequiredConfig<
+          Value,
+          Input,
+          Output,
+          CtxOptions,
+          Metadata,
+          ValidationState,
+          HasAllowError,
+          HasReValidate,
+          "yes",
+          HasOnDelete,
+          HasOnFailure,
+          HasOnSuccess
+        >;
+        ignoreUpdate(
+          resolver: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>,
+        ): BuildableRequiredConfig<
+          Value,
+          Input,
+          Output,
+          CtxOptions,
+          Metadata,
+          ValidationState,
+          HasAllowError,
+          HasReValidate,
+          "yes-computed",
+          HasOnDelete,
+          HasOnFailure,
+          HasOnSuccess
+        >;
+      }
+    : {}) &
   (HasOnDelete extends true
     ? {}
     : {
@@ -236,7 +176,6 @@ type BuildableRequiredConfig<
           ValidationState,
           HasAllowError,
           HasReValidate,
-          HasReadonly,
           HasIgnoreUpdate,
           true,
           HasOnFailure,
@@ -259,7 +198,6 @@ type BuildableRequiredConfig<
           ValidationState,
           HasAllowError,
           HasReValidate,
-          HasReadonly,
           HasIgnoreUpdate,
           HasOnDelete,
           true,
@@ -282,7 +220,6 @@ type BuildableRequiredConfig<
           ValidationState,
           HasAllowError,
           HasReValidate,
-          HasReadonly,
           HasIgnoreUpdate,
           HasOnDelete,
           HasOnFailure,
@@ -347,13 +284,13 @@ class RequiredBuilder<
     return this as never;
   }
 
-  readonly() {
-    this.config.readonly = true;
+  ignoreUpdate(resolver: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>) {
+    this.config.ignoreUpdate = resolver;
     return this as never;
   }
 
-  ignoreUpdate(resolver?: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>) {
-    this.config.ignoreUpdate = resolver ?? true;
+  readonly() {
+    this.config.ignoreUpdate = true;
     return this as never;
   }
 

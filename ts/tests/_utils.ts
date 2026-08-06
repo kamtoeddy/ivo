@@ -1,10 +1,9 @@
 import { expect } from "bun:test";
 import { type FieldMaker, Schema } from "../src/schema";
-import { ERRORS } from "../src/schema/utils/constants";
-import { isEqual, type ObjectType } from "../src/utils";
+import { isEqual } from "../src/utils";
+import { ObjectType } from "../src/utils/types";
 
 export {
-  ERRORS,
   expectFailure,
   expectNoFailure,
   findBy,
@@ -14,7 +13,7 @@ export {
   validator,
 };
 
-function expectFailure(fx: Function, message: string = ERRORS.INVALID_SCHEMA) {
+function expectFailure(fx: Function, message: string = "INVALID_SCHEMA") {
   expect(fx).toThrow(message);
 }
 
@@ -51,9 +50,9 @@ function getValidSchema(
   extraFields: any[] = [],
 ) {
   return (b: any, { lax }: FieldMaker<any>) => {
-    b.field(
-      extendField1(lax("fieldName1").default("").validate(validator)),
-    ).field(lax("fieldName2").default("").validate(validator));
+    b.field(extendField1(lax("fieldName1", "").validate(validator))).field(
+      lax("fieldName2", "").validate(validator),
+    );
 
     for (const extraField of extraFields) b.field(extraField);
 

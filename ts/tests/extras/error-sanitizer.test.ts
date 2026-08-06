@@ -31,31 +31,23 @@ describe("Schema.options.sanitizeError", () => {
     (b, m) =>
       b
         .field(
-          m
-            .lax("lat")
-            .default(0)
-            .validate((v) => {
-              if (typeof v !== "number" || Number.isNaN(v))
-                return { valid: false, reason: "invalid number" };
+          m.lax("lat", 0).validate((v) => {
+            if (typeof v !== "number" || Number.isNaN(v))
+              return { valid: false, reason: "invalid number" };
 
-              if (v < -90 || v > 90)
-                return {
-                  valid: false,
-                  reason: "out of range",
-                  metadata: {
-                    extraReasons: ["must be >= -90", "must be <= 90"],
-                  },
-                };
+            if (v < -90 || v > 90)
+              return {
+                valid: false,
+                reason: "out of range",
+                metadata: {
+                  extraReasons: ["must be >= -90", "must be <= 90"],
+                },
+              };
 
-              return { valid: true, validated: v };
-            }),
+            return { valid: true, validated: v };
+          }),
         )
-        .field(
-          m
-            .lax("lon")
-            .default(0)
-            .validate((v) => typeof v === "number"),
-        ),
+        .field(m.lax("lon", 0).validate((v) => typeof v === "number")),
     {
       sanitizeError(payload): CustomErrorPayload {
         const customized: CustomErrorPayload = {};

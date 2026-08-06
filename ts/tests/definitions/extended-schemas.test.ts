@@ -8,7 +8,7 @@ describe("Extended Schema", () => {
         const Model = new Schema<any>((b, m) => b.field(m.constant("id", 1)), {
           timestamps: { updatedAt: "u_At" },
         })
-          .extend<any>((b, m) => b.field(m.lax("name").default("")))
+          .extend<any>((b, m) => b.field(m.lax("name", "")))
           .getModel();
 
         const { data, error } = await Model.create({}, {});
@@ -24,7 +24,7 @@ describe("Extended Schema", () => {
         const Model = new Schema<any>((b, m) => b.field(m.constant("id", 1)), {
           timestamps: false,
         })
-          .extend<any>((b, m) => b.field(m.lax("name").default("")))
+          .extend<any>((b, m) => b.field(m.lax("name", "")))
           .getModel();
 
         const { data, error } = await Model.create({}, {});
@@ -39,7 +39,7 @@ describe("Extended Schema", () => {
         const Model = new Schema<any>((b, m) => b.field(m.constant("id", 1)), {
           timestamps: { createdAt: "c_at", updatedAt: "uAt" },
         })
-          .extend<any>((b, m) => b.field(m.lax("name").default("")))
+          .extend<any>((b, m) => b.field(m.lax("name", "")))
           .getModel();
 
         const { data, error } = await Model.create({}, {});
@@ -59,7 +59,7 @@ describe("Extended Schema", () => {
             (b, m) => b.field(m.constant("id", 1)),
             { timestamps: { updatedAt: "u_At" } },
           )
-            .extend<any>((b, m) => b.field(m.lax("name").default("")), {
+            .extend<any>((b, m) => b.field(m.lax("name", "")), {
               useParentOptions,
             })
             .getModel();
@@ -77,7 +77,7 @@ describe("Extended Schema", () => {
         const Model = new Schema<any>((b, m) => b.field(m.constant("id", 1)), {
           timestamps: { updatedAt: "u_At" },
         })
-          .extend<any>((b, m) => b.field(m.lax("name").default("")), {
+          .extend<any>((b, m) => b.field(m.lax("name", "")), {
             useParentOptions: false,
           })
           .getModel();

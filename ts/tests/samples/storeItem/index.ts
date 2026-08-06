@@ -22,25 +22,20 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
           .resolve(() => 1),
       )
       .field(
-        m
-          .lax("_laxField")
-          .default("")
-          .validate(validateString("Invalid lax field")),
+        m.lax("_laxField", "").validate(validateString("Invalid lax field")),
       )
-      .field(m.lax("_readOnlyLax1").default("").readonly())
-      .field(m.lax("_readOnlyLax2").default("").readonly())
-      .field(m.lax("_readOnlyNoInit").default("").readonly())
+      .field(m.lax("_readOnlyLax1", "").readonly())
+      .field(m.lax("_readOnlyLax2", "").readonly())
+      .field(m.lax("_readOnlyNoInit", "").readonly())
       .field(m.virtual("_virtualForDependentReadOnly").validate(() => true))
-      .field(m.lax("id").default("").validate(validateString("Invalid id")))
+      .field(m.lax("id", "").validate(validateString("Invalid id")))
       .field(m.required("name").validate(validateName))
       .field(
         m
           .required("measureUnit")
           .validate(validateString("Invalid measure unit")),
       )
-      .field(
-        m.lax("otherMeasureUnits").default([]).validate(validateOtherUnits),
-      )
+      .field(m.lax("otherMeasureUnits", []).validate(validateOtherUnits))
       .field(m.required("price").validate(validatePrice))
       .field(
         m

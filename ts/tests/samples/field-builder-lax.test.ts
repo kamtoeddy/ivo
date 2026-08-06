@@ -15,7 +15,7 @@ const field = newFieldMaker<Input, Output>();
 describe("field builder: lax()", () => {
   it("should allow a bare default() with no validation", async () => {
     const schema = new Schema<Input, Output>((b) =>
-      b.field(field.lax("name").default("anonymous")),
+      b.field(field.lax("name", "anonymous")),
     );
 
     const { data, error } = await schema.getModel().create({}, {});
@@ -28,8 +28,7 @@ describe("field builder: lax()", () => {
     const schema = new Schema<Input, Output>((b) =>
       b.field(
         field
-          .lax("name")
-          .default("anonymous")
+          .lax("name", "anonymous")
           .validate((value) =>
             typeof value === "string" && value.length > 0
               ? { valid: true, validated: value }
@@ -55,9 +54,7 @@ describe("field builder: lax()", () => {
 
   it("should allow allow() as the primary validator, rejecting values outside the list", async () => {
     const schema = new Schema<Input, Output>((b) =>
-      b.field(
-        field.lax("status").default("active").allow(["active", "inactive"]),
-      ),
+      b.field(field.lax("status", "active").allow(["active", "inactive"])),
     );
 
     const Model = schema.getModel();
@@ -77,8 +74,7 @@ describe("field builder: lax()", () => {
     const schema = new Schema<Input, Output>((b) =>
       b.field(
         field
-          .lax("status")
-          .default("active")
+          .lax("status", "active")
           .allow(["active", "inactive"])
           .allowError("status must be active or inactive"),
       ),
@@ -100,8 +96,7 @@ describe("field builder: lax()", () => {
     const schema = new Schema<Input, Output>((b) =>
       b.field(
         field
-          .lax("grade")
-          .default(0)
+          .lax("grade", 0)
           .validate((value) =>
             typeof value === "number"
               ? { valid: true, validated: value }
@@ -138,8 +133,7 @@ describe("field builder: lax()", () => {
     const schema = new Schema<Input, Output>((b) =>
       b.field(
         field
-          .lax("age")
-          .default(18)
+          .lax("age", 18)
           .allow([18, 21, 30, 40, 50])
           .reValidate((value) =>
             value >= 21
@@ -175,8 +169,7 @@ describe("field builder: lax()", () => {
       b
         .field(
           field
-            .lax("name")
-            .default("anonymous")
+            .lax("name", "anonymous")
             .validate((value) =>
               typeof value === "string"
                 ? { valid: true, validated: value }
@@ -193,14 +186,9 @@ describe("field builder: lax()", () => {
               failed = true;
             }),
         )
-        .field(field.lax("status").default("active").readonly())
-        .field(field.lax("grade").default(0).ignoreUpdate())
-        .field(
-          field
-            .lax("age")
-            .default(0)
-            .ignore(() => false),
-        ),
+        .field(field.lax("status", "active").readonly())
+        .field(field.lax("grade", 0).ignoreUpdate())
+        .field(field.lax("age", 0).ignore(() => false)),
     );
 
     const Model = schema.getModel();
@@ -246,8 +234,7 @@ describe("field builder: lax()", () => {
     const Model = new Schema<Input, Output>((b, m) =>
       b.field(
         m
-          .lax("name")
-          .default(defaultName)
+          .lax("name", defaultName)
           .validate((v) => v === "valid")
           .onDelete([
             () => deletedBy.push("first"),
@@ -299,7 +286,7 @@ describe("field builder: lax()", () => {
 
   describe("invalid usage (compile-time only - nothing here is meant to run)", () => {
     it("should never expose a callable .build()", () => {
-      const builder = field.lax("name").default("anonymous");
+      const builder = field.lax("name", "anonymous");
 
       // @ts-expect-error - build() doesn't exist; it's resolved internally by Schema only
       builder.build?.();
@@ -315,41 +302,27 @@ describe("field builder: lax()", () => {
       validated.build?.();
     });
 
-    it("should reject calling anything before default()", () => {
-      const builder = field.lax("name");
-
-      // @ts-expect-error - allow()/validate()/etc. aren't available until default() has been set
-      builder.allow?.(["a", "b"]);
-
-      // @ts-expect-error - allow()/validate()/etc. aren't available until default() has been set
-      builder.validate?.(() => true);
-    });
-
     it("should reject allow() + validate() or validate() + allow()", () => {
       const withAllow = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"]);
       // @ts-expect-error - validate() isn't available once allow() has been chosen as the primary validator
       withAllow.validate?.(() => true);
 
-      const withValidator = field
-        .lax("name")
-        .default("anonymous")
-        .validate(() => true);
+      const withValidator = field.lax("name", "anonymous").validate(() => true);
       // @ts-expect-error - allow() isn't available once validate() has been chosen as the primary validator
       withValidator.allow?.(["a", "b"]);
     });
 
     it("should reject allowError() before allow()", () => {
-      const withValidator = field.lax("name").default("anonymous");
+      const withValidator = field.lax("name", "anonymous");
 
       // @ts-expect-error - allowError() only becomes available once allow() has been called
       withValidator.allowError?.("nope");
     });
 
     it("should reject reValidate() before allow() or validate()", () => {
-      const builder = field.lax("name").default("anonymous");
+      const builder = field.lax("name", "anonymous");
 
       // @ts-expect-error - reValidate() isn't available until allow() or validate() has been called
       builder.reValidate?.(() => true);
@@ -357,8 +330,7 @@ describe("field builder: lax()", () => {
 
     it("should reject a second call to allowError()/reValidate()/required()/readonly()", () => {
       const decorated = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .allowError("nope")
         .reValidate(() => true)
@@ -377,8 +349,7 @@ describe("field builder: lax()", () => {
 
     it("should reject a second call to readonly()", () => {
       const decorated = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .readonly();
 
@@ -388,8 +359,7 @@ describe("field builder: lax()", () => {
 
     it("should reject a second call to ignoreUpdate()", () => {
       const decorated = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreUpdate();
 
@@ -405,8 +375,7 @@ describe("field builder: lax()", () => {
 
     it("should reject a second call to ignoreUpdate(() => boolean)", () => {
       const decorated = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreUpdate(() => false);
 
@@ -422,8 +391,7 @@ describe("field builder: lax()", () => {
 
     it("should reject allow() + ignoreInit() + ignoreUpdate()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit();
 
@@ -440,8 +408,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreUpdate();
 
@@ -460,8 +427,7 @@ describe("field builder: lax()", () => {
 
     it("should reject validate() + ignoreInit() + ignoreUpdate()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit();
 
@@ -478,8 +444,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreUpdate();
 
@@ -498,8 +463,7 @@ describe("field builder: lax()", () => {
 
     it("should accept allow() + ignoreInit() + ignoreUpdate(() => boolean)", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit()
         .ignoreUpdate(() => false);
@@ -523,8 +487,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreUpdate(() => false)
         .ignoreInit();
@@ -550,8 +513,7 @@ describe("field builder: lax()", () => {
 
     it("should accept validate() + ignoreInit() + ignoreUpdate(() => boolean)", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit()
         .ignoreUpdate(() => false);
@@ -575,8 +537,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreUpdate(() => false)
         .ignoreInit();
@@ -602,8 +563,7 @@ describe("field builder: lax()", () => {
 
     it("should accept allow() + ignoreInit(() => boolean) + ignoreUpdate()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit(() => false)
         .ignoreUpdate();
@@ -627,8 +587,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreUpdate()
         .ignoreInit(() => false);
@@ -654,8 +613,7 @@ describe("field builder: lax()", () => {
 
     it("should accept validate() + ignoreInit(() => boolean) + ignoreUpdate()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit(() => false)
         .ignoreUpdate();
@@ -679,8 +637,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreUpdate()
         .ignoreInit(() => false);
@@ -706,8 +663,7 @@ describe("field builder: lax()", () => {
 
     it("should accept allow() + ignoreInit(() => boolean) + ignoreUpdate(() => boolean)", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit(() => false)
         .ignoreUpdate(() => false);
@@ -731,8 +687,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreUpdate(() => false)
         .ignoreInit(() => false);
@@ -758,8 +713,7 @@ describe("field builder: lax()", () => {
 
     it("should accept validate() + ignoreInit(() => boolean) + ignoreUpdate(() => boolean)", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit(() => false)
         .ignoreUpdate(() => false);
@@ -783,8 +737,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreUpdate(() => false)
         .ignoreInit(() => false);
@@ -810,8 +763,7 @@ describe("field builder: lax()", () => {
 
     it("should accept allow() + ignoreInit() + readonly()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit()
         .readonly();
@@ -829,8 +781,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .readonly()
         .ignoreInit();
@@ -850,8 +801,7 @@ describe("field builder: lax()", () => {
 
     it("should accept validate() + ignoreInit() + readonly()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit()
         .readonly();
@@ -869,8 +819,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .readonly()
         .ignoreInit();
@@ -890,8 +839,7 @@ describe("field builder: lax()", () => {
 
     it("should accept allow() + ignoreInit(() => boolean) + readonly()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit(() => true)
         .readonly();
@@ -909,8 +857,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .readonly()
         .ignoreInit(() => true);
@@ -930,8 +877,7 @@ describe("field builder: lax()", () => {
 
     it("should accept validate() + ignoreInit(() => boolean) + readonly()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit(() => true)
         .readonly();
@@ -949,8 +895,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .readonly()
         .ignoreInit(() => true);
@@ -970,8 +915,7 @@ describe("field builder: lax()", () => {
 
     it("should reject allow() + ignoreUpdate() + readonly()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreUpdate();
 
@@ -988,8 +932,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreUpdate?.(() => false);
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .readonly();
 
@@ -1002,8 +945,7 @@ describe("field builder: lax()", () => {
 
     it("should reject validate() + ignoreUpdate() + readonly()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit();
 
@@ -1020,8 +962,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .readonly();
 
@@ -1034,8 +975,7 @@ describe("field builder: lax()", () => {
 
     it("should reject allow() + ignore(() => boolean) + ignoreInit()/ignoreInit(() => boolean) or ignoreUpdate()/ignoreUpdate(() => boolean)", () => {
       let ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit();
 
@@ -1043,8 +983,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignore(() => false);
 
       ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit(() => false);
 
@@ -1052,8 +991,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignore(() => false);
 
       const ignoreFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignore(() => false);
 
@@ -1067,8 +1005,7 @@ describe("field builder: lax()", () => {
       ignoreFirst.ignoreInit(() => false);
 
       let ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreUpdate();
 
@@ -1076,8 +1013,7 @@ describe("field builder: lax()", () => {
       ignoreUpdateFirst.ignore(() => false);
 
       ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreUpdate(() => false);
 
@@ -1085,8 +1021,7 @@ describe("field builder: lax()", () => {
       ignoreUpdateFirst.ignore(() => false);
 
       const ignoreBeforeIgnoreUpdate = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignore(() => false);
 
@@ -1102,8 +1037,7 @@ describe("field builder: lax()", () => {
 
     it("should reject validate() + ignore(() => boolean) + ignoreInit()/ignoreInit(() => boolean) or ignoreUpdate()/ignoreUpdate(() => boolean)", () => {
       let ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit();
 
@@ -1111,8 +1045,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignore(() => false);
 
       ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit(() => false);
 
@@ -1120,8 +1053,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignore(() => false);
 
       const ignoreFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignore(() => false);
 
@@ -1135,8 +1067,7 @@ describe("field builder: lax()", () => {
       ignoreFirst.ignoreInit(() => false);
 
       let ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreUpdate();
 
@@ -1144,8 +1075,7 @@ describe("field builder: lax()", () => {
       ignoreUpdateFirst.ignore(() => false);
 
       ignoreUpdateFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreUpdate(() => false);
 
@@ -1153,8 +1083,7 @@ describe("field builder: lax()", () => {
       ignoreUpdateFirst.ignore(() => false);
 
       const ignoreBeforeIgnoreUpdate = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignore(() => false);
 
@@ -1170,8 +1099,7 @@ describe("field builder: lax()", () => {
 
     it("should allow allow() + ignore(() => boolean) + readonly()", () => {
       const ignoreFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignore(() => false)
         .readonly();
@@ -1183,8 +1111,7 @@ describe("field builder: lax()", () => {
       ignoreFirst.readonly();
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .readonly()
         .ignore(() => false);
@@ -1198,8 +1125,7 @@ describe("field builder: lax()", () => {
 
     it("should allow validate() + ignore(() => boolean) + readonly()", () => {
       const ignoreFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignore(() => false)
         .readonly();
@@ -1211,8 +1137,7 @@ describe("field builder: lax()", () => {
       ignoreFirst.readonly();
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .readonly()
         .ignore(() => false);
@@ -1226,8 +1151,7 @@ describe("field builder: lax()", () => {
 
     it("should accept allow() + ignoreUpdate(() => boolean) + readonly()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit(() => true)
         .readonly();
@@ -1245,8 +1169,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .allow(["active", "inactive"])
         .readonly()
         .ignoreInit(() => true);
@@ -1266,8 +1189,7 @@ describe("field builder: lax()", () => {
 
     it("should accept validate() + ignoreUpdate(() => boolean) + readonly()", () => {
       const ignoreInitFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .ignoreInit(() => true)
         .readonly();
@@ -1285,8 +1207,7 @@ describe("field builder: lax()", () => {
       ignoreInitFirst.ignoreInit?.(() => false);
 
       const readonlyFirst = field
-        .lax("status")
-        .default("active")
+        .lax("status", "active")
         .validate(() => false)
         .readonly()
         .ignoreInit(() => true);

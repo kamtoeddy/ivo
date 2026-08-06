@@ -329,500 +329,110 @@ describe("field builder: virtual()", () => {
       decorated.sanitize?.(() => 0);
     });
 
-    it("should reject allow() + ignoreInit() + ignoreUpdate()", () => {
-      const ignoreInitFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreInit();
-
-      // @ts-expect-error - ignoreInit() and ignoreUpdate() should not be provided together
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreUpdate();
-
-      // @ts-expect-error - ignoreUpdate and ignoreInit() should not be provided together
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-    });
-
-    it("should reject validate() + ignoreInit() + ignoreUpdate()", () => {
-      const ignoreInitFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreInit();
-
-      // @ts-expect-error - ignoreInit() and ignoreUpdate() should not be provided together
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreUpdate();
-
-      // @ts-expect-error - ignoreUpdate and ignoreInit() should not be provided together
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-    });
-
-    it("should accept allow() + ignoreInit() + ignoreUpdate(() => boolean)", () => {
-      const ignoreInitFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreInit()
-        .ignoreUpdate(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreUpdate(() => false)
-        .ignoreInit();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => false);
-    });
-
-    it("should accept validate() + ignoreInit() + ignoreUpdate(() => boolean)", () => {
-      const ignoreInitFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreInit()
-        .ignoreUpdate(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreUpdate(() => false)
-        .ignoreInit();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => false);
-    });
-
-    it("should accept allow() + ignoreInit(() => boolean) + ignoreUpdate()", () => {
-      const ignoreInitFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreInit(() => false)
-        .ignoreUpdate();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreUpdate()
-        .ignoreInit(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => false);
-    });
-
-    it("should accept validate() + ignoreInit(() => boolean) + ignoreUpdate()", () => {
-      const ignoreInitFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreInit(() => false)
-        .ignoreUpdate();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreUpdate()
-        .ignoreInit(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => false);
-    });
-
-    it("should accept allow() + ignoreInit(() => boolean) + ignoreUpdate(() => boolean)", () => {
-      const ignoreInitFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreInit(() => false)
-        .ignoreUpdate(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreUpdate(() => false)
-        .ignoreInit(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => false);
-    });
-
-    it("should accept validate() + ignoreInit(() => boolean) + ignoreUpdate(() => boolean)", () => {
-      const ignoreInitFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreInit(() => false)
-        .ignoreUpdate(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreUpdate(() => false)
-        .ignoreInit(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => false);
-    });
-
-    it("should reject allow() + ignore(() => boolean) + ignoreInit()/ignoreInit(() => boolean) or ignoreUpdate()/ignoreUpdate(() => boolean)", () => {
-      let ignoreInitFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreInit();
-
-      // @ts-expect-error - ignoreInit() + ignore() should not be allowed
-      ignoreInitFirst.ignore(() => false);
-
-      ignoreInitFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreInit(() => false);
-
-      // @ts-expect-error - ignoreInit(() => boolean) + ignore() should not be allowed
-      ignoreInitFirst.ignore(() => false);
-
+    it("should reject allow() + ignore(() => boolean) +/ ignoreInit() +/ ignoreUpdate()", () => {
       const ignoreFirst = field
         .virtual("rawStatus")
         .allow(["active", "inactive"])
         .ignore(() => false);
 
+      // @ts-expect-error - ignore() was already provided
+      ignoreFirst.ignore(() => false);
+
+      // @ts-expect-error - ignore() was already provided
+      ignoreFirst.ignore(() => true);
+
       // @ts-expect-error - ignore() + ignoreInit() should not be allowed
       ignoreFirst.ignoreInit();
 
-      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
-      ignoreFirst.ignoreInit(() => true);
+      // @ts-expect-error - ignore() + ignoreUpdate() should not be allowed
+      ignoreFirst.ignoreUpdate();
 
-      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
-      ignoreFirst.ignoreInit(() => false);
+      let ignoreInitFirst = field
+        .virtual("rawStatus")
+        .allow(["active", "inactive"])
+        .ignoreInit();
+
+      // @ts-expect-error - ignoreInit() was already provided
+      ignoreFirst.ignoreInit();
+
+      // @ts-expect-error - ignoreInit() + ignore() should not be allowed
+      ignoreInitFirst.ignore(() => false);
+
+      // @ts-expect-error - ignoreInit() + ignore() should not be allowed
+      ignoreInitFirst.ignore(() => true);
+
+      // @ts-expect-error - ignoreInit() + ignoreUpdate() should not be allowed
+      ignoreFirst.ignoreUpdate();
 
       let ignoreUpdateFirst = field
         .virtual("rawStatus")
         .allow(["active", "inactive"])
         .ignoreUpdate();
 
+      // @ts-expect-error - ignoreUpdate() was already provided
+      ignoreUpdateFirst.ignoreUpdate();
+
       // @ts-expect-error - ignoreUpdate() + ignore() should not be allowed
       ignoreUpdateFirst.ignore(() => false);
 
-      ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignoreUpdate(() => false);
+      // @ts-expect-error - ignoreUpdate() + ignore() should not be allowed
+      ignoreUpdateFirst.ignore(() => true);
 
-      // @ts-expect-error - ignoreUpdate(() => boolean) + ignore() should not be allowed
-      ignoreUpdateFirst.ignore(() => false);
-
-      const ignoreBeforeIgnoreUpdate = field
-        .virtual("rawStatus")
-        .allow(["active", "inactive"])
-        .ignore(() => false);
-
-      // @ts-expect-error - ignore() + ignoreUpdate() should not be allowed
-      ignoreBeforeIgnoreUpdate.ignoreUpdate();
-
-      // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
-      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => true);
-
-      // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
-      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => false);
+      // @ts-expect-error - ignoreUpdate() + ignoreInit() should not be allowed
+      ignoreUpdateFirst.ignoreInit();
     });
 
-    it("should reject validate() + ignore(() => boolean) + ignoreInit()/ignoreInit(() => boolean) or ignoreUpdate()/ignoreUpdate(() => boolean)", () => {
-      let ignoreInitFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreInit();
-
-      // @ts-expect-error - ignoreInit() + ignore() should not be allowed
-      ignoreInitFirst.ignore(() => false);
-
-      ignoreInitFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreInit(() => false);
-
-      // @ts-expect-error - ignoreInit(() => boolean) + ignore() should not be allowed
-      ignoreInitFirst.ignore(() => false);
-
+    it("should reject validate() + ignore(() => boolean) +/ ignoreInit() +/ ignoreUpdate()", () => {
       const ignoreFirst = field
         .virtual("rawStatus")
         .validate(() => false)
         .ignore(() => false);
 
+      // @ts-expect-error - ignore() was already provided
+      ignoreFirst.ignore(() => false);
+
+      // @ts-expect-error - ignore() was already provided
+      ignoreFirst.ignore(() => true);
+
       // @ts-expect-error - ignore() + ignoreInit() should not be allowed
       ignoreFirst.ignoreInit();
 
-      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
-      ignoreFirst.ignoreInit(() => true);
+      // @ts-expect-error - ignore() + ignoreUpdate() should not be allowed
+      ignoreFirst.ignoreUpdate();
 
-      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
-      ignoreFirst.ignoreInit(() => false);
+      let ignoreInitFirst = field
+        .virtual("rawStatus")
+        .validate(() => false)
+        .ignoreInit();
+
+      // @ts-expect-error - ignoreInit() was already provided
+      ignoreFirst.ignoreInit();
+
+      // @ts-expect-error - ignoreInit() + ignore() should not be allowed
+      ignoreInitFirst.ignore(() => false);
+
+      // @ts-expect-error - ignoreInit() + ignore() should not be allowed
+      ignoreInitFirst.ignore(() => true);
+
+      // @ts-expect-error - ignoreInit() + ignoreUpdate() should not be allowed
+      ignoreFirst.ignoreUpdate();
 
       let ignoreUpdateFirst = field
         .virtual("rawStatus")
         .validate(() => false)
         .ignoreUpdate();
 
+      // @ts-expect-error - ignoreUpdate() was already provided
+      ignoreUpdateFirst.ignoreUpdate();
+
       // @ts-expect-error - ignoreUpdate() + ignore() should not be allowed
       ignoreUpdateFirst.ignore(() => false);
 
-      ignoreUpdateFirst = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignoreUpdate(() => false);
+      // @ts-expect-error - ignoreUpdate() + ignore() should not be allowed
+      ignoreUpdateFirst.ignore(() => true);
 
-      // @ts-expect-error - ignoreUpdate(() => boolean) + ignore() should not be allowed
-      ignoreUpdateFirst.ignore(() => false);
-
-      const ignoreBeforeIgnoreUpdate = field
-        .virtual("rawStatus")
-        .validate(() => false)
-        .ignore(() => false);
-
-      // @ts-expect-error - ignore() + ignoreUpdate() should not be allowed
-      ignoreBeforeIgnoreUpdate.ignoreUpdate();
-
-      // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
-      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => true);
-
-      // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
-      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => false);
+      // @ts-expect-error - ignoreUpdate() + ignoreInit() should not be allowed
+      ignoreUpdateFirst.ignoreInit();
     });
   });
 });

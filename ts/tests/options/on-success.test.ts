@@ -79,9 +79,9 @@ describe("Schema.options.onSuccess", () => {
             (b, m) =>
               b
                 .field(m.constant("constant", ""))
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default(""))
-                .field(m.lax("laxField").default(""))
+                .field(m.lax("fieldName1", ""))
+                .field(m.lax("fieldName2", ""))
+                .field(m.lax("laxField", ""))
                 .field(
                   m
                     .dependent("dependent", ["laxField", "virtual"])
@@ -111,9 +111,9 @@ describe("Schema.options.onSuccess", () => {
           (b, m) =>
             b
               .field(m.constant("constant", ""))
-              .field(m.lax("laxField").default(""))
-              .field(m.lax("fieldName1").default(""))
-              .field(m.lax("fieldName2").default(""))
+              .field(m.lax("laxField", ""))
+              .field(m.lax("fieldName1", ""))
+              .field(m.lax("fieldName2", ""))
               .field(
                 m
                   .dependent("dependent", ["laxField", "virtual"])
@@ -420,8 +420,8 @@ describe("Schema.options.onSuccess", () => {
                   .default("")
                   .resolve(() => {}),
               )
-              .field(m.lax("fieldName1").default(""))
-              .field(m.lax("fieldName2").default(""))
+              .field(m.lax("fieldName1", ""))
+              .field(m.lax("fieldName2", ""))
               .field(m.virtual("virtual").validate(() => false))
               .field(m.virtual("virtual2").validate(() => false)),
           { onSuccess: configs.map((ci) => ci[0]) },
@@ -644,7 +644,7 @@ describe("Schema.options.onSuccess", () => {
             b
               .field(m.constant("const1", 1))
               .field(m.constant("const2", 2))
-              .field(m.lax("lax").default(true)),
+              .field(m.lax("lax", true)),
           {
             onSuccess: {
               fields: ["const1", "const2"],
@@ -688,8 +688,8 @@ describe("Schema.options.onSuccess", () => {
           (b, m) =>
             b
               .field(m.constant("const", 1))
-              .field(m.lax("lax").default(true))
-              .field(m.lax("lax2").default(true))
+              .field(m.lax("lax", true))
+              .field(m.lax("lax2", true))
               .field(m.required("required").validate(validator))
               .field(m.required("required2").validate(validator))
               .field(

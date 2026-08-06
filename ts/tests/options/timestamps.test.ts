@@ -62,9 +62,7 @@ describe("Schema.options.timestamps", () => {
 
           Model = new Schema<any>(
             (b, m) =>
-              b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default("")),
+              b.field(m.lax("fieldName1", "")).field(m.lax("fieldName2", "")),
             {
               timestamps: true,
               onSuccess,
@@ -114,9 +112,7 @@ describe("Schema.options.timestamps", () => {
 
           Model = new Schema<any>(
             (b, m) =>
-              b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default("")),
+              b.field(m.lax("fieldName1", "")).field(m.lax("fieldName2", "")),
             {
               timestamps: { createdAt: "c_At" },
               onSuccess,
@@ -168,9 +164,7 @@ describe("Schema.options.timestamps", () => {
 
           Model = new Schema<any>(
             (b, m) =>
-              b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default("")),
+              b.field(m.lax("fieldName1", "")).field(m.lax("fieldName2", "")),
             {
               timestamps: { updatedAt: "u_At" },
               onSuccess,
@@ -222,9 +216,7 @@ describe("Schema.options.timestamps", () => {
 
           Model = new Schema<any>(
             (b, m) =>
-              b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default("")),
+              b.field(m.lax("fieldName1", "")).field(m.lax("fieldName2", "")),
             {
               timestamps: { createdAt: "c_At", updatedAt: "u_At" },
               onSuccess,
@@ -278,9 +270,7 @@ describe("Schema.options.timestamps", () => {
 
           Model = new Schema<any>(
             (b, m) =>
-              b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default("")),
+              b.field(m.lax("fieldName1", "")).field(m.lax("fieldName2", "")),
             {
               timestamps: { createdAt: "c_At", updatedAt: false },
               onSuccess,
@@ -336,9 +326,7 @@ describe("Schema.options.timestamps", () => {
 
           Model = new Schema<any>(
             (b, m) =>
-              b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default("")),
+              b.field(m.lax("fieldName1", "")).field(m.lax("fieldName2", "")),
             {
               timestamps: { updatedAt: false },
               onSuccess,
@@ -391,9 +379,7 @@ describe("Schema.options.timestamps", () => {
 
           Model = new Schema<any>(
             (b, m) =>
-              b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default("")),
+              b.field(m.lax("fieldName1", "")).field(m.lax("fieldName2", "")),
             {
               timestamps: { createdAt: false, updatedAt: "u_At" },
               onSuccess,
@@ -822,8 +808,8 @@ describe("Schema.options.timestamps", () => {
           const toFail = makeFx(
             (b, m) =>
               b
-                .field(m.lax("fieldName1").default(""))
-                .field(m.lax("fieldName2").default(""))
+                .field(m.lax("fieldName1", ""))
+                .field(m.lax("fieldName2", ""))
                 .field(
                   m
                     .dependent("dependentField", "virtualField")
@@ -953,9 +939,9 @@ describe("Schema.options.timestamps", () => {
           (b, m) =>
             b
               .field(m.constant("constant", () => true))
-              .field(m.lax("lax").default(""))
-              .field(m.lax("fieldName1").default(""))
-              .field(m.lax("fieldName2").default(""))
+              .field(m.lax("lax", ""))
+              .field(m.lax("fieldName1", ""))
+              .field(m.lax("fieldName2", ""))
               .field(
                 m
                   .dependent("dependent", "virtual")

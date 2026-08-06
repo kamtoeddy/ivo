@@ -728,20 +728,15 @@ class ModelTool<
       const fieldInfo = fieldsCollection.get(fieldName);
       const configName = fieldInfo?.configName ?? fieldName;
 
+      const config = this.definitions[configName];
+
       const {
         default: defaultValue,
         ignore,
         ignoreInit,
         ignoreUpdate,
         readonly,
-        type,
-      } = this.definitions[configName] as NS.LaxField<
-        any,
-        I,
-        O,
-        CtxOptions,
-        any
-      >;
+      } = config as NS.LaxField<any, I, O, CtxOptions, any>;
 
       if (ignore) {
         tasks.push([[fieldName], () => ignore(this._getContext())]);
@@ -776,27 +771,19 @@ class ModelTool<
 
       const source = isUpdate ? ignoreUpdate : ignoreInit;
 
-      // @ts-expect-error ikr
-      if (isUpdate && type === "required") {
-        if (!readonly && typeof source === "function")
-          tasks.push([[fieldName], () => source(this._getUpdateResolverCtx())]);
+      if (isUpdate && config.type === "required") {
+        const ignoreUpdate = config.ignoreUpdate;
+
+        if (!readonly && typeof ignoreUpdate === "function")
+          tasks.push([
+            [fieldName],
+            () => ignoreUpdate(this._getUpdateResolverCtx()),
+          ]);
 
         continue;
       }
 
       if (!source) continue;
-
-      if (typeof source === "function") {
-        tasks.push([
-          [fieldName],
-          isUpdate
-            ? () => source(this._getUpdateResolverCtx())
-            : // @ts-expect-error ikr
-              () => source(this._getInitResolverCtx()),
-        ]);
-
-        continue;
-      }
 
       relevantFieldsProvided.delete(fieldName);
 

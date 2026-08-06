@@ -12,12 +12,7 @@ describe("allowed values", () => {
 
       for (const allow of values) {
         const toPass = makeFx((b, m) =>
-          b.field(
-            m
-              .lax("field")
-              .default(allow[0])
-              .allow(allow as never),
-          ),
+          b.field(m.lax("field", allow[0]).allow(allow as never)),
         );
 
         expectNoFailure(toPass);
@@ -60,8 +55,7 @@ describe("allowed values", () => {
         const toPass = makeFx((b, m) =>
           b.field(
             m
-              .lax("dependent")
-              .default(null)
+              .lax("dependent", null)
               .allow({ values: [null, "lolz", -1] } as never),
           ),
         );
@@ -74,13 +68,10 @@ describe("allowed values", () => {
       it('should not reject if "values" & "error" are both provided', () => {
         const toPass = makeFx((b, m) =>
           b.field(
-            m
-              .lax("dependent")
-              .default(null)
-              .allow({
-                error: "value not allowed",
-                values: [null, "lolz", -1],
-              } as never),
+            m.lax("dependent", null).allow({
+              error: "value not allowed",
+              values: [null, "lolz", -1],
+            } as never),
           ),
         );
 
@@ -114,12 +105,7 @@ describe("allowed values", () => {
 
       for (const allow of values) {
         const toFail = makeFx((b, m) =>
-          b.field(
-            m
-              .lax("field")
-              .default(null)
-              .allow(allow as never),
-          ),
+          b.field(m.lax("field", null).allow(allow as never)),
         );
 
         expectFailure(toFail);
@@ -145,12 +131,7 @@ describe("allowed values", () => {
 
       for (const allow of values) {
         const toFail = makeFx((b, m) =>
-          b.field(
-            m
-              .lax("field")
-              .default(null)
-              .allow(allow as never),
-          ),
+          b.field(m.lax("field", null).allow(allow as never)),
         );
 
         expectFailure(toFail);
@@ -170,12 +151,7 @@ describe("allowed values", () => {
 
       for (const allow of values) {
         const toFail = makeFx((b, m) =>
-          b.field(
-            m
-              .lax("field")
-              .default(null)
-              .allow(allow as never),
-          ),
+          b.field(m.lax("field", null).allow(allow as never)),
         );
 
         expectFailure(toFail);
@@ -198,12 +174,7 @@ describe("allowed values", () => {
 
       for (const [_default, allow] of values) {
         const toFail = makeFx((b, m) =>
-          b.field(
-            m
-              .lax("field")
-              .default(_default)
-              .allow(allow as never),
-          ),
+          b.field(m.lax("field", _default).allow(allow as never)),
         );
 
         expectFailure(toFail);
@@ -221,12 +192,7 @@ describe("allowed values", () => {
     describe("allow as an object", () => {
       it("should reject if values array is not provided", () => {
         const toFail = makeFx((b, m) =>
-          b.field(
-            m
-              .lax("field")
-              .default(null)
-              .allow({} as never),
-          ),
+          b.field(m.lax("field", null).allow({} as never)),
         );
 
         expectFailure(toFail);
@@ -256,12 +222,7 @@ describe("allowed values", () => {
 
         for (const values of invalidValues) {
           const toFail = makeFx((b, m) =>
-            b.field(
-              m
-                .lax("field")
-                .default(null)
-                .allow({ values } as never),
-            ),
+            b.field(m.lax("field", null).allow({ values } as never)),
           );
 
           expectFailure(toFail);
@@ -287,12 +248,7 @@ describe("allowed values", () => {
 
         for (const values of invalidValues) {
           const toFail = makeFx((b, m) =>
-            b.field(
-              m
-                .lax("field")
-                .default(null)
-                .allow({ values } as never),
-            ),
+            b.field(m.lax("field", null).allow({ values } as never)),
           );
 
           expectFailure(toFail);
@@ -312,12 +268,7 @@ describe("allowed values", () => {
 
         for (const values of invalidValues) {
           const toFail = makeFx((b, m) =>
-            b.field(
-              m
-                .lax("field")
-                .default(null)
-                .allow({ values } as never),
-            ),
+            b.field(m.lax("field", null).allow({ values } as never)),
           );
 
           expectFailure(toFail);
@@ -340,12 +291,7 @@ describe("allowed values", () => {
 
         for (const [_default, values] of data) {
           const toFail = makeFx((b, m) =>
-            b.field(
-              m
-                .lax("field")
-                .default(_default)
-                .allow({ values } as never),
-            ),
+            b.field(m.lax("field", _default).allow({ values } as never)),
           );
 
           expectFailure(toFail);
@@ -378,8 +324,7 @@ describe("allowed values", () => {
           const toFail = makeFx((b, m) =>
             b.field(
               m
-                .lax("field")
-                .default(null)
+                .lax("field", null)
                 .allow({ error, values: [null, "lolz", -1] } as never),
             ),
           );
@@ -402,8 +347,7 @@ describe("allowed values", () => {
         const toFail = makeFx((b, m) =>
           b.field(
             m
-              .lax("field")
-              .default(null)
+              .lax("field", null)
               .allow({ key: "value", values: [null, "lolz", -1] } as never),
           ),
         );
@@ -428,12 +372,7 @@ describe("allowed values", () => {
 
     describe("behaviour with lax props & no validators", () => {
       const Model = new Schema<any>((b, m) =>
-        b.field(
-          m
-            .lax("field")
-            .default(null)
-            .allow(metadata.allowed as never),
-        ),
+        b.field(m.lax("field", null).allow(metadata.allowed as never)),
       ).getModel();
 
       describe("creation", () => {
@@ -572,12 +511,7 @@ describe("allowed values", () => {
     describe("allow as an object", () => {
       describe("behaviour with lax props & no validators", () => {
         const Model = new Schema<any>((b, m) =>
-          b.field(
-            m
-              .lax("field")
-              .default(null)
-              .allow(metadata.allowed as never),
-          ),
+          b.field(m.lax("field", null).allow(metadata.allowed as never)),
         ).getModel();
 
         describe("creation", () => {
@@ -645,8 +579,7 @@ describe("allowed values", () => {
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax("field")
-                  .default(metadata.allowed[0])
+                  .lax("field", metadata.allowed[0])
                   .allow(metadata.allowed as never)
                   .allowError(""),
               ),
@@ -688,8 +621,7 @@ describe("allowed values", () => {
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax("field")
-                  .default(metadata.allowed[0])
+                  .lax("field", metadata.allowed[0])
                   .allow(metadata.allowed as never)
                   .allowError(errorMessage),
               ),
@@ -737,8 +669,7 @@ describe("allowed values", () => {
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax("field")
-                  .default(metadata.allowed[0])
+                  .lax("field", metadata.allowed[0])
                   .allow(metadata.allowed as never)
                   .allowError(expected as never),
               ),
@@ -806,8 +737,7 @@ describe("allowed values", () => {
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax("field")
-                  .default(metadata.allowed[0])
+                  .lax("field", metadata.allowed[0])
                   .allow(metadata.allowed as never)
                   .allowError(error as never),
               ),
@@ -843,8 +773,7 @@ describe("allowed values", () => {
             const Model = new Schema<any>((b, m) =>
               b.field(
                 m
-                  .lax("field")
-                  .default("lol")
+                  .lax("field", "lol")
                   .allow(["lol", "lolol"])
                   .allowError(() => {
                     throw new Error("lolol");

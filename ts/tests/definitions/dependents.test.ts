@@ -27,14 +27,13 @@ describe("dependent", () => {
 
     const Model = new Schema<SampleInput, SampleOutput>((b, m) =>
       b
-        .field(m.lax("laxField").default(""))
-        .field(m.lax("laxField_1").default(""))
+        .field(m.lax("laxField", ""))
+        .field(m.lax("laxField_1", ""))
         .field(
           m
 
             // @ts-expect-error ikr
-            .lax("laxField_2")
-            .default("")
+            .lax("laxField_2", "")
             .onDelete(incrementOnDeleteCountOf("laxField_2")),
         )
         .field(
@@ -381,7 +380,7 @@ describe("dependent", () => {
       let resolverRunCount = 0;
 
       const Model = new Schema<any>((b, m) =>
-        b.field(m.lax("parent").default("")).field(
+        b.field(m.lax("parent", "")).field(
           m
             .dependent("child", "parent")
             .default(0)
@@ -437,7 +436,7 @@ describe("dependent", () => {
     describe("behaviour with errors thrown in the resolver", () => {
       const Model = new Schema<any>((b, m) =>
         b
-          .field(m.lax("field").default(""))
+          .field(m.lax("field", ""))
           .field(
             m
               .dependent("dependent", "field")
@@ -502,7 +501,7 @@ describe("dependent", () => {
                 .default(value)
                 .resolve(resolver),
             )
-            .field(m.lax("field").default("")),
+            .field(m.lax("field", "")),
         );
 
         expectNoFailure(toPass);
@@ -520,7 +519,7 @@ describe("dependent", () => {
               .default("")
               .resolve(resolver),
           )
-          .field(m.lax("field").default("")),
+          .field(m.lax("field", "")),
       );
 
       expectNoFailure(toPass);
@@ -543,7 +542,7 @@ describe("dependent", () => {
                   .resolve(resolver)
                   [lifeCycle](value as never),
               )
-              .field(m.lax("field").default("")),
+              .field(m.lax("field", "")),
           );
 
           expectNoFailure(toPass);
@@ -569,10 +568,10 @@ describe("dependent", () => {
                 .default("")
                 .resolve(resolver),
             )
-            .field(m.lax("field").default(""))
-            .field(m.lax("prop1").default(""))
-            .field(m.lax("prop2").default(""))
-            .field(m.lax("prop3").default("")),
+            .field(m.lax("field", ""))
+            .field(m.lax("prop1", ""))
+            .field(m.lax("prop2", ""))
+            .field(m.lax("prop3", "")),
         );
 
         expectNoFailure(toPass);
@@ -596,7 +595,7 @@ describe("dependent", () => {
               .default("")
               .resolve(resolver),
           )
-          .field(m.lax("field").default("")),
+          .field(m.lax("field", "")),
       );
 
       expectNoFailure(toPass);
@@ -739,7 +738,7 @@ describe("dependent", () => {
               .default("")
               .resolve(resolver),
           )
-          .field(m.lax("field").default("")),
+          .field(m.lax("field", "")),
       );
 
       expectFailure(toFail);
@@ -800,7 +799,7 @@ describe("dependent", () => {
               .default("")
               .resolve(resolver),
           )
-          .field(m.lax("field").default("")),
+          .field(m.lax("field", "")),
       );
 
       expectFailure(toFail);

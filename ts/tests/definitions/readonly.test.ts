@@ -14,7 +14,7 @@ describe("readonly", () => {
               .resolve(() => 1)
               .readonly(),
           )
-          .field(m.lax("field").default("")),
+          .field(m.lax("field", "")),
       );
 
       expectNoFailure(toPass);
@@ -26,8 +26,7 @@ describe("readonly", () => {
       const toPass = makeFx((b, m) =>
         b.field(
           m
-            .lax("fieldName")
-            .default("")
+            .lax("fieldName", "")
             .validate(validator)
             .readonly()
             .required(() => true),
@@ -55,8 +54,8 @@ describe("readonly", () => {
       beforeAll(() => {
         Model = new Schema<any>((b, m) =>
           b
-            .field(m.lax("age").default(null).readonly())
-            .field(m.lax("name").default("Default Name")),
+            .field(m.lax("age", null).readonly())
+            .field(m.lax("name", "Default Name")),
         ).getModel();
       });
 

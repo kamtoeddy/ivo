@@ -29,11 +29,11 @@ describe("behaviour of schema when errors thrown in setter of default values", (
   const Model = new Schema<any>((b, m) =>
     b
       .field(
-        m.lax("field").default(() => {
+        m.lax("field", () => {
           throw new Error("lolol");
         }),
       )
-      .field(m.lax("prop1").default("")),
+      .field(m.lax("prop1", "")),
   ).getModel();
 
   it("should set value as null on error generating default value at creation", async () => {

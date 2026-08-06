@@ -6,7 +6,7 @@ import {
 } from "../../utils/types";
 import { ConstantBuilder } from "./constants";
 import { type HasDependsOn, DependentBuilder } from "./dependents";
-import { type BlankLaxBuilder, LaxBuilder } from "./lax";
+import { BuildableLaxConfig, LaxBuilder } from "./lax";
 import { type BlankRequiredBuilder, RequiredBuilder } from "./required";
 import { type BlankVirtualBuilder, VirtualBuilder } from "./virtual";
 
@@ -41,16 +41,30 @@ function newFieldMaker<
         dependsOn,
       );
     },
-    lax<K extends keyof Output & string>(
+    lax<
+      K extends keyof Output & string,
+      Default extends
+        | Output[K]
+        | NS.Resolver<Output[K], Input, Output, CtxOptions>,
+      DefaultState extends "value" | "resolver" = Default extends Function
+        ? "resolver"
+        : "value",
+    >(
       name: K,
-    ): BlankLaxBuilder<Output[K], Input, Output, CtxOptions, Metadata> {
-      return new LaxBuilder<
-        (Input & Output)[K],
-        Input,
-        Output,
-        CtxOptions,
-        Metadata
-      >(name);
+      value: Default,
+    ): BuildableLaxConfig<
+      Output[K],
+      Input,
+      Output,
+      CtxOptions,
+      Metadata,
+      DefaultState
+    > {
+      // @ts-expect-error ikr
+      return new LaxBuilder<Output[K], Input, Output, CtxOptions, Metadata>(
+        name,
+        value,
+      );
     },
     required<K extends keyof Output & string>(
       name: K,
