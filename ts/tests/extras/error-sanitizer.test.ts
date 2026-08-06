@@ -98,7 +98,7 @@ describe("Schema.options.sanitizeError", () => {
     );
 
     expect(data).toBeNull();
-    expect(error).toEqual({
+    expect(error?.payload).toEqual({
       lat: [
         "customized: out of range",
         "customized: must be >= -90",

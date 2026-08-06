@@ -302,7 +302,6 @@ namespace NS {
     CtxOptions extends ObjectType = {},
   > = (
     ctx: ReadonlyIvoContext<Input, Output, CtxOptions>,
-    options: Readonly<CtxOptions>,
   ) => unknown | Promise<unknown>;
 
   export type SuccessHandler<

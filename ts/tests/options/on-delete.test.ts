@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from "bun:test";
 
 import { Schema } from "../../src";
 import {
-  ERRORS,
   expectFailure,
   expectNoFailure,
   getValidSchema,
@@ -51,7 +50,7 @@ describe("Schema.options.onDelete", () => {
       ).getModel();
 
       it("should trigger all 'delete' handlers on properties an global handlers", async () => {
-        await Book.delete(values);
+        await Book.delete(values, {});
 
         expect(deletedValues).toMatchObject({
           id: values,
@@ -79,7 +78,7 @@ describe("Schema.options.onDelete", () => {
       ).getModel();
 
       it("should trigger all global 'delete' handlers", async () => {
-        await Book.delete(values);
+        await Book.delete(values, {});
 
         expect(deletedValues).toMatchObject({
           global: values,
@@ -126,7 +125,7 @@ describe("Schema.options.onDelete", () => {
           toFail();
         } catch (err: any) {
           expect(err).toMatchObject({
-            message: ERRORS.INVALID_SCHEMA,
+            message: "INVALID_SCHEMA",
             payload: {
               onDelete: expect.arrayContaining([
                 "The 'onDelete' handler at index: 0 is not a function",

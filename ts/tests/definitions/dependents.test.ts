@@ -124,7 +124,7 @@ describe("dependent", () => {
         ctx.input.laxField_1 ??
         ctx.values.laxField_1;
 
-      return laxField.length + laxField_1.length;
+      return (laxField?.length ?? 0) + (laxField_1?.length ?? 0);
     }
 
     function resolverOfDependentField_1(
@@ -132,14 +132,14 @@ describe("dependent", () => {
     ) {
       incrementResolveCountOf("dependentField_1");
 
-      return ctx.values.dependentField + 1;
+      return ctx.values.dependentField! + 1;
     }
 
     function asyncResolver(field: string) {
       return (ctx: ReadonlyIvoContext<SampleInput, SampleOutput, {}>) => {
         incrementResolveCountOf(field);
 
-        return Promise.resolve(ctx.values.dependentField + 2);
+        return Promise.resolve(ctx.values.dependentField! + 2);
       };
     }
 

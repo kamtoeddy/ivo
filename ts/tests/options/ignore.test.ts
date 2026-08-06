@@ -110,18 +110,25 @@ describe("Schema.options.ignoreUpdate", () => {
       const model = new Schema<Data>(
         (b, m) =>
           b
-            .field(m.lax("lax", "default_lax").validate(validator))
+            .field(
+              m
+                .lax("lax", "default_lax")
+                .validate(validator)
+                .ignore(({ input: { lax } }) => lax === "ignore_value"),
+            )
             .field(m.lax("lax_1", "default_lax_1").validate(validator)),
-        { ignoreUpdate: ({ lax }: Partial<Data>) => lax === "ignore_value" },
+        {},
       ).getModel();
 
       const item = { lax: "initial_lax", lax_1: "initial_lax_1" };
-      const res = await model.update(item, { lax: "ignore_value" });
+      const res = await model.update(item, { lax: "ignore_value" }, {});
+
       expect(res.data).toBeNull();
       expect(res.error).toBeNull();
       expect(typeof res.handleFailure).toBe("function");
 
-      const res2 = await model.update(item, { lax: "updated_lax" });
+      const res2 = await model.update(item, { lax: "updated_lax" }, {});
+
       expect(res2.data).toEqual({ lax: "updated_lax" });
     });
   });

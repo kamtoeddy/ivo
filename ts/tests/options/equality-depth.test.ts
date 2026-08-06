@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Schema } from "../../src";
 import {
-  ERRORS,
   expectFailure,
   expectNoFailure,
   getValidSchema,
@@ -94,6 +93,7 @@ describe("Schema.options.equalityDepth", () => {
           const { data, error, handleFailure } = await Model.update(
             user,
             values.changes,
+            {},
           );
 
           if (values.data) {
@@ -177,6 +177,7 @@ describe("Schema.options.equalityDepth", () => {
           const { data, error, handleFailure } = await Model.update(
             user,
             values.changes,
+            {},
           );
 
           if (values.data) {
@@ -257,6 +258,7 @@ describe("Schema.options.equalityDepth", () => {
           const { data, error, handleFailure } = await Model.update(
             user,
             values.changes,
+            {},
           );
 
           if (values.error) {
@@ -315,7 +317,7 @@ describe("Schema.options.equalityDepth", () => {
           toFail();
         } catch (err: any) {
           expect(err).toMatchObject({
-            message: ERRORS.INVALID_SCHEMA,
+            message: "INVALID_SCHEMA",
             payload: {
               equalityDepth: expect.arrayContaining([
                 "'equalityDepth' must be a number between 0 and +Infinity",

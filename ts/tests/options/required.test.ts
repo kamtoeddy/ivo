@@ -410,9 +410,10 @@ describe("Schema.options.required", () => {
     });
 
     it("should run every handler in an array and merge their results", async () => {
-      const Model = new Schema<any>(
+      const Model = new Schema<{ a: any; b: any }>(
         (b, m) => b.field(m.lax("a", undefined)).field(m.lax("b", undefined)),
         {
+          // @ts-expect-error ikr
           required: {
             fields: ["a", "b"],
             handler: [() => ({ a: "a missing" }), () => ({ b: "b missing" })],
@@ -423,7 +424,8 @@ describe("Schema.options.required", () => {
       const { data, error } = await Model.create({}, {});
 
       expect(data).toBeNull();
-      expect(error?.payload).toEqual({
+      expect(error).toEqual({
+        // @ts-expect-error ikr
         a: { reason: "a missing", metadata: null },
         b: { reason: "b missing", metadata: null },
       });

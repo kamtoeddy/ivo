@@ -587,6 +587,7 @@ describe("Schema.options.timestamps", () => {
             };
 
             Model = new Schema(getValidSchema(), {
+              // @ts-expect-error ikr
               onSuccess,
               timestamps: {
                 updatedAt: { key: updatedAtKey, nullable: true },
@@ -649,6 +650,7 @@ describe("Schema.options.timestamps", () => {
             };
 
             Model = new Schema(getValidSchema(), {
+              // @ts-expect-error ikr
               onSuccess,
               timestamps: {
                 updatedAt: { key: updatedAtKey },
@@ -711,6 +713,7 @@ describe("Schema.options.timestamps", () => {
             };
 
             Model = new Schema(getValidSchema(), {
+              // @ts-expect-error ikr
               onSuccess,
               timestamps: {
                 updatedAt: { key: updatedAtKey, nullable: false },

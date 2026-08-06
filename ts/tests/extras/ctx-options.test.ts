@@ -17,7 +17,6 @@ describe("ctx options threading", () => {
         .field(
           m.lax("name", "").validate((v, ctx) => {
             push("validator")(ctx);
-            // @ts-expect-error
             ctx.options.log = ["lol"];
             return { valid: true, validated: v as string };
           }),

@@ -377,7 +377,7 @@ describe("field builder: lax()", () => {
       const decorated = field
         .lax("status", "active")
         .allow(["active", "inactive"])
-        .ignoreUpdate(() => false);
+        .ignoreUpdate();
 
       // @ts-expect-error - ignoreUpdate was already provided
       decorated.ignoreUpdate?.();
@@ -466,7 +466,7 @@ describe("field builder: lax()", () => {
         .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit()
-        .ignoreUpdate(() => false);
+        .ignoreUpdate();
 
       // @ts-expect-error - ignoreUpdate was already provided
       ignoreInitFirst.ignoreUpdate?.();
@@ -489,7 +489,7 @@ describe("field builder: lax()", () => {
       const ignoreUpdateFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
-        .ignoreUpdate(() => false)
+        .ignoreUpdate()
         .ignoreInit();
 
       // @ts-expect-error - ignoreUpdate was already provided
@@ -516,106 +516,6 @@ describe("field builder: lax()", () => {
         .lax("status", "active")
         .validate(() => false)
         .ignoreInit()
-        .ignoreUpdate(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .lax("status", "active")
-        .validate(() => false)
-        .ignoreUpdate(() => false)
-        .ignoreInit();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => false);
-    });
-
-    it("should accept allow() + ignoreInit(() => boolean) + ignoreUpdate()", () => {
-      const ignoreInitFirst = field
-        .lax("status", "active")
-        .allow(["active", "inactive"])
-        .ignoreInit(() => false)
-        .ignoreUpdate();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreInitFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const ignoreUpdateFirst = field
-        .lax("status", "active")
-        .allow(["active", "inactive"])
-        .ignoreUpdate()
-        .ignoreInit(() => false);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.();
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => true);
-
-      // @ts-expect-error - ignoreUpdate was already provided
-      ignoreUpdateFirst.ignoreUpdate?.(() => false);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreUpdateFirst.ignoreInit?.(() => false);
-    });
-
-    it("should accept validate() + ignoreInit(() => boolean) + ignoreUpdate()", () => {
-      const ignoreInitFirst = field
-        .lax("status", "active")
-        .validate(() => false)
-        .ignoreInit(() => false)
         .ignoreUpdate();
 
       // @ts-expect-error - ignoreUpdate was already provided
@@ -640,7 +540,7 @@ describe("field builder: lax()", () => {
         .lax("status", "active")
         .validate(() => false)
         .ignoreUpdate()
-        .ignoreInit(() => false);
+        .ignoreInit();
 
       // @ts-expect-error - ignoreUpdate was already provided
       ignoreUpdateFirst.ignoreUpdate?.();
@@ -661,12 +561,12 @@ describe("field builder: lax()", () => {
       ignoreUpdateFirst.ignoreInit?.(() => false);
     });
 
-    it("should accept allow() + ignoreInit(() => boolean) + ignoreUpdate(() => boolean)", () => {
+    it("should accept allow() +  + ignoreUpdate()", () => {
       const ignoreInitFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
-        .ignoreInit(() => false)
-        .ignoreUpdate(() => false);
+        .ignoreInit()
+        .ignoreUpdate();
 
       // @ts-expect-error - ignoreUpdate was already provided
       ignoreInitFirst.ignoreUpdate?.();
@@ -689,8 +589,8 @@ describe("field builder: lax()", () => {
       const ignoreUpdateFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
-        .ignoreUpdate(() => false)
-        .ignoreInit(() => false);
+        .ignoreUpdate()
+        .ignoreInit();
 
       // @ts-expect-error - ignoreUpdate was already provided
       ignoreUpdateFirst.ignoreUpdate?.();
@@ -711,12 +611,12 @@ describe("field builder: lax()", () => {
       ignoreUpdateFirst.ignoreInit?.(() => false);
     });
 
-    it("should accept validate() + ignoreInit(() => boolean) + ignoreUpdate(() => boolean)", () => {
+    it("should accept validate() +  + ignoreUpdate()", () => {
       const ignoreInitFirst = field
         .lax("status", "active")
         .validate(() => false)
-        .ignoreInit(() => false)
-        .ignoreUpdate(() => false);
+        .ignoreInit()
+        .ignoreUpdate();
 
       // @ts-expect-error - ignoreUpdate was already provided
       ignoreInitFirst.ignoreUpdate?.();
@@ -739,8 +639,8 @@ describe("field builder: lax()", () => {
       const ignoreUpdateFirst = field
         .lax("status", "active")
         .validate(() => false)
-        .ignoreUpdate(() => false)
-        .ignoreInit(() => false);
+        .ignoreUpdate()
+        .ignoreInit();
 
       // @ts-expect-error - ignoreUpdate was already provided
       ignoreUpdateFirst.ignoreUpdate?.();
@@ -761,15 +661,21 @@ describe("field builder: lax()", () => {
       ignoreUpdateFirst.ignoreInit?.(() => false);
     });
 
-    it("should accept allow() + ignoreInit() + readonly()", () => {
+    it("should accept allow() +  + ignoreUpdate(() => boolean)", () => {
       const ignoreInitFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
         .ignoreInit()
-        .readonly();
+        .ignoreUpdate();
 
-      // @ts-expect-error - readonly was already provided
-      ignoreInitFirst.readonly();
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => false);
 
       // @ts-expect-error - ignoreInit was already provided
       ignoreInitFirst.ignoreInit?.();
@@ -780,34 +686,46 @@ describe("field builder: lax()", () => {
       // @ts-expect-error - ignoreInit was already provided
       ignoreInitFirst.ignoreInit?.(() => false);
 
-      const readonlyFirst = field
+      const ignoreUpdateFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
-        .readonly()
+        .ignoreUpdate()
         .ignoreInit();
 
-      // @ts-expect-error - readonly was already provided
-      readonlyFirst.readonly();
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
 
       // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.();
+      ignoreUpdateFirst.ignoreInit?.();
 
       // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => true);
+      ignoreUpdateFirst.ignoreInit?.(() => true);
 
       // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => false);
+      ignoreUpdateFirst.ignoreInit?.(() => false);
     });
 
-    it("should accept validate() + ignoreInit() + readonly()", () => {
+    it("should accept validate() +  + ignoreUpdate(() => boolean)", () => {
       const ignoreInitFirst = field
         .lax("status", "active")
         .validate(() => false)
         .ignoreInit()
-        .readonly();
+        .ignoreUpdate();
 
-      // @ts-expect-error - readonly was already provided
-      ignoreInitFirst.readonly();
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreInitFirst.ignoreUpdate?.(() => false);
 
       // @ts-expect-error - ignoreInit was already provided
       ignoreInitFirst.ignoreInit?.();
@@ -818,99 +736,49 @@ describe("field builder: lax()", () => {
       // @ts-expect-error - ignoreInit was already provided
       ignoreInitFirst.ignoreInit?.(() => false);
 
-      const readonlyFirst = field
+      const ignoreUpdateFirst = field
         .lax("status", "active")
         .validate(() => false)
-        .readonly()
+        .ignoreUpdate()
         .ignoreInit();
 
-      // @ts-expect-error - readonly was already provided
-      readonlyFirst.readonly();
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.();
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => true);
+
+      // @ts-expect-error - ignoreUpdate was already provided
+      ignoreUpdateFirst.ignoreUpdate?.(() => false);
 
       // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.();
+      ignoreUpdateFirst.ignoreInit?.();
 
       // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => true);
+      ignoreUpdateFirst.ignoreInit?.(() => true);
 
       // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => false);
+      ignoreUpdateFirst.ignoreInit?.(() => false);
     });
 
-    it("should accept allow() + ignoreInit(() => boolean) + readonly()", () => {
+    it("should accept allow() + readonly()", () => {
       const ignoreInitFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
-        .ignoreInit(() => true)
         .readonly();
 
       // @ts-expect-error - readonly was already provided
       ignoreInitFirst.readonly();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const readonlyFirst = field
-        .lax("status", "active")
-        .allow(["active", "inactive"])
-        .readonly()
-        .ignoreInit(() => true);
-
-      // @ts-expect-error - readonly was already provided
-      readonlyFirst.readonly();
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => false);
     });
 
-    it("should accept validate() + ignoreInit(() => boolean) + readonly()", () => {
+    it("should accept validate() + readonly()", () => {
       const ignoreInitFirst = field
         .lax("status", "active")
         .validate(() => false)
-        .ignoreInit(() => true)
         .readonly();
 
       // @ts-expect-error - readonly was already provided
       ignoreInitFirst.readonly();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const readonlyFirst = field
-        .lax("status", "active")
-        .validate(() => false)
-        .readonly()
-        .ignoreInit(() => true);
-
-      // @ts-expect-error - readonly was already provided
-      readonlyFirst.readonly();
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => false);
     });
 
     it("should reject allow() + ignoreUpdate() + readonly()", () => {
@@ -973,7 +841,7 @@ describe("field builder: lax()", () => {
       readonlyFirst.readonly();
     });
 
-    it("should reject allow() + ignore(() => boolean) + ignoreInit()/ignoreInit(() => boolean) or ignoreUpdate()/ignoreUpdate(() => boolean)", () => {
+    it("should reject allow() + ignore(() => boolean) + ignoreInit() or ignoreUpdate()", () => {
       let ignoreInitFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
@@ -985,9 +853,9 @@ describe("field builder: lax()", () => {
       ignoreInitFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
-        .ignoreInit(() => false);
+        .ignoreInit();
 
-      // @ts-expect-error - ignoreInit(() => boolean) + ignore() should not be allowed
+      // @ts-expect-error -  + ignore() should not be allowed
       ignoreInitFirst.ignore(() => false);
 
       const ignoreFirst = field
@@ -998,11 +866,11 @@ describe("field builder: lax()", () => {
       // @ts-expect-error - ignore() + ignoreInit() should not be allowed
       ignoreFirst.ignoreInit();
 
-      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
+      // @ts-expect-error - ignore() +  should not be allowed
       ignoreFirst.ignoreInit(() => true);
 
-      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
-      ignoreFirst.ignoreInit(() => false);
+      // @ts-expect-error - ignore() +  should not be allowed
+      ignoreFirst.ignoreInit();
 
       let ignoreUpdateFirst = field
         .lax("status", "active")
@@ -1015,7 +883,7 @@ describe("field builder: lax()", () => {
       ignoreUpdateFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
-        .ignoreUpdate(() => false);
+        .ignoreUpdate();
 
       // @ts-expect-error - ignoreUpdate(() => boolean) + ignore() should not be allowed
       ignoreUpdateFirst.ignore(() => false);
@@ -1032,10 +900,10 @@ describe("field builder: lax()", () => {
       ignoreBeforeIgnoreUpdate.ignoreUpdate(() => true);
 
       // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
-      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => false);
+      ignoreBeforeIgnoreUpdate.ignoreUpdate();
     });
 
-    it("should reject validate() + ignore(() => boolean) + ignoreInit()/ignoreInit(() => boolean) or ignoreUpdate()/ignoreUpdate(() => boolean)", () => {
+    it("should reject validate() + ignore(() => boolean) + ignoreInit() or ignoreUpdate()", () => {
       let ignoreInitFirst = field
         .lax("status", "active")
         .validate(() => false)
@@ -1047,9 +915,9 @@ describe("field builder: lax()", () => {
       ignoreInitFirst = field
         .lax("status", "active")
         .validate(() => false)
-        .ignoreInit(() => false);
+        .ignoreInit();
 
-      // @ts-expect-error - ignoreInit(() => boolean) + ignore() should not be allowed
+      // @ts-expect-error -  + ignore() should not be allowed
       ignoreInitFirst.ignore(() => false);
 
       const ignoreFirst = field
@@ -1060,11 +928,11 @@ describe("field builder: lax()", () => {
       // @ts-expect-error - ignore() + ignoreInit() should not be allowed
       ignoreFirst.ignoreInit();
 
-      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
+      // @ts-expect-error - ignore() +  should not be allowed
       ignoreFirst.ignoreInit(() => true);
 
-      // @ts-expect-error - ignore() + ignoreInit(() => boolean) should not be allowed
-      ignoreFirst.ignoreInit(() => false);
+      // @ts-expect-error - ignore() +  should not be allowed
+      ignoreFirst.ignoreInit();
 
       let ignoreUpdateFirst = field
         .lax("status", "active")
@@ -1077,7 +945,7 @@ describe("field builder: lax()", () => {
       ignoreUpdateFirst = field
         .lax("status", "active")
         .validate(() => false)
-        .ignoreUpdate(() => false);
+        .ignoreUpdate();
 
       // @ts-expect-error - ignoreUpdate(() => boolean) + ignore() should not be allowed
       ignoreUpdateFirst.ignore(() => false);
@@ -1094,10 +962,10 @@ describe("field builder: lax()", () => {
       ignoreBeforeIgnoreUpdate.ignoreUpdate(() => true);
 
       // @ts-expect-error - ignore() + ignoreUpdate(() => boolean) should not be allowed
-      ignoreBeforeIgnoreUpdate.ignoreUpdate(() => false);
+      ignoreBeforeIgnoreUpdate.ignoreUpdate();
     });
 
-    it("should allow allow() + ignore(() => boolean) + readonly()", () => {
+    it("should accept allow() + ignore(() => boolean) + readonly()", () => {
       const ignoreFirst = field
         .lax("status", "active")
         .allow(["active", "inactive"])
@@ -1123,7 +991,7 @@ describe("field builder: lax()", () => {
       readonlyFirst.readonly();
     });
 
-    it("should allow validate() + ignore(() => boolean) + readonly()", () => {
+    it("should accept validate() + ignore(() => boolean) + readonly()", () => {
       const ignoreFirst = field
         .lax("status", "active")
         .validate(() => false)
@@ -1147,82 +1015,6 @@ describe("field builder: lax()", () => {
 
       // @ts-expect-error - readonly was already provided
       readonlyFirst.readonly();
-    });
-
-    it("should accept allow() + ignoreUpdate(() => boolean) + readonly()", () => {
-      const ignoreInitFirst = field
-        .lax("status", "active")
-        .allow(["active", "inactive"])
-        .ignoreInit(() => true)
-        .readonly();
-
-      // @ts-expect-error - readonly was already provided
-      ignoreInitFirst.readonly();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const readonlyFirst = field
-        .lax("status", "active")
-        .allow(["active", "inactive"])
-        .readonly()
-        .ignoreInit(() => true);
-
-      // @ts-expect-error - readonly was already provided
-      readonlyFirst.readonly();
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => false);
-    });
-
-    it("should accept validate() + ignoreUpdate(() => boolean) + readonly()", () => {
-      const ignoreInitFirst = field
-        .lax("status", "active")
-        .validate(() => false)
-        .ignoreInit(() => true)
-        .readonly();
-
-      // @ts-expect-error - readonly was already provided
-      ignoreInitFirst.readonly();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      ignoreInitFirst.ignoreInit?.(() => false);
-
-      const readonlyFirst = field
-        .lax("status", "active")
-        .validate(() => false)
-        .readonly()
-        .ignoreInit(() => true);
-
-      // @ts-expect-error - readonly was already provided
-      readonlyFirst.readonly();
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.();
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => true);
-
-      // @ts-expect-error - ignoreInit was already provided
-      readonlyFirst.ignoreInit?.(() => false);
     });
   });
 });

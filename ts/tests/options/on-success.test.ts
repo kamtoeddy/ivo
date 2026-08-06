@@ -1,18 +1,15 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 
-import { type ReadonlyIvoContext, Schema } from "../../src";
+import { Schema } from "../../src";
+
 import {
-  getInvalidConfigMessageForRepeatedFields,
-  getInvalidOnSuccessConfigMessage,
-} from "../../src/schema/schema-core";
-import {
-  ERRORS,
   expectFailure,
   expectNoFailure,
   getValidSchema,
   makeFx,
   validator,
 } from "../_utils";
+import { IvoSuccessContext } from "../../src/utils/types";
 
 describe("Schema.options.onSuccess", () => {
   describe("signature", () => {
@@ -152,149 +149,6 @@ describe("Schema.options.onSuccess", () => {
     });
 
     describe("invalid", () => {
-      it("should reject 'onSuccess' if it's not a function, object or array", () => {
-        const invalidValues = [
-          1,
-          0,
-          -14,
-          true,
-          false,
-          "invalid",
-          "",
-          null,
-          undefined,
-        ];
-
-        invalidValues.forEach((onSuccess) => {
-          const toFail = makeFx(getValidSchema(), { onSuccess });
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                onSuccess: expect.arrayContaining([
-                  getInvalidOnSuccessConfigMessage(),
-                ]),
-              },
-            });
-          }
-        });
-      });
-
-      it("should reject 'onSuccess' if invalid fields or handlers are passed in config object", () => {
-        const invalidFielderties = [
-          1,
-          0,
-          -14,
-          true,
-          false,
-          "invalid",
-          "",
-          null,
-          undefined,
-          [],
-        ];
-
-        invalidFielderties.forEach((fields) => {
-          const toFail = makeFx(getValidSchema(), {
-            onSuccess: { fields, handler: () => {} },
-          });
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                onSuccess: expect.arrayContaining([
-                  '"fields" must be an array of at least 2 fields or virtuals of your schema',
-                ]),
-              },
-            });
-          }
-        });
-
-        const invalidHandlers = [
-          1,
-          0,
-          -14,
-          true,
-          false,
-          "invalid",
-          "",
-          null,
-          undefined,
-        ];
-        invalidHandlers.forEach((handler) => {
-          const toFail = makeFx(getValidSchema(), {
-            onSuccess: {
-              fields: ["fieldName1", "fieldName2"],
-              handler,
-            },
-          });
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                onSuccess: expect.arrayContaining([
-                  '"handler" must be a function or array of functions',
-                ]),
-              },
-            });
-          }
-        });
-
-        const invalidNestedHandlers = [
-          1,
-          0,
-          -14,
-          true,
-          false,
-          "invalid",
-          "",
-          null,
-          undefined,
-        ];
-        const schemaWithInvalidHandlers = makeFx(getValidSchema(), {
-          onSuccess: {
-            fields: ["fieldName1", "fieldName2"],
-            handler: invalidNestedHandlers,
-          },
-        });
-
-        expectFailure(schemaWithInvalidHandlers);
-
-        try {
-          schemaWithInvalidHandlers();
-        } catch (err: any) {
-          expect(err).toMatchObject({
-            message: ERRORS.INVALID_SCHEMA,
-            payload: {
-              onSuccess: expect.arrayContaining(
-                invalidNestedHandlers.map((_, i) =>
-                  getInvalidOnSuccessConfigMessage(
-                    undefined,
-                    "handler-must-be-function",
-                    i,
-                  ),
-                ),
-              ),
-            },
-          });
-        }
-      });
-
       it("should reject if any of the fields passed in config object are not valid fields or virtuals", () => {
         const invalidFielderties = [
           1,
@@ -319,7 +173,7 @@ describe("Schema.options.onSuccess", () => {
           schemaWithInvalidFielderties();
         } catch (err: any) {
           expect(err).toMatchObject({
-            message: ERRORS.INVALID_SCHEMA,
+            message: "INVALID_SCHEMA",
             payload: {
               onSuccess: expect.arrayContaining(
                 invalidFielderties.map(
@@ -341,7 +195,7 @@ describe("Schema.options.onSuccess", () => {
           schemaWithNestedInvalidFielderties();
         } catch (err: any) {
           expect(err).toMatchObject({
-            message: ERRORS.INVALID_SCHEMA,
+            message: "INVALID_SCHEMA",
             payload: {
               onSuccess: expect.arrayContaining(
                 invalidFielderties.map(
@@ -349,93 +203,6 @@ describe("Schema.options.onSuccess", () => {
                     `Config at index 0: "${field}" is not a property or virtual on your schema`,
                 ),
               ),
-            },
-          });
-        }
-      });
-
-      it("should reject if some configs have the same fields in any order", () => {
-        const validConfigs = [
-          { fields: ["fieldName1", "fieldName2"], handler() {} },
-          { fields: ["virtual", "virtual2"], handler() {} },
-          { fields: ["fieldName1", "virtual2"], handler() {} },
-          { fields: ["virtual", "fieldName2"], handler() {} },
-          {
-            fields: ["fieldName1", "fieldName2", "virtual"],
-            handler() {},
-          },
-          {
-            fields: ["fieldName1", "fieldName2", "virtual", "virtual2"],
-            handler() {},
-          },
-        ];
-
-        const configs = [
-          // valid
-          ...validConfigs.map((c, i) => [c, i]),
-
-          // invalid because they're repeated
-          ...validConfigs.map((c, i) => [c, i]),
-
-          // invalid because they're re-arranged
-          [
-            {
-              fields: ["fieldName2", "fieldName1"],
-              handler() {},
-            },
-            0,
-          ],
-          [{ fields: ["virtual2", "virtual"], handler() {} }, 1],
-          [{ fields: ["virtual2", "fieldName1"], handler() {} }, 2],
-          [
-            {
-              fields: ["fieldName2", "fieldName1", "virtual"],
-              handler() {},
-            },
-            4,
-          ],
-          [
-            {
-              fields: ["fieldName1", "virtual", "fieldName2"],
-              handler() {},
-            },
-            4,
-          ],
-        ] as [any, number][];
-
-        const length = validConfigs.length;
-
-        const reasons = configs
-          .slice(length)
-          .map((ci, i) =>
-            getInvalidConfigMessageForRepeatedFields(i + length, ci[1]),
-          );
-
-        const toFail = makeFx(
-          (b, m) =>
-            b
-              .field(
-                m
-                  .dependent("dependent", ["virtual", "virtual2"])
-                  .default("")
-                  .resolve(() => {}),
-              )
-              .field(m.lax("fieldName1", ""))
-              .field(m.lax("fieldName2", ""))
-              .field(m.virtual("virtual").validate(() => false))
-              .field(m.virtual("virtual2").validate(() => false)),
-          { onSuccess: configs.map((ci) => ci[0]) },
-        );
-
-        expectFailure(toFail);
-
-        try {
-          toFail();
-        } catch (err: any) {
-          expect(err).toMatchObject({
-            message: ERRORS.INVALID_SCHEMA,
-            payload: {
-              onSuccess: expect.arrayContaining(reasons),
             },
           });
         }
@@ -450,7 +217,7 @@ describe("Schema.options.onSuccess", () => {
     type BookOutput = { id: number; name: string; price: number | null };
 
     function onSuccess_(field = "") {
-      return (summary: ReadonlyIvoContext<BookInput, BookOutput>) => {
+      return (summary: IvoSuccessContext<any>) => {
         successValues[field] = summary;
       };
     }

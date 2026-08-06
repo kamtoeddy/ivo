@@ -3,13 +3,6 @@ import { Schema } from "../../src";
 import { expectFailure, makeFx } from "../_utils";
 
 describe("Schema definitions", () => {
-  // "should reject if property definitions is not an object" discarded:
-  // the builder closure always resolves to a real `SchemaFieldBuilder`
-  // whose FIELD_BUILDER_DEFINITIONS getter always returns an object, so
-  // SchemaCore's `!isRecordLike(definitions)` branch is unreachable through
-  // the public API - passing a non-function first argument to `Schema`
-  // fails earlier (and differently) as `builder is not a function`.
-
   it("should reject if property definitions has no property", () => {
     const toFail = makeFx((b: any) => b);
 

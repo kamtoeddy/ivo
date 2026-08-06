@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, test } from "bun:test";
 import { type ReadonlyIvoContext, Schema } from "../../src";
 import { expectFailure, expectNoFailure, makeFx, validator } from "../_utils";
+import { IvoSuccessContext } from "../../src/utils/types";
 
 describe("life cycle handlers", () => {
   const rules = ["onDelete", "onFailure", "onSuccess"] as const;
@@ -69,21 +70,13 @@ describe("life cycle handlers", () => {
     const allFields = ["constant", "prop1", "prop2", "prop3"],
       props = ["prop1", "prop2", "prop3"];
 
-    type CtxSchemaInput = {
-      constant: string;
-      prop1: string;
-      prop2: string;
-      prop3: string;
-    };
-
     const handle =
       (rule = "", field = "") =>
-      (context: ReadonlyIvoContext<CtxSchemaInput, CtxSchemaInput>) => {
-        ctxHasUpdateMethod[rule] = !!(context as Record<string, unknown>)
-          ?.updateOptions;
+      (context: IvoSuccessContext<any>) => {
+        ctxHasUpdateMethod[rule] = !!(context as any)?.updateOptions;
 
         try {
-          (context as Record<string, unknown>)[field] = 1;
+          (context as any)[field] = 1;
         } catch {
           if (!propChangeMap[rule]) propChangeMap[rule] = {};
 
@@ -96,9 +89,9 @@ describe("life cycle handlers", () => {
       b
         .field(
           m
-            .constant("constant")
-            .value("constant")
+            .constant("constant", "constant")
             .onDelete(handle("onDelete", "constant"))
+            // @ts-expect-error ikr
             .onSuccess(handle("onSuccess", "constant")),
         )
         .field(
@@ -133,7 +126,10 @@ describe("life cycle handlers", () => {
     });
 
     it("should reject handlers that try to mutate the onSuccess ctx", async () => {
-      const { handleFailure, handleSuccess } = await Model.create(validData);
+      const { handleFailure, handleSuccess } = await Model.create(
+        validData,
+        {},
+      );
 
       expect(handleFailure).toBeNull();
 
@@ -144,7 +140,7 @@ describe("life cycle handlers", () => {
     });
 
     it("should reject handlers that try to mutate the onDelete ctx", async () => {
-      await Model.delete(validData);
+      await Model.delete(validData, {});
 
       for (const field of allFields)
         expect(propChangeMap.onDelete[field]).toBe(true);
@@ -153,11 +149,10 @@ describe("life cycle handlers", () => {
     });
 
     it("should reject handlers that try to mutate the onFailure(create) ctx", async () => {
-      const { handleFailure } = await Model.create({
-        prop1: "",
-        prop2: "",
-        prop3: "",
-      });
+      const { handleFailure } = await Model.create(
+        { prop1: "", prop2: "", prop3: "" },
+        {},
+      );
 
       await handleFailure?.();
 
@@ -173,11 +168,11 @@ describe("life cycle handlers", () => {
     });
 
     it("should reject handlers that try to mutate the onFailure(update) ctx", async () => {
-      const { handleFailure } = await Model.update(validData, {
-        prop1: "",
-        prop2: "",
-        prop3: "",
-      });
+      const { handleFailure } = await Model.update(
+        validData,
+        { prop1: "", prop2: "", prop3: "" },
+        {},
+      );
 
       await handleFailure?.();
 
@@ -210,10 +205,7 @@ describe("life cycle handlers", () => {
     const Model = new Schema<any>((b, m) =>
       b
         .field(
-          m
-            .constant("constant")
-            .value("constant")
-            .onDelete(onDelete("constant")),
+          m.constant("constant", "constant").onDelete(onDelete("constant")),
         )
         .field(
           m.required("prop1").validate(validator).onDelete(onDelete("prop1")),
@@ -233,13 +225,7 @@ describe("life cycle handlers", () => {
 
     it("should trigger all onDelete handlers but for virtuals", async () => {
       await Model.delete(
-        {
-          constant: true,
-          prop1: true,
-          prop2: true,
-          prop3: true,
-          prop4: true,
-        },
+        { constant: true, prop1: true, prop2: true, prop3: true, prop4: true },
         contextOptions,
       );
 
@@ -296,17 +282,8 @@ describe("life cycle handlers", () => {
       let cxtOptions: Record<string, unknown> = {},
         onFailureCount: Record<string, number> = {};
 
-      type FailureSchemaInput = {
-        prop1: boolean;
-        prop2: boolean;
-        prop3: boolean;
-      };
-
       function incrementOnFailureCountOf(field: string) {
-        return (
-          _: ReadonlyIvoContext<FailureSchemaInput, FailureSchemaInput>,
-          options: Record<string, unknown>,
-        ) => {
+        return ({ options }: ReadonlyIvoContext<any>) => {
           cxtOptions[field] = options;
           onFailureCount[field] = (onFailureCount[field] ?? 0) + 1;
         };
@@ -471,18 +448,9 @@ describe("life cycle handlers", () => {
       onSuccessValues: Record<string, unknown> = {},
       propChangeMap: Record<string, boolean> = {};
 
-    type OnSuccessInput = Record<string, never>;
-    type OnSuccessOutput = {
-      dependent: boolean;
-      lax: string;
-      requiredReadonly: string;
-      readonlyLax: string;
-      required: string;
-    };
-
     const onSuccess =
       (field = "") =>
-      (ctx: ReadonlyIvoContext<OnSuccessInput, OnSuccessOutput>) => {
+      (ctx: ReadonlyIvoContext<any>) => {
         cxtOptions[field] = ctx.options;
         onSuccessValues[field] = ctx;
         onSuccessValues.input = ctx.input;

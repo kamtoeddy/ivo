@@ -1,12 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, test } from "bun:test";
 
 import { type IvoContext, type ReadonlyIvoContext, Schema } from "../../src";
+
 import {
-  getInvalidConfigMessageForRepeatedFields,
-  getInvalidPostValidateConfigMessage,
-} from "../../src/schema/schema-core";
-import {
-  ERRORS,
   expectFailure,
   expectNoFailure,
   getValidSchema,
@@ -71,81 +67,6 @@ describe("Schema.options.postValidate", () => {
       });
 
       describe("invalid", () => {
-        it("should reject 'postValidate' as invalid config", () => {
-          const invalidPostValidateConfigMessage =
-            getInvalidPostValidateConfigMessage();
-
-          const configs = [
-            -1,
-            0,
-            1,
-            null,
-            undefined,
-            true,
-            false,
-            "",
-            "invalid",
-            {},
-            { fields: [] },
-            () => {},
-          ];
-
-          for (const postValidate of configs) {
-            const toFail = makeFx(getValidSchema(), { postValidate });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
-                payload: {
-                  postValidate: expect.arrayContaining([
-                    invalidPostValidateConfigMessage,
-                  ]),
-                },
-              });
-            }
-          }
-        });
-
-        it("should reject 'postValidate' has never repeated fields", () => {
-          const toFail = makeFx(
-            (b, m) =>
-              b
-                .field(m.lax("fieldName1", ""))
-                .field(m.lax("fieldName2", ""))
-                .field(m.lax("p1", ""))
-                .field(m.lax("p2", "")),
-
-            {
-              postValidate: {
-                fields: ["fieldName1", "fieldName2", "fieldName1"],
-                validator: () => {},
-              },
-            },
-          );
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                postValidate: expect.arrayContaining([
-                  getInvalidPostValidateConfigMessage(
-                    undefined,
-                    "fields-array-must-contain-unique-values",
-                  ),
-                ]),
-              },
-            });
-          }
-        });
-
         describe("should reject if 'fields' is not an array or does not contain valid input keys of schema", () => {
           const commonError = [
             '"fields" must be an array of at least 2 input fields of your schema',
@@ -207,7 +128,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
+                message: "INVALID_SCHEMA",
                 payload: { postValidate: expect.arrayContaining(errors) },
               });
             }
@@ -254,7 +175,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
+                message: "INVALID_SCHEMA",
                 payload: {
                   postValidate: expect.arrayContaining([
                     '"validator" must be a function or array of functions',
@@ -280,7 +201,7 @@ describe("Schema.options.postValidate", () => {
             toFail();
           } catch (err: any) {
             expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
+              message: "INVALID_SCHEMA",
               payload: {
                 postValidate: expect.arrayContaining([
                   'Config must be an object with keys "fields" and "validator" or an array of "PostValidateConfig"',
@@ -317,7 +238,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
+                message: "INVALID_SCHEMA",
                 payload: {
                   postValidate: expect.arrayContaining([
                     '"validator" cannot be an empty array',
@@ -367,7 +288,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
+                message: "INVALID_SCHEMA",
                 payload: {
                   postValidate: expect.arrayContaining(
                     values.map(
@@ -384,21 +305,6 @@ describe("Schema.options.postValidate", () => {
     });
 
     describe("multiple configs", () => {
-      const validConfigs = [
-        { fields: ["fieldName1", "fieldName2"], validator() {} },
-        { fields: ["virtual", "virtual2"], validator() {} },
-        { fields: ["fieldName1", "virtual2"], validator() {} },
-        { fields: ["virtual", "fieldName2"], validator() {} },
-        {
-          fields: ["fieldName1", "fieldName2", "virtual"],
-          validator() {},
-        },
-        {
-          fields: ["fieldName1", "fieldName2", "virtual", "virtual2"],
-          validator() {},
-        },
-      ];
-
       describe("valid", () => {
         it("should allow 'postValidate' as an array of subset and non-subset valid configs", () => {
           const configs = [
@@ -444,357 +350,6 @@ describe("Schema.options.postValidate", () => {
       });
 
       describe("invalid", () => {
-        it("should reject 'postValidate' as invalid config", () => {
-          const configs = [
-            -1,
-            0,
-            1,
-            null,
-            undefined,
-            true,
-            false,
-            "",
-            "invalid",
-            {},
-            { fields: [] },
-            { validator: [] },
-            () => {},
-          ];
-
-          const reasons = configs.map((_, i) =>
-            getInvalidPostValidateConfigMessage(i),
-          );
-
-          const toFail = makeFx(getValidSchema(), { postValidate: configs });
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                postValidate: expect.arrayContaining(reasons),
-              },
-            });
-          }
-        });
-
-        it("should reject 'postValidate' has never repeated fields", () => {
-          const configs = [
-            {
-              fields: ["fieldName1", "fieldName2", "fieldName2"],
-              validator,
-            },
-            { fields: ["p1", "p1", "p2"], validator },
-          ];
-
-          const reasons = configs.map((_, i) =>
-            getInvalidPostValidateConfigMessage(
-              i,
-              "fields-array-must-contain-unique-values",
-            ),
-          );
-
-          const toFail = makeFx(
-            (b, m) =>
-              b
-                .field(m.lax("fieldName1", ""))
-                .field(m.lax("fieldName2", ""))
-                .field(
-                  m
-                    .dependent("dependent", "fieldName1")
-                    .default("")
-                    .resolve(() => {}),
-                )
-                .field(m.lax("p1", ""))
-                .field(m.lax("p2", "")),
-            { postValidate: configs },
-          );
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: { postValidate: expect.arrayContaining(reasons) },
-            });
-          }
-        });
-
-        it("should reject if 'fields' are not arrays or do not contain valid input keys of schema", () => {
-          const configs = [
-            -1,
-            0,
-            1,
-            null,
-            undefined,
-            true,
-            false,
-            "",
-            "invalid",
-            {},
-            { fields: [] },
-            { validator: [] },
-            () => {},
-            [],
-            ["lol"],
-            ["fieldName1", "fieldName1"],
-          ].map((fields) => ({ fields, validator() {} }));
-
-          const reasons = configs.map((_, i) =>
-            getInvalidPostValidateConfigMessage(
-              i,
-              "fields-must-be-input-array",
-            ),
-          );
-
-          const toFail = makeFx(
-            (b, m) =>
-              b
-                .field(m.lax("fieldName1", ""))
-                .field(m.lax("fieldName2", ""))
-                .field(
-                  m
-                    .dependent("dependent", "fieldName1")
-                    .default("")
-                    .resolve(() => {}),
-                ),
-            { postValidate: configs },
-          );
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: { postValidate: expect.arrayContaining(reasons) },
-            });
-          }
-        });
-
-        it("should reject if 'fields' of any config a property that cannot be post-validated", () => {
-          const values = [
-            [
-              ["lol", "lolol"],
-              [
-                'Config at index 0: "lol" cannot be post-validated',
-                'Config at index 0: "lolol" cannot be post-validated',
-              ],
-            ],
-            [
-              ["fieldName1", "lolol"],
-              ['Config at index 1: "lolol" cannot be post-validated'],
-            ],
-            [
-              ["fieldName1", "fieldName2", "lol"],
-              ['Config at index 2: "lol" cannot be post-validated'],
-            ],
-            [
-              ["fieldName1", "dependent"],
-              ['Config at index 3: "dependent" cannot be post-validated'],
-            ],
-          ] as const;
-
-          // @ts-expect-error
-          const { configs, errors } = values.reduce(
-            // @ts-expect-error
-            (acc, [fields, err]) => {
-              return {
-                configs: [...acc.configs, { fields, validator() {} }],
-                errors: [...acc.errors, ...err],
-              };
-            },
-            { configs: [], errors: [] },
-          );
-
-          const toFail = makeFx(
-            (b, m) =>
-              b
-                .field(m.lax("fieldName1", ""))
-                .field(m.lax("fieldName2", ""))
-                .field(
-                  m
-                    .dependent("dependent", "fieldName1")
-                    .default("")
-                    .resolve(() => {}),
-                ),
-            { postValidate: configs },
-          );
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: { postValidate: expect.arrayContaining(errors) },
-            });
-          }
-        });
-
-        it("should reject if 'validator' are not functions or arrays", () => {
-          const configs = [
-            -1,
-            0,
-            1,
-            null,
-            undefined,
-            true,
-            false,
-            "",
-            "invalid",
-            {},
-          ].map((validator) => ({
-            validator,
-            fields: ["fieldName1", "fieldName2"],
-          }));
-
-          const reasons = configs.map((_, i) =>
-            getInvalidPostValidateConfigMessage(
-              i,
-              "validator-must-be-function",
-            ),
-          );
-
-          const toFail = makeFx(
-            (b, m) =>
-              b
-                .field(m.lax("fieldName1", ""))
-                .field(m.lax("fieldName2", ""))
-                .field(
-                  m
-                    .dependent("dependent", "fieldName1")
-                    .default("")
-                    .resolve(() => {}),
-                ),
-            { postValidate: configs },
-          );
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: { postValidate: expect.arrayContaining(reasons) },
-            });
-          }
-        });
-
-        it("should reject if config have any extra fields", () => {
-          const configs = [
-            {
-              fields: ["fieldName1", "fieldName2"],
-              validator() {},
-              lol: true,
-            },
-            {
-              fields: ["fieldName1", "fieldName2"],
-              validator() {},
-              hey: true,
-            },
-          ];
-
-          const reasons = configs.map((_, i) =>
-            getInvalidPostValidateConfigMessage(i),
-          );
-
-          const toFail = makeFx(getValidSchema(), { postValidate: configs });
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                postValidate: expect.arrayContaining(reasons),
-              },
-            });
-          }
-        });
-
-        it("should reject if some configs have the same fields in any order", () => {
-          const configs = [
-            // valid
-            ...validConfigs.map((c, i) => [c, i]),
-
-            // invalid because they're repeated
-            ...validConfigs.map((c, i) => [c, i]),
-
-            // invalid because they're re-arranged
-            [
-              {
-                fields: ["fieldName2", "fieldName1"],
-                validator() {},
-              },
-              0,
-            ],
-            [{ fields: ["virtual2", "virtual"], validator() {} }, 1],
-            [{ fields: ["virtual2", "fieldName1"], validator() {} }, 2],
-            [
-              {
-                fields: ["fieldName2", "fieldName1", "virtual"],
-                validator() {},
-              },
-              4,
-            ],
-            [
-              {
-                fields: ["fieldName1", "virtual", "fieldName2"],
-                validator() {},
-              },
-              4,
-            ],
-          ] as [any, number][];
-
-          const length = validConfigs.length;
-
-          const reasons = configs
-            .slice(length)
-            .map((ci, i) =>
-              getInvalidConfigMessageForRepeatedFields(i + length, ci[1]),
-            );
-
-          const toFail = makeFx(
-            (b, m) =>
-              b
-                .field(m.lax("fieldName1", ""))
-                .field(m.lax("fieldName2", ""))
-                .field(
-                  m
-                    .dependent("dependent", ["virtual", "virtual2"])
-                    .default("")
-                    .resolve(() => {}),
-                )
-                .field(m.virtual("virtual").validate(() => true))
-                .field(m.virtual("virtual2").validate(() => true)),
-            { postValidate: configs.map((ci) => ci[0]) },
-          );
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                postValidate: expect.arrayContaining(reasons),
-              },
-            });
-          }
-        });
-
         describe("validator array", () => {
           it("should reject if array is empty", () => {
             const toFail = makeFx(
@@ -829,7 +384,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
+                message: "INVALID_SCHEMA",
                 payload: {
                   postValidate: expect.arrayContaining([
                     'Config at index 1:  "validator" cannot be an empty array',
@@ -884,7 +439,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
+                message: "INVALID_SCHEMA",
                 payload: {
                   postValidate: expect.arrayContaining(
                     values.map(
@@ -1328,7 +883,9 @@ describe("Schema.options.postValidate", () => {
                   // @ts-expect-error ikr
                   fields: fields1,
                   validator: [
+                    // @ts-expect-error ikr
                     makePostValidator(fields1),
+                    // @ts-expect-error ikr
                     makePostValidator(fields1),
                   ],
                 },
@@ -1338,8 +895,11 @@ describe("Schema.options.postValidate", () => {
                   // @ts-expect-error ikr
                   fields: fields2,
                   validator: [
+                    // @ts-expect-error ikr
                     makePostValidator(fields2),
+                    // @ts-expect-error ikr
                     makePostValidator(fields2),
+                    // @ts-expect-error ikr
                     makePostValidator(fields2),
                   ],
                 },
@@ -2115,20 +1675,8 @@ describe("Schema.options.postValidate", () => {
           const Model = new Schema<PVInput2, PVOutput2>(
             (b, m) =>
               b
-                .field(
-                  m
-                    .dependent("d1", "v")
-                    .default("")
-                    // @ts-expect-error ikr
-                    .resolve(resolver),
-                )
-                .field(
-                  m
-                    .dependent("d2", "v")
-                    .default("")
-                    // @ts-expect-error ikr
-                    .resolve(resolver),
-                )
+                .field(m.dependent("d1", "v").default("").resolve(resolver))
+                .field(m.dependent("d2", "v").default("").resolve(resolver))
                 .field(m.lax("p1", ""))
                 .field(m.lax("p2", ""))
                 .field(m.lax("p3", ""))

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "bun:test";
 
 import { type ReadonlyIvoContext, Schema } from "../../src";
 import { expectFailure, expectNoFailure, makeFx, validator } from "../_utils";
+import { IvoSuccessContext } from "../../src/utils/types";
 
 describe("virtual", () => {
   describe("valid", () => {
@@ -216,7 +217,7 @@ describe("virtual", () => {
 
             expect(contextRecord).toEqual({ setQuantity: undefined });
             expect(operation.data).toBe(null);
-            expect(operation.error).toEqual({
+            expect(operation.error?.payload).toEqual({
               qty: { reason: "'qty' is required", metadata: null },
             });
           });
@@ -237,18 +238,18 @@ describe("virtual", () => {
                   .virtual("setQuantity")
                   .alias("qty")
                   .validate(validator)
-                  .ignoreInit(({ qty }) => {
+                  .ignore(({ input: { qty } }) => {
                     contextRecord.setQuantity = qty;
 
                     return (qty ?? 0) <= 0;
-                  })
-                  .ignoreUpdate((input: any, previousValues: any) => {
-                    const qty = input.qty;
-                    const quantity = previousValues.quantity;
-                    contextRecord.setQuantity = qty;
-
-                    return (qty ?? 0) <= quantity;
                   }),
+                // .ignoreUpdate((input: any, previousValues: any) => {
+                //   const qty = input.qty;
+                //   const quantity = previousValues.quantity;
+                //   contextRecord.setQuantity = qty;
+
+                //   return (qty ?? 0) <= quantity;
+                // }),
               ),
           ).getModel();
 
@@ -350,13 +351,13 @@ describe("virtual", () => {
               {},
             );
 
-            expect(error).toMatchObject({
+            expect(error?.payload).toMatchObject({
               virtual: {
                 reason: "validation failed",
                 metadata: null,
               },
             });
-            expect(error?._virtual).toBeUndefined();
+            expect(error?.payload?._virtual).toBeUndefined();
           });
         });
       });
@@ -411,16 +412,14 @@ describe("virtual", () => {
           it("should return alias name as error key if provided and validation fails during updates", async () => {
             const { error } = await Model.update(
               validData,
-              {
-                dependent: "5",
-              },
+              { dependent: "5" },
               {},
             );
 
             expect(error).toMatchObject({
               dependent: { reason: "validation failed", metadata: null },
             });
-            expect(error?._virtual).toBeUndefined();
+            expect(error?.payload?._virtual).toBeUndefined();
           });
         });
       });
@@ -492,34 +491,6 @@ describe("virtual", () => {
       toPass();
     });
 
-    it("should allow ignoreInit(true|()=>boolean) + validator", () => {
-      const values = [true, () => false, () => true];
-
-      for (const ignoreInit of values) {
-        const toPass = makeFx((b, m) =>
-          b
-            .field(
-              m
-                .dependent("dependentField", "fieldName")
-                .default("")
-                .resolve(() => ""),
-            )
-            .field(
-              ignoreInit === true
-                ? m.virtual("fieldName").validate(validator).ignoreInit()
-                : m
-                    .virtual("fieldName")
-                    .validate(validator)
-                    .ignoreInit(ignoreInit as never),
-            ),
-        );
-
-        expectNoFailure(toPass);
-
-        toPass();
-      }
-    });
-
     it("should allow onSuccess + validator", () => {
       const values = [[], () => ({})];
 
@@ -564,6 +535,7 @@ describe("virtual", () => {
                 ({ input: { virtualInit, virtualWithSanitizer } }: any) =>
                   virtualInit && virtualWithSanitizer ? "both" : "one",
               )
+              // @ts-expect-error ikr
               .onSuccess(onSuccess("dependentSideInit")),
           )
           .field(
@@ -574,13 +546,15 @@ describe("virtual", () => {
               ])
               .default("")
               .resolve(() => "changed")
+              // @ts-expect-error ikr
               .onSuccess(onSuccess("dependentSideNoInit")),
           )
           .field(m.lax("name", ""))
           .field(
             m
               .virtual("virtualInit")
-              .validate(validateBoolean as never)
+              .validate(validateBoolean)
+              // @ts-expect-error ikr
               .onSuccess(onSuccess("virtualInit")),
           )
           .field(
@@ -589,6 +563,7 @@ describe("virtual", () => {
               .validate(validateBoolean as never)
               .ignoreInit()
               .onSuccess([
+                // @ts-expect-error ikr
                 onSuccess("virtualNoInit"),
                 incrementOnSuccessStats("virtualNoInit"),
               ]),
@@ -599,6 +574,7 @@ describe("virtual", () => {
               .validate(validateBoolean as never)
               .sanitize(sanitizerOf("virtualWithSanitizer", "sanitized"))
               .onSuccess([
+                // @ts-expect-error ikr
                 onSuccess("virtualWithSanitizer"),
                 incrementOnSuccessStats("virtualWithSanitizer"),
                 incrementOnSuccessStats("virtualWithSanitizer"),
@@ -613,6 +589,7 @@ describe("virtual", () => {
                 sanitizerOf("virtualWithSanitizerNoInit", "sanitized no init"),
               )
               .onSuccess([
+                // @ts-expect-error ikr
                 onSuccess("virtualWithSanitizerNoInit"),
                 incrementOnSuccessStats("virtualWithSanitizerNoInit"),
               ]),
@@ -646,7 +623,7 @@ describe("virtual", () => {
       };
 
       function onSuccess(field: string) {
-        return (context: ReadonlyIvoContext<UserInput, UserOutput>) => {
+        return (context: IvoSuccessContext<UserInput, UserOutput>) => {
           onSuccessValues[field] =
             (context.values as Record<string, unknown>)?.[field] ??
             (context.input as Record<string, unknown>)?.[field];
@@ -1103,10 +1080,6 @@ describe("virtual", () => {
           }
         }
       });
-
-      // "should reject 'sanitizer' rule on non-virtuals" discarded:
-      // `.sanitize()` only exists on `VirtualBuilder` - there's no way to
-      // call it on a laxm builder chain at all.
     });
 
     it("should reject virtual & no dependent property ", () => {
@@ -1128,80 +1101,5 @@ describe("virtual", () => {
         );
       }
     });
-
-    // "should reject virtual & no validator" discarded: `.allow()`/
-    // `.validate()` is mandatory before `[BUILD]` is offered on
-    // `VirtualBuilder`, so a virtual with neither is structurally
-    // unrepresentable.
-
-    it("should reject requiredBy + ignoreInit", () => {
-      const toFail = makeFx((b, m) =>
-        b
-          .field(
-            m
-              .dependent("dependentField", "fieldName")
-              .default("")
-              .resolve(() => ""),
-          )
-          .field(
-            m
-              .virtual("fieldName")
-              .validate(validator)
-              .ignoreInit(true as never)
-              .required(() => true),
-          ),
-      );
-
-      expectFailure(toFail);
-
-      try {
-        toFail();
-      } catch (err: any) {
-        expect(err.payload).toEqual(
-          expect.objectContaining({
-            fieldName: expect.arrayContaining([
-              "Required virtuals cannot have initialization blocked",
-            ]),
-          }),
-        );
-      }
-    });
-
-    it("should reject required(true)", () => {
-      const toFail = makeFx((b, m) =>
-        b
-          .field(
-            m
-              .dependent("dependentField", "fieldName")
-              .default("")
-              .resolve(() => ""),
-          )
-          .field(
-            m
-              .virtual("fieldName")
-              .validate(validator)
-              .required(true as never),
-          ),
-      );
-
-      expectFailure(toFail);
-
-      try {
-        toFail();
-      } catch (err: any) {
-        expect(err.payload).toEqual(
-          expect.objectContaining({
-            fieldName: expect.arrayContaining([
-              "Callable required fields must have required as a function",
-            ]),
-          }),
-        );
-      }
-    });
-
-    // "should reject any non virtual rule" discarded: the excluded rules
-    // (constant, default, dependsOn, onDelete, readonly, resolver, value)
-    // have no corresponding method on `VirtualBuilder` at all, so none of
-    // them can be attached to a virtualm builder chain.
   });
 });

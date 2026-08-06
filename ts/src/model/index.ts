@@ -1390,9 +1390,7 @@ class ModelTool<
 
     return async () => {
       await Promise.allSettled(
-        cleanups.map((h) =>
-          Promise.try(h, Object.freeze(ctx), Object.freeze(ctx.options)),
-        ),
+        cleanups.map((h) => Promise.try(h, Object.freeze(ctx))),
       );
     };
   }
