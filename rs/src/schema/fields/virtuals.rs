@@ -31,8 +31,6 @@ pub struct VirtualFieldBuilder<
     HasSanitizer = No,
     HasRequired = No,
     HasIgnore = No,
-    HasIgnoreInit = No,
-    HasIgnoreUpdate = No,
     HasFailure = No,
     HasSuccess = No,
 > {
@@ -54,8 +52,6 @@ pub struct VirtualFieldBuilder<
     _required_fn: PhantomData<HasRequired>,
     _sanitizer_fn: PhantomData<HasSanitizer>,
     _ignore: PhantomData<HasIgnore>,
-    _ignore_init: PhantomData<HasIgnoreInit>,
-    _ignore_update: PhantomData<HasIgnoreUpdate>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
 }
@@ -67,8 +63,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -89,8 +83,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -114,8 +106,6 @@ impl<
             _required_fn: PhantomData,
             _sanitizer_fn: PhantomData,
             _ignore: PhantomData,
-            _ignore_init: PhantomData,
-            _ignore_update: PhantomData,
             _on_failure_fns: PhantomData,
             _on_success_fns: PhantomData,
         }
@@ -129,8 +119,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -151,8 +139,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -168,8 +154,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -190,8 +174,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -453,7 +435,6 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        No,
         Yes,
     > {
         VirtualFieldBuilder {
@@ -480,8 +461,6 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        No,
-        No,
         Yes,
     > {
         VirtualFieldBuilder {
@@ -503,8 +482,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -525,8 +502,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -546,8 +521,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         Yes,
         HasSuccess,
     >
@@ -588,8 +561,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -610,8 +581,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -631,8 +600,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         Yes,
     >
