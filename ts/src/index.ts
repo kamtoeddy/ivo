@@ -1,8 +1,23 @@
-export { Schema } from "./schema";
-
+export { Schema } from './schema';
+export {
+  getKeysAsProps,
+  isEqual,
+  isFieldError,
+  isFunctionLike,
+  isInputFieldError,
+  isNullOrUndefined,
+  isOneOf,
+  isPropertyOf,
+  isRecordLike,
+  makeFieldError,
+  toArray,
+} from './utils';
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
+  FieldError,
+  InputFieldError,
+  InputPayload,
   IvoContext,
   KeyOf,
   ReadonlyIvoContext,
@@ -10,17 +25,5 @@ export type {
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
-} from "./utils/types";
-export type { FieldError, InputFieldError, InputPayload } from "./utils/types";
-export { isFieldError, isInputFieldError, makeFieldError } from "./utils";
-export {
-  getKeysAsProps,
-  isEqual,
-  isFunctionLike,
-  isNullOrUndefined,
-  isOneOf,
-  isPropertyOf,
-  isRecordLike,
-  toArray,
-} from "./utils";
-export * from "./validators";
+} from './utils/types';
+export * from './validators';

@@ -1,7 +1,7 @@
-import { describe, expect, it } from "bun:test";
-import { type IvoContext, Schema } from "../../src";
+import { describe, expect, it } from 'bun:test';
+import { type IvoContext, Schema } from '../../src';
 
-describe("ctx options threading", () => {
+describe('ctx options threading', () => {
   type Input = { name?: string };
   type Output = { name: string; upper: string };
   type CtxOpts = { log: string[] };
@@ -12,22 +12,22 @@ describe("ctx options threading", () => {
   }
 
   const Model = new Schema<Input, Output, CtxOpts>(
-    (b, m) =>
+    (b) =>
       b
         .field(
-          m.lax("name", "").validate((v, ctx) => {
-            push("validator")(ctx);
-            ctx.options.log = ["lol"];
+          b.lax('name', '').validate((v, ctx) => {
+            push('validator')(ctx);
+            ctx.options.log = ['lol'];
             return { valid: true, validated: v as string };
           }),
         )
         .field(
-          m
-            .dependent("upper", "name")
-            .default("")
+          b
+            .dependent('upper', 'name')
+            .default('')
             .resolve((ctx) => {
-              push("resolver")(ctx);
-              return String(ctx.values.name ?? "").toUpperCase();
+              push('resolver')(ctx);
+              return String(ctx.values.name ?? '').toUpperCase();
             }),
         ),
     {
@@ -39,32 +39,32 @@ describe("ctx options threading", () => {
 
   let seenLogAtSuccess: string[] = [];
 
-  it("accumulates writes from validator then resolver, visible to onSuccess", async () => {
+  it('accumulates writes from validator then resolver, visible to onSuccess', async () => {
     seenLogAtSuccess = [];
 
     const { data, handleSuccess } = await Model.create(
-      { name: "bob" },
+      { name: 'bob' },
       { log: [] },
     );
 
-    expect(data).toEqual({ name: "bob", upper: "BOB" });
+    expect(data).toEqual({ name: 'bob', upper: 'BOB' });
 
     await handleSuccess?.();
 
-    expect(seenLogAtSuccess).toEqual(["validator", "resolver"]);
+    expect(seenLogAtSuccess).toEqual(['validator', 'resolver']);
   });
 
-  it("does not mutate the ctxOptions object instance the caller originally passed in", async () => {
+  it('does not mutate the ctxOptions object instance the caller originally passed in', async () => {
     const original: CtxOpts = { log: [] };
 
-    await Model.create({ name: "sue" }, original);
+    await Model.create({ name: 'sue' }, original);
 
     // the model works off an internal copy; the caller's own reference is untouched
     expect(original.log).toEqual([]);
 
     await Model.update(
-      { name: "sue", upper: "SUE" },
-      { name: "sue-update" },
+      { name: 'sue', upper: 'SUE' },
+      { name: 'sue-update' },
       original,
     );
 
@@ -72,24 +72,24 @@ describe("ctx options threading", () => {
     expect(original.log).toEqual([]);
   });
 
-  it("re-threads a fresh accumulation per call (no leakage across create() calls)", async () => {
+  it('re-threads a fresh accumulation per call (no leakage across create() calls)', async () => {
     seenLogAtSuccess = [];
-    const first = await Model.create({ name: "a" }, { log: ["seed"] });
+    const first = await Model.create({ name: 'a' }, { log: ['seed'] });
     await first.handleSuccess?.();
-    expect(seenLogAtSuccess).toEqual(["seed", "validator", "resolver"]);
+    expect(seenLogAtSuccess).toEqual(['seed', 'validator', 'resolver']);
 
     seenLogAtSuccess = [];
-    const second = await Model.create({ name: "b" }, { log: [] });
+    const second = await Model.create({ name: 'b' }, { log: [] });
     await second.handleSuccess?.();
-    expect(seenLogAtSuccess).toEqual(["validator", "resolver"]);
+    expect(seenLogAtSuccess).toEqual(['validator', 'resolver']);
   });
 
   it('calling ctx.updateOptions inside a "required" handler throws and is swallowed as not-required', async () => {
     type Input = { a: number };
-    const Model = new Schema<Input, Input, CtxOpts>((b, m) =>
+    const Model = new Schema<Input, Input, CtxOpts>((b) =>
       b.field(
-        m.lax("a", 0).required((ctx) => {
-          ctx.updateOptions({ log: [...ctx.options.log, "should-not-run"] });
+        b.lax('a', 0).required((ctx) => {
+          ctx.updateOptions({ log: [...ctx.options.log, 'should-not-run'] });
           return false;
         }),
       ),
@@ -103,10 +103,10 @@ describe("ctx options threading", () => {
     expect(error).toBeNull();
     expect(data).toEqual({ a: 0 });
     expect(original).toEqual({ log: [] });
-    expect(options.log).toEqual(["should-not-run"]);
+    expect(options.log).toEqual(['should-not-run']);
   });
 
-  describe("ctx options as plain object with methods", () => {
+  describe('ctx options as plain object with methods', () => {
     type Input = { a: number };
     type CtxOpts = {
       logs: string[];
@@ -116,17 +116,17 @@ describe("ctx options threading", () => {
     };
 
     const messageFromCtxOptionSetExternalMsg =
-      "set from ctx option.setExternalMsg";
-    const messageIvoUpdateOptionsAPI = "set from ivo updateOptions API";
+      'set from ctx option.setExternalMsg';
+    const messageIvoUpdateOptionsAPI = 'set from ivo updateOptions API';
 
-    it("ctx options as plain object with methods", async () => {
-      let externalMsg = "";
+    it('ctx options as plain object with methods', async () => {
+      let externalMsg = '';
 
-      const Model = new Schema<Input, Input, CtxOpts>((b, m) =>
+      const Model = new Schema<Input, Input, CtxOpts>((b) =>
         b.field(
-          m.lax("a", 0).required((ctx) => {
+          b.lax('a', 0).required((ctx) => {
             const options = ctx.options;
-            options.add("should not be set on ctx options");
+            options.add('should not be set on ctx options');
             options.setExternalMsg(messageFromCtxOptionSetExternalMsg);
             ctx.updateOptions({
               logs: [...ctx.options.logs, messageIvoUpdateOptionsAPI],
@@ -155,14 +155,14 @@ describe("ctx options threading", () => {
         },
       };
 
-      let newExternalMsg = "hello, tony";
+      let newExternalMsg = 'hello, tony';
       o1.setExternalMsg(newExternalMsg);
       expect(externalMsg).toBe(newExternalMsg);
       expect(o1.logs).toEqual([
         formatLogEntry(`set externalMsg to ${newExternalMsg}`),
       ]);
 
-      externalMsg = "";
+      externalMsg = '';
 
       const original: CtxOpts = {
         logs: [],
@@ -191,9 +191,9 @@ describe("ctx options threading", () => {
       expect(original.logs).toEqual([]);
       expect(options.logs).toEqual([messageIvoUpdateOptionsAPI]);
 
-      externalMsg = "";
+      externalMsg = '';
 
-      newExternalMsg = "hello, tony";
+      newExternalMsg = 'hello, tony';
       options.setExternalMsg(newExternalMsg);
       expect(externalMsg).toBe(newExternalMsg);
       // NOTE: this happens because all the methods available to ctx options become pure functions

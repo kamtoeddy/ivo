@@ -1,10 +1,10 @@
-import { toArray } from "../utils";
+import { toArray } from '../utils';
 
 export { SchemaError, SchemaErrorTool };
 
 class SchemaError extends Error {
   constructor(public payload: ErrorPayload) {
-    super("INVALID_SCHEMA");
+    super('INVALID_SCHEMA');
   }
 }
 
@@ -32,7 +32,7 @@ class SchemaErrorTool {
   }
 
   throw() {
-    console.error("\nSchema errors:");
+    console.error('\nSchema errors:');
 
     for (const [prop, messages] of Object.entries(this._payload)) {
       if (messages.length === 1) {

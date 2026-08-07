@@ -1,31 +1,30 @@
+import { Model, ModelTool } from '../model';
 import {
   getKeysAsProps,
   isOneOf,
   isRecordLike,
   SchemaErrorTool,
   toArray,
-} from "../utils";
-
+} from '../utils';
 import {
-  FIELD_CONFIG_BUILD_METHOD_NAME,
+  type ArrayOfMinSizeOne,
   type Buildable,
+  type DefaultFieldErrorMetadata,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   type IvoErrorPayload,
   type KeyOf,
   LIFE_CYCLES,
   type NS,
+  type ObjectType,
+  type PostValidationConfig,
   type RealType,
-  ObjectType,
-  DefaultFieldErrorMetadata,
-  ArrayOfMinSizeOne,
-  PostValidationConfig,
   TimeStampTool,
-} from "../utils/types";
-import { Model, ModelTool } from "../model";
-import { ConstantBuilder } from "./fields/constants";
-import { DependentBuilder, HasDependsOn } from "./fields/dependents";
-import { BuildableLaxConfig, LaxBuilder } from "./fields/lax";
-import { BlankRequiredBuilder, RequiredBuilder } from "./fields/required";
-import { BlankVirtualBuilder, VirtualBuilder } from "./fields/virtual";
+} from '../utils/types';
+import { ConstantBuilder } from './fields/constants';
+import { DependentBuilder, type HasDependsOn } from './fields/dependents';
+import { type BuildableLaxConfig, LaxBuilder } from './fields/lax';
+import { type BlankRequiredBuilder, RequiredBuilder } from './fields/required';
+import { type BlankVirtualBuilder, VirtualBuilder } from './fields/virtual';
 
 export { Schema };
 
@@ -141,7 +140,7 @@ class Schema<
     if (useParentOptions)
       getKeysAsProps(this.options)
         .filter(
-          (prop) => ![...LIFE_CYCLES, "shouldUpdate"].includes(prop as never),
+          (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as never),
         )
         .forEach((prop) => {
           options_[prop] = this.options[prop] as never;
@@ -167,16 +166,16 @@ class Schema<
 }
 
 const FIELD_BUILDER_DEFINITIONS: unique symbol = Symbol(
-  "ivo-schema-field-builder",
+  'ivo-schema-field-builder',
 );
 
 function isBuildable(value: unknown): value is Buildable<unknown> {
   return (
-    typeof value === "object" &&
+    typeof value === 'object' &&
     !!value &&
     typeof (value as { [FIELD_CONFIG_BUILD_METHOD_NAME]?: unknown })[
       FIELD_CONFIG_BUILD_METHOD_NAME
-    ] === "function"
+    ] === 'function'
   );
 }
 
@@ -203,7 +202,7 @@ class FieldBuilder<
     if (isBuildable(c)) {
       const built = c[FIELD_CONFIG_BUILD_METHOD_NAME]();
 
-      if (typeof built.name === "string") this._definitions[built.name] = built;
+      if (typeof built.name === 'string') this._definitions[built.name] = built;
     }
 
     return this;
@@ -228,9 +227,9 @@ class FieldBuilder<
   lax<
     K extends keyof O & string,
     Default extends O[K] | NS.Resolver<O[K], I, O, CtxOptions>,
-    DefaultState extends "value" | "resolver" = Default extends Function
-      ? "resolver"
-      : "value",
+    DefaultState extends 'value' | 'resolver' = Default extends Function
+      ? 'resolver'
+      : 'value',
   >(
     name: K,
     value: Default,
@@ -265,7 +264,7 @@ function validateFields<
   I extends RealType<I>,
   O extends RealType<O>,
   CtxOptions extends ObjectType,
-  const ErrorMetadata = DefaultFieldErrorMetadata,
+  ErrorMetadata,
 >(
   definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>,
   errorTool: SchemaErrorTool,
@@ -292,26 +291,26 @@ function validateFields<
 
     fieldNames.add(fieldName);
 
-    if (config.type === "constant") {
+    if (config.type === 'constant') {
       constantFieldNames.add(fieldName);
       continue;
     }
 
-    if (config.type === "dependent") {
+    if (config.type === 'dependent') {
       const { dependsOn } = config;
       let hasErrors = false;
 
-      if (typeof config.default === "undefined") {
+      if (typeof config.default === 'undefined') {
         errorTool.add(
           fieldName,
-          "Dependent fields must have a default value or default resolver",
+          'Dependent fields must have a default value or default resolver',
         );
 
         hasErrors = true;
       }
 
-      if (typeof config.resolver !== "function") {
-        errorTool.add(fieldName, "Dependent fields must have a value resolver");
+      if (typeof config.resolver !== 'function') {
+        errorTool.add(fieldName, 'Dependent fields must have a value resolver');
 
         hasErrors = true;
       }
@@ -319,14 +318,14 @@ function validateFields<
       if (!dependsOn?.length) {
         errorTool.add(
           fieldName,
-          "Dependent fields must depend on at least one lax, required, virtual or other dependent field on your schema",
+          'Dependent fields must depend on at least one lax, required, virtual or other dependent field on your schema',
         );
         hasErrors = true;
       }
 
       // @ts-expect-error
       if (dependsOn.includes(fieldName)) {
-        errorTool.add(fieldName, "A field cannot depend on itself");
+        errorTool.add(fieldName, 'A field cannot depend on itself');
         hasErrors = true;
       }
 
@@ -338,19 +337,19 @@ function validateFields<
       continue;
     }
 
-    if (config.type === "lax") {
-      if (typeof config.default === "undefined")
+    if (config.type === 'lax') {
+      if (typeof config.default === 'undefined')
         errorTool.add(
           fieldName,
-          "Lax fields must have a default value or default resolver",
+          'Lax fields must have a default value or default resolver',
         );
 
       continue;
     }
 
-    if (config.type === "required") {
+    if (config.type === 'required') {
       if (!config.allow && !config.validator)
-        errorTool.add(fieldName, "Required fields must have a validator");
+        errorTool.add(fieldName, 'Required fields must have a validator');
 
       continue;
     }
@@ -361,7 +360,7 @@ function validateFields<
       if (fieldName === alias) {
         errorTool.add(
           fieldName,
-          "virtual alias name must be different from field name",
+          'virtual alias name must be different from field name',
         );
         continue;
       }
@@ -376,12 +375,12 @@ function validateFields<
         continue;
       }
 
-      for (const [name, cfg] of definitionEntries) {
+      for (const [name, config] of definitionEntries) {
         if (name !== alias) continue;
 
-        if (cfg.type === "dependent") {
+        if (config.type === 'dependent') {
           // @ts-expect-error ikr
-          if (!cfg.dependsOn.includes(fieldName))
+          if (!config.dependsOn.includes(fieldName))
             errorTool.add(
               fieldName,
               `"${alias}" is not a valid alias for field because "${alias}" does not depend on "${fieldName}"`,
@@ -402,17 +401,17 @@ function validateFields<
 
     let hasSufficientDependencies = false;
 
-    for (const [, cfg] of definitionEntries)
+    for (const [, config] of definitionEntries) {
       // @ts-expect-error ikr
-      if (cfg.type === "dependent" && cfg.dependsOn.includes(fieldName)) {
+      if (config.type === 'dependent' && config.dependsOn.includes(fieldName)) {
         hasSufficientDependencies = true;
         break;
       }
-
+    }
     if (!hasSufficientDependencies)
       errorTool.add(
         fieldName,
-        "Virtual fields are expected to have at least one dependency, but found none",
+        'Virtual fields are expected to have at least one dependency, but found none',
       );
   }
 
@@ -474,14 +473,14 @@ function validateFields<
     if (circularChain != null)
       errorTool.add(
         fieldName,
-        `circular dependency identified between "${circularChain.sort().join(" <-> ")}"`,
+        `circular dependency identified between "${circularChain.sort().join(' <-> ')}"`,
       );
   }
 
   if (errorTool.isPayloadLoaded) errorTool.throw();
 
   if (!fieldNames.size)
-    errorTool.add("schema fields", "Insufficient Schema fields").throw();
+    errorTool.add('schema fields', 'Insufficient Schema fields').throw();
 
   return aliasToVirtualMap;
 }
@@ -505,7 +504,7 @@ function makeOptions<
 }): NS.InternalOptions<I, O, CtxOptions, ErrorMetadata, ErrorPayload> {
   let sanitizeError = (p: IvoErrorPayload<ErrorMetadata, KeyOf<I>>) => p;
 
-  if (typeof options.sanitizeError === "function") {
+  if (typeof options.sanitizeError === 'function') {
     // @ts-expect-error ikr
     sanitizeError = options.sanitizeError;
   }
@@ -526,14 +525,14 @@ function makeOptions<
     const ignore: NS.IgnoreConfigOptionItem<I, O, CtxOptions>[] = [];
     let hasErrors = false;
 
-    if (typeof options.ignore === "function") ignore.push(options.ignore);
+    if (typeof options.ignore === 'function') ignore.push(options.ignore);
     else {
-      const optionName = "options.ignore";
+      const optionName = 'options.ignore';
       const type_not_allowed_error =
-        "only lax and virtual fields can belong to grouped ignore configs";
+        'only lax and virtual fields can belong to grouped ignore configs';
 
       for (const config of toArray(options.ignore)) {
-        if (typeof config === "function") {
+        if (typeof config === 'function') {
           ignore.push(config);
 
           continue;
@@ -544,7 +543,7 @@ function makeOptions<
         ignore.push({ fields, resolver });
 
         if (fields.length < 2)
-          errorTool.add(optionName, "grouped ignore expects at least 2 fields");
+          errorTool.add(optionName, 'grouped ignore expects at least 2 fields');
 
         const fieldNames = new Set<string>();
 
@@ -567,7 +566,7 @@ function makeOptions<
             hasErrors = true;
           }
 
-          if (!isOneOf(definitions[fieldName]?.type, ["lax", "virtual"])) {
+          if (!isOneOf(definitions[fieldName]?.type, ['lax', 'virtual'])) {
             errorTool.add(
               optionName,
               `${type_not_allowed_error} remove "${fieldName}"`,
@@ -586,15 +585,15 @@ function makeOptions<
       [];
     let hasErrors = false;
 
-    if (typeof options.ignoreUpdate === "function")
+    if (typeof options.ignoreUpdate === 'function')
       ignoreUpdate.push(options.ignoreUpdate);
     else {
-      const optionName = "options.ignoreUpdate";
+      const optionName = 'options.ignoreUpdate';
       const type_not_allowed_error =
-        "only lax, required and virtual fields can belong to grouped ignore update configs";
+        'only lax, required and virtual fields can belong to grouped ignore update configs';
 
       for (const config of toArray(options.ignoreUpdate)) {
-        if (typeof config === "function") {
+        if (typeof config === 'function') {
           ignoreUpdate.push(config);
 
           continue;
@@ -607,7 +606,7 @@ function makeOptions<
         if (fields.length < 2) {
           errorTool.add(
             optionName,
-            "grouped ignore update expects at least 2 fields",
+            'grouped ignore update expects at least 2 fields',
           );
           hasErrors = true;
         }
@@ -635,9 +634,9 @@ function makeOptions<
 
           if (
             !isOneOf(definitions[fieldName]?.type, [
-              "lax",
-              "required",
-              "virtual",
+              'lax',
+              'required',
+              'virtual',
             ])
           ) {
             errorTool.add(
@@ -657,13 +656,13 @@ function makeOptions<
     const onSuccess: NS.OnSuccessConfigOptionItem<I, O, CtxOptions>[] = [];
     let hasErrors = false;
 
-    if (typeof options.onSuccess === "function")
+    if (typeof options.onSuccess === 'function')
       onSuccess.push(options.onSuccess);
     else {
-      const optionName = "options.on_success";
+      const optionName = 'options.on_success';
 
       for (const config of toArray(options.onSuccess)) {
-        if (typeof config === "function") {
+        if (typeof config === 'function') {
           onSuccess.push(config);
 
           continue;
@@ -709,9 +708,9 @@ function makeOptions<
   }
 
   if (options.postValidate) {
-    const optionName = "options.postValidate";
+    const optionName = 'options.postValidate';
     const type_not_allowed_error =
-      "only lax, required and virtual fields can be post-validated";
+      'only lax, required and virtual fields can be post-validated';
 
     const postValidate: PostValidationConfig<
       any,
@@ -720,7 +719,7 @@ function makeOptions<
       CtxOptions,
       ErrorMetadata
     >[] = [];
-    let hasErrors = false;
+    const hasErrors = false;
 
     for (const { fields, validator } of toArray(options.postValidate)) {
       postValidate.push({ fields, validator });
@@ -728,7 +727,7 @@ function makeOptions<
       if (fields.length < 2)
         errorTool.add(
           optionName,
-          "post-validation config expects at least 2 I fields",
+          'post-validation config expects at least 2 I fields',
         );
 
       const fieldNames = new Set<string>();
@@ -749,7 +748,7 @@ function makeOptions<
           );
 
         if (
-          !isOneOf(definitions[fieldName]?.type, ["lax", "required", "virtual"])
+          !isOneOf(definitions[fieldName]?.type, ['lax', 'required', 'virtual'])
         )
           errorTool.add(
             optionName,
@@ -762,12 +761,12 @@ function makeOptions<
   }
 
   if (options.required) {
-    const optionName = "options.required";
+    const optionName = 'options.required';
     const type_not_allowed_error =
-      "only lax and virtual fields can belong to grouped required configs";
+      'only lax and virtual fields can belong to grouped required configs';
     const required: NS.RequiredConfigObject<I, O, CtxOptions, ErrorMetadata>[] =
       [];
-    let hasErrors = false;
+    const hasErrors = false;
 
     for (const { fields, handler } of toArray(options.required)) {
       required.push({ fields, handler });
@@ -775,7 +774,7 @@ function makeOptions<
       if (fields.length < 2)
         errorTool.add(
           optionName,
-          "grouped required config expects at least 2 I fields",
+          'grouped required config expects at least 2 I fields',
         );
 
       const fieldNames = new Set<string>();
@@ -796,7 +795,7 @@ function makeOptions<
             `"${fieldName}" is an alias; use "${virtualField}" instead`,
           );
 
-        if (!isOneOf(definitions[fieldName]?.type, ["lax", "virtual"]))
+        if (!isOneOf(definitions[fieldName]?.type, ['lax', 'virtual']))
           errorTool.add(
             optionName,
             `${type_not_allowed_error} remove "${fieldName}"`,
@@ -810,7 +809,7 @@ function makeOptions<
   if (options.timestamps) {
     const isValid = isTimestampsConfigOptionOk(options.timestamps);
 
-    if (!isValid.valid) errorTool.add("options.timestamps", isValid.reason);
+    if (!isValid.valid) errorTool.add('options.timestamps', isValid.reason);
     else normalizedOptions.timestamps = new TimeStampTool(options.timestamps);
   }
 
@@ -820,34 +819,34 @@ function makeOptions<
 }
 
 function isTimestampsConfigOptionOk<I, O>(
-  timestamps: NS.Options<I, O>["timestamps"],
+  timestamps: NS.Options<I, O>['timestamps'],
 ) {
   const valid = false;
 
   const typeProveded = typeof timestamps;
 
-  if (typeProveded === "boolean") return { valid: true };
+  if (typeProveded === 'boolean') return { valid: true };
 
   if (!isRecordLike(timestamps))
     return { valid, reason: "should be 'boolean' or 'non null object'" };
 
   if (!Object.keys(timestamps!).length)
-    return { valid, reason: "cannot be an empty object" };
+    return { valid, reason: 'cannot be an empty object' };
 
   const createdAt = timestamps.createdAt as string;
   let updatedAt = timestamps.updatedAt as string;
 
-  if (typeof createdAt === "string" && !createdAt.trim().length)
+  if (typeof createdAt === 'string' && !createdAt.trim().length)
     return { valid, reason: "'createdAt' cannot be an empty string" };
 
-  if (typeof updatedAt === "string" && !updatedAt.trim().length)
+  if (typeof updatedAt === 'string' && !updatedAt.trim().length)
     return { valid, reason: "'updatedAt' cannot be an empty string" };
 
-  if (typeof timestamps.updatedAt === "object") {
+  if (typeof timestamps.updatedAt === 'object') {
     const updatedAtConfig = timestamps.updatedAt;
 
     const keys = Object.keys(updatedAtConfig).filter((prop) =>
-      isOneOf(prop, ["key", "nullable"]),
+      isOneOf(prop, ['key', 'nullable']),
     );
 
     if (!keys.length)
@@ -856,16 +855,16 @@ function isTimestampsConfigOptionOk<I, O>(
         reason: "'updatedAt' can only accept fields 'key' and 'nullable'",
       };
 
-    if (keys.includes("key")) {
+    if (keys.includes('key')) {
       updatedAt = updatedAtConfig.key!;
 
-      if (typeof updatedAt !== "string" || !updatedAt.trim().length)
+      if (typeof updatedAt !== 'string' || !updatedAt.trim().length)
         return { valid, reason: "'updatedAt.key' must be a valid string" };
     }
 
     if (
-      keys.includes("nullable") &&
-      typeof updatedAtConfig.nullable !== "boolean"
+      keys.includes('nullable') &&
+      typeof updatedAtConfig.nullable !== 'boolean'
     )
       return {
         valid,
@@ -874,7 +873,7 @@ function isTimestampsConfigOptionOk<I, O>(
   }
 
   if (createdAt === updatedAt)
-    return { valid, reason: "createdAt & updatedAt cannot be same" };
+    return { valid, reason: 'createdAt & updatedAt cannot be same' };
 
   return { valid: true };
 }

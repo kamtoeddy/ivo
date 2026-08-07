@@ -1,16 +1,16 @@
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
-  FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
+  type InitResolverCtx,
   type NotAllowedError,
   type NS,
+  type ObjectType,
   type ReValidator,
   type Validator,
-  type ObjectType,
-  InitResolverCtx,
-} from "../../utils/types";
-import { extractAllowedValues } from "./_utils";
+} from '../../utils/types';
+import { extractAllowedValues } from './_utils';
 
 export { type BlankRequiredBuilder, RequiredBuilder };
 
@@ -23,7 +23,7 @@ interface BlankRequiredBuilder<
 > {
   allow<const V extends Value>(
     values: ArrayOfMinSizeTwo<V>,
-  ): BuildableRequiredConfig<V, Input, Output, CtxOptions, Metadata, "allow">;
+  ): BuildableRequiredConfig<V, Input, Output, CtxOptions, Metadata, 'allow'>;
   requiredError(
     error: string | ((ctx: InitResolverCtx<Input, CtxOptions>) => string),
   ): HasRequiredError<Value, Input, Output, CtxOptions, Metadata>;
@@ -35,7 +35,7 @@ interface BlankRequiredBuilder<
     Output,
     CtxOptions,
     Metadata,
-    "validate"
+    'validate'
   >;
 }
 
@@ -48,7 +48,7 @@ interface HasRequiredError<
 > {
   allow<const V extends Value>(
     values: ArrayOfMinSizeTwo<V>,
-  ): BuildableRequiredConfig<V, Input, Output, CtxOptions, Metadata, "allow">;
+  ): BuildableRequiredConfig<V, Input, Output, CtxOptions, Metadata, 'allow'>;
   validate(
     validator: Validator<Value, Input, Output, CtxOptions, Metadata>,
   ): BuildableRequiredConfig<
@@ -57,7 +57,7 @@ interface HasRequiredError<
     Output,
     CtxOptions,
     Metadata,
-    "validate"
+    'validate'
   >;
 }
 
@@ -67,17 +67,17 @@ type BuildableRequiredConfig<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-  ValidationState extends "allow" | "none" | "validate" = "none",
+  ValidationState extends 'allow' | 'none' | 'validate' = 'none',
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
-  HasIgnoreUpdate extends "yes" | "yes-computed" | "no" = "no",
+  HasIgnoreUpdate extends 'yes' | 'yes-computed' | 'no' = 'no',
   HasOnDelete extends boolean = false,
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
-> = (ValidationState extends "none"
+> = (ValidationState extends 'none'
   ? {}
   : Buildable<NS.RequiredField<Value, Input, Output, CtxOptions, Metadata>>) &
-  (ValidationState extends "allow"
+  (ValidationState extends 'allow'
     ? HasAllowError extends true
       ? {}
       : {
@@ -94,7 +94,7 @@ type BuildableRequiredConfig<
             Output,
             CtxOptions,
             Metadata,
-            "allow",
+            'allow',
             true,
             HasReValidate,
             HasIgnoreUpdate,
@@ -104,7 +104,7 @@ type BuildableRequiredConfig<
           >;
         }
     : {}) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasReValidate extends true
       ? {}
@@ -126,7 +126,7 @@ type BuildableRequiredConfig<
             HasOnSuccess
           >;
         }) &
-  (HasIgnoreUpdate extends "no"
+  (HasIgnoreUpdate extends 'no'
     ? {
         readonly(): BuildableRequiredConfig<
           Value,
@@ -137,7 +137,7 @@ type BuildableRequiredConfig<
           ValidationState,
           HasAllowError,
           HasReValidate,
-          "yes",
+          'yes',
           HasOnDelete,
           HasOnFailure,
           HasOnSuccess
@@ -153,7 +153,7 @@ type BuildableRequiredConfig<
           ValidationState,
           HasAllowError,
           HasReValidate,
-          "yes-computed",
+          'yes-computed',
           HasOnDelete,
           HasOnFailure,
           HasOnSuccess
@@ -233,14 +233,13 @@ class RequiredBuilder<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
->
-  implements
+> implements
     BlankRequiredBuilder<Value, Input, Output, CtxOptions, Metadata>,
-    BuildableRequiredConfig<Value, Input, Output, CtxOptions, Metadata, "allow">
+    BuildableRequiredConfig<Value, Input, Output, CtxOptions, Metadata, 'allow'>
 {
   private config: Partial<
     NS.RequiredField<Value, Input, Output, CtxOptions, Metadata>
-  > = { type: "required" };
+  > = { type: 'required' };
 
   constructor(name: string) {
     this.config.name = name;

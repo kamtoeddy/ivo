@@ -11,8 +11,8 @@ import {
   makeFieldError,
   makeResponse,
   toArray,
-} from "../utils";
-import {
+} from '../utils';
+import type {
   ArrayOfMinSizeTwo,
   ConstantResolverCtx,
   DefaultFieldErrorMetadata,
@@ -33,12 +33,12 @@ import {
   RequiredHandlerRes,
   UpdateResolverCtx,
   ValidatorResponseObject,
-} from "../utils/types";
+} from '../utils/types';
 
 export { Model, ModelTool };
 
-const NotAllowedError = "value not allowed";
-const validationFailedFieldError = makeFieldError("validation failed");
+const NotAllowedError = 'value not allowed';
+const validationFailedFieldError = makeFieldError('validation failed');
 
 class ModelTool<
   I extends RealType<I>,
@@ -149,7 +149,7 @@ class ModelTool<
       : [];
 
     for (const c of Object.values(this.definitions))
-      if (c.type !== "virtual" && c.onDelete)
+      if (c.type !== 'virtual' && c.onDelete)
         handlers = handlers.concat(c.onDelete);
 
     await Promise.allSettled(
@@ -227,9 +227,9 @@ class ModelTool<
     for (const configName of getKeysAsProps(this.definitions)) {
       const config = this.definitions[configName]!;
 
-      if (config.type === "constant" || config.type === "dependent") continue;
+      if (config.type === 'constant' || config.type === 'dependent') continue;
 
-      const isVirtual = config.type === "virtual";
+      const isVirtual = config.type === 'virtual';
 
       fields.set(
         configName,
@@ -492,7 +492,7 @@ class ModelTool<
         });
       }
 
-      if (typeof message === "string")
+      if (typeof message === 'string')
         return makeResponse({
           valid: false,
           reason: message || NotAllowedError,
@@ -523,7 +523,7 @@ class ModelTool<
     const { reason, metadata } = validationResponse;
 
     const fieldError = makeFieldError<ErrorMetadata>(
-      reason || "validation failed",
+      reason || 'validation failed',
     );
 
     if (metadata) fieldError.metadata = metadata;
@@ -535,7 +535,7 @@ class ModelTool<
     const tasks: [string, NS.ConstantResolver<any, I, O, CtxOptions>][] = [];
 
     for (const [configName, config] of Object.entries(this.definitions)) {
-      if (config.type !== "constant") continue;
+      if (config.type !== 'constant') continue;
 
       const value = config.value;
 
@@ -559,12 +559,15 @@ class ModelTool<
             ] as const,
         ),
       )
-    ).reduce((acc, [configName, value]) => {
-      // @ts-expect-error ikr
-      acc[configName] = value;
+    ).reduce(
+      (acc, [configName, value]) => {
+        // @ts-expect-error ikr
+        acc[configName] = value;
 
-      return acc;
-    }, {} as Partial<O>);
+        return acc;
+      },
+      {} as Partial<O>,
+    );
 
     this._updateCxtValues(constantValues);
 
@@ -576,8 +579,8 @@ class ModelTool<
 
     for (const [configName, config] of Object.entries(this.definitions)) {
       if (
-        config.type === "dependent" ||
-        (config.type === "lax" &&
+        config.type === 'dependent' ||
+        (config.type === 'lax' &&
           !fieldsCollection.relevantFieldsProvided.has(configName))
       ) {
         const value = config.default;
@@ -603,12 +606,15 @@ class ModelTool<
             ] as const,
         ),
       )
-    ).reduce((acc, [configName, value]) => {
-      // @ts-expect-error ikr
-      acc[configName] = value;
+    ).reduce(
+      (acc, [configName, value]) => {
+        // @ts-expect-error ikr
+        acc[configName] = value;
 
-      return acc;
-    }, {} as Partial<O>);
+        return acc;
+      },
+      {} as Partial<O>,
+    );
 
     this._updateCxtValues(defaultValues);
   }
@@ -657,7 +663,7 @@ class ModelTool<
 
     if (isUpdate) {
       for (const config of toArray(this.options.ignoreUpdate ?? [])) {
-        if (typeof config === "function") entityResolvers.push(config);
+        if (typeof config === 'function') entityResolvers.push(config);
         else if (config.fields.length === 0)
           entityResolvers.push(config.resolver);
       }
@@ -710,7 +716,7 @@ class ModelTool<
         ),
       )) {
         // if "task.value" is positive, it means "ignore"
-        if (task.status === "fulfilled" && task.value) return fieldsCollection;
+        if (task.status === 'fulfilled' && task.value) return fieldsCollection;
       }
 
     fieldsCollection.fieldsProvided = fieldsProvided;
@@ -745,7 +751,7 @@ class ModelTool<
 
       if (readonly && isUpdate) {
         const hasStaticDefault =
-          defaultValue !== undefined && typeof defaultValue !== "function";
+          defaultValue !== undefined && typeof defaultValue !== 'function';
 
         // readonly with a static default: only allow the update while the
         // previous value still equals that default. Otherwise (no default,
@@ -771,10 +777,10 @@ class ModelTool<
 
       const source = isUpdate ? ignoreUpdate : ignoreInit;
 
-      if (isUpdate && config.type === "required") {
+      if (isUpdate && config.type === 'required') {
         const ignoreUpdate = config.ignoreUpdate;
 
-        if (!readonly && typeof ignoreUpdate === "function")
+        if (!readonly && typeof ignoreUpdate === 'function')
           tasks.push([
             [fieldName],
             () => ignoreUpdate(this._getUpdateResolverCtx()),
@@ -803,9 +809,9 @@ class ModelTool<
     );
 
     for (const config of toArray(this.options.ignore ?? [])) {
-      if (typeof config === "function") {
+      if (typeof config === 'function') {
         tasks.push([relevantConfigNames, () => config(this._getContext())]);
-      } else if (config && typeof config === "object") {
+      } else if (config && typeof config === 'object') {
         const fields = config.fields;
 
         if (fields.some((name: string) => relevantConfigNames.includes(name)))
@@ -815,7 +821,7 @@ class ModelTool<
 
     if (isUpdate) {
       for (const config of toArray(this.options.ignoreUpdate ?? [])) {
-        if (typeof config === "function") {
+        if (typeof config === 'function') {
           tasks.push([
             relevantConfigNames,
             () => config(this._getUpdateResolverCtx()),
@@ -886,18 +892,18 @@ class ModelTool<
     const handlers: (() => Res | Promise<Res>)[] = [];
 
     for (const [configName, config] of Object.entries(this.definitions)) {
-      if (config.type === "constant" || config.type === "dependent") continue;
+      if (config.type === 'constant' || config.type === 'dependent') continue;
 
       if (fieldsCollection.relevantConfigNames.has(configName)) continue;
 
-      if (config.type === "required") {
-        let error;
+      if (config.type === 'required') {
+        let error: string;
 
-        if (typeof config.requiredError === "function") {
+        if (typeof config.requiredError === 'function') {
           try {
             let customError = config.requiredError(this._getInitResolverCtx());
 
-            if (typeof customError === "string") {
+            if (typeof customError === 'string') {
               customError = customError.trim();
 
               if (customError) error = customError;
@@ -957,7 +963,7 @@ class ModelTool<
     );
 
     for (const r of results) {
-      if (r.status !== "fulfilled" || !r.value) continue;
+      if (r.status !== 'fulfilled' || !r.value) continue;
 
       for (const [fieldName, err] of r.value) {
         if (!err) continue;
@@ -995,9 +1001,9 @@ class ModelTool<
   private _evaluateUpdateValidity(
     fieldsCollection: FieldInfoCollection,
   ): Set<string> {
-    let input: Partial<I> = this.ctxInput;
-    let updates: Partial<O> = this.ctxValues;
-    let previousPartial: O = this.ctxPreviousValues!;
+    const input: Partial<I> = this.ctxInput;
+    const updates: Partial<O> = this.ctxValues;
+    const previousPartial: O = this.ctxPreviousValues!;
 
     const relevantFieldsProvided = new Set<string>();
 
@@ -1067,11 +1073,11 @@ class ModelTool<
             );
           else if (validator) {
             const result = await Promise.try(validator, rawValue, ctx).catch(
-              () => ({ valid: false, reason: "validation failed" }),
+              () => ({ valid: false, reason: 'validation failed' }),
             );
 
             isValid = this._sanitizeValidationResponse<any>(
-              typeof result === "boolean" ? { valid: result } : result,
+              typeof result === 'boolean' ? { valid: result } : result,
               rawValue,
             );
           }
@@ -1132,7 +1138,7 @@ class ModelTool<
         } catch {
           isValid = makeResponse<unknown, ErrorMetadata>({
             valid: false,
-            reason: "validation failed",
+            reason: 'validation failed',
           });
         }
 
@@ -1162,9 +1168,9 @@ class ModelTool<
 
     const errorTool = new ErrorTool<ErrorMetadata>();
 
-    let validators: [
+    const validators: [
       string[],
-      PostValidationConfig<any, I, O, CtxOptions, ErrorMetadata>["validator"],
+      PostValidationConfig<any, I, O, CtxOptions, ErrorMetadata>['validator'],
     ][] = [];
 
     if (this.options.postValidate)
@@ -1298,7 +1304,7 @@ class ModelTool<
 
         if (!info || !fields.includes(info.configName)) continue;
 
-        if (typeof value === "object" && "validated" in (value as any)) {
+        if (typeof value === 'object' && 'validated' in (value as any)) {
           // @ts-expect-error ikr
           revalidatedData[info.name] = (value as any).validated;
 
@@ -1306,11 +1312,11 @@ class ModelTool<
         }
 
         let error: string | InputFieldError<ErrorMetadata> =
-          "validation failed";
+          'validation failed';
 
         if (isInputFieldError<ErrorMetadata>(value)) error = value;
 
-        if (typeof value === "string") {
+        if (typeof value === 'string') {
           const message = value.trim();
 
           if (message.length) error = message;
@@ -1414,7 +1420,7 @@ class ModelTool<
       for (const config of this.options.onSuccess) {
         if (!config) continue;
 
-        if (typeof config === "function") {
+        if (typeof config === 'function') {
           successListeners = successListeners.concat(config);
           continue;
         }
@@ -1450,7 +1456,7 @@ class ModelTool<
     for (const configName in this.definitions) {
       const config = this.definitions[configName];
 
-      if (config.type !== "dependent") continue;
+      if (config.type !== 'dependent') continue;
 
       if (
         toArray(config.dependsOn).some((parent) =>
@@ -1479,7 +1485,7 @@ class ModelTool<
         if (
           !isCreation &&
           config.readonly &&
-          typeof config.default !== "function" &&
+          typeof config.default !== 'function' &&
           !isEqual(
             config.default,
             (values as any)[name],
@@ -1513,14 +1519,14 @@ class ModelTool<
   ): ValidatorResponseObject<T, ErrorMetadata> {
     const responseType = typeof response;
 
-    if (responseType === "boolean")
+    if (responseType === 'boolean')
       return (
         response
           ? { valid: true, validated: value }
           : getValidationFailedResponse(value)
       ) as never;
 
-    if (!response && responseType !== "object")
+    if (!response && responseType !== 'object')
       return getValidationFailedResponse(value) as never;
 
     if (response?.valid) {
@@ -1536,7 +1542,7 @@ class ModelTool<
       value,
     } as never;
 
-    if (response?.reason && typeof response?.reason === "string")
+    if (response?.reason && typeof response?.reason === 'string')
       _response.reason = response.reason;
 
     if (response?.metadata && isRecordLike(response.metadata))
@@ -1615,13 +1621,13 @@ class Model<
 }
 
 function areValuesOk(values: unknown) {
-  return values && typeof values === "object";
+  return values && typeof values === 'object';
 }
 
 function getValidationFailedResponse(value: unknown) {
   return {
     metadata: null,
-    reason: "validation failed",
+    reason: 'validation failed',
     valid: false,
     value,
   } as ValidatorResponseObject<unknown, unknown>;

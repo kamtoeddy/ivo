@@ -1,46 +1,46 @@
-import { describe, expect, it } from "bun:test";
-import { Schema } from "../../src";
+import { describe, expect, it } from 'bun:test';
+import { Schema } from '../../src';
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
   makeFx,
-} from "../_utils";
+} from '../_utils';
 
-describe("Schema.options.equalityDepth", () => {
-  describe("behaviour", () => {
+describe('Schema.options.equalityDepth', () => {
+  describe('behaviour', () => {
     const error = null;
 
     const user = {
-      level_0_a: "value",
+      level_0_a: 'value',
       level_0_b: {
-        level_1_a: { level_2_a: "value", level_2_b: "value" },
+        level_1_a: { level_2_a: 'value', level_2_b: 'value' },
         level_1_b: {
-          level_2_a: "value",
+          level_2_a: 'value',
           level_2_b: {
-            level_3_a: "value",
-            level_3_b: "value",
-            level_3_c: { level_4_a: "value", level_4_b: "value" },
+            level_3_a: 'value',
+            level_3_b: 'value',
+            level_3_c: { level_4_a: 'value', level_4_b: 'value' },
           },
         },
       },
     };
 
-    describe("behaviour with previous values", () => {
-      it("should respect the default equality depth(1)", async () => {
-        const Model = new Schema<any>((b, m) =>
-          b.field(m.lax("level_0_a", "")).field(m.lax("level_0_b", {})),
+    describe('behaviour with previous values', () => {
+      it('should respect the default equality depth(1)', async () => {
+        const Model = new Schema<any>((b) =>
+          b.field(b.lax('level_0_a', '')).field(b.lax('level_0_b', {})),
         ).getModel();
 
         const changeToAllow = {
-          level_1_a: { level_2_b: "value", level_2_a: "value" },
+          level_1_a: { level_2_b: 'value', level_2_a: 'value' },
           level_1_b: {
             level_2_b: {
-              level_3_b: "value",
-              level_3_a: "value",
-              level_3_c: { level_4_a: "value", level_4_b: "value" },
+              level_3_b: 'value',
+              level_3_a: 'value',
+              level_3_c: { level_4_a: 'value', level_4_b: 'value' },
             },
-            level_2_a: "value",
+            level_2_a: 'value',
           },
         };
 
@@ -49,17 +49,17 @@ describe("Schema.options.equalityDepth", () => {
           {
             changes: {
               level_0_b: {
-                level_1_a: { level_2_a: "value", level_2_b: "value" },
+                level_1_a: { level_2_a: 'value', level_2_b: 'value' },
                 level_1_b: {
-                  level_2_a: "value",
+                  level_2_a: 'value',
                   level_2_b: {
-                    level_3_a: "value",
-                    level_3_b: "value",
-                    level_3_c: { level_4_a: "value", level_4_b: "value" },
+                    level_3_a: 'value',
+                    level_3_b: 'value',
+                    level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                   },
                 },
               },
-              level_0_a: "value",
+              level_0_a: 'value',
             },
             error,
           },
@@ -68,22 +68,22 @@ describe("Schema.options.equalityDepth", () => {
               level_0_b: {
                 level_1_b: {
                   level_2_b: {
-                    level_3_a: "value",
-                    level_3_b: "value",
-                    level_3_c: { level_4_a: "value", level_4_b: "value" },
+                    level_3_a: 'value',
+                    level_3_b: 'value',
+                    level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                   },
-                  level_2_a: "value",
+                  level_2_a: 'value',
                 },
-                level_1_a: { level_2_b: "value", level_2_a: "value" },
+                level_1_a: { level_2_b: 'value', level_2_a: 'value' },
               },
-              level_0_a: "value",
+              level_0_a: 'value',
             },
             error,
           },
           {
             changes: {
               level_0_b: changeToAllow,
-              level_0_a: "value",
+              level_0_a: 'value',
             },
             data: { level_0_b: changeToAllow },
           },
@@ -104,15 +104,14 @@ describe("Schema.options.equalityDepth", () => {
           if ((values as any).error) {
             expect(data).toEqual(null);
             expect(error).toBeNull();
-            expect(typeof handleFailure).toBe("function");
+            expect(typeof handleFailure).toBe('function');
           }
         }
       });
 
-      it("should respect the equality depth(0)", async () => {
+      it('should respect the equality depth(0)', async () => {
         const Model = new Schema<any>(
-          (b, m) =>
-            b.field(m.lax("level_0_a", "")).field(m.lax("level_0_b", {})),
+          (b) => b.field(b.lax('level_0_a', '')).field(b.lax('level_0_b', {})),
           { equalityDepth: 0 },
         ).getModel();
 
@@ -120,24 +119,24 @@ describe("Schema.options.equalityDepth", () => {
             level_0_b: {
               level_1_b: {
                 level_2_b: {
-                  level_3_a: "value",
-                  level_3_b: "value",
-                  level_3_c: { level_4_a: "value", level_4_b: "value" },
+                  level_3_a: 'value',
+                  level_3_b: 'value',
+                  level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                 },
-                level_2_a: "value",
+                level_2_a: 'value',
               },
-              level_1_a: { level_2_b: "value", level_2_a: "value" },
+              level_1_a: { level_2_b: 'value', level_2_a: 'value' },
             },
           },
           changeToAllow1 = {
-            level_1_a: { level_2_b: "value", level_2_a: "value" },
+            level_1_a: { level_2_b: 'value', level_2_a: 'value' },
             level_1_b: {
               level_2_b: {
-                level_3_b: "value",
-                level_3_a: "value",
-                level_3_c: { level_4_a: "value", level_4_b: "value" },
+                level_3_b: 'value',
+                level_3_a: 'value',
+                level_3_c: { level_4_a: 'value', level_4_b: 'value' },
               },
-              level_2_a: "value",
+              level_2_a: 'value',
             },
           };
 
@@ -146,17 +145,17 @@ describe("Schema.options.equalityDepth", () => {
           {
             changes: {
               level_0_b: {
-                level_1_a: { level_2_a: "value", level_2_b: "value" },
+                level_1_a: { level_2_a: 'value', level_2_b: 'value' },
                 level_1_b: {
-                  level_2_a: "value",
+                  level_2_a: 'value',
                   level_2_b: {
-                    level_3_a: "value",
-                    level_3_b: "value",
-                    level_3_c: { level_4_a: "value", level_4_b: "value" },
+                    level_3_a: 'value',
+                    level_3_b: 'value',
+                    level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                   },
                 },
               },
-              level_0_a: "value",
+              level_0_a: 'value',
             },
             error,
           },
@@ -167,7 +166,7 @@ describe("Schema.options.equalityDepth", () => {
           {
             changes: {
               level_0_b: changeToAllow1,
-              level_0_a: "value",
+              level_0_a: 'value',
             },
             data: { level_0_b: changeToAllow1 },
           },
@@ -188,15 +187,14 @@ describe("Schema.options.equalityDepth", () => {
           if ((values as any).error) {
             expect(data).toEqual(null);
             expect(error).toBeNull();
-            expect(typeof handleFailure).toBe("function");
+            expect(typeof handleFailure).toBe('function');
           }
         }
       });
 
-      it("should respect the equality depth(2)", async () => {
+      it('should respect the equality depth(2)', async () => {
         const Model = new Schema<any>(
-          (b, m) =>
-            b.field(m.lax("level_0_a", "")).field(m.lax("level_0_b", {})),
+          (b) => b.field(b.lax('level_0_a', '')).field(b.lax('level_0_b', {})),
           { equalityDepth: 2 },
         ).getModel();
 
@@ -205,17 +203,17 @@ describe("Schema.options.equalityDepth", () => {
           {
             changes: {
               level_0_b: {
-                level_1_a: { level_2_a: "value", level_2_b: "value" },
+                level_1_a: { level_2_a: 'value', level_2_b: 'value' },
                 level_1_b: {
-                  level_2_a: "value",
+                  level_2_a: 'value',
                   level_2_b: {
-                    level_3_a: "value",
-                    level_3_b: "value",
-                    level_3_c: { level_4_a: "value", level_4_b: "value" },
+                    level_3_a: 'value',
+                    level_3_b: 'value',
+                    level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                   },
                 },
               },
-              level_0_a: "value",
+              level_0_a: 'value',
             },
             error,
           },
@@ -224,13 +222,13 @@ describe("Schema.options.equalityDepth", () => {
               level_0_b: {
                 level_1_b: {
                   level_2_b: {
-                    level_3_a: "value",
-                    level_3_b: "value",
-                    level_3_c: { level_4_a: "value", level_4_b: "value" },
+                    level_3_a: 'value',
+                    level_3_b: 'value',
+                    level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                   },
-                  level_2_a: "value",
+                  level_2_a: 'value',
                 },
-                level_1_a: { level_2_b: "value", level_2_a: "value" },
+                level_1_a: { level_2_b: 'value', level_2_a: 'value' },
               },
             },
             error,
@@ -238,17 +236,17 @@ describe("Schema.options.equalityDepth", () => {
           {
             changes: {
               level_0_b: {
-                level_1_a: { level_2_b: "value", level_2_a: "value" },
+                level_1_a: { level_2_b: 'value', level_2_a: 'value' },
                 level_1_b: {
                   level_2_b: {
-                    level_3_b: "value",
-                    level_3_a: "value",
-                    level_3_c: { level_4_a: "value", level_4_b: "value" },
+                    level_3_b: 'value',
+                    level_3_a: 'value',
+                    level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                   },
-                  level_2_a: "value",
+                  level_2_a: 'value',
                 },
               },
-              level_0_a: "value",
+              level_0_a: 'value',
             },
             error,
           },
@@ -264,14 +262,14 @@ describe("Schema.options.equalityDepth", () => {
           if (values.error) {
             expect(data).toEqual(null);
             expect(error).toBeNull();
-            expect(typeof handleFailure).toBe("function");
+            expect(typeof handleFailure).toBe('function');
           }
         }
       });
     });
   });
 
-  describe("valid", () => {
+  describe('valid', () => {
     it("should allow 'equalityDepth' as number", () => {
       const toPass = makeFx(getValidSchema(), { equalityDepth: 1 });
 
@@ -280,7 +278,7 @@ describe("Schema.options.equalityDepth", () => {
       toPass();
     });
 
-    it("should allow numbers >= 0", () => {
+    it('should allow numbers >= 0', () => {
       const values = [0, 1, 53, Number.POSITIVE_INFINITY];
 
       for (const equalityDepth of values) {
@@ -293,18 +291,18 @@ describe("Schema.options.equalityDepth", () => {
     });
   });
 
-  describe("invalid", () => {
+  describe('invalid', () => {
     it("should reject 'equalityDepth' if not a number >= 0", () => {
       const invalidValues = [
         -1,
         [],
         {},
-        () => "",
+        () => '',
         () => 23,
         true,
         false,
-        "invalid",
-        "",
+        'invalid',
+        '',
         null,
       ];
 
@@ -317,7 +315,7 @@ describe("Schema.options.equalityDepth", () => {
           toFail();
         } catch (err: any) {
           expect(err).toMatchObject({
-            message: "INVALID_SCHEMA",
+            message: 'INVALID_SCHEMA',
             payload: {
               equalityDepth: expect.arrayContaining([
                 "'equalityDepth' must be a number between 0 and +Infinity",

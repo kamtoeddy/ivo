@@ -1,21 +1,21 @@
-import { beforeEach, describe, expect, it, test } from "bun:test";
-import { type ReadonlyIvoContext, Schema } from "../../src";
-import { expectFailure, expectNoFailure, makeFx, validator } from "../_utils";
-import { IvoSuccessContext } from "../../src/utils/types";
+import { beforeEach, describe, expect, it, test } from 'bun:test';
+import { type ReadonlyIvoContext, Schema } from '../../src';
+import type { IvoSuccessContext } from '../../src/utils/types';
+import { expectFailure, expectNoFailure, makeFx, validator } from '../_utils';
 
-describe("life cycle handlers", () => {
-  const rules = ["onDelete", "onFailure", "onSuccess"] as const;
+describe('life cycle handlers', () => {
+  const rules = ['onDelete', 'onFailure', 'onSuccess'] as const;
 
-  describe("valid", () => {
-    test("valid", () => {
+  describe('valid', () => {
+    test('valid', () => {
       const values = [() => {}, () => ({}), [() => {}], [() => {}, () => ({})]];
 
       for (const rule of rules)
         for (const value of values) {
-          const toPass = makeFx((b, m) =>
+          const toPass = makeFx((b) =>
             b.field(
-              m
-                .lax("fieldName", "")
+              b
+                .lax('fieldName', '')
                 .validate(validator)
                 [rule](value as never),
             ),
@@ -28,16 +28,16 @@ describe("life cycle handlers", () => {
     });
   });
 
-  describe("invalid", () => {
-    test("invalid", () => {
-      const values = [1, "", 0, false, true, null, {}];
+  describe('invalid', () => {
+    test('invalid', () => {
+      const values = [1, '', 0, false, true, null, {}];
 
       for (const rule of rules)
         for (const value of values) {
-          const toFail = makeFx((b, m) =>
+          const toFail = makeFx((b) =>
             b.field(
-              m
-                .lax("fieldName", "")
+              b
+                .lax('fieldName', '')
                 .validate(validator)
                 [rule](value as never),
             ),
@@ -60,18 +60,18 @@ describe("life cycle handlers", () => {
     });
   });
 
-  describe("life cycle readonly ctx", () => {
-    const rules = ["onDelete", "onFailure", "onSuccess"];
+  describe('life cycle readonly ctx', () => {
+    const rules = ['onDelete', 'onFailure', 'onSuccess'];
 
     let propChangeMap: Record<string, Record<string, boolean>> = {},
       ctxHasUpdateMethod: Record<string, boolean> = {};
 
-    const validData = { constant: 1, prop1: "1", prop2: "2", prop3: "3" };
-    const allFields = ["constant", "prop1", "prop2", "prop3"],
-      props = ["prop1", "prop2", "prop3"];
+    const validData = { constant: 1, prop1: '1', prop2: '2', prop3: '3' };
+    const allFields = ['constant', 'prop1', 'prop2', 'prop3'],
+      props = ['prop1', 'prop2', 'prop3'];
 
     const handle =
-      (rule = "", field = "") =>
+      (rule = '', field = '') =>
       (context: IvoSuccessContext<any>) => {
         ctxHasUpdateMethod[rule] = !!(context as any)?.updateOptions;
 
@@ -85,38 +85,38 @@ describe("life cycle handlers", () => {
       };
     const validator = (value: unknown) => ({ valid: !!value });
 
-    const Model = new Schema<any>((b, m) =>
+    const Model = new Schema<any>((b) =>
       b
         .field(
-          m
-            .constant("constant", "constant")
-            .onDelete(handle("onDelete", "constant"))
+          b
+            .constant('constant', 'constant')
+            .onDelete(handle('onDelete', 'constant'))
             // @ts-expect-error ikr
-            .onSuccess(handle("onSuccess", "constant")),
+            .onSuccess(handle('onSuccess', 'constant')),
         )
         .field(
-          m
-            .required("prop1")
+          b
+            .required('prop1')
             .validate(validator)
-            .onDelete(handle("onDelete", "prop1"))
-            .onFailure(handle("onFailure", "prop1"))
-            .onSuccess(handle("onSuccess", "prop1")),
+            .onDelete(handle('onDelete', 'prop1'))
+            .onFailure(handle('onFailure', 'prop1'))
+            .onSuccess(handle('onSuccess', 'prop1')),
         )
         .field(
-          m
-            .required("prop2")
+          b
+            .required('prop2')
             .validate(validator)
-            .onDelete(handle("onDelete", "prop2"))
-            .onFailure(handle("onFailure", "prop2"))
-            .onSuccess(handle("onSuccess", "prop2")),
+            .onDelete(handle('onDelete', 'prop2'))
+            .onFailure(handle('onFailure', 'prop2'))
+            .onSuccess(handle('onSuccess', 'prop2')),
         )
         .field(
-          m
-            .required("prop3")
+          b
+            .required('prop3')
             .validate(validator)
-            .onDelete(handle("onDelete", "prop3"))
-            .onFailure(handle("onFailure", "prop3"))
-            .onSuccess(handle("onSuccess", "prop3")),
+            .onDelete(handle('onDelete', 'prop3'))
+            .onFailure(handle('onFailure', 'prop3'))
+            .onSuccess(handle('onSuccess', 'prop3')),
         ),
     ).getModel();
 
@@ -125,7 +125,7 @@ describe("life cycle handlers", () => {
       ctxHasUpdateMethod = {};
     });
 
-    it("should reject handlers that try to mutate the onSuccess ctx", async () => {
+    it('should reject handlers that try to mutate the onSuccess ctx', async () => {
       const { handleFailure, handleSuccess } = await Model.create(
         validData,
         {},
@@ -139,7 +139,7 @@ describe("life cycle handlers", () => {
       expect(ctxHasUpdateMethod).toEqual({ onSuccess: false });
     });
 
-    it("should reject handlers that try to mutate the onDelete ctx", async () => {
+    it('should reject handlers that try to mutate the onDelete ctx', async () => {
       await Model.delete(validData, {});
 
       for (const field of allFields)
@@ -148,9 +148,9 @@ describe("life cycle handlers", () => {
       expect(ctxHasUpdateMethod).toEqual({ onDelete: false });
     });
 
-    it("should reject handlers that try to mutate the onFailure(create) ctx", async () => {
+    it('should reject handlers that try to mutate the onFailure(create) ctx', async () => {
       const { handleFailure } = await Model.create(
-        { prop1: "", prop2: "", prop3: "" },
+        { prop1: '', prop2: '', prop3: '' },
         {},
       );
 
@@ -158,7 +158,7 @@ describe("life cycle handlers", () => {
 
       for (const field of props)
         for (const rule of rules) {
-          const result = rule === "onFailure" ? true : undefined;
+          const result = rule === 'onFailure' ? true : undefined;
 
           // @ts-expect-error we are testing that the context is readonly
           expect(propChangeMap?.[rule]?.[field]).toBe(result);
@@ -167,10 +167,10 @@ describe("life cycle handlers", () => {
       expect(ctxHasUpdateMethod).toEqual({ onFailure: false });
     });
 
-    it("should reject handlers that try to mutate the onFailure(update) ctx", async () => {
+    it('should reject handlers that try to mutate the onFailure(update) ctx', async () => {
       const { handleFailure } = await Model.update(
         validData,
-        { prop1: "", prop2: "", prop3: "" },
+        { prop1: '', prop2: '', prop3: '' },
         {},
       );
 
@@ -178,7 +178,7 @@ describe("life cycle handlers", () => {
 
       for (const field of props)
         for (const rule of rules) {
-          const result = rule === "onFailure" ? true : undefined;
+          const result = rule === 'onFailure' ? true : undefined;
 
           // @ts-expect-error we are testing that the context is readonly
           expect(propChangeMap?.[rule]?.[field]).toBe(result);
@@ -188,13 +188,13 @@ describe("life cycle handlers", () => {
     });
   });
 
-  describe("onDelete", () => {
-    const contextOptions = { lang: "en" };
+  describe('onDelete', () => {
+    const contextOptions = { lang: 'en' };
 
     let cxtOptions: Record<string, unknown> = {},
       propChangeMap: Record<string, boolean> = {};
 
-    const onDelete = (field = "") => {
+    const onDelete = (field = '') => {
       return (_: unknown, options: Record<string, unknown>) => {
         cxtOptions[field] = options;
         propChangeMap[field] = true;
@@ -202,19 +202,19 @@ describe("life cycle handlers", () => {
     };
     const validator = () => ({ valid: false });
 
-    const Model = new Schema<any>((b, m) =>
+    const Model = new Schema<any>((b) =>
       b
         .field(
-          m.constant("constant", "constant").onDelete(onDelete("constant")),
+          b.constant('constant', 'constant').onDelete(onDelete('constant')),
         )
         .field(
-          m.required("prop1").validate(validator).onDelete(onDelete("prop1")),
+          b.required('prop1').validate(validator).onDelete(onDelete('prop1')),
         )
         .field(
-          m.required("prop2").validate(validator).onDelete(onDelete("prop2")),
+          b.required('prop2').validate(validator).onDelete(onDelete('prop2')),
         )
         .field(
-          m.required("prop3").validate(validator).onDelete(onDelete("prop3")),
+          b.required('prop3').validate(validator).onDelete(onDelete('prop3')),
         ),
     ).getModel();
 
@@ -223,7 +223,7 @@ describe("life cycle handlers", () => {
       propChangeMap = {};
     });
 
-    it("should trigger all onDelete handlers but for virtuals", async () => {
+    it('should trigger all onDelete handlers but for virtuals', async () => {
       await Model.delete(
         { constant: true, prop1: true, prop2: true, prop3: true, prop4: true },
         contextOptions,
@@ -243,8 +243,8 @@ describe("life cycle handlers", () => {
       });
     });
 
-    it("should not trigger any handlers if values are invalid", async () => {
-      const invalidData = [1, -10, 0, false, true, "", "true", null];
+    it('should not trigger any handlers if values are invalid', async () => {
+      const invalidData = [1, -10, 0, false, true, '', 'true', null];
 
       for (const val of invalidData) {
         await Model.delete(val, contextOptions);
@@ -255,10 +255,10 @@ describe("life cycle handlers", () => {
     });
   });
 
-  describe("onFailure", () => {
-    it("should reject onFailure & no validator", () => {
-      const toFail = makeFx((b, m) =>
-        b.field(m.lax("field", "").onFailure(() => {})),
+  describe('onFailure', () => {
+    it('should reject onFailure & no validator', () => {
+      const toFail = makeFx((b) =>
+        b.field(b.lax('field', '').onFailure(() => {})),
       );
 
       expectFailure(toFail);
@@ -276,8 +276,8 @@ describe("life cycle handlers", () => {
       }
     });
 
-    describe("behaviour", () => {
-      const contextOptions = { lang: "en" };
+    describe('behaviour', () => {
+      const contextOptions = { lang: 'en' };
 
       let cxtOptions: Record<string, unknown> = {},
         onFailureCount: Record<string, number> = {};
@@ -290,37 +290,37 @@ describe("life cycle handlers", () => {
       }
       const validator = () => ({ valid: false });
 
-      const Model = new Schema<any>((b, m) =>
+      const Model = new Schema<any>((b) =>
         b
           .field(
-            m
-              .lax("prop1", true)
+            b
+              .lax('prop1', true)
               .validate(validator)
-              .onFailure(incrementOnFailureCountOf("prop1")),
+              .onFailure(incrementOnFailureCountOf('prop1')),
           )
           .field(
-            m
-              .required("prop2")
+            b
+              .required('prop2')
               .validate(validator)
               .onFailure([
-                incrementOnFailureCountOf("prop2"),
-                incrementOnFailureCountOf("prop2"),
+                incrementOnFailureCountOf('prop2'),
+                incrementOnFailureCountOf('prop2'),
               ]),
           )
           .field(
-            m
-              .dependent("dependentField", "virtualField")
-              .default("")
-              .resolve(() => ""),
+            b
+              .dependent('dependentField', 'virtualField')
+              .default('')
+              .resolve(() => ''),
           )
           .field(
-            m
-              .virtual("virtualField")
+            b
+              .virtual('virtualField')
               .validate(validator)
               .onFailure([
-                incrementOnFailureCountOf("virtualField"),
-                incrementOnFailureCountOf("virtualField"),
-                incrementOnFailureCountOf("virtualField"),
+                incrementOnFailureCountOf('virtualField'),
+                incrementOnFailureCountOf('virtualField'),
+                incrementOnFailureCountOf('virtualField'),
               ]),
           ),
       ).getModel();
@@ -330,8 +330,8 @@ describe("life cycle handlers", () => {
         onFailureCount = {};
       });
 
-      describe("creation", () => {
-        it("should properly trigger onFailure handlers at creation", async () => {
+      describe('creation', () => {
+        it('should properly trigger onFailure handlers at creation', async () => {
           const { error, handleFailure } = await Model.create(
             { prop1: false },
             contextOptions,
@@ -346,11 +346,11 @@ describe("life cycle handlers", () => {
           expect(onFailureCount).toEqual({ prop1: 1 });
         });
 
-        it("should properly trigger onFailure handlers at creation with virtuals", async () => {
+        it('should properly trigger onFailure handlers at creation with virtuals', async () => {
           const { error, handleFailure } = await Model.create(
             {
               prop1: false,
-              virtualField: "Yes",
+              virtualField: 'Yes',
             },
             contextOptions,
           );
@@ -370,11 +370,11 @@ describe("life cycle handlers", () => {
         });
       });
 
-      describe("updates", () => {
-        it("should properly trigger onFailure handlers during updates", async () => {
+      describe('updates', () => {
+        it('should properly trigger onFailure handlers during updates', async () => {
           const { error, handleFailure } = await Model.update(
             {},
-            { prop1: "" },
+            { prop1: '' },
             contextOptions,
           );
 
@@ -385,15 +385,15 @@ describe("life cycle handlers", () => {
           expect(onFailureCount).toEqual({ prop1: 1 });
         });
 
-        it("should properly trigger onFailure handlers during updates with virtuals", async () => {
+        it('should properly trigger onFailure handlers during updates with virtuals', async () => {
           const data = [
             [
-              { virtualField: "" },
+              { virtualField: '' },
               { virtualField: 3 },
               { virtualField: contextOptions },
             ],
             [
-              { prop1: "", virtualField: "" },
+              { prop1: '', virtualField: '' },
               { prop1: 1, virtualField: 3 },
               { prop1: contextOptions, virtualField: contextOptions },
             ],
@@ -417,7 +417,7 @@ describe("life cycle handlers", () => {
           }
         });
 
-        it("should properly trigger onFailure handlers during updates & nothing to update", async () => {
+        it('should properly trigger onFailure handlers during updates & nothing to update', async () => {
           const { error, handleFailure } = await Model.update(
             { prop1: 2 },
             { prop1: 35 },
@@ -434,22 +434,22 @@ describe("life cycle handlers", () => {
     });
   });
 
-  describe("onSuccess", () => {
-    const contextOptions = { lang: "en" };
+  describe('onSuccess', () => {
+    const contextOptions = { lang: 'en' };
 
     let cxtOptions: any = {},
       initialData = {
         dependent: false,
-        lax: "changed",
-        readonly: "changed",
-        readonlyLax: "",
-        required: "changed",
+        lax: 'changed',
+        readonly: 'changed',
+        readonlyLax: '',
+        required: 'changed',
       },
       onSuccessValues: Record<string, unknown> = {},
       propChangeMap: Record<string, boolean> = {};
 
     const onSuccess =
-      (field = "") =>
+      (field = '') =>
       (ctx: ReadonlyIvoContext<any>) => {
         cxtOptions[field] = ctx.options;
         onSuccessValues[field] = ctx;
@@ -459,35 +459,35 @@ describe("life cycle handlers", () => {
 
     const validator = () => ({ valid: true });
 
-    const Model = new Schema<any>((b, m) =>
+    const Model = new Schema<any>((b) =>
       b
         .field(
-          m
-            .dependent("dependent", "readonlyLax")
+          b
+            .dependent('dependent', 'readonlyLax')
             .default(false)
             .resolve(() => true)
-            .onSuccess(onSuccess("dependent")),
+            .onSuccess(onSuccess('dependent')),
         )
-        .field(m.lax("lax", "").validate(validator).onSuccess(onSuccess("lax")))
+        .field(b.lax('lax', '').validate(validator).onSuccess(onSuccess('lax')))
         .field(
-          m
-            .required("requiredReadonly")
+          b
+            .required('requiredReadonly')
             .validate(validator)
             .readonly()
-            .onSuccess(onSuccess("requiredReadonly")),
+            .onSuccess(onSuccess('requiredReadonly')),
         )
         .field(
-          m
-            .lax("readonlyLax", "")
+          b
+            .lax('readonlyLax', '')
             .validate(validator)
             .readonly()
-            .onSuccess(onSuccess("readonlyLax")),
+            .onSuccess(onSuccess('readonlyLax')),
         )
         .field(
-          m
-            .required("required")
+          b
+            .required('required')
             .validate(validator)
-            .onSuccess(onSuccess("required")),
+            .onSuccess(onSuccess('required')),
         ),
     ).getModel();
 
@@ -498,7 +498,7 @@ describe("life cycle handlers", () => {
     });
 
     // creation
-    it("should call onSuccess handlers at creation", async () => {
+    it('should call onSuccess handlers at creation', async () => {
       const { data, error, handleSuccess } = await Model.create(
         { required: true, requiredReadonly: true },
         contextOptions,
@@ -541,7 +541,7 @@ describe("life cycle handlers", () => {
     });
 
     // updates
-    it("should call onSuccess handlers during updates with lax props", async () => {
+    it('should call onSuccess handlers during updates with lax props', async () => {
       const { data, error, handleSuccess } = await Model.update(
         initialData,
         { lax: true },
@@ -564,7 +564,7 @@ describe("life cycle handlers", () => {
       });
     });
 
-    it("should call onSuccess handlers during updates with readonlyLax & dependent", async () => {
+    it('should call onSuccess handlers during updates with readonlyLax & dependent', async () => {
       const { data, error, handleSuccess } = await Model.update(
         initialData,
         { readonlyLax: true },

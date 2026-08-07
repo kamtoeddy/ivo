@@ -1,5 +1,5 @@
-import { type IvoContext, Schema } from "../../../src";
-import type { StoreItem, StoreItemInput } from "./types";
+import { type IvoContext, Schema } from '../../../src';
+import type { StoreItem, StoreItemInput } from './types';
 import {
   sanitizeQuantities,
   validateName,
@@ -8,53 +8,53 @@ import {
   validateQuantities,
   validateQuantity,
   validateString,
-} from "./validators";
+} from './validators';
 
 export { StoreItemModel, storeItemSchema };
 
 const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
-  (b, m) =>
+  (b) =>
     b
       .field(
-        m
-          .dependent("_dependentReadOnly", "_virtualForDependentReadOnly")
+        b
+          .dependent('_dependentReadOnly', '_virtualForDependentReadOnly')
           .default(0)
           .resolve(() => 1),
       )
       .field(
-        m.lax("_laxField", "").validate(validateString("Invalid lax field")),
+        b.lax('_laxField', '').validate(validateString('Invalid lax field')),
       )
-      .field(m.lax("_readOnlyLax1", "").readonly())
-      .field(m.lax("_readOnlyLax2", "").readonly())
-      .field(m.lax("_readOnlyNoInit", "").readonly())
-      .field(m.virtual("_virtualForDependentReadOnly").validate(() => true))
-      .field(m.lax("id", "").validate(validateString("Invalid id")))
-      .field(m.required("name").validate(validateName))
+      .field(b.lax('_readOnlyLax1', '').readonly())
+      .field(b.lax('_readOnlyLax2', '').readonly())
+      .field(b.lax('_readOnlyNoInit', '').readonly())
+      .field(b.virtual('_virtualForDependentReadOnly').validate(() => true))
+      .field(b.lax('id', '').validate(validateString('Invalid id')))
+      .field(b.required('name').validate(validateName))
       .field(
-        m
-          .required("measureUnit")
-          .validate(validateString("Invalid measure unit")),
+        b
+          .required('measureUnit')
+          .validate(validateString('Invalid measure unit')),
       )
-      .field(m.lax("otherMeasureUnits", []).validate(validateOtherUnits))
-      .field(m.required("price").validate(validatePrice))
+      .field(b.lax('otherMeasureUnits', []).validate(validateOtherUnits))
+      .field(b.required('price').validate(validatePrice))
       .field(
-        m
-          .virtual("quantities")
+        b
+          .virtual('quantities')
           .validate(validateQuantities)
           .sanitize(sanitizeQuantities),
       )
       .field(
-        m
-          .dependent("quantity", ["_quantity", "quantities"])
+        b
+          .dependent('quantity', ['_quantity', 'quantities'])
           .default(0)
           .resolve(resolveQuantity),
       )
       .field(
-        m.virtual("_quantity").alias("__quantity").validate(validateQuantity),
+        b.virtual('_quantity').alias('__quantity').validate(validateQuantity),
       )
       .field(
-        m
-          .dependent("quantityChangeCounter", "quantity")
+        b
+          .dependent('quantityChangeCounter', 'quantity')
           .default(0)
           .resolve(
             ({ values: { quantityChangeCounter } }) =>
@@ -64,7 +64,7 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
 
   {
     onSuccess,
-    timestamps: { createdAt: "c_At", updatedAt: "u_At" },
+    timestamps: { createdAt: 'c_At', updatedAt: 'u_At' },
   },
 );
 

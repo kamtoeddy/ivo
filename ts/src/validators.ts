@@ -1,6 +1,11 @@
-import { deepCloneValue } from "./utils";
-import { getUniqueBy, isNullOrUndefined, isOneOf, makeResponse } from "./utils";
-import { ArrayOfMinSizeTwo, ValidationResponse, XOR } from "./utils/types";
+import {
+  deepCloneValue,
+  getUniqueBy,
+  isNullOrUndefined,
+  isOneOf,
+  makeResponse,
+} from './utils';
+import type { ArrayOfMinSizeTwo, ValidationResponse, XOR } from './utils/types';
 
 export type {
   ArrayValidatorOptions,
@@ -44,7 +49,7 @@ type ArrayFilterFn<T> =
 
 type ArraySortOptions<T> =
   | { sort?: (a: T, b: T) => number; sortOrder?: never }
-  | { sort?: boolean; sortOrder?: "asc" | "desc" };
+  | { sort?: boolean; sortOrder?: 'asc' | 'desc' };
 
 function makeArrayValidator<
   const PreFilteredType,
@@ -73,15 +78,15 @@ function makeArrayValidator<
   } = _getMaxMinInfo({
     max,
     min,
-    defaulMaxError: "Max limit reached",
-    defaulMinError: "Expected a non-empty array",
+    defaulMaxError: 'Max limit reached',
+    defaulMinError: 'Expected a non-empty array',
   });
 
-  if (!filter) throw new Error("Array validator must have a filter function");
+  if (!filter) throw new Error('Array validator must have a filter function');
 
   return async (value: unknown): Promise<ValidationResponse<FinalType[]>> => {
     if (!Array.isArray(value))
-      return makeResponse({ reason: "Expected an array", valid: false });
+      return makeResponse({ reason: 'Expected an array', valid: false });
 
     let _array = await Promise.all(value.filter(filter));
 
@@ -105,7 +110,7 @@ function makeArrayValidator<
 
       const sorter =
         // @ts-expect-error lol
-        typeof sort === "boolean" ? (a, b) => (a < b ? order : -order) : sort;
+        typeof sort === 'boolean' ? (a, b) => (a < b ? order : -order) : sort;
 
       _array = deepCloneValue(_array).sort(sorter);
     }
@@ -115,21 +120,21 @@ function makeArrayValidator<
 }
 
 const _getArrayOrder = (sortOrder: unknown) => {
-  if (!["asc", "desc"].includes(sortOrder as never)) return -1;
+  if (!['asc', 'desc'].includes(sortOrder as never)) return -1;
 
-  return sortOrder === "asc" ? -1 : 1;
+  return sortOrder === 'asc' ? -1 : 1;
 };
 
 function validateBoolean(value: unknown) {
   return makeResponse<boolean>(
-    typeof value === "boolean"
+    typeof value === 'boolean'
       ? { valid: true, validated: value }
-      : { valid: false, reason: "Expected a boolean" },
+      : { valid: false, reason: 'Expected a boolean' },
   );
 }
 
 const invalidCardResponse = makeResponse({
-  reason: "Invalid card number",
+  reason: 'Invalid card number',
   valid: false,
 });
 
@@ -144,7 +149,7 @@ const validateCreditCard = (value: unknown) => {
 
   if (!_isCheckSumOk(singleDigits)) return invalidCardResponse;
 
-  const validated = typeof value === "number" ? value : _value;
+  const validated = typeof value === 'number' ? value : _value;
 
   return makeResponse<string | number>({ valid: true, validated });
 };
@@ -155,13 +160,13 @@ function _isEven(num: number) {
 
 function _getSingleDigits(value: string) {
   return value
-    .split("")
+    .split('')
     .filter((v) => !isNaN(Number.parseInt(v, 10)))
     .map(Number);
 }
 
 function _getCheckSum(values: number[]) {
-  const separated = _getSingleDigits(values.map((v) => String(v)).join(""));
+  const separated = _getSingleDigits(values.map((v) => String(v)).join(''));
 
   return separated.map(Number).reduce((prev, next) => {
     prev += next;
@@ -181,10 +186,10 @@ const EMAIL_REGEXP =
   /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
 
 const getInvalidEmailResponse = (value: unknown) =>
-  makeResponse({ reason: "Invalid email", valid: false, value });
+  makeResponse({ reason: 'Invalid email', valid: false, value });
 
 const validateEmail = (value: unknown, regExp = EMAIL_REGEXP) => {
-  if (typeof value !== "string") return getInvalidEmailResponse(value);
+  if (typeof value !== 'string') return getInvalidEmailResponse(value);
 
   const validated = value?.trim();
 
@@ -222,7 +227,7 @@ type StringValidatorOptions<T extends string | unknown = string> = {
   {
     max?: number | ValueError;
     min?: number | ValueError;
-    normalForm?: "NFC" | "NFD" | "NFKC" | "NFKD";
+    normalForm?: 'NFC' | 'NFD' | 'NFKC' | 'NFKD';
     normalize?: boolean;
     nullable?: boolean;
     regExp?: ValueError<RegExp>;
@@ -248,8 +253,8 @@ function makeNumberValidator<const T extends number | unknown = number>({
   } = _getMaxMinInfo({
     max,
     min,
-    defaulMaxError: "too_big",
-    defaulMinError: "too_small",
+    defaulMaxError: 'too_big',
+    defaulMinError: 'too_small',
   });
 
   const exclusion = _getExclusionInfo(exclude);
@@ -277,8 +282,8 @@ function makeNumberValidator<const T extends number | unknown = number>({
     if (nullable && isOneOf(value, [null, undefined]))
       return makeResponse({ valid: true, validated: null as never as T });
 
-    if (!["number", "bigint"].includes(typeof value) || isNaN(value as never))
-      return makeResponse({ reason: "Expected a number", valid: false });
+    if (!['number', 'bigint'].includes(typeof value) || isNaN(value as never))
+      return makeResponse({ reason: 'Expected a number', valid: false });
 
     const _value = Number(value);
 
@@ -308,8 +313,8 @@ function makeStringValidator<const T extends string | unknown = string>({
 }: StringValidatorOptions<T> = {}) {
   normalize ??= true;
 
-  if (normalForm && !["NFC", "NFD", "NFKC", "NFKD"].includes(normalForm))
-    throw new Error("Invalid string normalization form");
+  if (normalForm && !['NFC', 'NFD', 'NFKC', 'NFKD'].includes(normalForm))
+    throw new Error('Invalid string normalization form');
 
   const {
     maxValue: maxLength,
@@ -322,8 +327,8 @@ function makeStringValidator<const T extends string | unknown = string>({
   } = _getMaxMinInfo({
     max,
     min,
-    defaulMaxError: "too_long",
-    defaulMinError: "too_short",
+    defaulMaxError: 'too_long',
+    defaulMinError: 'too_short',
   });
 
   const exclusion = _getExclusionInfo(exclude);
@@ -348,11 +353,11 @@ function makeStringValidator<const T extends string | unknown = string>({
           });
     }
 
-    if (nullable && isOneOf(value, ["", null, undefined]))
+    if (nullable && isOneOf(value, ['', null, undefined]))
       return makeResponse({ valid: true, validated: null as never as T });
 
-    if (typeof value !== "string")
-      return makeResponse({ reason: "Expected a string", valid: false });
+    if (typeof value !== 'string')
+      return makeResponse({ reason: 'Expected a string', valid: false });
 
     if (regExp && !regExp.value.test(value))
       return makeResponse({ valid: false, reason: regExp.error });
@@ -381,7 +386,7 @@ function _getAllowedInfo<T>(allow: AllowConfig<T>): {
 
   return {
     allowed: isArray ? allow : (allow.values as any),
-    notAllowedError: isArray ? "Value not allowed" : (allow as any).error,
+    notAllowedError: isArray ? 'Value not allowed' : (allow as any).error,
   };
 }
 
@@ -391,7 +396,7 @@ function _getExclusionInfo<T>(exclude?: ExclusionConfig<T>): {
   hasExclusion: boolean;
   metadata: { excluded: T[] } | null;
 } {
-  const isConfigObject = typeof exclude === "object" && !Array.isArray(exclude);
+  const isConfigObject = typeof exclude === 'object' && !Array.isArray(exclude);
 
   const hasExclusion = !isNullOrUndefined(exclude);
   let excluded = isConfigObject
@@ -401,8 +406,8 @@ function _getExclusionInfo<T>(exclude?: ExclusionConfig<T>): {
   if (!Array.isArray(excluded)) excluded = [excluded];
 
   const exclusionError = isConfigObject
-    ? ((exclude as { error: string })?.error ?? "Value not allowed")
-    : "Value not allowed";
+    ? ((exclude as { error: string })?.error ?? 'Value not allowed')
+    : 'Value not allowed';
 
   const metadata = hasExclusion ? { excluded } : null;
 
@@ -429,9 +434,9 @@ function _getMaxMinInfo({
   metadata: { max?: number; min?: number } | null;
 } {
   const typeOfMaxConfig = typeof max;
-  const isMaxConfigObject = typeOfMaxConfig === "object";
+  const isMaxConfigObject = typeOfMaxConfig === 'object';
   const typeOfMinConfig = typeof min;
-  const isMinConfigObject = typeOfMinConfig === "object";
+  const isMinConfigObject = typeOfMinConfig === 'object';
 
   const maxValue = isMaxConfigObject
     ? (max as ValueError).value

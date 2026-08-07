@@ -1,10 +1,10 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from 'bun:test';
 
-import { type IvoContext, Schema } from "../../src";
+import { type IvoContext, Schema } from '../../src';
 
-describe("Context options", () => {
-  describe("RequiredBy", () => {
-    const contextOptions = { lang: "en" };
+describe('Context options', () => {
+  describe('RequiredBy', () => {
+    const contextOptions = { lang: 'en' };
     const validator = () => true;
 
     type Input = { lax: string; name: string; price: number };
@@ -19,16 +19,16 @@ describe("Context options", () => {
       };
     }
 
-    const Model = new Schema<Input, Output, CtxOptions>((b, { lax }) =>
+    const Model = new Schema<Input, Output, CtxOptions>((b) =>
       b
-        .field(lax("lax").default(""))
+        .field(b.lax('lax', ''))
         .field(
-          lax("name")
-            .default("")
-            .required(handleRequired("name"))
+          b
+            .lax('name', '')
+            .required(handleRequired('name'))
             .validate(validator),
         )
-        .field(lax("price").default(0).required(handleRequired("price"))),
+        .field(b.lax('price', 0).required(handleRequired('price'))),
     ).getModel();
 
     let ctxOptions: any = {};
@@ -38,7 +38,7 @@ describe("Context options", () => {
     });
 
     it('provided "contextOptions" should be accessible in requiredBy methods at creation', async () => {
-      await Model.create({ lax: "lax" }, contextOptions);
+      await Model.create({ lax: 'lax' }, contextOptions);
 
       expect(ctxOptions).toEqual({
         name: contextOptions,
@@ -48,8 +48,8 @@ describe("Context options", () => {
 
     it('provided "contextOptions" should be accessible in requiredBy methods during updates', async () => {
       const { options } = await Model.update(
-        { lax: "lax", name: "test", price: 4 },
-        { lax: "update" },
+        { lax: 'lax', name: 'test', price: 4 },
+        { lax: 'update' },
         contextOptions,
       );
 
@@ -61,7 +61,7 @@ describe("Context options", () => {
     });
   });
 
-  describe("should accept functions properly", () => {
+  describe('should accept functions properly', () => {
     let called = false;
 
     function ctxHandler() {
@@ -71,10 +71,10 @@ describe("Context options", () => {
     type Data = { name: string };
     type CtxOptions = { ctxHandler: () => any };
 
-    const Model = new Schema<Data, Data, CtxOptions>((b, m) =>
+    const Model = new Schema<Data, Data, CtxOptions>((b) =>
       b.field(
-        m
-          .lax("name", "")
+        b
+          .lax('name', '')
           .validate((_, { options }) => {
             options.ctxHandler();
             return true;
@@ -88,15 +88,15 @@ describe("Context options", () => {
       called = false;
     });
 
-    it("should allow provided function in ctx options at creation", async () => {
+    it('should allow provided function in ctx options at creation', async () => {
       expect(called).toBe(false);
 
-      await Model.create({ name: "lol" }, { ctxHandler });
+      await Model.create({ name: 'lol' }, { ctxHandler });
 
       expect(called).toBe(true);
     });
 
-    it("should allow provided function in ctx options onSuccess after creation", async () => {
+    it('should allow provided function in ctx options onSuccess after creation', async () => {
       expect(called).toBe(false);
 
       const { handleSuccess } = await Model.create({}, { ctxHandler });
@@ -108,18 +108,18 @@ describe("Context options", () => {
       expect(called).toBe(true);
     });
 
-    it("should allow provided function in ctx options during updates", async () => {
+    it('should allow provided function in ctx options during updates', async () => {
       expect(called).toBe(false);
 
-      await Model.update({ name: "lol" }, { name: "updated" }, { ctxHandler });
+      await Model.update({ name: 'lol' }, { name: 'updated' }, { ctxHandler });
 
       expect(called).toBe(true);
     });
 
-    it("should allow provided function in ctx options on deletion", async () => {
+    it('should allow provided function in ctx options on deletion', async () => {
       expect(called).toBe(false);
 
-      await Model.delete({ name: "lol" }, { ctxHandler });
+      await Model.delete({ name: 'lol' }, { ctxHandler });
 
       expect(called).toBe(true);
     });

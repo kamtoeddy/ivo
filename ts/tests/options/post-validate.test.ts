@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, test } from 'bun:test';
 
-import { type IvoContext, type ReadonlyIvoContext, Schema } from "../../src";
+import { type IvoContext, type ReadonlyIvoContext, Schema } from '../../src';
 
 import {
   expectFailure,
@@ -8,12 +8,12 @@ import {
   getValidSchema,
   makeFx,
   validator,
-} from "../_utils";
+} from '../_utils';
 
-describe("Schema.options.postValidate", () => {
-  describe("signature", () => {
-    describe("single config", () => {
-      describe("valid", () => {
+describe('Schema.options.postValidate', () => {
+  describe('signature', () => {
+    describe('single config', () => {
+      describe('valid', () => {
         it("should allow 'postValidate' as valid config", () => {
           const validators = [
             () => {},
@@ -25,7 +25,7 @@ describe("Schema.options.postValidate", () => {
           for (const validator of validators) {
             const toPass = makeFx(getValidSchema(), {
               postValidate: {
-                fields: ["fieldName1", "fieldName2"],
+                fields: ['fieldName1', 'fieldName2'],
                 validator,
               },
             });
@@ -38,24 +38,24 @@ describe("Schema.options.postValidate", () => {
 
         it("should allow 'postValidate' if some or all the fields to post validate are virtuals", () => {
           const values = [
-            { fields: ["virtual", "fieldName2"], validator() {} },
-            [{ fields: ["virtual", "virtual2"], validator() {} }],
+            { fields: ['virtual', 'fieldName2'], validator() {} },
+            [{ fields: ['virtual', 'virtual2'], validator() {} }],
           ];
 
           for (const postValidate of values) {
             const toPass = makeFx(
-              (b, m) =>
+              (b) =>
                 b
-                  .field(m.lax("fieldName1", ""))
-                  .field(m.lax("fieldName2", ""))
+                  .field(b.lax('fieldName1', ''))
+                  .field(b.lax('fieldName2', ''))
                   .field(
-                    m
-                      .dependent("dependent", ["virtual", "virtual2"])
-                      .default("")
+                    b
+                      .dependent('dependent', ['virtual', 'virtual2'])
+                      .default('')
                       .resolve(() => {}),
                   )
-                  .field(m.virtual("virtual").validate(() => false))
-                  .field(m.virtual("virtual2").validate(() => false)),
+                  .field(b.virtual('virtual').validate(() => false))
+                  .field(b.virtual('virtual2').validate(() => false)),
               { postValidate },
             );
 
@@ -66,7 +66,7 @@ describe("Schema.options.postValidate", () => {
         });
       });
 
-      describe("invalid", () => {
+      describe('invalid', () => {
         describe("should reject if 'fields' is not an array or does not contain valid input keys of schema", () => {
           const commonError = [
             '"fields" must be an array of at least 2 input fields of your schema',
@@ -80,43 +80,43 @@ describe("Schema.options.postValidate", () => {
             [undefined, commonError],
             [true, commonError],
             [false, commonError],
-            ["", commonError],
-            ["invalid", commonError],
+            ['', commonError],
+            ['invalid', commonError],
             [{}, commonError],
             [{ fields: [] }, commonError],
             [{ validator: [] }, commonError],
             [() => {}, commonError],
             [[], commonError],
-            [["lol"], commonError],
+            [['lol'], commonError],
             [
-              ["lol", "lolol"],
+              ['lol', 'lolol'],
               [
                 '"lol" cannot be post-validated',
                 '"lolol" cannot be post-validated',
               ],
             ],
-            [["fieldName1", "lolol"], ['"lolol" cannot be post-validated']],
-            [["fieldName1", "fieldName1"], commonError],
+            [['fieldName1', 'lolol'], ['"lolol" cannot be post-validated']],
+            [['fieldName1', 'fieldName1'], commonError],
             [
-              ["fieldName1", "fieldName2", "lol"],
+              ['fieldName1', 'fieldName2', 'lol'],
               ['"lol" cannot be post-validated'],
             ],
             [
-              ["fieldName1", "dependent"],
+              ['fieldName1', 'dependent'],
               ['"dependent" cannot be post-validated'],
             ],
           ] as const;
 
-          test.each(values)("", (fields, errors) => {
+          test.each(values)('', (fields, errors) => {
             const toFail = makeFx(
-              (b, m) =>
+              (b) =>
                 b
-                  .field(m.lax("fieldName1", ""))
-                  .field(m.lax("fieldName2", ""))
+                  .field(b.lax('fieldName1', ''))
+                  .field(b.lax('fieldName2', ''))
                   .field(
-                    m
-                      .dependent("dependent", ["fieldName1"])
-                      .default("")
+                    b
+                      .dependent('dependent', ['fieldName1'])
+                      .default('')
                       .resolve(() => {}),
                   ),
               { postValidate: { fields, validator() {} } },
@@ -128,7 +128,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "INVALID_SCHEMA",
+                message: 'INVALID_SCHEMA',
                 payload: { postValidate: expect.arrayContaining(errors) },
               });
             }
@@ -144,26 +144,26 @@ describe("Schema.options.postValidate", () => {
             undefined,
             true,
             false,
-            "",
-            "invalid",
+            '',
+            'invalid',
             {},
           ];
 
           for (const validator of values) {
             const toFail = makeFx(
-              (b, m) =>
+              (b) =>
                 b
-                  .field(m.lax("fieldName1", ""))
-                  .field(m.lax("fieldName2", ""))
+                  .field(b.lax('fieldName1', ''))
+                  .field(b.lax('fieldName2', ''))
                   .field(
-                    m
-                      .dependent("dependent", "fieldName1")
-                      .default("")
+                    b
+                      .dependent('dependent', 'fieldName1')
+                      .default('')
                       .resolve(() => {}),
                   ),
               {
                 postValidate: {
-                  fields: ["fieldName1", "fieldName2"],
+                  fields: ['fieldName1', 'fieldName2'],
                   validator,
                 },
               },
@@ -175,7 +175,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "INVALID_SCHEMA",
+                message: 'INVALID_SCHEMA',
                 payload: {
                   postValidate: expect.arrayContaining([
                     '"validator" must be a function or array of functions',
@@ -186,10 +186,10 @@ describe("Schema.options.postValidate", () => {
           }
         });
 
-        it("should reject if config has never extra property", () => {
+        it('should reject if config has never extra property', () => {
           const toFail = makeFx(getValidSchema(), {
             postValidate: {
-              fields: ["fieldName1", "fieldName2"],
+              fields: ['fieldName1', 'fieldName2'],
               validator() {},
               lol: true,
             },
@@ -201,7 +201,7 @@ describe("Schema.options.postValidate", () => {
             toFail();
           } catch (err: any) {
             expect(err).toMatchObject({
-              message: "INVALID_SCHEMA",
+              message: 'INVALID_SCHEMA',
               payload: {
                 postValidate: expect.arrayContaining([
                   'Config must be an object with keys "fields" and "validator" or an array of "PostValidateConfig"',
@@ -211,22 +211,22 @@ describe("Schema.options.postValidate", () => {
           }
         });
 
-        describe("validator array", () => {
-          it("should reject if array is empty", () => {
+        describe('validator array', () => {
+          it('should reject if array is empty', () => {
             const toFail = makeFx(
-              (b, m) =>
+              (b) =>
                 b
-                  .field(m.lax("fieldName1", ""))
-                  .field(m.lax("fieldName2", ""))
+                  .field(b.lax('fieldName1', ''))
+                  .field(b.lax('fieldName2', ''))
                   .field(
-                    m
-                      .dependent("dependent", "fieldName1")
-                      .default("")
+                    b
+                      .dependent('dependent', 'fieldName1')
+                      .default('')
                       .resolve(() => {}),
                   ),
               {
                 postValidate: {
-                  fields: ["fieldName1", "fieldName2"],
+                  fields: ['fieldName1', 'fieldName2'],
                   validator: [],
                 },
               },
@@ -238,7 +238,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "INVALID_SCHEMA",
+                message: 'INVALID_SCHEMA',
                 payload: {
                   postValidate: expect.arrayContaining([
                     '"validator" cannot be an empty array',
@@ -248,7 +248,7 @@ describe("Schema.options.postValidate", () => {
             }
           });
 
-          it("should reject if any of the validators is not a function", () => {
+          it('should reject if any of the validators is not a function', () => {
             const values = [
               -1,
               0,
@@ -257,26 +257,26 @@ describe("Schema.options.postValidate", () => {
               undefined,
               true,
               false,
-              "",
-              "invalid",
+              '',
+              'invalid',
               {},
               // [],
             ];
 
             const toFail = makeFx(
-              (b, m) =>
+              (b) =>
                 b
-                  .field(m.lax("fieldName1", ""))
-                  .field(m.lax("fieldName2", ""))
+                  .field(b.lax('fieldName1', ''))
+                  .field(b.lax('fieldName2', ''))
                   .field(
-                    m
-                      .dependent("dependent", "fieldName1")
-                      .default("")
+                    b
+                      .dependent('dependent', 'fieldName1')
+                      .default('')
                       .resolve(() => {}),
                   ),
               {
                 postValidate: {
-                  fields: ["fieldName1", "fieldName2"],
+                  fields: ['fieldName1', 'fieldName2'],
                   validator: values,
                 },
               },
@@ -288,7 +288,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "INVALID_SCHEMA",
+                message: 'INVALID_SCHEMA',
                 payload: {
                   postValidate: expect.arrayContaining(
                     values.map(
@@ -304,37 +304,37 @@ describe("Schema.options.postValidate", () => {
       });
     });
 
-    describe("multiple configs", () => {
-      describe("valid", () => {
+    describe('multiple configs', () => {
+      describe('valid', () => {
         it("should allow 'postValidate' as an array of subset and non-subset valid configs", () => {
           const configs = [
-            ["fieldName1", "p1", "p3"],
-            ["fieldName1", "p1"],
-            ["fieldName1", "p3"],
-            ["p1", "p3"],
-            ["fieldName1", "p1", "p2"],
-            ["p1", "p2", "p3"],
-            ["v1", "v2"],
-            ["p1", "v2"],
-            ["v1", "p2"],
+            ['fieldName1', 'p1', 'p3'],
+            ['fieldName1', 'p1'],
+            ['fieldName1', 'p3'],
+            ['p1', 'p3'],
+            ['fieldName1', 'p1', 'p2'],
+            ['p1', 'p2', 'p3'],
+            ['v1', 'v2'],
+            ['p1', 'v2'],
+            ['v1', 'p2'],
           ];
 
           const toPass = makeFx(
-            (b, m) =>
+            (b) =>
               b
-                .field(m.lax("fieldName1", ""))
-                .field(m.lax("fieldName2", ""))
+                .field(b.lax('fieldName1', ''))
+                .field(b.lax('fieldName2', ''))
                 .field(
-                  m
-                    .dependent("dependent", ["v1", "v2"])
-                    .default("")
+                  b
+                    .dependent('dependent', ['v1', 'v2'])
+                    .default('')
                     .resolve(() => {}),
                 )
-                .field(m.lax("p1", ""))
-                .field(m.lax("p2", ""))
-                .field(m.lax("p3", ""))
-                .field(m.virtual("v1").validate(() => true))
-                .field(m.virtual("v2").validate(() => true)),
+                .field(b.lax('p1', ''))
+                .field(b.lax('p2', ''))
+                .field(b.lax('p3', ''))
+                .field(b.virtual('v1').validate(() => true))
+                .field(b.virtual('v2').validate(() => true)),
             {
               postValidate: configs.map((fields, i) => ({
                 fields,
@@ -349,29 +349,29 @@ describe("Schema.options.postValidate", () => {
         });
       });
 
-      describe("invalid", () => {
-        describe("validator array", () => {
-          it("should reject if array is empty", () => {
+      describe('invalid', () => {
+        describe('validator array', () => {
+          it('should reject if array is empty', () => {
             const toFail = makeFx(
-              (b, m) =>
+              (b) =>
                 b
-                  .field(m.lax("fieldName1", ""))
-                  .field(m.lax("fieldName2", ""))
+                  .field(b.lax('fieldName1', ''))
+                  .field(b.lax('fieldName2', ''))
                   .field(
-                    m
-                      .dependent("dependent", "fieldName1")
-                      .default("")
+                    b
+                      .dependent('dependent', 'fieldName1')
+                      .default('')
                       .resolve(() => {}),
                   )
-                  .field(m.lax("lax", "")),
+                  .field(b.lax('lax', '')),
               {
                 postValidate: [
                   {
-                    fields: ["fieldName1", "fieldName2"],
+                    fields: ['fieldName1', 'fieldName2'],
                     validator: [validator],
                   },
                   {
-                    fields: ["fieldName1", "lax"],
+                    fields: ['fieldName1', 'lax'],
                     validator: [],
                   },
                 ],
@@ -384,7 +384,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "INVALID_SCHEMA",
+                message: 'INVALID_SCHEMA',
                 payload: {
                   postValidate: expect.arrayContaining([
                     'Config at index 1:  "validator" cannot be an empty array',
@@ -394,7 +394,7 @@ describe("Schema.options.postValidate", () => {
             }
           });
 
-          it("should reject if any of the validators is not a function", () => {
+          it('should reject if any of the validators is not a function', () => {
             const values = [
               -1,
               0,
@@ -403,30 +403,30 @@ describe("Schema.options.postValidate", () => {
               undefined,
               true,
               false,
-              "",
-              "invalid",
+              '',
+              'invalid',
               {},
             ];
 
             const toFail = makeFx(
-              (b, m) =>
+              (b) =>
                 b
-                  .field(m.lax("fieldName1", ""))
-                  .field(m.lax("fieldName2", ""))
+                  .field(b.lax('fieldName1', ''))
+                  .field(b.lax('fieldName2', ''))
                   .field(
-                    m
-                      .dependent("dependent", "fieldName1")
-                      .default("")
+                    b
+                      .dependent('dependent', 'fieldName1')
+                      .default('')
                       .resolve(() => {}),
                   ),
               {
                 postValidate: [
                   {
-                    fields: ["fieldName1", "fieldName2"],
+                    fields: ['fieldName1', 'fieldName2'],
                     validator,
                   },
                   {
-                    fields: ["fieldName1", "fieldName2"],
+                    fields: ['fieldName1', 'fieldName2'],
                     validator: values,
                   },
                 ],
@@ -439,7 +439,7 @@ describe("Schema.options.postValidate", () => {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "INVALID_SCHEMA",
+                message: 'INVALID_SCHEMA',
                 payload: {
                   postValidate: expect.arrayContaining(
                     values.map(
@@ -456,8 +456,8 @@ describe("Schema.options.postValidate", () => {
     });
   });
 
-  describe("behaviour", () => {
-    describe("should properly trigger post-validators", () => {
+  describe('behaviour', () => {
+    describe('should properly trigger post-validators', () => {
       let providedfieldsStats: Record<string, number> = {};
       let ctxStats: Record<string, unknown> = {};
 
@@ -487,44 +487,44 @@ describe("Schema.options.postValidate", () => {
         providedfieldsStats = {};
       });
 
-      describe("behaviour with single post-validators", () => {
+      describe('behaviour with single post-validators', () => {
         const Model = new Schema<any>(
-          (b, m) =>
+          (b) =>
             b
-              .field(m.lax("fieldName1", ""))
-              .field(m.lax("fieldName2", ""))
+              .field(b.lax('fieldName1', ''))
+              .field(b.lax('fieldName2', ''))
               .field(
-                m
-                  .dependent("dependent", ["virtual", "virtual2"])
-                  .default("")
+                b
+                  .dependent('dependent', ['virtual', 'virtual2'])
+                  .default('')
                   .resolve(validator),
               )
-              .field(m.lax("lax", ""))
-              .field(m.required("requiredReadonly").validate(() => true))
-              .field(m.lax("readonlyLax", "").readonly())
-              .field(m.required("required").validate(() => true))
-              .field(m.virtual("virtual").validate(() => true))
-              .field(m.virtual("virtual2").validate(() => true)),
+              .field(b.lax('lax', ''))
+              .field(b.required('requiredReadonly').validate(() => true))
+              .field(b.lax('readonlyLax', '').readonly())
+              .field(b.required('required').validate(() => true))
+              .field(b.virtual('virtual').validate(() => true))
+              .field(b.virtual('virtual2').validate(() => true)),
           {
             // @ts-expect-error ikr
             postValidate: makePostValidationConfig([
-              "lax",
-              "required",
-              "requiredReadonly",
-              "readonlyLax",
-              "virtual",
-              "virtual2",
+              'lax',
+              'required',
+              'requiredReadonly',
+              'readonlyLax',
+              'virtual',
+              'virtual2',
             ]),
           },
         ).getModel();
 
-        it("should trigger all post-validators at creation", async () => {
+        it('should trigger all post-validators at creation', async () => {
           const { error } = await Model.create(
             {
-              required: "req",
-              lax: "",
-              requiredReadonly: "reqReadonly",
-              readonlyLax: "",
+              required: 'req',
+              lax: '',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
             },
             {},
           );
@@ -538,13 +538,13 @@ describe("Schema.options.postValidate", () => {
           });
         });
 
-        it("should not trigger post-validators of virtuals not provided at creation", async () => {
+        it('should not trigger post-validators of virtuals not provided at creation', async () => {
           const { error } = await Model.create(
             {
-              required: "req",
-              lax: "",
-              requiredReadonly: "reqReadonly",
-              readonlyLax: "",
+              required: 'req',
+              lax: '',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
               virtual2: true,
             },
             {},
@@ -560,7 +560,7 @@ describe("Schema.options.postValidate", () => {
           });
         });
 
-        it("should only trigger post-validators of props that change during updates", async () => {
+        it('should only trigger post-validators of props that change during updates', async () => {
           const { error } = await Model.update(
             // @ts-expect-error ikr
             { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: 1 },
@@ -584,10 +584,10 @@ describe("Schema.options.postValidate", () => {
           });
         });
 
-        it("should only trigger post-validators of readonly props that have not changed during updates", async () => {
+        it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
           const { error } = await Model.update(
             // @ts-expect-error ikr
-            { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: "" },
+            { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: '' },
             {
               requiredReadonly: 1,
               readonlyLax: true,
@@ -599,36 +599,36 @@ describe("Schema.options.postValidate", () => {
           expect(providedfieldsStats).toEqual({ readonlyLax: 1 });
         });
 
-        describe("behaviour with post-validators that have validator arrays", () => {
+        describe('behaviour with post-validators that have validator arrays', () => {
           const fields = [
-            "lax",
-            "required",
-            "requiredReadonly",
-            "readonlyLax",
-            "virtual",
-            "virtual2",
+            'lax',
+            'required',
+            'requiredReadonly',
+            'readonlyLax',
+            'virtual',
+            'virtual2',
           ];
 
           const Model = new Schema<any>(
-            (b, m) =>
+            (b) =>
               b
                 .field(
-                  m
-                    .dependent("dependent", ["virtual", "virtual2"])
-                    .default("")
+                  b
+                    .dependent('dependent', ['virtual', 'virtual2'])
+                    .default('')
                     .resolve(validator),
                 )
-                .field(m.lax("lax", ""))
+                .field(b.lax('lax', ''))
                 .field(
-                  m
-                    .required("requiredReadonly")
+                  b
+                    .required('requiredReadonly')
                     .validate(() => true)
                     .readonly(),
                 )
-                .field(m.lax("readonlyLax", "").readonly())
-                .field(m.required("required").validate(() => true))
-                .field(m.virtual("virtual").validate(() => true))
-                .field(m.virtual("virtual2").validate(() => true)),
+                .field(b.lax('readonlyLax', '').readonly())
+                .field(b.required('required').validate(() => true))
+                .field(b.virtual('virtual').validate(() => true))
+                .field(b.virtual('virtual2').validate(() => true)),
             {
               // @ts-expect-error ikr
               postValidate: {
@@ -645,13 +645,13 @@ describe("Schema.options.postValidate", () => {
             };
           }
 
-          it("should trigger all post-validators at creation", async () => {
+          it('should trigger all post-validators at creation', async () => {
             const { error } = await Model.create(
               {
-                required: "req",
-                lax: "",
-                requiredReadonly: "reqReadonly",
-                readonlyLax: "",
+                required: 'req',
+                lax: '',
+                requiredReadonly: 'reqReadonly',
+                readonlyLax: '',
               },
               {},
             );
@@ -665,13 +665,13 @@ describe("Schema.options.postValidate", () => {
             });
           });
 
-          it("should not trigger post-validators of virtuals not provided at creation", async () => {
+          it('should not trigger post-validators of virtuals not provided at creation', async () => {
             const { error } = await Model.create(
               {
-                required: "req",
-                lax: "",
-                requiredReadonly: "reqReadonly",
-                readonlyLax: "",
+                required: 'req',
+                lax: '',
+                requiredReadonly: 'reqReadonly',
+                readonlyLax: '',
                 virtual2: true,
               },
               {},
@@ -687,7 +687,7 @@ describe("Schema.options.postValidate", () => {
             });
           });
 
-          it("should only trigger post-validators of props that change during updates", async () => {
+          it('should only trigger post-validators of props that change during updates', async () => {
             const { error } = await Model.update(
               // @ts-expect-error ikr
               { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: 1 },
@@ -710,10 +710,10 @@ describe("Schema.options.postValidate", () => {
             });
           });
 
-          it("should only trigger post-validators of readonly props that have not changed during updates", async () => {
+          it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
             const { error } = await Model.update(
               // @ts-expect-error ikr
-              { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: "" },
+              { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: '' },
               { requiredReadonly: true, readonlyLax: true },
               {},
             );
@@ -724,40 +724,40 @@ describe("Schema.options.postValidate", () => {
         });
       });
 
-      describe("behaviour with multiple post-validators", () => {
+      describe('behaviour with multiple post-validators', () => {
         const Model = new Schema<any>(
-          (b, m) =>
+          (b) =>
             b
               .field(
-                m
-                  .dependent("dependent", ["virtual", "virtual2"])
-                  .default("")
+                b
+                  .dependent('dependent', ['virtual', 'virtual2'])
+                  .default('')
                   .resolve(validator),
               )
-              .field(m.lax("lax", ""))
+              .field(b.lax('lax', ''))
               .field(
-                m
-                  .required("requiredReadonly")
+                b
+                  .required('requiredReadonly')
                   .validate(() => true)
                   .readonly(),
               )
-              .field(m.lax("readonlyLax", "").readonly())
-              .field(m.required("required").validate(() => true))
-              .field(m.virtual("virtual").validate(() => true))
-              .field(m.virtual("virtual2").validate(() => true)),
+              .field(b.lax('readonlyLax', '').readonly())
+              .field(b.required('required').validate(() => true))
+              .field(b.virtual('virtual').validate(() => true))
+              .field(b.virtual('virtual2').validate(() => true)),
           {
             postValidate: [
               // @ts-expect-error ikr
               makePostValidationConfig([
-                "lax",
-                "required",
-                "requiredReadonly",
-                "readonlyLax",
+                'lax',
+                'required',
+                'requiredReadonly',
+                'readonlyLax',
               ]),
               // @ts-expect-error ikr
-              makePostValidationConfig(["lax", "virtual"]),
+              makePostValidationConfig(['lax', 'virtual']),
               // @ts-expect-error ikr
-              makePostValidationConfig(["virtual", "virtual2"]),
+              makePostValidationConfig(['virtual', 'virtual2']),
             ],
           },
         ).getModel();
@@ -767,13 +767,13 @@ describe("Schema.options.postValidate", () => {
           providedfieldsStats = {};
         });
 
-        it("should trigger all post-validators at creation", async () => {
+        it('should trigger all post-validators at creation', async () => {
           const { error } = await Model.create(
             {
-              required: "req",
-              lax: "",
-              requiredReadonly: "reqReadonly",
-              readonlyLax: "",
+              required: 'req',
+              lax: '',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
             },
             {},
           );
@@ -787,13 +787,13 @@ describe("Schema.options.postValidate", () => {
           });
         });
 
-        it("should not trigger post-validators of virtuals not provided at creation", async () => {
+        it('should not trigger post-validators of virtuals not provided at creation', async () => {
           const { error } = await Model.create(
             {
-              required: "req",
-              lax: "",
-              requiredReadonly: "reqReadonly",
-              readonlyLax: "",
+              required: 'req',
+              lax: '',
+              requiredReadonly: 'reqReadonly',
+              readonlyLax: '',
               virtual2: true,
             },
             {},
@@ -809,7 +809,7 @@ describe("Schema.options.postValidate", () => {
           });
         });
 
-        it("should only trigger post-validators of props provided during updates", async () => {
+        it('should only trigger post-validators of props provided during updates', async () => {
           const { error } = await Model.update(
             // @ts-expect-error ikr
             { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: 1 },
@@ -833,10 +833,10 @@ describe("Schema.options.postValidate", () => {
           });
         });
 
-        it("should only trigger post-validators of readonly props that have not changed during updates", async () => {
+        it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
           const { error } = await Model.update(
             // @ts-expect-error ikr
-            { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: "" },
+            { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: '' },
             {
               requiredReadonly: true,
               readonlyLax: true,
@@ -848,35 +848,35 @@ describe("Schema.options.postValidate", () => {
           expect(providedfieldsStats).toEqual({ readonlyLax: 1 });
         });
 
-        describe("behaviour with post-validators that have validator arrays", () => {
+        describe('behaviour with post-validators that have validator arrays', () => {
           const fields1 = [
-              "lax",
-              "required",
-              "requiredReadonly",
-              "readonlyLax",
+              'lax',
+              'required',
+              'requiredReadonly',
+              'readonlyLax',
             ],
-            fields2 = ["virtual", "virtual2"];
+            fields2 = ['virtual', 'virtual2'];
 
           const Model = new Schema<any>(
-            (b, m) =>
+            (b) =>
               b
                 .field(
-                  m
-                    .dependent("dependent", ["virtual", "virtual2"])
-                    .default("")
+                  b
+                    .dependent('dependent', ['virtual', 'virtual2'])
+                    .default('')
                     .resolve(validator),
                 )
-                .field(m.lax("lax", ""))
+                .field(b.lax('lax', ''))
                 .field(
-                  m
-                    .required("requiredReadonly")
+                  b
+                    .required('requiredReadonly')
                     .validate(() => true)
                     .readonly(),
                 )
-                .field(m.lax("readonlyLax", "").readonly())
-                .field(m.required("required").validate(() => true))
-                .field(m.virtual("virtual").validate(() => true))
-                .field(m.virtual("virtual2").validate(() => true)),
+                .field(b.lax('readonlyLax', '').readonly())
+                .field(b.required('required').validate(() => true))
+                .field(b.virtual('virtual').validate(() => true))
+                .field(b.virtual('virtual2').validate(() => true)),
             {
               postValidate: [
                 {
@@ -890,7 +890,7 @@ describe("Schema.options.postValidate", () => {
                   ],
                 },
                 // @ts-expect-error ikr
-                makePostValidationConfig(["lax", "virtual"]),
+                makePostValidationConfig(['lax', 'virtual']),
                 {
                   // @ts-expect-error ikr
                   fields: fields2,
@@ -914,13 +914,13 @@ describe("Schema.options.postValidate", () => {
             };
           }
 
-          it("should trigger all post-validators at creation", async () => {
+          it('should trigger all post-validators at creation', async () => {
             const { error } = await Model.create(
               {
-                required: "req",
-                lax: "",
-                requiredReadonly: "reqReadonly",
-                readonlyLax: "",
+                required: 'req',
+                lax: '',
+                requiredReadonly: 'reqReadonly',
+                readonlyLax: '',
               },
               {},
             );
@@ -934,13 +934,13 @@ describe("Schema.options.postValidate", () => {
             });
           });
 
-          it("should not trigger post-validators of virtuals not provided at creation", async () => {
+          it('should not trigger post-validators of virtuals not provided at creation', async () => {
             const { error } = await Model.create(
               {
-                required: "req",
-                lax: "",
-                requiredReadonly: "reqReadonly",
-                readonlyLax: "",
+                required: 'req',
+                lax: '',
+                requiredReadonly: 'reqReadonly',
+                readonlyLax: '',
                 virtual2: true,
               },
               {},
@@ -956,7 +956,7 @@ describe("Schema.options.postValidate", () => {
             });
           });
 
-          it("should only trigger post-validators of props provided during updates", async () => {
+          it('should only trigger post-validators of props provided during updates', async () => {
             const { error } = await Model.update(
               // @ts-expect-error ikr
               { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: 1 },
@@ -980,10 +980,10 @@ describe("Schema.options.postValidate", () => {
             });
           });
 
-          it("should only trigger post-validators of readonly props that have not changed during updates", async () => {
+          it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
             const { error } = await Model.update(
               // @ts-expect-error ikr
-              { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: "" },
+              { lax: 2, required: 1, requiredReadonly: 1, readonlyLax: '' },
               {
                 requiredReadonly: true,
                 readonlyLax: true,
@@ -998,17 +998,17 @@ describe("Schema.options.postValidate", () => {
       });
     });
 
-    describe("values returned from post-validators should be handled accordingly", () => {
-      it("should ignore non-object-like values", async () => {
-        const values = [-1, 0, 1, "", "lol", undefined, null, () => {}, []];
+    describe('values returned from post-validators should be handled accordingly', () => {
+      it('should ignore non-object-like values', async () => {
+        const values = [-1, 0, 1, '', 'lol', undefined, null, () => {}, []];
 
         for (const value of values) {
           const Model = new Schema<{ p1: string; p2: string }>(
-            (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
+            (b) => b.field(b.lax('p1', '')).field(b.lax('p2', '')),
             {
               // @ts-expect-error ikr
               postValidate: {
-                fields: ["p1", "p2"],
+                fields: ['p1', 'p2'],
                 validator: () => value,
               },
             },
@@ -1018,9 +1018,9 @@ describe("Schema.options.postValidate", () => {
 
           expect(error).toBeNull();
           // @ts-expect-error ikr
-          expect(data).toEqual({ p1: "", p2: "" });
+          expect(data).toEqual({ p1: '', p2: '' });
 
-          const updates = { p1: "updated", p2: "updated" };
+          const updates = { p1: 'updated', p2: 'updated' };
 
           const { data: updated, error: error2 } = await Model.update(
             // @ts-expect-error ikr
@@ -1035,7 +1035,7 @@ describe("Schema.options.postValidate", () => {
         }
       });
 
-      it("should respect errors returned in post-validators(sync & async)", async () => {
+      it('should respect errors returned in post-validators(sync & async)', async () => {
         type Input = {
           d1?: string;
           p1?: string;
@@ -1056,58 +1056,58 @@ describe("Schema.options.postValidate", () => {
           ctx.rawInput.d1 ?? ctx.input.d1 ?? ctx.values?.d1;
 
         const Model = new Schema<Input, Output>(
-          (b, m) =>
+          (b) =>
             b
-              .field(m.lax("p1", ""))
-              .field(m.lax("p2", ""))
-              .field(m.lax("p3", ""))
-              .field(m.lax("p4", ""))
+              .field(b.lax('p1', ''))
+              .field(b.lax('p2', ''))
+              .field(b.lax('p3', ''))
+              .field(b.lax('p4', ''))
               .field(
                 // @ts-expect-error ikr
-                m.dependent("d1", "v").default("").resolve(resolver),
+                b.dependent('d1', 'v').default('').resolve(resolver),
               )
               .field(
                 // @ts-expect-error ikr
-                m.dependent("d2", "v").default("").resolve(resolver),
+                b.dependent('d2', 'v').default('').resolve(resolver),
               )
               .field(
-                m
-                  .virtual("v")
-                  .alias("d1")
+                b
+                  .virtual('v')
+                  .alias('d1')
                   .validate(() => true),
               ),
           {
             postValidate: [
               {
                 // @ts-expect-error ikr
-                fields: ["p1", "v"],
+                fields: ['p1', 'v'],
                 // @ts-expect-error ikr
                 validator(ctx) {
                   const v = ctx.rawInput.d1 ?? ctx.input.d1;
                   const isUpdate = ctx.isUpdate;
-                  if (v === "allow") return;
+                  if (v === 'allow') return;
 
-                  if (v === "throw") throw new Error("lol");
+                  if (v === 'throw') throw new Error('lol');
 
                   return isUpdate
-                    ? { d1: "lolz" }
+                    ? { d1: 'lolz' }
                     : {
-                        p2: "p2",
-                        p3: "error1",
+                        p2: 'p2',
+                        p3: 'error1',
                         p4: null,
-                        v: { reason: "error", metadata: { lol: true } },
+                        v: { reason: 'error', metadata: { lol: true } },
                       };
                 },
               },
               {
-                fields: ["p1", "p2"],
+                fields: ['p1', 'p2'],
                 // @ts-expect-error ikr
                 validator: (ctx) => {
                   const v = ctx.rawInput.d1 ?? ctx.input.d1;
-                  if (v === "throw") throw new Error("lol");
+                  if (v === 'throw') throw new Error('lol');
 
                   return Promise.resolve(
-                    v === "allow" ? false : { p1: "failed to validate" },
+                    v === 'allow' ? false : { p1: 'failed to validate' },
                   );
                 },
               },
@@ -1115,12 +1115,12 @@ describe("Schema.options.postValidate", () => {
           },
         ).getModel();
 
-        const res = await Model.create({ p2: "x" }, {});
+        const res = await Model.create({ p2: 'x' }, {});
 
         expect(res.data).toBeNull();
         expect(res.error).toMatchObject({
           p1: expect.objectContaining({
-            reason: "failed to validate",
+            reason: 'failed to validate',
           }),
           // p2: expect.objectContaining({
           //   reason: "p2",
@@ -1138,38 +1138,38 @@ describe("Schema.options.postValidate", () => {
         });
 
         // @ts-expect-error ikr
-        const res2 = await Model.update({}, { p2: "updated", d1: "updated" });
+        const res2 = await Model.update({}, { p2: 'updated', d1: 'updated' });
         expect(res2.data).toBeNull();
         expect(res2.error).toMatchObject({
-          p1: expect.objectContaining({ reason: "failed to validate" }),
-          d1: expect.objectContaining({ reason: "lolz" }),
+          p1: expect.objectContaining({ reason: 'failed to validate' }),
+          d1: expect.objectContaining({ reason: 'lolz' }),
         });
 
-        const res3 = await Model.create({ d1: "allow" }, {});
+        const res3 = await Model.create({ d1: 'allow' }, {});
         expect(res3.error).toBeNull();
         expect(res3.data).toEqual({
-          p1: "",
-          p2: "",
-          p3: "",
-          p4: "",
-          d1: "allow",
-          d2: "allow",
+          p1: '',
+          p2: '',
+          p3: '',
+          p4: '',
+          d1: 'allow',
+          d2: 'allow',
         });
 
         // @ts-expect-error ikr
         const res4 = await Model.update(res3.data, {
-          p1: "data",
-          d1: "allow",
+          p1: 'data',
+          d1: 'allow',
         });
         expect(res4.error).toBeNull();
-        expect(res4.data).toEqual({ p1: "data" });
+        expect(res4.data).toEqual({ p1: 'data' });
 
         const res5 = await Model.create(
           {
-            p1: "provided",
-            p2: "provided",
-            p4: "provided",
-            d1: "throw",
+            p1: 'provided',
+            p2: 'provided',
+            p4: 'provided',
+            d1: 'throw',
           },
           {},
         );
@@ -1177,15 +1177,15 @@ describe("Schema.options.postValidate", () => {
         // @ts-expect-error ikr
         expect(Object.keys(res5.error).length).toBe(3);
         expect(res5.error).toMatchObject({
-          p1: expect.objectContaining({ reason: "validation failed" }),
-          p2: expect.objectContaining({ reason: "validation failed" }),
-          d1: expect.objectContaining({ reason: "validation failed" }),
+          p1: expect.objectContaining({ reason: 'validation failed' }),
+          p2: expect.objectContaining({ reason: 'validation failed' }),
+          d1: expect.objectContaining({ reason: 'validation failed' }),
         });
 
         const res6 = await Model.update(
           // @ts-expect-error ikr
           {},
-          { p1: "updated", p2: "updated", d1: "throw" },
+          { p1: 'updated', p2: 'updated', d1: 'throw' },
           {},
         );
         expect(res6.data).toBeNull();
@@ -1194,63 +1194,63 @@ describe("Schema.options.postValidate", () => {
         expect(res6.error).toEqual({
           // @ts-expect-error ikr
           d1: expect.objectContaining({
-            reason: "validation failed",
+            reason: 'validation failed',
           }),
           p1: expect.objectContaining({
-            reason: "validation failed",
+            reason: 'validation failed',
           }),
           p2: expect.objectContaining({
-            reason: "validation failed",
+            reason: 'validation failed',
           }),
         });
 
-        const res7 = await Model.create({ d1: "throw" }, {});
+        const res7 = await Model.create({ d1: 'throw' }, {});
         expect(res7.data).toBeNull();
         // @ts-expect-error ikr
         expect(Object.keys(res7.error).length).toBe(1);
         expect(res7.error).toMatchObject({
-          d1: expect.objectContaining({ reason: "validation failed" }),
+          d1: expect.objectContaining({ reason: 'validation failed' }),
         });
 
         // @ts-expect-error ikr
-        const res8 = await Model.update({}, { d1: "throw" });
+        const res8 = await Model.update({}, { d1: 'throw' });
         expect(res8.data).toBeNull();
         // @ts-expect-error ikr
         expect(Object.keys(res8.error).length).toBe(1);
         expect(res8.error).toEqual({
           // @ts-expect-error ikr
-          d1: expect.objectContaining({ reason: "validation failed" }),
+          d1: expect.objectContaining({ reason: 'validation failed' }),
         });
       });
 
-      it("should properly update revalidated values returned from post-validators", async () => {
+      it('should properly update revalidated values returned from post-validators', async () => {
         const Model = new Schema<{ p1: string; p2: string }>(
-          (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
+          (b) => b.field(b.lax('p1', '')).field(b.lax('p2', '')),
           {
             // @ts-expect-error ikr
             postValidate: {
-              fields: ["p1", "p2"],
+              fields: ['p1', 'p2'],
               validator: ({ isUpdate }) =>
                 isUpdate
                   ? {
-                      p1: { validated: "re updated" },
-                      p2: { validated: "also re updated" },
+                      p1: { validated: 're updated' },
+                      p2: { validated: 'also re updated' },
                     }
                   : {
                       p1: { validated: true },
-                      p2: { validated: "also revalidated" },
+                      p2: { validated: 'also revalidated' },
                     },
             },
           },
         ).getModel();
 
-        const { data, error } = await Model.create({ p1: "", p2: "" }, {});
+        const { data, error } = await Model.create({ p1: '', p2: '' }, {});
 
         expect(error).toBeNull();
         // @ts-expect-error ikr
-        expect(data).toEqual({ p1: true, p2: "also revalidated" });
+        expect(data).toEqual({ p1: true, p2: 'also revalidated' });
 
-        const updates = { p1: "updated", p2: "updated" };
+        const updates = { p1: 'updated', p2: 'updated' };
 
         const { data: updated, error: error2 } = await Model.update(
           // @ts-expect-error ikr
@@ -1262,46 +1262,46 @@ describe("Schema.options.postValidate", () => {
         expect(error2).toBeNull();
         expect(updated).toEqual({
           // @ts-expect-error ikr
-          p1: "re updated",
-          p2: "also re updated",
+          p1: 're updated',
+          p2: 'also re updated',
         });
       });
 
-      it("should properly update revalidated values returned from post-validators with virtuals", async () => {
+      it('should properly update revalidated values returned from post-validators with virtuals', async () => {
         const Model = new Schema<
           { p1: string; p2: string; v: string; v1: string },
           { dependent: string; p1: string; p2: string }
         >(
-          (b, m) =>
+          (b) =>
             b
-              .field(m.lax("p1", ""))
-              .field(m.lax("p2", ""))
+              .field(b.lax('p1', ''))
+              .field(b.lax('p2', ''))
               .field(
-                m
-                  .dependent("dependent", ["v", "v1"])
-                  .default("")
+                b
+                  .dependent('dependent', ['v', 'v1'])
+                  .default('')
                   .resolve((ctx) => {
-                    const v = ctx.input.v ?? ctx.rawInput.v ?? "";
-                    const v1 = ctx.input.v1 ?? ctx.rawInput.v1 ?? "";
+                    const v = ctx.input.v ?? ctx.rawInput.v ?? '';
+                    const v1 = ctx.input.v1 ?? ctx.rawInput.v1 ?? '';
                     return `${v} ${v1}`.trim();
                   }),
               )
-              .field(m.virtual("v").validate(() => true))
-              .field(m.virtual("v1").validate(() => true)),
+              .field(b.virtual('v').validate(() => true))
+              .field(b.virtual('v1').validate(() => true)),
 
           {
             // @ts-expect-error ikr
             postValidate: {
-              fields: ["v", "v1"],
+              fields: ['v', 'v1'],
               validator: ({ isUpdate }) =>
                 isUpdate
                   ? {
-                      v: { validated: "re updated" },
-                      v1: { validated: "also re updated" },
+                      v: { validated: 're updated' },
+                      v1: { validated: 'also re updated' },
                     }
                   : {
                       v: { validated: true },
-                      v1: { validated: "also revalidated" },
+                      v1: { validated: 'also revalidated' },
                     },
             },
           },
@@ -1311,7 +1311,7 @@ describe("Schema.options.postValidate", () => {
         const { data, error } = await Model.create({ v1: false });
 
         expect(error).toBeNull();
-        expect(data).toMatchObject({ dependent: "true also revalidated" });
+        expect(data).toMatchObject({ dependent: 'true also revalidated' });
 
         const updates = { v: true };
 
@@ -1324,75 +1324,75 @@ describe("Schema.options.postValidate", () => {
 
         expect(error2).toBeNull();
         expect(updated).toEqual({
-          dependent: "re updated also re updated",
+          dependent: 're updated also re updated',
         });
       });
 
-      it("should not revalidate props not related to validator", async () => {
+      it('should not revalidate props not related to validator', async () => {
         type Input = { p1?: string; p2: string; v?: string; v1?: string };
         type Output = { p1: string; p2: string; dependent: string };
 
         const Model = new Schema<Input, Output>(
-          (b, m) =>
+          (b) =>
             b
-              .field(m.lax("p1", ""))
-              .field(m.lax("p2", ""))
+              .field(b.lax('p1', ''))
+              .field(b.lax('p2', ''))
               .field(
-                m
-                  .dependent("dependent", ["v", "v1"])
-                  .default("")
+                b
+                  .dependent('dependent', ['v', 'v1'])
+                  .default('')
                   .resolve((ctx) => {
-                    const v = ctx.input.v ?? ctx.rawInput.v ?? "";
-                    const v1 = ctx.input.v1 ?? ctx.rawInput.v1 ?? "";
+                    const v = ctx.input.v ?? ctx.rawInput.v ?? '';
+                    const v1 = ctx.input.v1 ?? ctx.rawInput.v1 ?? '';
                     return `${v} ${v1}`.trim();
                   }),
               )
-              .field(m.virtual("v").validate(() => true))
-              .field(m.virtual("v1").validate(() => true)),
+              .field(b.virtual('v').validate(() => true))
+              .field(b.virtual('v1').validate(() => true)),
           {
             postValidate: [
               {
-                fields: ["v", "v1"],
+                fields: ['v', 'v1'],
                 // @ts-expect-error ikr
                 validator: ({ isUpdate }) =>
                   isUpdate
                     ? {
-                        v: { validated: "re updated" },
-                        v1: { validated: "also re updated" },
+                        v: { validated: 're updated' },
+                        v1: { validated: 'also re updated' },
                       }
                     : {
                         v: { validated: true },
-                        v1: { validated: "also revalidated" },
+                        v1: { validated: 'also revalidated' },
                       },
               },
               {
-                fields: ["p1", "p2", "v"],
+                fields: ['p1', 'p2', 'v'],
                 // @ts-expect-error ikr
                 validator: ({ isUpdate }) =>
                   isUpdate
                     ? {
-                        p2: { validated: "re updated" },
-                        v: { validated: "successfully re updated" },
-                        v1: { validated: "also re updated" },
+                        p2: { validated: 're updated' },
+                        v: { validated: 'successfully re updated' },
+                        v1: { validated: 'also re updated' },
                       }
                     : {
                         p1: { validated: true },
-                        p2: { validated: "also revalidated" },
-                        v1: { validated: "also revalidated" },
+                        p2: { validated: 'also revalidated' },
+                        v1: { validated: 'also revalidated' },
                       },
               },
             ],
           },
         ).getModel();
 
-        const { data, error } = await Model.create({ p1: "provided" }, {});
+        const { data, error } = await Model.create({ p1: 'provided' }, {});
 
         expect(error).toBeNull();
         // @ts-expect-error ikr
         expect(data).toEqual({
-          dependent: "",
+          dependent: '',
           p1: true,
-          p2: "also revalidated",
+          p2: 'also revalidated',
         });
 
         const updates = { p1: false };
@@ -1408,22 +1408,22 @@ describe("Schema.options.postValidate", () => {
         // @ts-expect-error ikr
         expect(updated).toEqual({
           p1: false,
-          p2: "re updated",
-          dependent: "successfully re updated",
+          p2: 're updated',
+          dependent: 'successfully re updated',
         });
       });
 
-      describe("behaviour with validator array", () => {
-        it("should ignore non-object-like values", async () => {
-          const values = [-1, 0, 1, "", "lol", undefined, null, () => {}, []];
+      describe('behaviour with validator array', () => {
+        it('should ignore non-object-like values', async () => {
+          const values = [-1, 0, 1, '', 'lol', undefined, null, () => {}, []];
 
           for (const value of values) {
             const Model = new Schema<any>(
-              (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
+              (b) => b.field(b.lax('p1', '')).field(b.lax('p2', '')),
               {
                 // @ts-expect-error ikr
                 postValidate: {
-                  fields: ["p1", "p2"],
+                  fields: ['p1', 'p2'],
                   validator: [() => value, () => value],
                 },
               },
@@ -1433,9 +1433,9 @@ describe("Schema.options.postValidate", () => {
 
             expect(error).toBeNull();
             // @ts-expect-error ikr
-            expect(data).toEqual({ p1: "", p2: "" });
+            expect(data).toEqual({ p1: '', p2: '' });
 
-            const updates = { p1: "updated", p2: "updated" };
+            const updates = { p1: 'updated', p2: 'updated' };
 
             const { data: updated, error: error2 } = await Model.update(
               // @ts-expect-error ikr
@@ -1450,7 +1450,7 @@ describe("Schema.options.postValidate", () => {
           }
         });
 
-        it("should process errors of first validator to return errors and stop validating", async () => {
+        it('should process errors of first validator to return errors and stop validating', async () => {
           type PVInput = {
             d1?: any;
             p1?: string;
@@ -1477,68 +1477,68 @@ describe("Schema.options.postValidate", () => {
           }
 
           const Model = new Schema<PVInput, PVOutput>(
-            (b, m) =>
+            (b) =>
               b
-                .field(m.lax("p1", ""))
-                .field(m.lax("p2", ""))
-                .field(m.lax("p3", ""))
-                .field(m.lax("p4", ""))
-                .field(m.dependent("d1", "v").default("").resolve(resolver))
-                .field(m.dependent("d2", "v").default("").resolve(resolver))
+                .field(b.lax('p1', ''))
+                .field(b.lax('p2', ''))
+                .field(b.lax('p3', ''))
+                .field(b.lax('p4', ''))
+                .field(b.dependent('d1', 'v').default('').resolve(resolver))
+                .field(b.dependent('d2', 'v').default('').resolve(resolver))
                 .field(
-                  m
-                    .virtual("v")
-                    .alias("d1")
+                  b
+                    .virtual('v')
+                    .alias('d1')
                     .validate(() => true),
                 ),
             {
               postValidate: [
                 {
                   // @ts-expect-error ikr
-                  fields: ["p1", "v"],
+                  fields: ['p1', 'v'],
                   validator: [
                     () => {
-                      incrementValidatorCount("p1-v");
+                      incrementValidatorCount('p1-v');
                     },
                     (ctx) => {
                       const v = ctx.input.d1 ?? ctx.rawInput.d1;
-                      if (v === "return error") return { d1: "error returned" };
+                      if (v === 'return error') return { d1: 'error returned' };
                     },
                     (ctx) => {
                       const v = ctx.input.d1 ?? ctx.rawInput.d1;
-                      incrementValidatorCount("p1-v");
-                      if (v === "throw") throw new Error("lol");
+                      incrementValidatorCount('p1-v');
+                      if (v === 'throw') throw new Error('lol');
                     },
                     // @ts-expect-error ikr
                     (ctx) => {
                       const isUpdate = ctx.isUpdate;
-                      incrementValidatorCount("p1-v");
+                      incrementValidatorCount('p1-v');
 
                       return isUpdate
-                        ? { d1: "lolz" }
+                        ? { d1: 'lolz' }
                         : {
-                            p1: "p1",
-                            p2: "p2",
-                            p3: "error1",
+                            p1: 'p1',
+                            p2: 'p2',
+                            p3: 'error1',
                             p4: null,
-                            d1: { reason: "error", metadata: { lol: true } },
+                            d1: { reason: 'error', metadata: { lol: true } },
                           };
                     },
                   ],
                 },
                 {
-                  fields: ["p1", "p2"],
+                  fields: ['p1', 'p2'],
                   validator: [
                     (ctx) => {
                       const v = ctx.input.d1 ?? ctx.rawInput.d1;
-                      incrementValidatorCount("p1-p2");
-                      if (v === "throw") throw new Error("lol");
+                      incrementValidatorCount('p1-p2');
+                      if (v === 'throw') throw new Error('lol');
                     },
                     // @ts-expect-error ikr
                     (ctx) => {
                       const v = ctx.input.d1 ?? ctx.rawInput.d1;
                       return Promise.resolve(
-                        v === "allow" ? false : { p1: "failed to validate" },
+                        v === 'allow' ? false : { p1: 'failed to validate' },
                       );
                     },
                   ],
@@ -1569,48 +1569,48 @@ describe("Schema.options.postValidate", () => {
           // validatorRunCount = {};
 
           // @ts-expect-error ikr
-          const createRes1 = await Model.create({ d1: "throw", p2: true }, {});
+          const createRes1 = await Model.create({ d1: 'throw', p2: true }, {});
 
           expect(createRes1.data).toBeNull();
           expect(createRes1.error).toEqual({
             // @ts-expect-error ikr
-            p2: expect.objectContaining({ reason: "validation failed" }),
-            d1: expect.objectContaining({ reason: "validation failed" }),
+            p2: expect.objectContaining({ reason: 'validation failed' }),
+            d1: expect.objectContaining({ reason: 'validation failed' }),
           });
 
           expect(validatorRunCount).toMatchObject({
-            "p1-v": 2,
-            "p1-p2": 1,
+            'p1-v': 2,
+            'p1-p2': 1,
           });
 
           validatorRunCount = {};
 
-          const createRes11 = await Model.create({ d1: "return error" }, {});
+          const createRes11 = await Model.create({ d1: 'return error' }, {});
 
           expect(createRes11.data).toBeNull();
           expect(createRes11.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "error returned" }),
+            d1: expect.objectContaining({ reason: 'error returned' }),
           });
 
-          expect(validatorRunCount).toEqual({ "p1-v": 1 });
+          expect(validatorRunCount).toEqual({ 'p1-v': 1 });
 
           validatorRunCount = {};
 
           const updateRes = await Model.update(
             // @ts-expect-error ikr
             {},
-            { p2: "updated", d1: "updated" },
+            { p2: 'updated', d1: 'updated' },
             {},
           );
           expect(updateRes.data).toBeNull();
           expect(updateRes.error).toMatchObject({
-            p1: expect.objectContaining({ reason: "failed to validate" }),
-            d1: expect.objectContaining({ reason: "lolz" }),
+            p1: expect.objectContaining({ reason: 'failed to validate' }),
+            d1: expect.objectContaining({ reason: 'lolz' }),
           });
 
           expect(validatorRunCount).toMatchObject({
-            "p1-v": 3,
-            "p1-p2": 1,
+            'p1-v': 3,
+            'p1-p2': 1,
           });
 
           validatorRunCount = {};
@@ -1618,35 +1618,35 @@ describe("Schema.options.postValidate", () => {
           const updateRes1 = await Model.update(
             // @ts-expect-error ikr
             {},
-            { p2: "updated", d1: "throw" },
+            { p2: 'updated', d1: 'throw' },
             {},
           );
 
           expect(updateRes1.data).toBeNull();
           expect(updateRes1.error).toMatchObject({
-            p2: expect.objectContaining({ reason: "validation failed" }),
-            d1: expect.objectContaining({ reason: "validation failed" }),
+            p2: expect.objectContaining({ reason: 'validation failed' }),
+            d1: expect.objectContaining({ reason: 'validation failed' }),
           });
 
           expect(validatorRunCount).toMatchObject({
-            "p1-v": 2,
-            "p1-p2": 1,
+            'p1-v': 2,
+            'p1-p2': 1,
           });
 
           validatorRunCount = {};
 
           // @ts-expect-error ikr
-          const updateRes2 = await Model.update({}, { d1: "return error" });
+          const updateRes2 = await Model.update({}, { d1: 'return error' });
 
           expect(updateRes2.data).toBeNull();
           expect(updateRes2.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "error returned" }),
+            d1: expect.objectContaining({ reason: 'error returned' }),
           });
 
-          expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
+          expect(validatorRunCount).toMatchObject({ 'p1-v': 1 });
         });
 
-        it("should process parallel and sequential validators accordingly", async () => {
+        it('should process parallel and sequential validators accordingly', async () => {
           type PVInput2 = {
             d1?: any;
             p1?: string;
@@ -1673,53 +1673,53 @@ describe("Schema.options.postValidate", () => {
           }
 
           const Model = new Schema<PVInput2, PVOutput2>(
-            (b, m) =>
+            (b) =>
               b
-                .field(m.dependent("d1", "v").default("").resolve(resolver))
-                .field(m.dependent("d2", "v").default("").resolve(resolver))
-                .field(m.lax("p1", ""))
-                .field(m.lax("p2", ""))
-                .field(m.lax("p3", ""))
-                .field(m.lax("p4", ""))
-                .field(m.virtual("v").alias("d1").validate(validator)),
+                .field(b.dependent('d1', 'v').default('').resolve(resolver))
+                .field(b.dependent('d2', 'v').default('').resolve(resolver))
+                .field(b.lax('p1', ''))
+                .field(b.lax('p2', ''))
+                .field(b.lax('p3', ''))
+                .field(b.lax('p4', ''))
+                .field(b.virtual('v').alias('d1').validate(validator)),
             {
               postValidate: [
                 {
                   // @ts-expect-error ikr
-                  fields: ["p1", "v"],
+                  fields: ['p1', 'v'],
                   validator: [
                     (ctx) => {
                       const v = ctx.input.d1 ?? ctx.rawInput.d1;
-                      incrementValidatorCount("p1-v");
+                      incrementValidatorCount('p1-v');
 
-                      if (v === "return error") return { d1: "error returned" };
+                      if (v === 'return error') return { d1: 'error returned' };
 
-                      if (v === "throw") throw new Error("lol");
+                      if (v === 'throw') throw new Error('lol');
                     },
                     [
                       (ctx) => {
                         const v = ctx.input.d1 ?? ctx.rawInput.d1;
-                        incrementValidatorCount("p1-v-parallel");
+                        incrementValidatorCount('p1-v-parallel');
 
-                        if (v === "throw-parallel") throw new Error("lol");
+                        if (v === 'throw-parallel') throw new Error('lol');
                       },
                       (ctx) => {
                         const v = ctx.input.d1 ?? ctx.rawInput.d1;
-                        incrementValidatorCount("p1-v-parallel");
+                        incrementValidatorCount('p1-v-parallel');
 
-                        if (v === "return error-parallel")
-                          return { d1: "error returned" };
+                        if (v === 'return error-parallel')
+                          return { d1: 'error returned' };
                       },
                     ],
                     () => {
-                      incrementValidatorCount("p1-v");
+                      incrementValidatorCount('p1-v');
                     },
                     [
                       () => {
-                        incrementValidatorCount("p1-v-parallel-1");
+                        incrementValidatorCount('p1-v-parallel-1');
                       },
                       () => {
-                        incrementValidatorCount("p1-v-parallel-1");
+                        incrementValidatorCount('p1-v-parallel-1');
                       },
                     ],
                   ],
@@ -1733,43 +1733,43 @@ describe("Schema.options.postValidate", () => {
           expect(createRes.error).toBeNull();
           expect(validatorRunCount).toMatchObject({});
 
-          const createRes0 = await Model.create({ d1: "" }, {});
+          const createRes0 = await Model.create({ d1: '' }, {});
 
           expect(createRes0.error).toBeNull();
           expect(validatorRunCount).toMatchObject({
-            "p1-v": 2,
-            "p1-v-parallel": 2,
-            "p1-v-parallel-1": 2,
+            'p1-v': 2,
+            'p1-v-parallel': 2,
+            'p1-v-parallel-1': 2,
           });
 
           validatorRunCount = {};
 
           // @ts-expect-error ikr
-          const createRes1 = await Model.create({ d1: "throw", p2: true }, {});
+          const createRes1 = await Model.create({ d1: 'throw', p2: true }, {});
 
           expect(createRes1.data).toBeNull();
           expect(createRes1.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "validation failed" }),
+            d1: expect.objectContaining({ reason: 'validation failed' }),
           });
 
-          expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
+          expect(validatorRunCount).toMatchObject({ 'p1-v': 1 });
 
           validatorRunCount = {};
 
-          const createRes2 = await Model.create({ d1: "return error" }, {});
+          const createRes2 = await Model.create({ d1: 'return error' }, {});
 
           expect(createRes2.data).toBeNull();
           expect(createRes2.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "error returned" }),
+            d1: expect.objectContaining({ reason: 'error returned' }),
           });
 
-          expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
+          expect(validatorRunCount).toMatchObject({ 'p1-v': 1 });
 
           validatorRunCount = {};
 
           const createRes3 = await Model.create(
             {
-              d1: "throw-parallel",
+              d1: 'throw-parallel',
               // @ts-expect-error ikr
               p2: true,
             },
@@ -1778,19 +1778,19 @@ describe("Schema.options.postValidate", () => {
 
           expect(createRes3.data).toBeNull();
           expect(createRes3.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "validation failed" }),
+            d1: expect.objectContaining({ reason: 'validation failed' }),
           });
 
           expect(validatorRunCount).toMatchObject({
-            "p1-v": 1,
-            "p1-v-parallel": 2,
+            'p1-v': 1,
+            'p1-v-parallel': 2,
           });
 
           validatorRunCount = {};
 
           const createRes4 = await Model.create(
             {
-              d1: "return error-parallel",
+              d1: 'return error-parallel',
               // @ts-expect-error ikr
               p2: true,
             },
@@ -1799,66 +1799,66 @@ describe("Schema.options.postValidate", () => {
 
           expect(createRes4.data).toBeNull();
           expect(createRes4.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "error returned" }),
+            d1: expect.objectContaining({ reason: 'error returned' }),
           });
 
           expect(validatorRunCount).toMatchObject({
-            "p1-v": 1,
-            "p1-v-parallel": 2,
+            'p1-v': 1,
+            'p1-v-parallel': 2,
           });
 
           validatorRunCount = {};
 
           // @ts-expect-error ikr
-          const updateRes = await Model.update({}, { d1: "valid" });
+          const updateRes = await Model.update({}, { d1: 'valid' });
           expect(updateRes.error).toBeNull();
 
           expect(validatorRunCount).toMatchObject({
-            "p1-v": 2,
-            "p1-v-parallel": 2,
-            "p1-v-parallel-1": 2,
+            'p1-v': 2,
+            'p1-v-parallel': 2,
+            'p1-v-parallel-1': 2,
           });
 
           validatorRunCount = {};
 
           // @ts-expect-error ikr
-          const updateRes1 = await Model.update({}, { d1: "throw" });
+          const updateRes1 = await Model.update({}, { d1: 'throw' });
           expect(updateRes1.data).toBeNull();
           expect(updateRes1.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "validation failed" }),
+            d1: expect.objectContaining({ reason: 'validation failed' }),
           });
 
-          expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
+          expect(validatorRunCount).toMatchObject({ 'p1-v': 1 });
 
           validatorRunCount = {};
 
           // @ts-expect-error ikr
-          const updateRes2 = await Model.update({}, { d1: "return error" }, {});
+          const updateRes2 = await Model.update({}, { d1: 'return error' }, {});
 
           expect(updateRes2.data).toBeNull();
           expect(updateRes2.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "error returned" }),
+            d1: expect.objectContaining({ reason: 'error returned' }),
           });
 
-          expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
+          expect(validatorRunCount).toMatchObject({ 'p1-v': 1 });
 
           validatorRunCount = {};
 
           const updateRes3 = await Model.update(
             // @ts-expect-error ikr
             {},
-            { d1: "throw-parallel", p2: true },
+            { d1: 'throw-parallel', p2: true },
             {},
           );
 
           expect(updateRes3.data).toBeNull();
           expect(updateRes3.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "validation failed" }),
+            d1: expect.objectContaining({ reason: 'validation failed' }),
           });
 
           expect(validatorRunCount).toMatchObject({
-            "p1-v": 1,
-            "p1-v-parallel": 2,
+            'p1-v': 1,
+            'p1-v-parallel': 2,
           });
 
           validatorRunCount = {};
@@ -1866,24 +1866,24 @@ describe("Schema.options.postValidate", () => {
           const updateRes4 = await Model.update(
             // @ts-expect-error ikr
             {},
-            { d1: "return error-parallel", p2: true },
+            { d1: 'return error-parallel', p2: true },
             {},
           );
 
           expect(updateRes4.data).toBeNull();
           expect(updateRes4.error).toMatchObject({
-            d1: expect.objectContaining({ reason: "error returned" }),
+            d1: expect.objectContaining({ reason: 'error returned' }),
           });
 
           expect(validatorRunCount).toMatchObject({
-            "p1-v": 1,
-            "p1-v-parallel": 2,
+            'p1-v': 1,
+            'p1-v-parallel': 2,
           });
         });
       });
     });
 
-    describe("behaviour when updating ctxOptions from within post-validators", () => {
+    describe('behaviour when updating ctxOptions from within post-validators', () => {
       let ctxValue: Record<string, unknown> = {};
 
       beforeEach(() => {
@@ -1893,10 +1893,10 @@ describe("Schema.options.postValidate", () => {
       type Data = { p1: string; p2: string };
 
       const Model = new Schema<Data>(
-        (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
+        (b) => b.field(b.lax('p1', '')).field(b.lax('p2', '')),
         {
           postValidate: {
-            fields: ["p1", "p2"],
+            fields: ['p1', 'p2'],
             validator: ({ updateOptions }) => {
               updateOptions({ updated: true });
 
@@ -1909,7 +1909,7 @@ describe("Schema.options.postValidate", () => {
         },
       ).getModel();
 
-      it("should respect ctx updates at creation", async () => {
+      it('should respect ctx updates at creation', async () => {
         expect(ctxValue).toEqual({});
 
         const { handleSuccess } = await Model.create({}, {});
@@ -1919,7 +1919,7 @@ describe("Schema.options.postValidate", () => {
         expect(ctxValue).toEqual({});
 
         {
-          const { handleSuccess } = await Model.create({ p1: "1" }, {});
+          const { handleSuccess } = await Model.create({ p1: '1' }, {});
 
           await handleSuccess?.();
 
@@ -1927,11 +1927,11 @@ describe("Schema.options.postValidate", () => {
         }
       });
 
-      it("should respect ctx updates during updates", async () => {
+      it('should respect ctx updates during updates', async () => {
         expect(ctxValue).toEqual({});
 
         const { handleSuccess } = await Model.update(
-          { p1: "", p2: "3" },
+          { p1: '', p2: '3' },
           // @ts-expect-error ikr
           { p1: true },
           { initial: true },
@@ -1942,7 +1942,7 @@ describe("Schema.options.postValidate", () => {
         expect(ctxValue).toEqual({ updated: true, initial: true });
       });
 
-      describe("behaviour with validator array", () => {
+      describe('behaviour with validator array', () => {
         let ctxValue: Record<string, unknown> = {};
 
         beforeEach(() => {
@@ -1950,10 +1950,10 @@ describe("Schema.options.postValidate", () => {
         });
         type Data = { p1: string; p2: string };
         const Model = new Schema<Data, Data, Record<string, unknown>>(
-          (b, m) => b.field(m.lax("p1", "")).field(m.lax("p2", "")),
+          (b) => b.field(b.lax('p1', '')).field(b.lax('p2', '')),
           {
             postValidate: {
-              fields: ["p1", "p2"],
+              fields: ['p1', 'p2'],
               validator: [
                 ({ updateOptions }) => {
                   updateOptions({ updated: true });
@@ -1973,7 +1973,7 @@ describe("Schema.options.postValidate", () => {
           },
         ).getModel();
 
-        it("should respect ctx updates at creation", async () => {
+        it('should respect ctx updates at creation', async () => {
           expect(ctxValue).toEqual({});
 
           const { handleSuccess } = await Model.create({}, {});
@@ -1983,7 +1983,7 @@ describe("Schema.options.postValidate", () => {
           expect(ctxValue).toEqual({});
 
           {
-            const { handleSuccess } = await Model.create({ p1: "1" }, {});
+            const { handleSuccess } = await Model.create({ p1: '1' }, {});
 
             await handleSuccess?.();
             expect(ctxValue).toEqual({
@@ -1993,11 +1993,11 @@ describe("Schema.options.postValidate", () => {
           }
         });
 
-        it("should respect ctx updates during updates", async () => {
+        it('should respect ctx updates during updates', async () => {
           expect(ctxValue).toEqual({});
 
           const { handleSuccess } = await Model.update(
-            { p1: "", p2: "3" },
+            { p1: '', p2: '3' },
             // @ts-expect-error ikr
             { p1: true },
             { initial: true },

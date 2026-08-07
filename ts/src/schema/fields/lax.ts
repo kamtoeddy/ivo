@@ -1,16 +1,16 @@
 import {
   type ArrayOfMinSizeOne,
   type ArrayOfMinSizeTwo,
-  FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   type NotAllowedError,
   type NS,
+  type ObjectType,
   type RequiredHandler,
   type ReValidator,
   type Validator,
-  type ObjectType,
-} from "../../utils/types";
-import { extractAllowedValues } from "./_utils";
+} from '../../utils/types';
+import { extractAllowedValues } from './_utils';
 
 export { type BuildableLaxConfig, LaxBuilder };
 
@@ -20,18 +20,18 @@ type BuildableLaxConfig<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-  DefaultState extends "value" | "resolver" = "resolver",
-  ValidationState extends "allow" | "none" | "validate" = "none",
+  DefaultState extends 'value' | 'resolver' = 'resolver',
+  ValidationState extends 'allow' | 'none' | 'validate' = 'none',
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
   HasRequired extends boolean = false,
-  HasIgnore extends "init" | "update" | "ignore" | "none" = "none",
+  HasIgnore extends 'init' | 'update' | 'ignore' | 'none' = 'none',
   HasReadonly extends boolean = false,
   HasOnDelete extends boolean = false,
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
 > = Buildable<NS.LaxField<Value, Input, Output, CtxOptions, Metadata>> &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {
         allow<const V extends Value>(
           values: ArrayOfMinSizeTwo<V>,
@@ -42,7 +42,7 @@ type BuildableLaxConfig<
           CtxOptions,
           Metadata,
           DefaultState,
-          "allow",
+          'allow',
           HasAllowError,
           HasReValidate,
           HasRequired,
@@ -61,7 +61,7 @@ type BuildableLaxConfig<
           CtxOptions,
           Metadata,
           DefaultState,
-          "validate",
+          'validate',
           HasAllowError,
           HasReValidate,
           HasRequired,
@@ -73,7 +73,7 @@ type BuildableLaxConfig<
         >;
       }
     : {}) &
-  (ValidationState extends "allow"
+  (ValidationState extends 'allow'
     ? HasAllowError extends true
       ? {}
       : {
@@ -91,7 +91,7 @@ type BuildableLaxConfig<
             CtxOptions,
             Metadata,
             DefaultState,
-            "allow",
+            'allow',
             true,
             HasReValidate,
             HasRequired,
@@ -103,7 +103,7 @@ type BuildableLaxConfig<
           >;
         }
     : {}) &
-  (ValidationState extends "none"
+  (ValidationState extends 'none'
     ? {}
     : HasReValidate extends true
       ? {}
@@ -151,7 +151,7 @@ type BuildableLaxConfig<
           HasOnSuccess
         >;
       }) &
-  (HasIgnore extends "none"
+  (HasIgnore extends 'none'
     ? HasReadonly extends true
       ? {}
       : {
@@ -168,7 +168,7 @@ type BuildableLaxConfig<
             HasAllowError,
             HasReValidate,
             HasRequired,
-            "ignore",
+            'ignore',
             HasReadonly,
             HasOnDelete,
             HasOnFailure,
@@ -185,7 +185,7 @@ type BuildableLaxConfig<
             HasAllowError,
             HasReValidate,
             HasRequired,
-            "init",
+            'init',
             HasReadonly,
             HasOnDelete,
             HasOnFailure,
@@ -202,7 +202,7 @@ type BuildableLaxConfig<
             HasAllowError,
             HasReValidate,
             HasRequired,
-            "update",
+            'update',
             HasReadonly,
             HasOnDelete,
             HasOnFailure,
@@ -227,7 +227,7 @@ type BuildableLaxConfig<
           >;
         }
     : {}) &
-  (DefaultState extends "resolver"
+  (DefaultState extends 'resolver'
     ? {}
     : HasReadonly extends true
       ? {
@@ -244,14 +244,14 @@ type BuildableLaxConfig<
             HasAllowError,
             HasReValidate,
             HasRequired,
-            "ignore",
+            'ignore',
             HasReadonly,
             HasOnDelete,
             HasOnFailure,
             HasOnSuccess
           >;
         }
-      : HasIgnore extends "init" | "update"
+      : HasIgnore extends 'init' | 'update'
         ? {}
         : {
             readonly(): BuildableLaxConfig<
@@ -354,10 +354,11 @@ class LaxBuilder<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-> implements BuildableLaxConfig<Value, Input, Output, CtxOptions, Metadata> {
+> implements BuildableLaxConfig<Value, Input, Output, CtxOptions, Metadata>
+{
   private config: Partial<
     NS.LaxField<Value, Input, Output, CtxOptions, Metadata>
-  > = { type: "lax" };
+  > = { type: 'lax' };
 
   constructor(
     name: string,

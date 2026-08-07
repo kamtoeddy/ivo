@@ -11,33 +11,33 @@ import type {
   TypeOf,
   ValidationResponse,
   ValidatorResponseObject,
-} from "./types";
+} from './types';
 
-export * from "./error-tool";
-export * from "./schema-error";
+export * from './error-tool';
+export * from './schema-error';
 
 export {
+  cloneWithMethods,
+  deepCloneValue,
+  getDefaultRequiredError,
   getKeysAsProps,
   getSetValuesAsProps,
   getUnique,
   getUniqueBy,
   hasAnyOf,
   isEqual,
+  isFieldError,
   isFunctionLike,
+  isInputFieldError,
   isNullOrUndefined,
   isOneOf,
   isPropertyOf,
   isRecordLike,
+  makeFieldError,
   makeResponse,
   sort,
   sortKeys,
   toArray,
-  deepCloneValue,
-  cloneWithMethods,
-  isFieldError,
-  isInputFieldError,
-  getDefaultRequiredError,
-  makeFieldError,
 };
 
 function deepCloneValue<T>(value: T): T {
@@ -87,7 +87,7 @@ function deepCloneValue<T>(value: T): T {
 
 function cloneWithMethods<T>(obj: T, circularMap = new WeakMap()): T {
   // 1. Handle primitives, null, functions, or special objects
-  if (obj === null || typeof obj !== "object") return obj;
+  if (obj === null || typeof obj !== 'object') return obj;
 
   if (obj instanceof Date) return new Date(obj.getTime()) as T;
   if (obj instanceof RegExp) return new RegExp(obj.source, obj.flags) as T;
@@ -110,13 +110,13 @@ function cloneWithMethods<T>(obj: T, circularMap = new WeakMap()): T {
     const descriptor = descriptors[key];
 
     // Handle data properties
-    if ("value" in descriptor) {
+    if ('value' in descriptor) {
       const value = descriptor.value;
 
-      if (typeof value === "function") {
+      if (typeof value === 'function') {
         // Bind functions directly to 'copy' (its own parent object/array)
         descriptor.value = value.bind(copy);
-      } else if (typeof value === "object" && value !== null) {
+      } else if (typeof value === 'object' && value !== null) {
         // Recursively clone without overriding the nested context
         descriptor.value = cloneWithMethods(value, circularMap);
       }
@@ -133,13 +133,13 @@ function isFieldError(data: unknown): data is FieldError {
   if (!isRecordLike(data) || isEqual({}, data)) return false;
 
   if (
-    !isPropertyOf("metadata", data) ||
+    !isPropertyOf('metadata', data) ||
     !isFieldErrorMetadataOk(data) ||
-    !isPropertyOf("reason", data)
+    !isPropertyOf('reason', data)
   )
     return false;
 
-  return typeof data?.reason === "string";
+  return typeof data?.reason === 'string';
 }
 
 function isInputFieldError<Metadata>(
@@ -149,18 +149,18 @@ function isInputFieldError<Metadata>(
 
   if (!isRecordLike(data) || isEqual({}, data)) return false;
 
-  const hasMetadata = isPropertyOf("metadata", data),
-    hasReason = isPropertyOf("reason", data);
+  const hasMetadata = isPropertyOf('metadata', data),
+    hasReason = isPropertyOf('reason', data);
 
   if (!hasMetadata && !hasReason) return false;
 
   if (hasMetadata && !isFieldErrorMetadataOk(data?.metadata)) return false;
-  if (hasReason && typeof data?.reason !== "string") return false;
+  if (hasReason && typeof data?.reason !== 'string') return false;
 
   return true;
 }
 
-function isFieldErrorMetadataOk(data: unknown): data is FieldError["metadata"] {
+function isFieldErrorMetadataOk(data: unknown): data is FieldError['metadata'] {
   const metadata = (data as FieldError)?.metadata;
 
   return metadata == null || isRecordLike(metadata);
@@ -168,7 +168,7 @@ function isFieldErrorMetadataOk(data: unknown): data is FieldError["metadata"] {
 
 function makeFieldError<Metadata>(
   value: InputPayload[string] | InputFieldError<Metadata>,
-  fallbackMessage = "validation failed",
+  fallbackMessage = 'validation failed',
 ): FieldError<Metadata> {
   if (isFieldError(value)) {
     if (!value.reason) value.reason = fallbackMessage;
@@ -176,7 +176,7 @@ function makeFieldError<Metadata>(
     return value as never;
   }
 
-  if (typeof value === "string") return { reason: value, metadata: null };
+  if (typeof value === 'string') return { reason: value, metadata: null };
 
   return {
     reason: (value as any).reason ?? fallbackMessage,
@@ -203,7 +203,7 @@ function makeResponse<T = undefined, Metadata = DefaultFieldErrorMetadata>(
     ? isRecordLike(inputReason)
       ? inputReason
       : inputReason
-    : "validation failed";
+    : 'validation failed';
 
   return {
     metadata,
@@ -233,7 +233,7 @@ function isEqual<T>(a: unknown, b: T, depth = 1): a is T {
   if (a instanceof Date && b instanceof Date)
     return a.getTime() === b.getTime();
 
-  if (!a || !b || (typeof a !== "object" && typeof b !== "object"))
+  if (!a || !b || (typeof a !== 'object' && typeof b !== 'object'))
     return a === b;
 
   let keysOfA = Object.keys(a),
@@ -258,7 +258,7 @@ function isEqual<T>(a: unknown, b: T, depth = 1): a is T {
 }
 
 function isFunctionLike<T extends Function>(value: unknown): value is T {
-  return typeof value === "function";
+  return typeof value === 'function';
 }
 
 function isNullOrUndefined(value: unknown): value is null | undefined {
@@ -275,7 +275,7 @@ function isOneOf<const T>(
 function isRecordLike<T extends ObjectType>(
   value: unknown,
 ): value is ObjectType<T> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isPropertyOf<T>(
@@ -325,7 +325,7 @@ function getUniqueBy<T>(list: T[], key?: string) {
 }
 
 function _getDeepValue(data: ObjectType, key: string): unknown {
-  return key.split(".").reduce((prev, next) => prev?.[next] as never, data);
+  return key.split('.').reduce((prev, next) => prev?.[next] as never, data);
 }
 
 function _serialize(dt: unknown, revert = false) {

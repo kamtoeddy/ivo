@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it } from "bun:test";
-import { Schema } from "../../src";
-import { expectNoFailure, makeFx, validator } from "../_utils";
+import { beforeEach, describe, expect, it } from 'bun:test';
+import { Schema } from '../../src';
+import { expectNoFailure, makeFx, validator } from '../_utils';
 
-describe("required", () => {
-  describe("valid", () => {
-    it("should allow required + validator", () => {
-      const toPass = makeFx((b, m) =>
-        b.field(m.required("fieldName").validate(validator)),
+describe('required', () => {
+  describe('valid', () => {
+    it('should allow required + validator', () => {
+      const toPass = makeFx((b) =>
+        b.field(b.required('fieldName').validate(validator)),
       );
 
       expectNoFailure(toPass);
@@ -14,9 +14,9 @@ describe("required", () => {
       toPass();
     });
 
-    it("should allow required: true + allow alone", () => {
-      const toPass = makeFx((b, m) =>
-        b.field(m.required("fieldName").allow([1, 2, 435, 45])),
+    it('should allow required: true + allow alone', () => {
+      const toPass = makeFx((b) =>
+        b.field(b.required('fieldName').allow([1, 2, 435, 45])),
       );
 
       expectNoFailure(toPass);
@@ -24,9 +24,9 @@ describe("required", () => {
       toPass();
     });
 
-    it("should allow required(true) + readonly(true) (locks the m after creation)", () => {
-      const toPass = makeFx((b, m) =>
-        b.field(m.required("fieldName").validate(validator).readonly()),
+    it('should allow required(true) + readonly(true) (locks the m after creation)', () => {
+      const toPass = makeFx((b) =>
+        b.field(b.required('fieldName').validate(validator).readonly()),
       );
 
       expectNoFailure(toPass);
@@ -43,16 +43,16 @@ describe("required", () => {
   // the builder by design.
 });
 
-describe("required runtime enforcement (strictly required, i.e. required: true)", () => {
+describe('required runtime enforcement (strictly required, i.e. required: true)', () => {
   // Mirrors rs/tests/fields/required/mod.rs::
   // should_respect_the_default_required_error_if_field_is_missing
-  const Book = new Schema<any>((b, m) =>
+  const Book = new Schema<any>((b) =>
     b
-      .field(m.required("bookId").validate(validator))
-      .field(m.lax("isPublished", false).validate(validator)),
+      .field(b.required('bookId').validate(validator))
+      .field(b.lax('isPublished', false).validate(validator)),
   ).getModel();
 
-  it("should reject creation if a strictly required m is missing, with the default message", async () => {
+  it('should reject creation if a strictly required m is missing, with the default message', async () => {
     const { data, error } = await Book.create({ isPublished: true }, {});
 
     expect(data).toBeNull();
@@ -61,14 +61,14 @@ describe("required runtime enforcement (strictly required, i.e. required: true)"
     });
   });
 
-  it("should create normally once the strictly required m is provided", async () => {
+  it('should create normally once the strictly required m is provided', async () => {
     const { data, error } = await Book.create({ bookId: 1 }, {});
 
     expect(error).toBeNull();
     expect(data).toEqual({ bookId: 1, isPublished: false });
   });
 
-  it("updates are unaffected by required-ness (a strictly required m may simply be absent from an update)", async () => {
+  it('updates are unaffected by required-ness (a strictly required m may simply be absent from an update)', async () => {
     const { data, error } = await Book.update(
       { bookId: 1, isPublished: false },
       { isPublished: true },
@@ -80,8 +80,8 @@ describe("required runtime enforcement (strictly required, i.e. required: true)"
   });
 });
 
-describe("requiredBy", () => {
-  describe("behaviour", () => {
+describe('requiredBy', () => {
+  describe('behaviour', () => {
     let callsPerField: Record<string, boolean> = {};
 
     const book = {
@@ -103,13 +103,13 @@ describe("requiredBy", () => {
       callsPerField[field] = true;
     }
 
-    const Book = new Schema<any>((b, m) =>
+    const Book = new Schema<any>((b) =>
       b
-        .field(m.required("bookId").validate(validator))
-        .field(m.lax("isPublished", false).validate(validator))
+        .field(b.required('bookId').validate(validator))
+        .field(b.lax('isPublished', false).validate(validator))
         .field(
-          m
-            .lax("price", null)
+          b
+            .lax('price', null)
             .validate(validatePrice as never)
             .required((ctx: any) => {
               const isPublished =
@@ -119,13 +119,13 @@ describe("requiredBy", () => {
               const price =
                 ctx.rawInput.price ?? ctx.input.price ?? ctx.values.price;
               const isRequired = isPublished && price == null;
-              recordCalls("price");
-              return [isRequired, "A price is required to publish a book!"];
+              recordCalls('price');
+              return [isRequired, 'A price is required to publish a book!'];
             }),
         )
         .field(
-          m
-            .lax("priceReadonly", null)
+          b
+            .lax('priceReadonly', null)
             .validate(validatePrice as never)
             .readonly()
             .required((ctx: any) => {
@@ -136,16 +136,16 @@ describe("requiredBy", () => {
                 ctx.input.priceReadonly ??
                 ctx.values.priceReadonly;
               const isRequired = price === 101 && priceReadonly == null;
-              recordCalls("priceReadonly");
+              recordCalls('priceReadonly');
               return [
                 isRequired,
-                "A priceReadonly is required when price is 101!",
+                'A priceReadonly is required when price is 101!',
               ];
             }),
         )
         .field(
-          m
-            .lax("priceRequiredWithoutMessage", null)
+          b
+            .lax('priceRequiredWithoutMessage', null)
             .validate(validatePrice as never)
             .readonly()
             .required((ctx: any) => {
@@ -155,7 +155,7 @@ describe("requiredBy", () => {
                 ctx.rawInput.priceReadonly ??
                 ctx.input.priceReadonly ??
                 ctx.values.priceReadonly;
-              recordCalls("priceRequiredWithoutMessage");
+              recordCalls('priceRequiredWithoutMessage');
               return price === 101 && priceReadonly == null;
             }),
         ),
@@ -165,8 +165,8 @@ describe("requiredBy", () => {
       callsPerField = {};
     });
 
-    describe("creation", () => {
-      it("should create normally", async () => {
+    describe('creation', () => {
+      it('should create normally', async () => {
         const toPass = () => Book.create({ bookId: 1 }, {});
 
         expectNoFailure(toPass);
@@ -181,7 +181,7 @@ describe("requiredBy", () => {
         });
       });
 
-      it("should pass if condition is met at creation", async () => {
+      it('should pass if condition is met at creation', async () => {
         const toPass = () =>
           Book.create({ bookId: 1, isPublished: true, price: 2000 }, {});
 
@@ -205,7 +205,7 @@ describe("requiredBy", () => {
         });
       });
 
-      it("should reject if condition is not met at creation", async () => {
+      it('should reject if condition is not met at creation', async () => {
         const { data, error } = await Book.create(
           {
             bookId: 1,
@@ -217,7 +217,7 @@ describe("requiredBy", () => {
         expect(data).toBeNull();
         expect(error).toMatchObject({
           price: {
-            reason: "A price is required to publish a book!",
+            reason: 'A price is required to publish a book!',
             metadata: null,
           },
         });
@@ -230,8 +230,8 @@ describe("requiredBy", () => {
       });
     });
 
-    describe("updates", () => {
-      it("should pass if condition is met during updates", async () => {
+    describe('updates', () => {
+      it('should pass if condition is met during updates', async () => {
         const toPass = () =>
           Book.update(
             {
@@ -257,7 +257,7 @@ describe("requiredBy", () => {
         });
       });
 
-      it("should pass if condition is met during updates of readonly", async () => {
+      it('should pass if condition is met during updates of readonly', async () => {
         const toPass = () =>
           Book.update(book, { price: 101, priceReadonly: 201 }, {});
 
@@ -272,7 +272,7 @@ describe("requiredBy", () => {
         });
       });
 
-      it("should reject if condition is not met during updates", async () => {
+      it('should reject if condition is not met during updates', async () => {
         const { data, error } = await Book.update(
           {
             bookId: 1,
@@ -287,7 +287,7 @@ describe("requiredBy", () => {
         expect(data).toBeNull();
         expect(error).toMatchObject({
           price: {
-            reason: "A price is required to publish a book!",
+            reason: 'A price is required to publish a book!',
             metadata: null,
           },
         });
@@ -295,13 +295,13 @@ describe("requiredBy", () => {
         expect(callsPerField).toEqual({ price: true, priceReadonly: true });
       });
 
-      it("should reject if condition is not met during updates of readonly", async () => {
+      it('should reject if condition is not met during updates of readonly', async () => {
         const { data, error } = await Book.update(book, { price: 101 }, {});
 
         expect(data).toBeNull();
         expect(error).toMatchObject({
           priceReadonly: {
-            reason: "A priceReadonly is required when price is 101!",
+            reason: 'A priceReadonly is required when price is 101!',
             metadata: null,
           },
           priceRequiredWithoutMessage: {
@@ -318,7 +318,7 @@ describe("requiredBy", () => {
         });
       });
 
-      it("should not update callable readonly field that has changed", async () => {
+      it('should not update callable readonly field that has changed', async () => {
         const { data, error } = await Book.update(
           {
             bookId: 1,
@@ -344,54 +344,54 @@ describe("requiredBy", () => {
       });
     });
 
-    describe("behaviour when nothing is returned from required function", () => {
-      const Book = new Schema<any>((b, m) =>
+    describe('behaviour when nothing is returned from required function', () => {
+      const Book = new Schema<any>((b) =>
         b
-          .field(m.required("bookId").validate(validator))
-          .field(m.lax("isPublished", false).validate(validator))
-          .field(m.lax("name", "").validate(validator))
+          .field(b.required('bookId').validate(validator))
+          .field(b.lax('isPublished', false).validate(validator))
+          .field(b.lax('name', '').validate(validator))
           .field(
-            m
-              .lax("price", null)
+            b
+              .lax('price', null)
               .validate(validator)
               .required((() => {}) as never),
           ),
       ).getModel();
 
-      it("should create normally", async () => {
+      it('should create normally', async () => {
         const { data } = await Book.create({ bookId: 1 }, {});
 
         expect(data).toEqual({
           bookId: 1,
           isPublished: false,
-          name: "",
+          name: '',
           price: null,
         });
       });
 
-      it("should update normally", async () => {
+      it('should update normally', async () => {
         const book = {
           bookId: 1,
           isPublished: false,
-          name: "",
+          name: '',
           price: null,
         };
-        const { data } = await Book.update(book, { name: "yooo" }, {});
+        const { data } = await Book.update(book, { name: 'yooo' }, {});
 
-        expect(data).toEqual({ name: "yooo" });
+        expect(data).toEqual({ name: 'yooo' });
       });
     });
 
-    describe("behaviour when a non-string value is returned as message from required function", () => {
-      describe("should respect InputField", () => {
+    describe('behaviour when a non-string value is returned as message from required function', () => {
+      describe('should respect InputField', () => {
         const responses = [
-          [{ reason: "lol" }, { reason: "lol" }],
+          [{ reason: 'lol' }, { reason: 'lol' }],
           [
-            { reason: "lol", metadata: { shouldWork: true } },
-            { reason: "lol", metadata: { shouldWork: true } },
+            { reason: 'lol', metadata: { shouldWork: true } },
+            { reason: 'lol', metadata: { shouldWork: true } },
           ],
           [
-            { reason: "", metadata: null },
+            { reason: '', metadata: null },
             { reason: "'price' is required", metadata: null },
           ],
           [
@@ -402,20 +402,20 @@ describe("requiredBy", () => {
         ];
 
         for (const [provided, expected] of responses) {
-          const Book = new Schema<any>((b, m) =>
+          const Book = new Schema<any>((b) =>
             b
-              .field(m.required("bookId").validate(validator))
-              .field(m.lax("isPublished", false).validate(validator))
-              .field(m.lax("name", "").validate(validator))
+              .field(b.required('bookId').validate(validator))
+              .field(b.lax('isPublished', false).validate(validator))
+              .field(b.lax('name', '').validate(validator))
               .field(
-                m
-                  .lax("price", null)
+                b
+                  .lax('price', null)
                   .validate(validator)
                   .required((): never => [true, provided] as never),
               ),
           ).getModel();
 
-          it("should reject with proper required error message at creation", async () => {
+          it('should reject with proper required error message at creation', async () => {
             const { data, error } = await Book.create({ bookId: 1 }, {});
 
             expect(data).toBeNull();
@@ -425,16 +425,16 @@ describe("requiredBy", () => {
             });
           });
 
-          it("should reject with proper required error message during updates", async () => {
+          it('should reject with proper required error message during updates', async () => {
             const book = {
               bookId: 1,
               isPublished: false,
-              name: "",
+              name: '',
               price: null,
             };
             const { data, error } = await Book.update(
               book,
-              { name: "yooo" },
+              { name: 'yooo' },
               {},
             );
 
@@ -447,24 +447,24 @@ describe("requiredBy", () => {
         }
       });
 
-      describe("should ignore unsupported types", () => {
+      describe('should ignore unsupported types', () => {
         const invalidMessages = [null, undefined, [], {}, 1, 0, -12, () => {}];
 
         for (const message of invalidMessages) {
-          const Book = new Schema<any>((b, m) =>
+          const Book = new Schema<any>((b) =>
             b
-              .field(m.required("bookId").validate(validator))
-              .field(m.lax("isPublished", false).validate(validator))
-              .field(m.lax("name", "").validate(validator))
+              .field(b.required('bookId').validate(validator))
+              .field(b.lax('isPublished', false).validate(validator))
+              .field(b.lax('name', '').validate(validator))
               .field(
-                m
-                  .lax("price", null)
+                b
+                  .lax('price', null)
                   .validate(validator)
                   .required((): never => [true, message] as never),
               ),
           ).getModel();
 
-          it("should reject with proper required error message at creation", async () => {
+          it('should reject with proper required error message at creation', async () => {
             const { data, error } = await Book.create({ bookId: 1 }, {});
 
             expect(data).toBeNull();
@@ -477,16 +477,16 @@ describe("requiredBy", () => {
             });
           });
 
-          it("should reject with proper required error message during updates", async () => {
+          it('should reject with proper required error message during updates', async () => {
             const book = {
               bookId: 1,
               isPublished: false,
-              name: "",
+              name: '',
               price: null,
             };
             const { data, error } = await Book.update(
               book,
-              { name: "yooo" },
+              { name: 'yooo' },
               {},
             );
 
@@ -500,13 +500,13 @@ describe("requiredBy", () => {
       });
     });
 
-    describe("behaviour when a value returned by required function is not boolean nor array", () => {
+    describe('behaviour when a value returned by required function is not boolean nor array', () => {
       const invalidResponses = [
         null,
         undefined,
         {},
-        "",
-        "not array",
+        '',
+        'not array',
         1,
         0,
         -12,
@@ -514,54 +514,54 @@ describe("requiredBy", () => {
       ];
 
       for (const response of invalidResponses) {
-        const Book = new Schema<any>((b, m) =>
+        const Book = new Schema<any>((b) =>
           b
-            .field(m.required("bookId").validate(validator))
-            .field(m.lax("isPublished", false).validate(validator))
-            .field(m.lax("name", "").validate(validator))
+            .field(b.required('bookId').validate(validator))
+            .field(b.lax('isPublished', false).validate(validator))
+            .field(b.lax('name', '').validate(validator))
             .field(
-              m
-                .lax("price", null)
+              b
+                .lax('price', null)
                 .validate(validator)
                 .required((): never => response as never),
             ),
         ).getModel();
 
-        it("should create normally", async () => {
+        it('should create normally', async () => {
           const { data } = await Book.create({ bookId: 1 }, {});
 
           expect(data).toEqual({
             bookId: 1,
             isPublished: false,
-            name: "",
+            name: '',
             price: null,
           });
         });
 
-        it("should update normally", async () => {
+        it('should update normally', async () => {
           const book = {
             bookId: 1,
             isPublished: false,
-            name: "",
+            name: '',
             price: null,
           };
-          const { data } = await Book.update(book, { name: "yooo" }, {});
+          const { data } = await Book.update(book, { name: 'yooo' }, {});
 
-          expect(data).toEqual({ name: "yooo" });
+          expect(data).toEqual({ name: 'yooo' });
         });
       }
     });
 
-    describe("behaviour with virtual properties", () => {
-      const book = { name: "book name", price: 10 };
+    describe('behaviour with virtual properties', () => {
+      const book = { name: 'book name', price: 10 };
 
-      describe("when value of virtual is not provided", () => {
-        const Book = new Schema<any>((b, m) =>
+      describe('when value of virtual is not provided', () => {
+        const Book = new Schema<any>((b) =>
           b
-            .field(m.lax("name", ""))
+            .field(b.lax('name', ''))
             .field(
-              m
-                .dependent("price", "_price")
+              b
+                .dependent('price', '_price')
                 .default(null)
                 .resolve(
                   (ctx: any) =>
@@ -569,8 +569,8 @@ describe("requiredBy", () => {
                 ),
             )
             .field(
-              m
-                .virtual("_price")
+              b
+                .virtual('_price')
                 .validate(validator)
                 .required((ctx: any) => {
                   const _price = ctx.rawInput._price ?? ctx.input._price;
@@ -579,7 +579,7 @@ describe("requiredBy", () => {
             ),
         ).getModel();
 
-        it("should reject at creation", async () => {
+        it('should reject at creation', async () => {
           const { data, error } = await Book.create({}, {});
 
           expect(data).toBeNull();
@@ -591,11 +591,11 @@ describe("requiredBy", () => {
           });
         });
 
-        it("should reject during updates", async () => {
+        it('should reject during updates', async () => {
           const { data, error } = await Book.update(
             book,
             {
-              name: "updated name",
+              name: 'updated name',
             },
             {},
           );
@@ -610,13 +610,13 @@ describe("requiredBy", () => {
         });
       });
 
-      describe("when value of virtual is not provided and required at creation only", () => {
-        const Book = new Schema<any>((b, m) =>
+      describe('when value of virtual is not provided and required at creation only', () => {
+        const Book = new Schema<any>((b) =>
           b
-            .field(m.lax("name", ""))
+            .field(b.lax('name', ''))
             .field(
-              m
-                .dependent("price", "_price")
+              b
+                .dependent('price', '_price')
                 .default(null)
                 .resolve(
                   (ctx: any) =>
@@ -624,8 +624,8 @@ describe("requiredBy", () => {
                 ),
             )
             .field(
-              m
-                .virtual("_price")
+              b
+                .virtual('_price')
                 .validate(validator)
                 .required((ctx: any) => {
                   const _price = ctx.rawInput._price ?? ctx.input._price;
@@ -634,7 +634,7 @@ describe("requiredBy", () => {
             ),
         ).getModel();
 
-        it("should reject at creation", async () => {
+        it('should reject at creation', async () => {
           const { data, error } = await Book.create({}, {});
 
           expect(data).toBeNull();
@@ -646,8 +646,8 @@ describe("requiredBy", () => {
           });
         });
 
-        it("should reject during updates", async () => {
-          const name = "updated book name";
+        it('should reject during updates', async () => {
+          const name = 'updated book name';
           const { data, error } = await Book.update(
             book,
             {
@@ -661,13 +661,13 @@ describe("requiredBy", () => {
         });
       });
 
-      describe("when value of virtual is not provided and required at creation and update is blocked", () => {
-        const Book = new Schema<any>((b, m) =>
+      describe('when value of virtual is not provided and required at creation and update is blocked', () => {
+        const Book = new Schema<any>((b) =>
           b
-            .field(m.lax("name", ""))
+            .field(b.lax('name', ''))
             .field(
-              m
-                .dependent("price", "_price")
+              b
+                .dependent('price', '_price')
                 .default(null)
                 .resolve(
                   (ctx: any) =>
@@ -675,8 +675,8 @@ describe("requiredBy", () => {
                 ),
             )
             .field(
-              m
-                .virtual("_price")
+              b
+                .virtual('_price')
                 .validate(validator)
                 .ignoreUpdate()
                 .required((ctx: any) => {
@@ -686,7 +686,7 @@ describe("requiredBy", () => {
             ),
         ).getModel();
 
-        it("should reject at creation", async () => {
+        it('should reject at creation', async () => {
           const { data, error } = await Book.create({}, {});
 
           expect(data).toBeNull();
@@ -698,8 +698,8 @@ describe("requiredBy", () => {
           });
         });
 
-        it("should reject during updates", async () => {
-          const name = "updated book name";
+        it('should reject during updates', async () => {
+          const name = 'updated book name';
           const { data, error } = await Book.update(
             book,
             {
@@ -714,14 +714,14 @@ describe("requiredBy", () => {
       });
     });
 
-    describe("behaviour with asychronous required setters", () => {
-      const book = { name: "book name", price: 10 };
-      const Book = new Schema<any>((b, m) =>
+    describe('behaviour with asychronous required setters', () => {
+      const book = { name: 'book name', price: 10 };
+      const Book = new Schema<any>((b) =>
         b
-          .field(m.lax("name", ""))
+          .field(b.lax('name', ''))
           .field(
-            m
-              .dependent("price", "_price")
+            b
+              .dependent('price', '_price')
               .default(null)
               .resolve(
                 (ctx: any) =>
@@ -729,8 +729,8 @@ describe("requiredBy", () => {
               ),
           )
           .field(
-            m
-              .virtual("_price")
+            b
+              .virtual('_price')
               .validate(validator)
               .required((ctx: any) => {
                 const _price = ctx.rawInput._price ?? ctx.input._price;
@@ -739,8 +739,8 @@ describe("requiredBy", () => {
           ),
       ).getModel();
 
-      describe("creation", () => {
-        it("should reject when condition is not met", async () => {
+      describe('creation', () => {
+        it('should reject when condition is not met', async () => {
           const { data, error } = await Book.create({}, {});
 
           expect(data).toBeNull();
@@ -749,23 +749,23 @@ describe("requiredBy", () => {
           });
         });
 
-        it("should allow when condition is met", async () => {
+        it('should allow when condition is met', async () => {
           const { data, error } = await Book.create({ _price: 20 }, {});
 
           expect(error).toBeNull();
-          expect(data).toMatchObject({ name: "", price: 20 });
+          expect(data).toMatchObject({ name: '', price: 20 });
         });
       });
 
-      describe("updates", () => {
-        it("should reject when condition is not met", async () => {
+      describe('updates', () => {
+        it('should reject when condition is not met', async () => {
           // A genuine, unrelated change (`name`) so this isn't a no-op
           // update — `_price` itself stays unprovided, so its `required`
           // callback still runs and rejects.
           const { data, error } = await Book.update(
             book,
             {
-              name: "updated name",
+              name: 'updated name',
             },
             {},
           );
@@ -779,7 +779,7 @@ describe("requiredBy", () => {
           });
         });
 
-        it("should allow when condition is met", async () => {
+        it('should allow when condition is met', async () => {
           const { data, error } = await Book.update(book, { _price: 20 }, {});
 
           expect(error).toBeNull();
@@ -788,47 +788,47 @@ describe("requiredBy", () => {
       });
     });
 
-    describe("behaviour with errors thrown in required setter", () => {
-      const Model = new Schema<any>((b, m) =>
-        b.field(m.lax("prop1", "")).field(
-          m
-            .lax("field", null)
+    describe('behaviour with errors thrown in required setter', () => {
+      const Model = new Schema<any>((b) =>
+        b.field(b.lax('prop1', '')).field(
+          b
+            .lax('field', null)
             .validate(validator)
             .required(() => {
-              throw new Error("lolol");
+              throw new Error('lolol');
             }),
         ),
       ).getModel();
 
-      it("should consider required:false if occurred at creation", async () => {
+      it('should consider required:false if occurred at creation', async () => {
         const { data, error } = await Model.create({}, {});
 
         expect(error).toBeNull();
-        expect(data).toEqual({ field: null, prop1: "" });
+        expect(data).toEqual({ field: null, prop1: '' });
       });
 
-      it("should consider required:false if occurred during updates", async () => {
+      it('should consider required:false if occurred during updates', async () => {
         const { data, error } = await Model.update(
-          { field: null, prop1: "" },
-          { prop1: "updated" },
+          { field: null, prop1: '' },
+          { prop1: 'updated' },
           {},
         );
 
         expect(error).toBeNull();
-        expect(data).toEqual({ prop1: "updated" });
+        expect(data).toEqual({ prop1: 'updated' });
       });
     });
   });
 
-  describe("valid", () => {
-    it("should accept requiredBy + default(any | function)", () => {
-      const values = ["", () => ""];
+  describe('valid', () => {
+    it('should accept requiredBy + default(any | function)', () => {
+      const values = ['', () => ''];
 
       for (const value of values) {
-        const toPass = makeFx((b, m) =>
+        const toPass = makeFx((b) =>
           b.field(
-            m
-              .lax("fieldName", value)
+            b
+              .lax('fieldName', value)
               .validate(validator)
               .required(() => true),
           ),
@@ -840,11 +840,11 @@ describe("requiredBy", () => {
       }
     });
 
-    it("should accept requiredBy + readonly", () => {
-      const toPass = makeFx((b, m) =>
+    it('should accept requiredBy + readonly', () => {
+      const toPass = makeFx((b) =>
         b.field(
-          m
-            .lax("fieldName", "")
+          b
+            .lax('fieldName', '')
             .validate(validator)
             .readonly()
             .required(() => true),
@@ -856,11 +856,11 @@ describe("requiredBy", () => {
       toPass();
     });
 
-    it("should accept requiredBy + ignoreInit", () => {
-      const toPass = makeFx((b, m) =>
+    it('should accept requiredBy + ignoreInit', () => {
+      const toPass = makeFx((b) =>
         b.field(
-          m
-            .lax("fieldName", "")
+          b
+            .lax('fieldName', '')
             .validate(validator)
             .readonly()
             .ignoreInit(() => true)

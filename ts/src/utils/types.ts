@@ -1,10 +1,14 @@
-import { isEqual } from ".";
+import { isEqual } from '.';
 
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
   Buildable,
+  DefaultFieldErrorMetadata,
   DefinitionRule,
+  FieldError,
+  InputFieldError,
+  InputPayload,
   InternalValidatorResponse,
   InvalidValidatorResponse,
   IvoContext,
@@ -19,6 +23,7 @@ export type {
   ReadonlyIvoContext,
   RealType,
   RequiredHandler,
+  RequiredHandlerRes,
   ResponseErrorObject,
   ReValidator,
   TypeOf,
@@ -27,21 +32,16 @@ export type {
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
-  DefaultFieldErrorMetadata,
-  FieldError,
-  InputFieldError,
-  InputPayload,
-  RequiredHandlerRes,
 };
 
 export {
   ALLOWED_OPTIONS,
-  FIELD_CONFIG_BUILD_METHOD_NAME,
   CONSTANT_RULES,
   DEFINITION_RULES,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   LIFE_CYCLES,
-  VIRTUAL_RULES,
   TimeStampTool,
+  VIRTUAL_RULES,
 };
 
 type ObjectType<T = Record<string, unknown>> = T extends object
@@ -59,8 +59,8 @@ type FieldError<Metadata = DefaultFieldErrorMetadata> = {
 
 type InputFieldError<Metadata> =
   | FieldError<Metadata>
-  | { reason: FieldError["reason"] }
-  | { metadata: FieldError<Metadata>["metadata"] };
+  | { reason: FieldError['reason'] }
+  | { metadata: FieldError<Metadata>['metadata'] };
 
 type InputPayload = Record<string, string | FieldError>;
 
@@ -388,11 +388,7 @@ namespace NS {
     | Resolver<boolean, Input, Output, CtxOptions>
     | IgnoreConfigObject<Input, Output, CtxOptions>;
 
-  export type IgnoreConfigOption<
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-  > =
+  export type IgnoreConfigOption<Input, Output, CtxOptions extends ObjectType> =
     | IgnoreConfigOptionItem<Input, Output, CtxOptions>
     | ArrayOfMinSizeOne<IgnoreConfigOptionItem<Input, Output, CtxOptions>>;
 
@@ -484,7 +480,7 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = {
     name: string;
-    type: "constant";
+    type: 'constant';
     value: Value | ConstantResolver<Value, Input, Output, CtxOptions>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
@@ -506,7 +502,7 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = {
     name: string;
-    type: "dependent";
+    type: 'dependent';
     default: TypeOf<Output[K]> | Resolver<Output[K], Input, Output, CtxOptions>;
     dependsOn: ArrayOfMinSizeOne<Dependables<K, Input, Output>>;
     resolver: Resolver<Output[K], Input, Output, CtxOptions>;
@@ -527,7 +523,7 @@ namespace NS {
     Metadata,
   > = {
     name: string;
-    type: "lax";
+    type: 'lax';
     default: Value | Resolver<Value, Input, Output, CtxOptions>;
     allow?:
       | ArrayOfMinSizeTwo<Value>
@@ -567,7 +563,7 @@ namespace NS {
     Metadata,
   > = {
     name: string;
-    type: "required";
+    type: 'required';
     allow?:
       | ArrayOfMinSizeTwo<Value>
       | {
@@ -606,7 +602,7 @@ namespace NS {
     Metadata,
   > = {
     name: string;
-    type: "virtual";
+    type: 'virtual';
     alias?: Alias;
     required?: RequiredHandler<Input, Output, CtxOptions, Metadata>;
     validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
@@ -734,13 +730,13 @@ namespace NS {
 type ValidationResponse<T, Metadata = DefaultFieldErrorMetadata> =
   | { valid: true; validated: T }
   | {
-      metadata: FieldError<Metadata>["metadata"];
+      metadata: FieldError<Metadata>['metadata'];
       reason: string;
       valid: false;
     };
 
 type InvalidValidatorResponse<Metadata> = {
-  metadata?: FieldError<Metadata>["metadata"];
+  metadata?: FieldError<Metadata>['metadata'];
   reason?: string;
   valid: false;
   value?: unknown;
@@ -788,68 +784,68 @@ type ArrayOfMinSizeOne<T> = [T, ...T[]] | readonly [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]] | readonly [T, T, ...T[]];
 
 const DEFINITION_RULES = [
-  "name",
-  "type",
-  "alias",
-  "allow",
-  "constant",
-  "default",
-  "dependsOn",
-  "ignore",
-  "onDelete",
-  "onFailure",
-  "onSuccess",
-  "readonly",
-  "resolver",
-  "required",
-  "reValidator",
-  "sanitizer",
-  "ignoreInit",
-  "ignoreUpdate",
-  "validator",
-  "value",
-  "virtual",
+  'name',
+  'type',
+  'alias',
+  'allow',
+  'constant',
+  'default',
+  'dependsOn',
+  'ignore',
+  'onDelete',
+  'onFailure',
+  'onSuccess',
+  'readonly',
+  'resolver',
+  'required',
+  'reValidator',
+  'sanitizer',
+  'ignoreInit',
+  'ignoreUpdate',
+  'validator',
+  'value',
+  'virtual',
 ] as const;
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
 const ALLOWED_OPTIONS: NS.OptionsKey<unknown, unknown>[] = [
-  "equalityDepth",
-  "ignore",
-  "ignoreUpdate",
-  "onDelete",
-  "onSuccess",
-  "postValidate",
-  "required",
-  "sanitizeError",
-  "timestamps",
+  'equalityDepth',
+  'ignore',
+  'ignoreUpdate',
+  'onDelete',
+  'onSuccess',
+  'postValidate',
+  'required',
+  'sanitizeError',
+  'timestamps',
 ];
 const CONSTANT_RULES = [
-  "name",
-  "type",
-  "constant",
-  "onDelete",
-  "onSuccess",
-  "value",
+  'name',
+  'type',
+  'constant',
+  'onDelete',
+  'onSuccess',
+  'value',
 ];
 const VIRTUAL_RULES = [
-  "name",
-  "type",
-  "alias",
-  "allow",
-  "ignore",
-  "sanitizer",
-  "onFailure",
-  "onSuccess",
-  "required",
-  "reValidator",
-  "ignoreInit",
-  "ignoreUpdate",
-  "validator",
-  "virtual",
+  'name',
+  'type',
+  'alias',
+  'allow',
+  'ignore',
+  'sanitizer',
+  'onFailure',
+  'onSuccess',
+  'required',
+  'reValidator',
+  'ignoreInit',
+  'ignoreUpdate',
+  'validator',
+  'virtual',
 ];
 
-const LIFE_CYCLES = ["onDelete", "onFailure", "onSuccess"] as const;
+const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
 
 type IvoErrorPayload<Metadata, Keys extends string> = {
   [K in Keys]?: FieldError<Metadata>;
@@ -864,7 +860,7 @@ type RealType<T> = {
 } & {};
 
 const FIELD_CONFIG_BUILD_METHOD_NAME: unique symbol = Symbol(
-  "ivo.field-config-build-method-name",
+  'ivo.field-config-build-method-name',
 );
 
 type Buildable<T> = { [FIELD_CONFIG_BUILD_METHOD_NAME]: () => T };
@@ -884,11 +880,11 @@ class TimeStampTool {
   private timestamps: NS.Timestamp;
   private nullable: boolean;
 
-  constructor(timestamps: NS.Options<any, any, any>["timestamps"]) {
+  constructor(timestamps: NS.Options<any, any, any>['timestamps']) {
     this.timestamps = this._makeTimestamps(timestamps);
     this.nullable =
-      typeof timestamps === "object" &&
-      typeof timestamps?.updatedAt === "object"
+      typeof timestamps === 'object' &&
+      typeof timestamps?.updatedAt === 'object'
         ? (timestamps.updatedAt.nullable ??
           IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT)
         : IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT;
@@ -898,32 +894,32 @@ class TimeStampTool {
     ) as TimestampKey[];
   }
 
-  private _makeTimestamps(timestamps: NS.Options<any, any, any>["timestamps"]) {
-    if (isEqual(timestamps, undefined)) return { createdAt: "", updatedAt: "" };
+  private _makeTimestamps(timestamps: NS.Options<any, any, any>['timestamps']) {
+    if (isEqual(timestamps, undefined)) return { createdAt: '', updatedAt: '' };
 
-    let createdAt = "createdAt",
-      updatedAt = "updatedAt";
+    let createdAt = 'createdAt',
+      updatedAt = 'updatedAt';
 
     if (!timestamps || timestamps === true)
       return timestamps
         ? { createdAt, updatedAt }
-        : { createdAt: "", updatedAt: "" };
+        : { createdAt: '', updatedAt: '' };
 
     const custom_createdAt = timestamps?.createdAt;
     const custom_updatedAt =
-      typeof timestamps?.updatedAt === "object"
+      typeof timestamps?.updatedAt === 'object'
         ? timestamps?.updatedAt?.key
         : timestamps?.updatedAt;
 
-    if (custom_createdAt && typeof custom_createdAt === "string")
+    if (custom_createdAt && typeof custom_createdAt === 'string')
       createdAt = custom_createdAt.trim();
 
-    if (custom_createdAt === false) createdAt = "";
+    if (custom_createdAt === false) createdAt = '';
 
-    if (custom_updatedAt && typeof custom_updatedAt === "string")
+    if (custom_updatedAt && typeof custom_updatedAt === 'string')
       updatedAt = custom_updatedAt.trim();
 
-    if (custom_updatedAt === false) updatedAt = "";
+    if (custom_updatedAt === false) updatedAt = '';
 
     return { createdAt, updatedAt };
   }

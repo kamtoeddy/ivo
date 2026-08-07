@@ -1,13 +1,13 @@
 import {
   type ArrayOfMinSizeOne,
-  FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   type NS,
+  type ObjectType,
   type TypeOf,
-  ObjectType,
-} from "../../utils/types";
+} from '../../utils/types';
 
-export { type HasDependsOn, DependentBuilder };
+export { DependentBuilder, type HasDependsOn };
 
 interface HasDependsOn<
   K extends keyof Output,
@@ -93,14 +93,13 @@ class DependentBuilder<
   Input,
   Output,
   CtxOptions extends ObjectType,
->
-  implements
+> implements
     HasDependsOn<K, Input, Output, CtxOptions>,
     HasDefault<K, Input, Output, CtxOptions>,
     BuildableDependentConfig<K, Input, Output, CtxOptions>
 {
   private config: Partial<NS.DependentField<K, Input, Output, CtxOptions>> = {
-    type: "dependent",
+    type: 'dependent',
   };
 
   constructor(

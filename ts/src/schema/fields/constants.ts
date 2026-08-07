@@ -1,10 +1,10 @@
 import {
   type ArrayOfMinSizeOne,
-  FIELD_CONFIG_BUILD_METHOD_NAME,
   type Buildable,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
   type NS,
-  ObjectType,
-} from "../../utils/types";
+  type ObjectType,
+} from '../../utils/types';
 
 export { ConstantBuilder };
 
@@ -57,9 +57,10 @@ class ConstantBuilder<
   Input,
   Output,
   CtxOptions extends ObjectType,
-> implements BuildableConstantConfig<Value, Input, Output, CtxOptions> {
+> implements BuildableConstantConfig<Value, Input, Output, CtxOptions>
+{
   private config: Partial<NS.ConstantField<Value, Input, Output, CtxOptions>> =
-    { type: "constant" };
+    { type: 'constant' };
 
   constructor(
     name: string,
