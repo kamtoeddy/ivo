@@ -1,4 +1,4 @@
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoModel, IvoStruct};
+use ivo::{constant_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -40,10 +40,8 @@ async fn should_reject_updates_if_no_value_has_changed() {
 
     let default_value = 1;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| f.field("lax", IvoField::LAX.default(default_value)),
-        |o| o,
-    );
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(|f| f.field(lax_field("lax").default(default_value)), |o| o);
 
     let value = 24;
 
@@ -78,8 +76,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE)))),
             )
@@ -118,8 +115,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE)))),
@@ -163,13 +159,12 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE.to_string())
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE.into())))),
             )
-            .field("lax_1", IvoField::LAX.default(DEFAULT_VALUE.to_string()))
+            .field(lax_field("lax_1").default(DEFAULT_VALUE.to_string()))
         },
         |o| {
             o.post_validate(["lax", "lax_1"], |v| {
@@ -265,10 +260,8 @@ async fn should_properly_use_default_value_of_missing_fields_at_creation() {
 
     let default_value = 1;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| f.field("lax", IvoField::LAX.default(default_value)),
-        |o| o,
-    );
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(|f| f.field(lax_field("lax").default(default_value)), |o| o);
 
     let r = model.create(&PartialDataInput { lax: None }, None).await;
 
@@ -294,7 +287,7 @@ async fn should_properly_resolve_default_values_of_missing_fields_at_creation() 
     const DEFAULT_VALUE: i32 = 1_000;
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| f.field("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
+        |f| f.field(lax_field("lax").default_fn(|_, _| ready(DEFAULT_VALUE))),
         |o| o,
     );
 
@@ -322,7 +315,7 @@ async fn should_properly_use_lax_input_values_as_output_values_if_no_validator_i
     const DEFAULT_VALUE: i32 = 1_000;
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| f.field("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
+        |f| f.field(lax_field("lax").default_fn(|_, _| ready(DEFAULT_VALUE))),
         |o| o,
     );
 
@@ -383,14 +376,12 @@ async fn should_respect_the_required_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "other",
-                IvoField::LAX
+                lax_field("other")
                     .default(String::from("default_other_value"))
                     .validate(|_, _, _| ready(Ok(None))),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(default_lax_value.to_string())
                     .validate(|_, _, _| ready(Ok(None)))
                     .required(|ctx: IvoContext<DataInput, Data>, _| {
@@ -504,15 +495,9 @@ async fn should_properly_handle_grouped_required_errors() {
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
-                .field(
-                    "lax_1",
-                    IvoField::LAX.default(default_lax_1_value.to_string()),
-                )
-                .field(
-                    "lax_2",
-                    IvoField::LAX.default(default_lax_2_value.to_string()),
-                )
+            f.field(lax_field("lax").default(default_lax_value.to_string()))
+                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+                .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
         },
         |o| {
             o.required(["lax", "lax_1"], |ctx: IvoContext<DataInput, Data>, _| {
@@ -651,13 +636,11 @@ async fn should_not_create_if_primary_validation_fails() {
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                "lax",
-                IvoField::LAX
-                    .default("default_value".into())
-                    .validate(|v: String, _, _| {
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(
+            |f| {
+                f.field(lax_field("lax").default("default_value".into()).validate(
+                    |v: String, _, _| {
                         let validated = v.trim();
 
                         if validated.len() < 2 {
@@ -665,11 +648,11 @@ async fn should_not_create_if_primary_validation_fails() {
                         }
 
                         ready(Ok(Some(validated.into())))
-                    }),
-            )
-        },
-        |o| o,
-    );
+                    },
+                ))
+            },
+            |o| o,
+        );
 
     let lax_values = [
         String::from(" "),
@@ -736,17 +719,14 @@ async fn should_not_update_if_primary_validation_fails() {
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1)))
-                .field(
-                    "lax",
-                    IvoField::LAX.default(1).validate(|v: i32, _, _| {
-                        if !LAX_VALUE_RANGE.contains(&v) {
-                            return ready(Err((LAX_OUT_OF_RANGE_ERROR.into(), None)));
-                        }
+            f.field(constant_field("id").value_fn(|_, _| ready(1)))
+                .field(lax_field("lax").default(1).validate(|v: i32, _, _| {
+                    if !LAX_VALUE_RANGE.contains(&v) {
+                        return ready(Err((LAX_OUT_OF_RANGE_ERROR.into(), None)));
+                    }
 
-                        ready(Ok(None))
-                    }),
-                )
+                    ready(Ok(None))
+                }))
         },
         |o| o,
     );
@@ -821,8 +801,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(1)
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -882,8 +861,7 @@ async fn should_not_create_if_re_validation_fails() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default("default_value".into())
                     .validate(|v: String, _, _| {
                         let validated = v.trim();
@@ -977,10 +955,9 @@ async fn should_not_update_if_re_validation_fails() {
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1)))
                 .field(
-                    "lax",
-                    IvoField::LAX
+                    lax_field("lax")
                         .default(1)
                         .validate(|v: i32, _, _| {
                             if !LAX_VALUE_RANGE.contains(&v) {
@@ -1079,8 +1056,8 @@ async fn should_properly_use_re_validated_values() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::REQUIRED
+                lax_field("lax")
+                    .default(0)
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .re_validate(|v: i32, _, _| ready(Ok(Some(v + 1)))),
             )
@@ -1141,8 +1118,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(1)
                     .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
                     .re_validate(|_: i32, _, _| ready(Ok(None))),
@@ -1223,15 +1199,9 @@ async fn should_respect_post_validation_config() {
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
-                .field(
-                    "lax_1",
-                    IvoField::LAX.default(default_lax_1_value.to_string()),
-                )
-                .field(
-                    "lax_2",
-                    IvoField::LAX.default(default_lax_2_value.to_string()),
-                )
+            f.field(lax_field("lax").default(default_lax_value.to_string()))
+                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+                .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
         },
         |o| {
             o.post_validate(["lax", "lax_1"], |v| {
@@ -1653,15 +1623,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
-                .field(
-                    "lax_1",
-                    IvoField::LAX.default(default_lax_1_value.to_string()),
-                )
-                .field(
-                    "lax_2",
-                    IvoField::LAX.default(default_lax_2_value.to_string()),
-                )
+            f.field(lax_field("lax").default(default_lax_value.to_string()))
+                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+                .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
         },
         |o| {
             o.post_validate(["lax", "lax_1"], |v| {

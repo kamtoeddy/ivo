@@ -1,6 +1,8 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{
+    dependent_field, lax_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct,
+};
 
 use crate::async_test_matrix;
 
@@ -25,18 +27,16 @@ async fn should_respect_the_ignore_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -153,18 +153,16 @@ async fn should_respect_the_ignore_rule_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -282,18 +280,16 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -411,18 +407,16 @@ async fn should_respect_the_ignore_init_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -544,18 +538,16 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -678,18 +670,16 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -812,18 +802,16 @@ async fn should_respect_the_ignore_update_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -962,18 +950,16 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1113,18 +1099,16 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1270,24 +1254,17 @@ async fn should_properly_handle_grouped_ignore_rule() {
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+            f.field(lax_field("lax").default(default_lax_value.to_string()))
+                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
                 .field(
-                    "lax_1",
-                    IvoField::LAX.default(default_lax_1_value.to_string()),
-                )
-                .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(default_dependent_value)
                         .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(ctx.values().dependent.unwrap() + 1)
                         }),
                 )
-                .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL.validate(|_, _, _| ready(Ok(None::<String>))),
-                )
+                .field(virtual_field("virtual_field").validate(|_, _, _| ready(Ok(None::<String>))))
         },
         |o| {
             o.ignore(
@@ -1436,14 +1413,10 @@ async fn should_properly_handle_grouped_ignore_rule_with_alias() {
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+            f.field(lax_field("lax").default(default_lax_value.to_string()))
+                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
                 .field(
-                    "lax_1",
-                    IvoField::LAX.default(default_lax_1_value.to_string()),
-                )
-                .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(default_dependent_value)
                         .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1451,8 +1424,7 @@ async fn should_properly_handle_grouped_ignore_rule_with_alias() {
                         }),
                 )
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("virtual_alias")
                         .validate(|_, _, _| ready(Ok(None::<String>))),
                 )
@@ -1604,14 +1576,10 @@ async fn should_properly_handle_grouped_ignore_rule_with_alias_same_as_dependent
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+            f.field(lax_field("lax").default(default_lax_value.to_string()))
+                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
                 .field(
-                    "lax_1",
-                    IvoField::LAX.default(default_lax_1_value.to_string()),
-                )
-                .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(default_dependent_value)
                         .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1619,8 +1587,7 @@ async fn should_properly_handle_grouped_ignore_rule_with_alias_same_as_dependent
                         }),
                 )
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("dependent")
                         .validate(|_, _, _| ready(Ok(None::<String>))),
                 )
@@ -1775,23 +1742,16 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_DEPENDENT_VALUE)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value.to_string()))
-            .field(
-                "lax_1",
-                IvoField::LAX.default(default_lax_1_value.to_string()),
-            )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|_, _, _| ready(Ok(None::<String>))),
-            )
+            .field(lax_field("lax").default(default_lax_value.to_string()))
+            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+            .field(virtual_field("virtual_field").validate(|_, _, _| ready(Ok(None::<String>))))
         },
         |o| {
             o.ignore_update(
@@ -1942,22 +1902,17 @@ async fn should_properly_handle_grouped_ignore_update_rule_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_DEPENDENT_VALUE)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+            .field(lax_field("lax").default(default_lax_value.to_string()))
+            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
             .field(
-                "lax_1",
-                IvoField::LAX.default(default_lax_1_value.to_string()),
-            )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|_, _, _| ready(Ok(None::<String>))),
             )
@@ -2111,22 +2066,17 @@ async fn should_properly_handle_grouped_ignore_update_rule_with_alias_same_as_de
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_DEPENDENT_VALUE)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+            .field(lax_field("lax").default(default_lax_value.to_string()))
+            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
             .field(
-                "lax_1",
-                IvoField::LAX.default(default_lax_1_value.to_string()),
-            )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|_, _, _| ready(Ok(None::<String>))),
             )

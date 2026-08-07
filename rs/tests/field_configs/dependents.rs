@@ -1,4 +1,7 @@
-use ivo::{IvoField, IvoInputStruct, IvoModel, IvoStruct};
+use ivo::{
+    constant_field, dependent_field, lax_field, required_field, virtual_field, IvoInputStruct,
+    IvoModel, IvoStruct,
+};
 use std::{future::ready, panic};
 
 #[test]
@@ -22,18 +25,14 @@ fn should_reject_if_parent_array_is_empty() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1))
+            f.field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(2)
                         .depends_on([])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
@@ -63,19 +62,15 @@ fn should_reject_dependency_of_created_at_field_with_default_name() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(2)
                         .depends_on(["lax", "required", "created_at"])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| {
                     t.resolve(|| "Date.now()")
                         .created_at(None)
@@ -109,19 +104,15 @@ fn should_reject_dependency_of_created_at_field_with_custom_name() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(2)
                         .depends_on(["lax", "required", "custom_created_at"])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| {
                     t.resolve(|| "Date.now()")
                         .created_at(Some("custom_created_at"))
@@ -155,19 +146,15 @@ fn should_reject_dependency_of_updated_at_field_with_default_name() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(2)
                         .depends_on(["lax", "required", "updated_at"])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
@@ -197,19 +184,15 @@ fn should_reject_dependency_of_updated_at_field_with_custom_name() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(2)
                         .depends_on(["lax", "required", "custom_updated_at"])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| {
                     t.resolve(|| "Date.now()")
                         .created_at(None)
@@ -241,18 +224,14 @@ fn should_reject_if_any_parent_field_provided_does_not_belong_on_schema() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1))
+            f.field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(2)
                         .depends_on(["lax", "required", "lol"])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
@@ -278,18 +257,14 @@ fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1))
+            f.field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(2)
                         .depends_on(["lax", "required", "dependent"])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
@@ -317,18 +292,14 @@ fn should_reject_if_duplicate_parent_fields_are_provided() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1))
+            f.field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(2)
                         .depends_on(["lax", "required", "lax"])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
@@ -355,19 +326,15 @@ fn should_reject_dependency_of_constant_fields() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(2)
                         .depends_on(["lax", "required", "id"])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
@@ -395,25 +362,20 @@ fn should_reject_any_redundant_dependencies() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("c", IvoField::LAX.default(1))
+            f.field(lax_field("c").default(1))
                 .field(
-                    "b",
-                    IvoField::DEPENDENT
+                    dependent_field("b")
                         .default(2)
                         .depends_on(["c"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(
-                    "a",
-                    IvoField::DEPENDENT
+                    dependent_field("a")
                         .default(2)
                         .depends_on(["c", "d", "b"])
                         .resolve(|_, _| ready(4)),
                 )
-                .field(
-                    "d",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
+                .field(required_field("d").validate(|v: String, _, _| ready(Ok(Some(v)))))
         },
         |o| o,
     );
@@ -440,30 +402,24 @@ fn should_reject_any_deeply_redundant_dependencies() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "c",
-                IvoField::DEPENDENT
+                dependent_field("c")
                     .default(2)
                     .depends_on(["d"])
                     .resolve(|_, _| ready(4)),
             )
             .field(
-                "b",
-                IvoField::DEPENDENT
+                dependent_field("b")
                     .default(2)
                     .depends_on(["c"])
                     .resolve(|_, _| ready(4)),
             )
             .field(
-                "a",
-                IvoField::DEPENDENT
+                dependent_field("a")
                     .default(2)
                     .depends_on(["b", "d"])
                     .resolve(|_, _| ready(4)),
             )
-            .field(
-                "d",
-                IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
-            )
+            .field(required_field("d").validate(|v: String, _, _| ready(Ok(Some(v)))))
         },
         |o| o,
     );
@@ -486,17 +442,15 @@ fn should_reject_any_circular_dependencies() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("c", IvoField::LAX.default(1))
+            f.field(lax_field("c").default(1))
                 .field(
-                    "a",
-                    IvoField::DEPENDENT
+                    dependent_field("a")
                         .default(2)
                         .depends_on(["b"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(
-                    "b",
-                    IvoField::DEPENDENT
+                    dependent_field("b")
                         .default(2)
                         .depends_on(["a", "c"])
                         .resolve(|_, _| ready(4)),
@@ -525,27 +479,24 @@ fn should_reject_any_deeply_circular_dependencies() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "a",
-                IvoField::DEPENDENT
+                dependent_field("a")
                     .default(2)
                     .depends_on(["b"])
                     .resolve(|_, _| ready(4)),
             )
             .field(
-                "c",
-                IvoField::DEPENDENT
+                dependent_field("c")
                     .default(2)
                     .depends_on(["a", "d"])
                     .resolve(|_, _| ready(4)),
             )
             .field(
-                "b",
-                IvoField::DEPENDENT
+                dependent_field("b")
                     .default(2)
                     .depends_on(["c"])
                     .resolve(|_, _| ready(4)),
             )
-            .field("d", IvoField::LAX.default(1))
+            .field(lax_field("d").default(1))
         },
         |o| o,
     );
@@ -570,17 +521,15 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
@@ -593,17 +542,15 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["required"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
@@ -616,17 +563,15 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["lax", "required"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
@@ -657,24 +602,21 @@ fn should_allow_dependency_on_other_dependent_fields() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["dependent1"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "dependent1",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent1")
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
@@ -687,24 +629,21 @@ fn should_allow_dependency_on_other_dependent_fields() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["dependent1", "required"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "dependent1",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent1")
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
@@ -736,28 +675,25 @@ fn should_allow_dependency_on_virtual_fields() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "dependent1",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent1")
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .field(
-                        "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        virtual_field("virtual_field")
+                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
@@ -770,28 +706,25 @@ fn should_allow_dependency_on_virtual_fields() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["required", "virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "dependent1",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent1")
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .field(
-                        "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        virtual_field("virtual_field")
+                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
@@ -804,28 +737,25 @@ fn should_allow_dependency_on_virtual_fields() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["dependent1", "virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "dependent1",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent1")
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .field(
-                        "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        virtual_field("virtual_field")
+                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
@@ -838,28 +768,25 @@ fn should_allow_dependency_on_virtual_fields() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "dependent1",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent1")
                             .default(2)
                             .depends_on(["lax", "virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .field(
-                        "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        virtual_field("virtual_field")
+                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
@@ -890,21 +817,18 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
 
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .field(
-                        "virtual_field",
-                        IvoField::VIRTUAL
+                        virtual_field("virtual_field")
                             .alias("alias_name")
                             .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -934,21 +858,18 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
 
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("lax", IvoField::LAX.default(1))
+                f.field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(2)
                             .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .field(
-                        "virtual_field",
-                        IvoField::VIRTUAL
+                        virtual_field("virtual_field")
                             .alias("dependent")
                             .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )

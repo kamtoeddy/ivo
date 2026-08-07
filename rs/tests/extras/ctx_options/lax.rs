@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoStruct};
+use ivo::{lax_field, IvoCtxOptions, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -49,8 +49,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default_fn(async |_, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
@@ -109,8 +108,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE)
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .ignore(async |_, o: IvoRwCtxOptions<CtxOptions>| {
@@ -170,8 +168,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE)
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .ignore(async |_, o: IvoRwCtxOptions<CtxOptions>| {
@@ -235,8 +232,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE)
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .required(async |_, o: IvoRwCtxOptions<CtxOptions>| {
@@ -286,8 +282,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE)
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .required(async |_, o: IvoRwCtxOptions<CtxOptions>| {
@@ -299,8 +294,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
                     }),
             )
             .field(
-                "lax_1",
-                IvoField::LAX
+                lax_field("lax_1")
                     .default(DEFAULT_VALUE)
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -361,8 +355,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE.into())
                     .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -432,8 +425,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE.into())
                     .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -514,8 +506,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE.into())
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
@@ -586,8 +577,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE.into())
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
@@ -671,14 +661,12 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(None))),
             )
             .field(
-                "lax_1",
-                IvoField::LAX
+                lax_field("lax_1")
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(None))),
             )
@@ -759,14 +747,12 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(None))),
             )
             .field(
-                "lax_1",
-                IvoField::LAX
+                lax_field("lax_1")
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(None))),
             )

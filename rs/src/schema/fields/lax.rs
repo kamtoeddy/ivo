@@ -40,6 +40,7 @@ pub struct LaxFieldBuilder<
     HasFailure = No,
     HasSuccess = No,
 > {
+    name: &'static str,
     default: Option<DefaultValue<ErasedValue, I, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
@@ -93,8 +94,9 @@ impl<
         HasSuccess,
     >
 {
-    pub const fn new() -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Self {
+            name,
             default: None,
             validator: None,
             re_validator: None,
@@ -150,7 +152,7 @@ impl<
     >
 {
     fn default() -> Self {
-        Self::new()
+        Self::new("")
     }
 }
 
@@ -187,6 +189,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
+            name: self.name,
             field_type: FieldType::Lax,
             default: self.default,
             validator: self.validator,
@@ -213,6 +216,7 @@ impl<
 {
     pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         LaxFieldBuilder {
+            name: self.name,
             default: Some(DefaultValue::Static(erase_value(value))),
             ..Default::default()
         }
@@ -226,6 +230,7 @@ impl<
         F: IntoDefaultValueResolver<T, I, CtxOptions>,
     {
         LaxFieldBuilder {
+            name: self.name,
             default: Some(DefaultValue::Func(default_fn.into_uniform())),
             ..Default::default()
         }
@@ -249,6 +254,7 @@ impl<
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: Some(validator.into_uniform()),
             ..Default::default()
@@ -273,6 +279,7 @@ impl<
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: self.validator,
             re_validator: Some(re_validator.into_uniform()),
@@ -322,6 +329,7 @@ impl<
         R: IntoRequiredResolver<I, O, CtxOptions>,
     {
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -349,6 +357,7 @@ impl<
         R: IntoBooleanResolver<I, O, CtxOptions>,
     {
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -373,6 +382,7 @@ impl<
         Yes,
     > {
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -397,6 +407,7 @@ impl<
         Yes,
     > {
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -453,6 +464,7 @@ impl<
         Yes,
     > {
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -521,6 +533,7 @@ impl<
         let h = handler.into_handler();
 
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -601,6 +614,7 @@ impl<
         let h = handler.into_handler();
 
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -681,6 +695,7 @@ impl<
         let h = handler.into_handler();
 
         LaxFieldBuilder {
+            name: self.name,
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,

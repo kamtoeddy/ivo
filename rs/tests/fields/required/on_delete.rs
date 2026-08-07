@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoInputStruct, IvoShared, IvoStruct, IvoModel};
+use ivo::{required_field, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -18,8 +18,7 @@ async fn should_trigger_on_delete_handlers() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .on_delete(|data: IvoShared<Data>, _| {
                         if true {

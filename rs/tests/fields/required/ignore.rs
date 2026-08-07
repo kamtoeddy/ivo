@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{lax_field, required_field, IvoInputStruct, IvoModel, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -24,8 +24,7 @@ async fn should_respect_the_ignore_update_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .ignore_update(|_, values: Data, _| {
                         if IGNORE_REQUIRED_FOR_UPDATE == values.lax {
@@ -35,10 +34,7 @@ async fn should_respect_the_ignore_update_rule() {
                         ready(false)
                     }),
             )
-            .field(
-                "lax",
-                IvoField::LAX.default("default_lax_value".to_string()),
-            )
+            .field(lax_field("lax").default("default_lax_value".to_string()))
         },
         |o| o,
     );
@@ -132,15 +128,11 @@ async fn should_respect_the_readonly_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .readonly(),
             )
-            .field(
-                "lax",
-                IvoField::LAX.default("default_lax_value".to_string()),
-            )
+            .field(lax_field("lax").default("default_lax_value".to_string()))
         },
         |o| o,
     );
@@ -232,15 +224,9 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
-                .field(
-                    "lax_1",
-                    IvoField::LAX.default(default_lax_1_value.to_string()),
-                )
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|_, _, _| ready(Ok(None::<String>))),
-                )
+            f.field(lax_field("lax").default(default_lax_value.to_string()))
+                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+                .field(required_field("required").validate(|_, _, _| ready(Ok(None::<String>))))
         },
         |o| {
             o.ignore_update(["lax", "required"], |raw_input: PartialDataInput, _, _| {

@@ -1,4 +1,6 @@
-use ivo::{IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{
+    constant_field, dependent_field, lax_field, virtual_field, IvoInputStruct, IvoModel, IvoStruct,
+};
 use std::{future::ready, panic};
 
 #[test]
@@ -18,8 +20,8 @@ fn should_reject_if_fields_array_is_empty() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
         },
         |o| o.post_validate([], |v| v.validate(|_, _| ready(Ok(None)))),
     );
@@ -42,8 +44,8 @@ fn should_reject_if_fields_array_has_just_one_field() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
         },
         |o| o.post_validate(["lax"], |v| v.validate(|_, _| ready(Ok(None)))),
     );
@@ -68,8 +70,8 @@ fn should_reject_if_the_fields_array_contains_any_duplicates() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
         },
         |o| o.post_validate(["lax", "lax"], |v| v.validate(|_, _| ready(Ok(None)))),
     );
@@ -94,8 +96,8 @@ fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
         },
         |o| {
             o.post_validate(["lax", "invalid_field"], |v| {
@@ -125,9 +127,9 @@ fn should_reject_if_a_constant_is_provided_to_the_fields_array() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value(1234))
-                .field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(constant_field("id").value(1234))
+                .field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
         },
         |o| o.post_validate(["lax", "id"], |v| v.validate(|_, _| ready(Ok(None)))),
     );
@@ -154,14 +156,13 @@ fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(1)
                     .depends_on(["lax", "lax_1"])
                     .resolve(|_, _| ready(2)),
             )
-            .field("lax", IvoField::LAX.default(1234))
-            .field("lax_1", IvoField::LAX.default(5678))
+            .field(lax_field("lax").default(1234))
+            .field(lax_field("lax_1").default(5678))
         },
         |o| {
             o.post_validate(["lax", "lax_1", "dependent"], |v| {
@@ -193,17 +194,15 @@ fn should_reject_if_an_alias_similar_to_a_dependent_field_is_provided_to_the_fie
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(1)
                     .depends_on(["lax", "virtual_field"])
                     .resolve(|_, _| ready(2)),
             )
-            .field("lax", IvoField::LAX.default(1234))
-            .field("lax_1", IvoField::LAX.default(5678))
+            .field(lax_field("lax").default(1234))
+            .field(lax_field("lax_1").default(5678))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|_, _, _| ready(Ok(Some(1)))),
             )
@@ -238,17 +237,15 @@ fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array()
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(1)
                     .depends_on(["lax", "virtual_field"])
                     .resolve(|_, _| ready(2)),
             )
-            .field("lax", IvoField::LAX.default(1234))
-            .field("lax_1", IvoField::LAX.default(5678))
+            .field(lax_field("lax").default(1234))
+            .field(lax_field("lax_1").default(5678))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("alias")
                     .validate(|_, _, _| ready(Ok(Some(1)))),
             )
@@ -281,8 +278,8 @@ fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fi
 
     let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
                 .timestamps(|t| t.resolve(|| 1234).created_at(None))
         },
         |o| {
@@ -313,8 +310,8 @@ fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fie
 
     let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
                 .timestamps(|t| t.resolve(|| 1234).created_at(Some("custom_created_at")))
         },
         |o| {
@@ -345,8 +342,8 @@ fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fi
 
     let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
                 .timestamps(|t| t.resolve(|| 1234).updated_at(None))
         },
         |o| {
@@ -377,8 +374,8 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
 
     let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
                 .timestamps(|t| t.resolve(|| 1234).updated_at(Some("custom_updated_at")))
         },
         |o| {

@@ -1,6 +1,6 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
+use ivo::{dependent_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 const DEFAULT_DEPENDENT: i32 = 1;
 const DEFAULT_USERNAME: &str = "default-username";
@@ -164,8 +164,7 @@ pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
     IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_DEPENDENT)
                     .depends_on(["username"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
@@ -185,8 +184,7 @@ pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
                     }),
             )
             .field(
-                "username",
-                IvoField::LAX
+                lax_field("username")
                     .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
                     .on_success(|ctx: Ctx, _| {
                         println!(

@@ -79,13 +79,9 @@ impl<
         }
     }
 
-    #[expect(clippy::type_complexity)]
     #[track_caller]
     fn make_field_configs(
-        config_tuples: Vec<(
-            &'static str,
-            InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>,
-        )>,
+        config_tuples: Vec<InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>>,
         timestamp_configs: &Option<TimestampConfig<Timestamp>>,
         input_field_names: &HashSet<String>,
         output_field_names: &HashSet<String>,
@@ -148,7 +144,9 @@ impl<
         let mut alias_to_virtual = HashMap::new();
         let mut dependent_configs = Vec::new();
 
-        for (field_name, config) in config_tuples.iter() {
+        for config in config_tuples.iter() {
+            let field_name = config.name;
+
             if field_names.contains(field_name) {
                 panic!("\n{STYLE_COLOR_RED}[{field_name}]: occurs more than once, please remove duplicates{STYLE_RESET}\n");
             }
@@ -158,7 +156,7 @@ impl<
                 ..
             }) = timestamp_configs
             {
-                if field_name == name {
+                if field_name == *name {
                     panic!(
                         "\n{STYLE_COLOR_RED}[{field_name}]: is not a valid field name. It is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
                     );
@@ -170,7 +168,7 @@ impl<
                 ..
             }) = timestamp_configs
             {
-                if field_name == name {
+                if field_name == *name {
                     panic!(
                         "\n{STYLE_COLOR_RED}[{field_name}]: is not a valid field name. It is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
                     );
@@ -184,13 +182,13 @@ impl<
                     field_type: FieldType::Constant,
                     ..
                 } => {
-                    if !output_field_names.contains(*field_name) {
+                    if !output_field_names.contains(field_name) {
                         panic!(
                             "\n{STYLE_COLOR_RED}[{field_name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
                         );
                     }
 
-                    if input_field_names.contains(*field_name) {
+                    if input_field_names.contains(field_name) {
                         panic!(
                             "\n{STYLE_COLOR_RED}[{field_name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
                         );
@@ -206,7 +204,7 @@ impl<
                     ..
                 } => {
                     if let Some(alias) = alias {
-                        if field_name == alias {
+                        if field_name == *alias {
                             panic!("\n{STYLE_COLOR_RED}[{field_name}]: virtual alias name must be different from field name{STYLE_RESET}\n");
                         }
 
@@ -238,13 +236,15 @@ impl<
                             }
                         }
 
-                        for (name, config) in config_tuples.iter() {
-                            if name != alias {
+                        for config in config_tuples.iter() {
+                            let name = config.name;
+
+                            if name != *alias {
                                 continue;
                             }
 
                             if let Some(ref depends_on) = config.depends_on {
-                                if !depends_on.iter().any(|parent| parent == field_name) {
+                                if !depends_on.contains(&field_name) {
                                     panic!("\n{STYLE_COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because \"{alias}\" does not depend on \"{field_name}\"{STYLE_RESET}\n");
                                 }
 
@@ -259,26 +259,26 @@ impl<
                                 "\n{STYLE_COLOR_RED}[{field_name}]: is an input field. Hence, \"{alias}\" must be present on {input_struct_name}{STYLE_RESET}\n");
                         }
 
-                        if input_field_names.contains(*field_name) {
+                        if input_field_names.contains(field_name) {
                             panic!(
                                 "\n{STYLE_COLOR_RED}[{field_name}]: has an alias. Only its alias must be present on {input_struct_name}{STYLE_RESET}\n");
                         }
 
-                        alias_to_virtual.insert(*alias, *field_name);
+                        alias_to_virtual.insert(*alias, field_name);
 
                         continue;
                     }
 
-                    if !input_field_names.contains(*field_name) {
+                    if !input_field_names.contains(field_name) {
                         panic!(
                                 "\n{STYLE_COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
                     }
 
                     let mut has_sufficent_dependencies = false;
 
-                    for (_, config) in config_tuples.iter() {
+                    for config in config_tuples.iter() {
                         if let Some(ref depends_on) = config.depends_on {
-                            if depends_on.iter().any(|parent| parent == field_name) {
+                            if depends_on.contains(&field_name) {
                                 has_sufficent_dependencies = true;
 
                                 break;
@@ -295,7 +295,7 @@ impl<
                 _ => (),
             }
 
-            if !output_field_names.contains(*field_name) {
+            if !output_field_names.contains(field_name) {
                 panic!(
                     "\n{STYLE_COLOR_RED}[{field_name}]: is an output field. It must be present on {output_struct_name}{STYLE_RESET}\n");
             }
@@ -306,14 +306,14 @@ impl<
                     depends_on,
                     ..
                 } => {
-                    dependent_configs.push((field_name, config));
+                    dependent_configs.push(config);
                     dependent_field_to_parent_fields
-                        .insert(*field_name, depends_on.as_ref().unwrap());
+                        .insert(config.name, depends_on.as_ref().unwrap());
                 }
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required,
                     ..
-                } if !input_field_names.contains(*field_name) => {
+                } if !input_field_names.contains(field_name) => {
                     panic!(
                         "\n{STYLE_COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
                 }
@@ -321,7 +321,12 @@ impl<
             }
         }
 
-        for (field_name, InternalFieldConfig { depends_on, .. }) in dependent_configs {
+        for InternalFieldConfig {
+            depends_on,
+            name: field_name,
+            ..
+        } in dependent_configs
+        {
             let parent_fields = depends_on.as_ref().unwrap();
 
             if parent_fields.is_empty() {
@@ -355,7 +360,7 @@ impl<
                     }
                 }
 
-                if !field_names.contains(&parent_field) {
+                if !field_names.contains(parent_field) {
                     panic!(
                                 "\n{STYLE_COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is not a field on your schema{STYLE_RESET}\n"
                             );
@@ -373,7 +378,7 @@ impl<
                             );
                 }
 
-                if constant_field_names.contains(&parent_field) {
+                if constant_field_names.contains(parent_field) {
                     panic!(
                                 "\n{STYLE_COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is a constant{STYLE_RESET}\n"
                             );
@@ -412,8 +417,8 @@ impl<
 
         let mut field_configs = HashMap::new();
 
-        for (field_name, config) in config_tuples {
-            field_configs.insert(field_name, config);
+        for config in config_tuples {
+            field_configs.insert(config.name, config);
         }
 
         (field_configs, alias_to_virtual)
@@ -832,11 +837,7 @@ pub struct FieldBuilder<
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     WithTimestamps = No,
 > {
-    #[expect(clippy::type_complexity)]
-    configs: Vec<(
-        &'static str,
-        InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>,
-    )>,
+    configs: Vec<InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>>,
     timestamp_config: Option<TimestampConfig<T>>,
     _t: PhantomData<WithTimestamps>,
 }
@@ -857,11 +858,11 @@ impl<
         }
     }
 
-    pub fn field<Config>(mut self, name: &'static str, config: Config) -> Self
+    pub fn field<Config>(mut self, config: Config) -> Self
     where
         Config: BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>,
     {
-        self.configs.push((name, config.build()));
+        self.configs.push(config.build());
 
         self
     }

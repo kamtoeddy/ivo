@@ -1,4 +1,6 @@
-use ivo::{IvoField, IvoInputStruct, IvoModel, IvoStruct};
+use ivo::{
+    constant_field, dependent_field, lax_field, virtual_field, IvoInputStruct, IvoModel, IvoStruct,
+};
 use std::{future::ready, panic};
 
 #[test]
@@ -21,19 +23,15 @@ fn should_reject_if_virtual_field_does_not_have_any_dependency() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(1)
                         .depends_on(["lax"])
                         .resolve(|_, _| ready(2)),
                 )
-                .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-                )
+                .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| o,
     );
@@ -55,17 +53,15 @@ fn should_reject_with_same_alias_name() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(1)
                         .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("virtual_field")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -94,18 +90,16 @@ fn should_reject_with_alias_as_non_dependent_field() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(1)
                         .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("lax")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -135,25 +129,22 @@ fn should_reject_with_alias_as_unrelated_dependent_field() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent1",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent1")
                         .default(1)
                         .depends_on(["lax"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(1)
                         .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("dependent1")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -180,10 +171,9 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("created_at")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -212,8 +202,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
             f.field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("custom_created_at")
                     .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
@@ -244,10 +233,9 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("updated_at")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -276,8 +264,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
             f.field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("custom_updated_at")
                     .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
@@ -310,24 +297,21 @@ fn should_reject_if_alias_already_used() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(1)
                         .depends_on(["lax", "virtual_field", "virtual_field1"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
-                    "virtual_field1",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field1")
                         .alias("dependent")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("dependent")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -355,18 +339,16 @@ fn should_reject_if_alias_does_not_exist_on_input_struct() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(1)
                         .depends_on(["lax", "virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("alias_name")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -396,18 +378,16 @@ fn should_reject_if_both_alias_and_field_name_exist_on_input_struct() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(1)
                         .depends_on(["lax", "virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL
+                    virtual_field("virtual_field")
                         .alias("alias_name")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -435,24 +415,21 @@ fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data> = IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                    .field("lax", IvoField::LAX.default(1))
+                f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                    .field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(1)
                             .depends_on(["lax", "virtual_field", "virtual_field1"])
                             .resolve(|_, _| ready(2)),
                     )
                     .field(
-                        "virtual_field",
-                        IvoField::VIRTUAL
+                        virtual_field("virtual_field")
                             .alias("dependent")
                             .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .field(
-                        "virtual_field1",
-                        IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
+                        virtual_field("virtual_field1").validate(|_: String, _, _| ready(Ok(None))),
                     )
             },
             |o| o,
@@ -482,18 +459,16 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, String> = IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                    .field("lax", IvoField::LAX.default(1))
+                f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                    .field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(1)
                             .depends_on(["lax", "virtual_field"])
                             .resolve(|_, _| ready(2)),
                     )
                     .field(
-                        "virtual_field",
-                        IvoField::VIRTUAL
+                        virtual_field("virtual_field")
                             .alias("alias_name")
                             .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -529,19 +504,15 @@ fn should_reject_if_no_alias_is_provided_and_field_name_does_not_exist_on_input_
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                .field("lax", IvoField::LAX.default(1))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT
+                    dependent_field("dependent")
                         .default(1)
                         .depends_on(["lax", "virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
-                .field(
-                    "virtual_field",
-                    IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-                )
+                .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| o,
     );
@@ -565,18 +536,16 @@ fn should_allow_if_no_alias_is_provided_but_field_name_exists_on_input_struct() 
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data> = IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
-                    .field("lax", IvoField::LAX.default(1))
+                f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                    .field(lax_field("lax").default(1))
                     .field(
-                        "dependent",
-                        IvoField::DEPENDENT
+                        dependent_field("dependent")
                             .default(1)
                             .depends_on(["lax", "virtual_field"])
                             .resolve(|_, _| ready(2)),
                     )
                     .field(
-                        "virtual_field",
-                        IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
+                        virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))),
                     )
             },
             |o| o,

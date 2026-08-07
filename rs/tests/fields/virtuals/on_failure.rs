@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{dependent_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -20,8 +20,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -29,8 +28,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -95,8 +93,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -104,8 +101,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -172,8 +168,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -181,8 +176,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -248,8 +242,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -257,8 +250,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -327,8 +319,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -336,8 +327,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -407,8 +397,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -416,8 +405,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -489,8 +477,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -498,8 +485,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -519,16 +505,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -581,8 +564,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -590,8 +572,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -612,16 +593,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -674,8 +652,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -683,8 +660,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -705,16 +681,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -767,8 +740,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -776,8 +748,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -797,16 +768,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -862,8 +830,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -871,8 +838,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -893,16 +859,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -958,8 +921,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -967,8 +929,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -989,16 +950,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -1054,8 +1012,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1063,8 +1020,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -1084,16 +1040,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -1146,8 +1099,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1155,8 +1107,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1177,16 +1128,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -1239,8 +1187,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1248,8 +1195,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1270,16 +1216,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -1332,8 +1275,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1341,8 +1283,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -1362,16 +1303,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -1429,8 +1367,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1438,8 +1375,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1460,16 +1396,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -1527,8 +1460,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1536,8 +1468,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1558,16 +1489,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "virtual_field2",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );

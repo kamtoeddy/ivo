@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, IvoModel};
+use ivo::{required_field, IvoCtxOptions, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -48,8 +48,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .ignore_update(async |_, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -116,8 +115,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
@@ -186,8 +184,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
@@ -267,8 +264,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -338,8 +334,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -421,14 +416,8 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
-            )
-            .field(
-                "required_1",
-                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
-            )
+            f.field(required_field("required").validate(|_: i32, _, _| ready(Ok(None))))
+                .field(required_field("required_1").validate(|_: i32, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["required", "required_1"], |v| {
@@ -505,14 +494,8 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
-            )
-            .field(
-                "required_1",
-                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
-            )
+            f.field(required_field("required").validate(|_: i32, _, _| ready(Ok(None))))
+                .field(required_field("required_1").validate(|_: i32, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["required", "required_1"], |v| {

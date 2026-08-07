@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
+use ivo::{dependent_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -34,15 +34,14 @@ async fn should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(dependent)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(lax))
+            .field(lax_field("lax").default(lax))
         },
         |o| o,
     );
@@ -78,15 +77,14 @@ async fn should_use_computed_default_value_of_dependent_if_resolver_is_not_run_a
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default_fn(move |_, _| ready(dependent))
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(lax))
+            .field(lax_field("lax").default(lax))
         },
         |o| o,
     );
@@ -150,15 +148,14 @@ async fn should_properly_run_dependent_resolver() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
         },
         |o| o,
     );
@@ -237,16 +234,15 @@ async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax", "lax_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field("lax_1", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
+            .field(lax_field("lax_1").default(default_lax_value))
         },
         |o| o,
     );
@@ -336,8 +332,7 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax", "lax_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -345,16 +340,15 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
                     }),
             )
             .field(
-                "dependent_1",
-                IvoField::DEPENDENT
+                dependent_field("dependent_1")
                     .default(default_dependent_value)
                     .depends_on(["dependent"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 10)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field("lax_1", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
+            .field(lax_field("lax_1").default(default_lax_value))
         },
         |o| o,
     );
@@ -456,8 +450,7 @@ async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -465,7 +458,7 @@ async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_
                     })
                     .readonly(),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
         },
         |o| o,
     );
@@ -574,8 +567,7 @@ async fn should_trigger_on_delete_handlers_with_static_default_values() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(dependent)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -592,7 +584,7 @@ async fn should_trigger_on_delete_handlers_with_static_default_values() {
                         ready(())
                     }),
             )
-            .field("lax", IvoField::LAX.default(20))
+            .field(lax_field("lax").default(20))
         },
         |o| o,
     );
@@ -630,8 +622,7 @@ async fn should_trigger_on_delete_handlers_with_computed_default_values() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(dependent)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -649,7 +640,7 @@ async fn should_trigger_on_delete_handlers_with_computed_default_values() {
                     })
                     .on_delete(async |_, _| ()),
             )
-            .field("lax", IvoField::LAX.default(20))
+            .field(lax_field("lax").default(20))
         },
         |o| o,
     );
@@ -690,8 +681,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_at_creation() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -708,7 +698,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_at_creation() {
                         ready(())
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
         },
         |o| o,
     );
@@ -760,8 +750,7 @@ async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creat
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -779,7 +768,7 @@ async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creat
                     })
                     .on_success(async |_, _| ()),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
         },
         |o| o,
     );
@@ -831,8 +820,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_during_updates() 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -849,7 +837,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_during_updates() 
                         ready(())
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
         },
         |o| o,
     );
@@ -903,8 +891,7 @@ async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_up
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -921,8 +908,8 @@ async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_up
                         ready(())
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field("lax_1", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
+            .field(lax_field("lax_1").default(default_lax_value))
         },
         |o| o,
     );
@@ -978,15 +965,14 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {
@@ -1048,15 +1034,14 @@ async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {
@@ -1113,15 +1098,14 @@ async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {
@@ -1188,8 +1172,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_be
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1197,7 +1180,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_be
                     })
                     .readonly(),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {
@@ -1262,16 +1245,15 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field("lax_1", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
+            .field(lax_field("lax_1").default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {

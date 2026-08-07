@@ -1,4 +1,4 @@
-use ivo::{IvoField, IvoInputStruct, IvoModel, IvoStruct};
+use ivo::{constant_field, IvoInputStruct, IvoModel, IvoStruct};
 use std::{future::ready, panic};
 
 #[test]
@@ -18,7 +18,7 @@ fn should_reject_if_created_at_is_enabled_with_default_name_but_missing_from_out
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| t.resolve(|| "Date.now()").created_at(None))
         },
         |o| o,
@@ -42,7 +42,7 @@ fn should_reject_if_created_at_is_enabled_with_custom_name_but_missing_from_outp
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| {
                     t.resolve(|| "Date.now()")
                         .created_at(Some("custom_created_at"))
@@ -70,7 +70,7 @@ fn should_reject_if_created_at_is_enabled_with_default_name_and_is_provided_on_i
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| t.resolve(|| "Date.now()").created_at(None))
         },
         |o| o,
@@ -95,7 +95,7 @@ fn should_reject_if_created_at_is_enabled_with_custom_name_and_is_provided_on_in
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| {
                     t.resolve(|| "Date.now()")
                         .created_at(Some("custom_created_at"))
@@ -121,7 +121,7 @@ fn should_allow_if_created_at_is_enabled_with_default_name_and_is_on_output_stru
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+                f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                     .timestamps(|t| t.resolve(|| "Date.now()").created_at(None))
             },
             |o| o,
@@ -147,7 +147,7 @@ fn should_allow_if_created_at_is_enabled_with_custom_name_and_is_on_output_struc
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+                f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                     .timestamps(|t| {
                         t.resolve(|| "Date.now()")
                             .created_at(Some("custom_created_at"))
@@ -177,7 +177,7 @@ fn should_reject_if_updated_at_is_enabled_with_default_name_but_missing_from_out
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
@@ -201,7 +201,7 @@ fn should_reject_if_updated_at_is_enabled_with_custom_name_but_missing_from_outp
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| {
                     t.resolve(|| "Date.now()")
                         .optional_updated_at(Some("custom_updated_at"))
@@ -229,7 +229,7 @@ fn should_reject_if_updated_at_is_enabled_with_default_name_and_is_provided_on_i
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| t.resolve(|| "Date.now()").updated_at(None))
         },
         |o| o,
@@ -254,7 +254,7 @@ fn should_reject_if_updated_at_is_enabled_with_custom_name_and_is_provided_on_in
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| {
                     t.resolve(|| "Date.now()")
                         .updated_at(Some("custom_updated_at"))
@@ -283,7 +283,7 @@ fn should_reject_if_optional_updated_at_is_enabled_with_default_name_and_is_prov
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
@@ -309,7 +309,7 @@ fn should_reject_if_optional_updated_at_is_enabled_with_custom_name_and_is_provi
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .timestamps(|t| {
                     t.resolve(|| "Date.now()")
                         .optional_updated_at(Some("custom_updated_at"))
@@ -335,7 +335,7 @@ fn should_allow_if_updated_at_is_enabled_with_default_name_and_is_on_output_stru
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+                f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                     .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
             },
             |o| o,
@@ -361,7 +361,7 @@ fn should_allow_if_updated_at_is_enabled_with_custom_name_and_is_on_output_struc
     let result = panic::catch_unwind(|| {
         let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+                f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                     .timestamps(|t| {
                         t.resolve(|| "Date.now()")
                             .optional_updated_at(Some("custom_updated_at"))

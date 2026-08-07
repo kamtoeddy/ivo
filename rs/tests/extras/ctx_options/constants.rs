@@ -1,6 +1,8 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoStruct};
+use ivo::{
+    constant_field, lax_field, IvoCtxOptions, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoStruct,
+};
 
 use crate::async_test_matrix;
 
@@ -38,8 +40,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "id",
-                IvoField::CONSTANT
+                constant_field("id")
                     .value_fn(async |_, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
@@ -56,8 +57,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
                     }),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(2)
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )

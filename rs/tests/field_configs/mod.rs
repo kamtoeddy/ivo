@@ -2,7 +2,10 @@ mod dependents;
 mod timestamps;
 mod virtuals;
 
-use ivo::{IvoField, IvoInputStruct, IvoModel, IvoStruct};
+use ivo::{
+    constant_field, dependent_field, lax_field, required_field, virtual_field, IvoInputStruct,
+    IvoModel, IvoStruct,
+};
 use std::future::ready;
 
 #[test]
@@ -21,16 +24,14 @@ fn should_reject_if_field_name_is_already_set() {
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(
-                    "lax",
-                    IvoField::LAX
+                    lax_field("lax")
                         .default("value".into())
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .field(
-                    "lax",
-                    IvoField::LAX
+                    lax_field("lax")
                         .default(true)
                         .validate(|_, _, _| ready(Ok(None))),
                 )
@@ -57,10 +58,9 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(
-                    "created_at",
-                    IvoField::LAX
+                    lax_field("created_at")
                         .default("value".into())
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -89,8 +89,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
             f.field(
-                "custom_created_at",
-                IvoField::LAX
+                lax_field("custom_created_at")
                     .default("value".into())
                     .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
@@ -119,10 +118,9 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(
-                    "updated_at",
-                    IvoField::LAX
+                    lax_field("updated_at")
                         .default("value".into())
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -151,8 +149,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
             f.field(
-                "custom_updated_at",
-                IvoField::LAX
+                lax_field("custom_updated_at")
                     .default("value".into())
                     .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
@@ -179,7 +176,7 @@ fn should_reject_if_constant_field_does_not_exist_on_output_struct() {
     }
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(12))),
+        |f| f.field(constant_field("id").value_fn(|_, _| ready(12))),
         |o| o,
     );
 }
@@ -200,7 +197,7 @@ fn should_reject_if_constant_field_exists_on_input_struct() {
     }
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(12))),
+        |f| f.field(constant_field("id").value_fn(|_, _| ready(12))),
         |o| o,
     );
 }
@@ -222,22 +219,17 @@ fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(1)
                     .depends_on(["lax"])
                     .resolve(|_, _| ready(12)),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default("default".into())
                     .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
-            )
+            .field(virtual_field("virtual_field").validate(|v: String, _, _| ready(Ok(Some(v)))))
         },
         |o| o,
     );
@@ -259,8 +251,7 @@ fn should_reject_if_lax_field_does_not_exist_on_input_struct() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(12)
                     .validate(|_, _, _| ready(Ok(None))),
             )
@@ -285,8 +276,7 @@ fn should_reject_if_lax_field_does_not_exist_on_output_struct() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(12)
                     .validate(|_, _, _| ready(Ok(None))),
             )
@@ -311,12 +301,7 @@ fn should_reject_if_required_field_does_not_exist_on_input_struct() {
     }
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(Some(v)))),
-            )
-        },
+        |f| f.field(required_field("required").validate(|v: i32, _, _| ready(Ok(Some(v))))),
         |o| o,
     );
 }
@@ -335,12 +320,7 @@ fn should_reject_if_required_field_does_not_exist_on_output_struct() {
     }
 
     let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(Some(v)))),
-            )
-        },
+        |f| f.field(required_field("required").validate(|v: i32, _, _| ready(Ok(Some(v))))),
         |o| o,
     );
 }

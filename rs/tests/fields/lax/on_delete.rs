@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoInputStruct, IvoShared, IvoStruct, IvoModel};
+use ivo::{lax_field, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -18,8 +18,7 @@ async fn should_trigger_on_delete_handlers() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default("default_value".into())
                     .validate(|v: String, _, _| ready(Ok(Some(v))))
                     .on_delete(async |_, _| ())

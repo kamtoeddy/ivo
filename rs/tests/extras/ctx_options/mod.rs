@@ -1,6 +1,6 @@
 #![expect(dead_code)]
 
-use ivo::{IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, IvoModel};
+use ivo::{constant_field, required_field, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoStruct};
 use std::{array, collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
@@ -126,22 +126,12 @@ static PRODUCT_MODEL: LazyLock<IvoModel<ProductInput, Product, ProductCtxOptions
     LazyLock::new(|| {
         IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value(ProductID(1)))
+                f.field(constant_field("id").value(ProductID(1)))
+                    .field(required_field("name").validate(|_: String, _, _| ready(Ok(None))))
+                    .field(required_field("sku").validate(|_: String, _, _| ready(Ok(None))))
+                    .field(required_field("price").validate(|_: u32, _, _| ready(Ok(None))))
                     .field(
-                        "name",
-                        IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
-                    )
-                    .field(
-                        "sku",
-                        IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
-                    )
-                    .field(
-                        "price",
-                        IvoField::REQUIRED.validate(|_: u32, _, _| ready(Ok(None))),
-                    )
-                    .field(
-                        "supplier",
-                        IvoField::REQUIRED
+                        required_field("supplier")
                             .validate(|_: SupplierID, _, _| ready(Ok(None)))
                             .re_validate(
                                 async |id: SupplierID, _, o: IvoRwCtxOptions<ProductCtxOptions>| {

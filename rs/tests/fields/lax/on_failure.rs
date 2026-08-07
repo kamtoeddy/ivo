@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -18,8 +18,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default("default_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -79,40 +78,37 @@ async fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ign
         lax2: String,
     }
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                "lax",
-                IvoField::LAX
-                    .default("default_value".to_string())
-                    .ignore_init()
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[lax]: on_failure triggered with value: {}",
-                                ctx.raw_input().lax.unwrap().as_str()
-                            );
-                        }
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(
+            |f| {
+                f.field(
+                    lax_field("lax")
+                        .default("default_value".to_string())
+                        .ignore_init()
+                        .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
+                            if true {
+                                panic!(
+                                    "[lax]: on_failure triggered with value: {}",
+                                    ctx.raw_input().lax.unwrap().as_str()
+                                );
+                            }
 
-                        ready(())
-                    })
-                    .on_failure(async |_, _| ()),
-            )
-            .field(
-                "lax2",
-                IvoField::LAX
-                    .default("default_value".into())
-                    .validate(|v: String, _, _| {
+                            ready(())
+                        })
+                        .on_failure(async |_, _| ()),
+                )
+                .field(lax_field("lax2").default("default_value".into()).validate(
+                    |v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
                         ready(Ok(Some(v)))
-                    }),
-            )
-        },
-        |o| o,
-    );
+                    },
+                ))
+            },
+            |o| o,
+        );
 
     let input = PartialDataInput {
         lax: Some("to be ignored".into()),
@@ -154,8 +150,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default("default_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -221,8 +216,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default("default_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -292,46 +286,43 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         lax2: String,
     }
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                "lax",
-                IvoField::LAX
-                    .default("default_value".into())
-                    .validate(|v: String, _, _| {
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(
+            |f| {
+                f.field(
+                    lax_field("lax")
+                        .default("default_value".into())
+                        .validate(|v: String, _, _| {
+                            if v == "fail_validation" {
+                                return ready(Err(("validation failed".into(), None)));
+                            }
+
+                            ready(Ok(Some(v)))
+                        })
+                        .ignore_update()
+                        .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
+                            if true {
+                                panic!(
+                                    "[lax]: on_failure triggered with value: {}",
+                                    ctx.raw_input().lax.unwrap().as_str()
+                                );
+                            }
+
+                            ready(())
+                        }),
+                )
+                .field(lax_field("lax2").default("default_value".into()).validate(
+                    |v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
                         ready(Ok(Some(v)))
-                    })
-                    .ignore_update()
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[lax]: on_failure triggered with value: {}",
-                                ctx.raw_input().lax.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(
-                "lax2",
-                IvoField::LAX
-                    .default("default_value".into())
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(Some(v)))
-                    }),
-            )
-        },
-        |o| o,
-    );
+                    },
+                ))
+            },
+            |o| o,
+        );
 
     let data = Data {
         lax: "lax1".into(),

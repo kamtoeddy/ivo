@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -20,8 +20,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default("default_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -42,18 +41,15 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
                         ready(())
                     }),
             )
-            .field(
-                "lax_1",
-                IvoField::LAX
-                    .default("default_value".into())
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
+            .field(lax_field("lax_1").default("default_value".into()).validate(
+                |v: String, _, _| {
+                    if v == "fail_validation" {
+                        return ready(Err(("validation failed".into(), None)));
+                    }
 
-                        ready(Ok(Some(v)))
-                    }),
-            )
+                    ready(Ok(Some(v)))
+                },
+            ))
         },
         |o| o,
     );
@@ -103,8 +99,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(default_lax_value.clone())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -127,8 +122,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
                     }),
             )
             .field(
-                "lax_1",
-                IvoField::LAX
+                lax_field("lax_1")
                     .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -190,8 +184,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(default_lax_value.clone())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -213,8 +206,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
                     }),
             )
             .field(
-                "lax_1",
-                IvoField::LAX
+                lax_field("lax_1")
                     .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -277,8 +269,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(default_lax_value.clone())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -299,8 +290,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
                     }),
             )
             .field(
-                "lax_1",
-                IvoField::LAX
+                lax_field("lax_1")
                     .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -369,8 +359,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(default_lax_value.clone())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -391,8 +380,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
                     }),
             )
             .field(
-                "lax_1",
-                IvoField::LAX
+                lax_field("lax_1")
                     .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -458,8 +446,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(default_lax_value.clone())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -481,8 +468,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                     }),
             )
             .field(
-                "lax_1",
-                IvoField::LAX
+                lax_field("lax_1")
                     .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -550,8 +536,8 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax))
-                .field("lax_1", IvoField::LAX.default(default_lax_1))
+            f.field(lax_field("lax").default(default_lax))
+                .field(lax_field("lax_1").default(default_lax_1))
         },
         |o| {
             o.on_success([], |s| {
@@ -606,8 +592,8 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
 
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax))
-                .field("lax_1", IvoField::LAX.default(default_lax_1))
+            f.field(lax_field("lax").default(default_lax))
+                .field(lax_field("lax_1").default(default_lax_1))
         },
         |o| {
             o.on_success([], |s| {

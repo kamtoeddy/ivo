@@ -1,6 +1,6 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, IvoModel};
+use ivo::{required_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 const MIN_USERNAME_LEN: usize = 4;
 
@@ -69,8 +69,8 @@ pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
     IvoModel::new(
         |f| {
             f.field(
-                "username",
-                IvoField::REQUIRED
+
+                required_field("username")
                     .validate(|_, _, _| ready(Ok(None::<String>)))
                     .re_validate(|v: String, _, _| {
                         if v.len() < MIN_USERNAME_LEN {

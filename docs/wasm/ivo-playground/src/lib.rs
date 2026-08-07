@@ -14,7 +14,7 @@ fn set_panic_hook() {
 
 mod constants {
     use super::*;
-    use ivo::{IvoField, IvoInputStruct, IvoModel, IvoStruct};
+    use ivo::{constant_field, lax_field, IvoInputStruct, IvoModel, IvoStruct};
 
     const CONSTANT_ID: i32 = 1234;
     const DEFAULT_USERNAME: &str = "default-username";
@@ -35,9 +35,8 @@ mod constants {
     static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
         IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value(CONSTANT_ID)).field(
-                    "username",
-                    IvoField::LAX
+                f.field(constant_field("id").value(CONSTANT_ID)).field(
+                    lax_field("username")
                         .default(DEFAULT_USERNAME.into())
                         .validate(|_, _, _| ready(Ok(None::<String>))),
                 )
@@ -52,10 +51,7 @@ mod constants {
 
         let username: Option<String> = super::parse_field(&input_json, "username")?;
 
-        match MODEL
-            .create(&PartialDataInput { username }, None)
-            .await
-        {
+        match MODEL.create(&PartialDataInput { username }, None).await {
             Ok((data, _, _)) => Ok(serde_json::json!({
                 "data": { "id": data.id, "username": data.username },
                 "error": null,
@@ -68,7 +64,7 @@ mod constants {
 
 mod lax_defaults {
     use super::*;
-    use ivo::{IvoField, IvoInputStruct, IvoModel, IvoStruct};
+    use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
 
     const DEFAULT_USERNAME: &str = "default-username";
 
@@ -86,7 +82,7 @@ mod lax_defaults {
 
     static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
         IvoModel::new(
-            |f| f.field("username", IvoField::LAX.default(DEFAULT_USERNAME.to_string())),
+            |f| f.field(lax_field("username").default(DEFAULT_USERNAME.to_string())),
             |o| o,
         )
     });
@@ -97,10 +93,7 @@ mod lax_defaults {
 
         let username: Option<String> = super::parse_field(&input_json, "username")?;
 
-        match MODEL
-            .create(&PartialDataInput { username }, None)
-            .await
-        {
+        match MODEL.create(&PartialDataInput { username }, None).await {
             Ok((data, _, _)) => Ok(serde_json::json!({
                 "data": { "username": data.username },
                 "error": null,
@@ -113,7 +106,7 @@ mod lax_defaults {
 
 mod required {
     use super::*;
-    use ivo::{IvoField, IvoInputStruct, IvoModel, IvoStruct};
+    use ivo::{required_field, IvoInputStruct, IvoModel, IvoStruct};
 
     #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
     pub struct DataInput {
@@ -129,12 +122,7 @@ mod required {
 
     static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
         IvoModel::new(
-            |f| {
-                f.field(
-                    "username",
-                    IvoField::REQUIRED.validate(|_, _, _| ready(Ok(None::<String>))),
-                )
-            },
+            |f| f.field(required_field("username").validate(|_, _, _| ready(Ok(None::<String>)))),
             |o| o,
         )
     });
@@ -145,10 +133,7 @@ mod required {
 
         let username: Option<String> = super::parse_field(&input_json, "username")?;
 
-        match MODEL
-            .create(&PartialDataInput { username }, None)
-            .await
-        {
+        match MODEL.create(&PartialDataInput { username }, None).await {
             Ok((data, _, _)) => Ok(serde_json::json!({
                 "data": { "username": data.username },
                 "error": null,

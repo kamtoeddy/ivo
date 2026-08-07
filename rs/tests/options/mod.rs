@@ -1,7 +1,10 @@
 use std::future::ready;
 
 use crate::async_test_matrix;
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{
+    constant_field, dependent_field, lax_field, virtual_field, IvoContext, IvoInputStruct,
+    IvoModel, IvoStruct,
+};
 
 mod ignore;
 mod ignore_update;
@@ -31,7 +34,7 @@ async fn should_respect_option_to_ignore_updates_with_empty_fields_array() {
     const IGNORE_VALUE: &str = "ignore_value";
 
     let model = IvoModel::<DataInput, Data>::new(
-        |f| f.field("lax", IvoField::LAX.default(default_value.to_string())),
+        |f| f.field(lax_field("lax").default(default_value.to_string())),
         |o| {
             o.ignore_update([], |input: PartialDataInput, _, _| {
                 ready(input.lax.map(|v| v == IGNORE_VALUE).unwrap_or(false))
@@ -94,8 +97,8 @@ async fn should_properly_trigger_on_delete_handlers() {
 
     let model: IvoModel<Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
         },
         |o| {
             o.on_delete(|_, _| {
@@ -125,8 +128,8 @@ async fn should_properly_trigger_all_on_delete_handlers() {
 
     let model: IvoModel<Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
         },
         |o| {
             o.on_delete(|_, _| ready(())).on_delete(|_, _| {
@@ -168,8 +171,8 @@ fn should_reject_if_the_fields_array_contains_any_duplicates() {
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
         },
         |o| o.on_success(["lax", "lax"], |s| s.handle(|_, _| ready(()))),
     );
@@ -192,8 +195,8 @@ fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_
 
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
         },
         |o| o.on_success(["lax", "invalid_field"], |s| s.handle(|_, _| ready(()))),
     );
@@ -221,17 +224,15 @@ fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array()
     let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(1)
                     .depends_on(["lax", "virtual_field"])
                     .resolve(|_, _| ready(2)),
             )
-            .field("lax", IvoField::LAX.default(1234))
-            .field("lax_1", IvoField::LAX.default(5678))
+            .field(lax_field("lax").default(1234))
+            .field(lax_field("lax_1").default(5678))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("alias")
                     .validate(|_, _, _| ready(Ok(Some(1)))),
             )
@@ -260,8 +261,8 @@ fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fi
 
     let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
                 .timestamps(|t| t.resolve(|| 1234).created_at(None))
         },
         |o| {
@@ -292,8 +293,8 @@ fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fie
 
     let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
                 .timestamps(|t| t.resolve(|| 1234).created_at(Some("custom_created_at")))
         },
         |o| {
@@ -324,8 +325,8 @@ fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fi
 
     let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
                 .timestamps(|t| t.resolve(|| 1234).updated_at(None))
         },
         |o| {
@@ -356,8 +357,8 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
 
     let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234))
-                .field("lax_1", IvoField::LAX.default(5678))
+            f.field(lax_field("lax").default(1234))
+                .field(lax_field("lax_1").default(5678))
                 .timestamps(|t| t.resolve(|| 1234).updated_at(Some("custom_updated_at")))
         },
         |o| {
@@ -384,16 +385,16 @@ fn should_allow_constant_and_dependents_in_fields_array() {
 
     let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value(1234))
+            f.field(constant_field("id").value(1234))
                 .field(
-                    "dependent",
-                    IvoField::DEPENDENT.default(1).depends_on(["lax"]).resolve(
-                        |ctx: IvoContext<DataInput, Data>, _| {
+                    dependent_field("dependent")
+                        .default(1)
+                        .depends_on(["lax"])
+                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(ctx.values().dependent.unwrap() + 1)
-                        },
-                    ),
+                        }),
                 )
-                .field("lax", IvoField::LAX.default(5678))
+                .field(lax_field("lax").default(5678))
         },
         |o| o.on_success(["id", "dependent"], |s| s.handle(|_, _| ready(()))),
     );

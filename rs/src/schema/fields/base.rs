@@ -42,6 +42,7 @@ pub struct FieldConfig<
     CtxOptions,
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > {
+    pub name: &'static str,
     pub field_type: FieldType,
     pub alias: Option<&'static str>,
     pub default: Option<DefaultValue<T, I, CtxOptions>>,
@@ -68,6 +69,7 @@ impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitize
 {
     fn default() -> Self {
         Self {
+            name: "",
             field_type: FieldType::Lax,
             alias: None,
             value: None,

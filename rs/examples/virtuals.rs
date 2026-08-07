@@ -1,6 +1,8 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, IvoModel};
+use ivo::{
+    dependent_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct,
+};
 
 const DEFAULT_DEPENDENT_VALUE: &str = "DEFAULT_DEPENDENT_VALUE";
 
@@ -189,8 +191,7 @@ pub static DATA_MODEL_WITH_VALIDATOR: LazyLock<IvoModel<DataInput, Data>> = Lazy
     IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_DEPENDENT_VALUE.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -215,8 +216,7 @@ pub static DATA_MODEL_WITH_VALIDATOR: LazyLock<IvoModel<DataInput, Data>> = Lazy
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_, _, _| ready(Ok(None::<String>)))
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         println!(
@@ -248,66 +248,65 @@ pub static DATA_MODEL_WITH_VALIDATOR: LazyLock<IvoModel<DataInput, Data>> = Lazy
     )
 });
 
-pub static DATA_MODEL_WITH_RE_VALIDATOR: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                "dependent",
-                IvoField::DEPENDENT
-                    .default(DEFAULT_DEPENDENT_VALUE.into())
-                    .depends_on(["virtual_field"])
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(
-                            ctx.input()
-                                .virtual_field
-                                .unwrap_or_else(|| ctx.values().dependent.unwrap()),
-                        )
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_success]: dependent = {}",
-                            ctx.values().dependent.unwrap()
-                        );
+pub static DATA_MODEL_WITH_RE_VALIDATOR: LazyLock<IvoModel<DataInput, Data>> =
+    LazyLock::new(|| {
+        IvoModel::new(
+            |f| {
+                f.field(
+                    dependent_field("dependent")
+                        .default(DEFAULT_DEPENDENT_VALUE.into())
+                        .depends_on(["virtual_field"])
+                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                            ready(
+                                ctx.input()
+                                    .virtual_field
+                                    .unwrap_or_else(|| ctx.values().dependent.unwrap()),
+                            )
+                        })
+                        .on_success(|ctx: IvoContext<DataInput, Data>, _| {
+                            println!(
+                                "\n[on_success]: dependent = {}",
+                                ctx.values().dependent.unwrap()
+                            );
 
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: dependent = {}", data.dependent);
+                            ready(())
+                        })
+                        .on_delete(|data: IvoShared<Data>, _| {
+                            println!("\n[on_delete]: dependent = {}", data.dependent);
 
-                        ready(())
-                    }),
-            )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
-                    .validate(|_, _, _| ready(Ok(None::<String>)))
-                    .re_validate(|_, _, _| ready(Ok(None::<String>)))
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_failure]: raw virtual_field = {}",
-                            ctx.raw_input().virtual_field.unwrap()
-                        );
-                        println!(
-                            "\n[on_failure]: validated virtual_field = {}",
-                            ctx.input().virtual_field.unwrap()
-                        );
+                            ready(())
+                        }),
+                )
+                .field(
+                    virtual_field("virtual_field")
+                        .validate(|_, _, _| ready(Ok(None::<String>)))
+                        .re_validate(|_, _, _| ready(Ok(None::<String>)))
+                        .on_success(|ctx: IvoContext<DataInput, Data>, _| {
+                            println!(
+                                "\n[on_failure]: raw virtual_field = {}",
+                                ctx.raw_input().virtual_field.unwrap()
+                            );
+                            println!(
+                                "\n[on_failure]: validated virtual_field = {}",
+                                ctx.input().virtual_field.unwrap()
+                            );
 
-                        ready(())
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_failure]: raw virtual_field = {}",
-                            ctx.raw_input().virtual_field.unwrap()
-                        );
-                        println!(
-                            "\n[on_failure]: validated virtual_field = {}",
-                            ctx.input().virtual_field.unwrap()
-                        );
+                            ready(())
+                        })
+                        .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
+                            println!(
+                                "\n[on_failure]: raw virtual_field = {}",
+                                ctx.raw_input().virtual_field.unwrap()
+                            );
+                            println!(
+                                "\n[on_failure]: validated virtual_field = {}",
+                                ctx.input().virtual_field.unwrap()
+                            );
 
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    )
-});
+                            ready(())
+                        }),
+                )
+            },
+            |o| o,
+        )
+    });

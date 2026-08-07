@@ -1,7 +1,7 @@
 use std::{future::ready, sync::LazyLock};
 
 use chrono::{DateTime, Utc};
-use ivo::{IvoField, IvoInputStruct, IvoStruct, IvoModel};
+use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
 
 #[async_std::main]
 async fn main() {
@@ -125,8 +125,7 @@ pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data, Option<()>, Timestamp>
         IvoModel::new(
             |f| {
                 f.field(
-                    "username",
-                    IvoField::LAX
+                    lax_field("username")
                         .default("default-value".into())
                         .validate(|_, _, _| ready(Ok(None::<String>))),
                 )
@@ -142,8 +141,7 @@ pub static DATA_MODEL_WITH_OPTIONAL_UPDATED_AT: LazyLock<
     IvoModel::new(
         |f| {
             f.field(
-                "username",
-                IvoField::LAX
+                lax_field("username")
                     .default("default-value".into())
                     .validate(|_, _, _| ready(Ok(None::<String>))),
             )

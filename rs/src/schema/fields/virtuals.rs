@@ -34,6 +34,7 @@ pub struct VirtualFieldBuilder<
     HasFailure = No,
     HasSuccess = No,
 > {
+    name: &'static str,
     alias: Option<&'static str>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
@@ -87,8 +88,9 @@ impl<
         HasSuccess,
     >
 {
-    pub const fn new() -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Self {
+            name,
             alias: None,
             validator: None,
             re_validator: None,
@@ -144,7 +146,7 @@ impl<
     >
 {
     fn default() -> Self {
-        Self::new()
+        Self::new("")
     }
 }
 
@@ -180,6 +182,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
+            name: self.name,
             field_type: FieldType::Virtual,
             alias: self.alias,
             validator: self.validator,
@@ -214,6 +217,7 @@ impl<
         name: &'static str,
     ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasValidator, Yes> {
         VirtualFieldBuilder {
+            name: self.name,
             alias: Some(name),
             validator: self.validator,
             re_validator: self.re_validator,
@@ -246,6 +250,7 @@ impl<
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: Some(validator.into_uniform()),
             ..Default::default()
@@ -270,6 +275,7 @@ impl<
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: Some(re_validator.into_uniform()),
@@ -307,6 +313,7 @@ impl<
         R: IntoRequiredResolver<I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -358,6 +365,7 @@ impl<
         F: IntoVirtualSanitizer<T, I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -412,6 +420,7 @@ impl<
         R: IntoBooleanResolver<I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -438,6 +447,7 @@ impl<
         Yes,
     > {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -464,6 +474,7 @@ impl<
         Yes,
     > {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -530,6 +541,7 @@ impl<
         let h = handler.into_handler();
 
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -609,6 +621,7 @@ impl<
         let h = handler.into_handler();
 
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
