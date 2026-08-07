@@ -5,7 +5,6 @@ import {
   SchemaErrorTool,
   toArray,
 } from "../utils";
-import { newFieldMaker } from "./fields";
 
 import {
   FIELD_CONFIG_BUILD_METHOD_NAME,
@@ -22,25 +21,25 @@ import {
   TimeStampTool,
 } from "../utils/types";
 import { Model, ModelTool } from "../model";
+import { ConstantBuilder } from "./fields/constants";
+import { DependentBuilder, HasDependsOn } from "./fields/dependents";
+import { BuildableLaxConfig, LaxBuilder } from "./fields/lax";
+import { BlankRequiredBuilder, RequiredBuilder } from "./fields/required";
+import { BlankVirtualBuilder, VirtualBuilder } from "./fields/virtual";
 
-export { type FieldMaker, Schema };
+export { Schema };
 
 class Schema<
-  const Input extends RealType<Input>,
-  const Output extends RealType<Output> = Input,
+  const I extends RealType<I>,
+  const O extends RealType<O> = I,
   const CtxOptions extends ObjectType = {},
   const ErrorMetadata = DefaultFieldErrorMetadata,
-  const ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
+  const ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<I>>,
 > {
-  private _definitions: NS.Definitions<
-    Input,
-    Output,
-    CtxOptions,
-    ErrorMetadata
-  >;
+  private _definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>;
   private _options: NS.InternalOptions<
-    Input,
-    Output,
+    I,
+    O,
     CtxOptions,
     ErrorMetadata,
     ErrorPayload
@@ -48,38 +47,21 @@ class Schema<
 
   constructor(
     builder: (
-      b: FieldBuilder<Input, Output, CtxOptions, ErrorMetadata>,
-      m: FieldMaker<Input, Output, CtxOptions, ErrorMetadata>,
-    ) => FieldBuilder<Input, Output, CtxOptions, ErrorMetadata>,
-    options: NS.Options<
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata,
-      ErrorPayload
-    > = {},
+      f: FieldBuilder<I, O, CtxOptions, ErrorMetadata>,
+    ) => FieldBuilder<I, O, CtxOptions, ErrorMetadata>,
+    options: NS.Options<I, O, CtxOptions, ErrorMetadata, ErrorPayload> = {},
   ) {
-    const definitions = builder(new FieldBuilder(), newFieldMaker())[
-      FIELD_BUILDER_DEFINITIONS
-    ];
+    const definitions = builder(new FieldBuilder())[FIELD_BUILDER_DEFINITIONS];
 
     const errorTool = new SchemaErrorTool();
 
-    const aliasToVirtualMap = validateFields<
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata
-    >(definitions, errorTool);
+    const aliasToVirtualMap = validateFields<I, O, CtxOptions, ErrorMetadata>(
+      definitions,
+      errorTool,
+    );
 
     this._definitions = definitions;
-    this._options = makeOptions<
-      Input,
-      Output,
-      CtxOptions,
-      ErrorMetadata,
-      ErrorPayload
-    >({
+    this._options = makeOptions<I, O, CtxOptions, ErrorMetadata, ErrorPayload>({
       aliasToVirtualMap,
       definitions,
       errorTool,
@@ -89,8 +71,8 @@ class Schema<
 
   get definitions() {
     return this._definitions as never as NS.Definitions<
-      Input,
-      Output,
+      I,
+      O,
       CtxOptions,
       ErrorMetadata
     >;
@@ -101,39 +83,33 @@ class Schema<
   }
 
   extend<
-    const ExtendedInput extends RealType<ExtendedInput>,
-    const ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
+    const ExtendedI extends RealType<ExtendedI>,
+    const ExtendedO extends RealType<ExtendedO> = ExtendedI,
     const ExtendedCtxOptions extends ObjectType = CtxOptions,
     const ExtendedErrorMetadata = ErrorMetadata,
     const ExtendedErrorPayload = IvoErrorPayload<
       ExtendedErrorMetadata,
-      KeyOf<ExtendedInput>
+      KeyOf<ExtendedI>
     >,
   >(
     builder: (
       b: FieldBuilder<
-        ExtendedInput,
-        ExtendedOutput,
-        ExtendedCtxOptions,
-        ExtendedErrorMetadata
-      >,
-      m: FieldMaker<
-        ExtendedInput,
-        ExtendedOutput,
+        ExtendedI,
+        ExtendedO,
         ExtendedCtxOptions,
         ExtendedErrorMetadata
       >,
     ) => FieldBuilder<
-      ExtendedInput,
-      ExtendedOutput,
+      ExtendedI,
+      ExtendedO,
       ExtendedCtxOptions,
       ExtendedErrorMetadata
     >,
     options: NS.ExtensionOptions<
-      Input,
-      Output,
-      ExtendedInput,
-      ExtendedOutput,
+      I,
+      O,
+      ExtendedI,
+      ExtendedO,
       ExtendedCtxOptions,
       ExtendedErrorMetadata,
       ExtendedErrorPayload
@@ -144,8 +120,8 @@ class Schema<
     const _definitions = {
       ...this.definitions,
     } as unknown as NS.Definitions<
-      ExtendedInput,
-      ExtendedOutput,
+      ExtendedI,
+      ExtendedO,
       ExtendedCtxOptions,
       ExtendedErrorMetadata
     >;
@@ -155,8 +131,8 @@ class Schema<
     );
 
     const options_ = {} as NS.Options<
-      ExtendedInput,
-      ExtendedOutput,
+      ExtendedI,
+      ExtendedO,
       ExtendedCtxOptions,
       ExtendedErrorMetadata,
       ExtendedErrorPayload
@@ -172,19 +148,19 @@ class Schema<
         });
 
     return new Schema<
-      ExtendedInput,
-      ExtendedOutput,
+      ExtendedI,
+      ExtendedO,
       ExtendedCtxOptions,
       ExtendedErrorMetadata,
       ExtendedErrorPayload
     >(
-      () => builder(new FieldBuilder(_definitions), newFieldMaker()),
+      () => builder(new FieldBuilder(_definitions)),
       Object.assign({}, options_, rest),
     );
   }
 
   getModel() {
-    return new Model<Input, Output, CtxOptions, ErrorMetadata, ErrorPayload>(
+    return new Model<I, O, CtxOptions, ErrorMetadata, ErrorPayload>(
       () => new ModelTool(this.definitions, this.options),
     );
   }
@@ -233,6 +209,48 @@ class FieldBuilder<
     return this;
   }
 
+  constant<K extends keyof O & string>(
+    name: K,
+    value: O[K] | NS.ConstantResolver<O[K], I, O, CtxOptions>,
+  ): ConstantBuilder<O[K], I, O, CtxOptions> {
+    return new ConstantBuilder<O[K], I, O, CtxOptions>(name, value);
+  }
+
+  dependent<K extends keyof O & string>(
+    name: K,
+    dependsOn:
+      | NS.Dependables<K, I, O>
+      | ArrayOfMinSizeOne<NS.Dependables<K, I, O>>,
+  ): HasDependsOn<K, I, O, CtxOptions> {
+    return new DependentBuilder<K, I, O, CtxOptions>(name, dependsOn);
+  }
+
+  lax<
+    K extends keyof O & string,
+    Default extends O[K] | NS.Resolver<O[K], I, O, CtxOptions>,
+    DefaultState extends "value" | "resolver" = Default extends Function
+      ? "resolver"
+      : "value",
+  >(
+    name: K,
+    value: Default,
+  ): BuildableLaxConfig<O[K], I, O, CtxOptions, ErrorMetadata, DefaultState> {
+    // @ts-expect-error ikr
+    return new LaxBuilder<O[K], I, O, CtxOptions, ErrorMetadata>(name, value);
+  }
+
+  required<K extends keyof O & string>(
+    name: K,
+  ): BlankRequiredBuilder<O[K], I, O, CtxOptions, ErrorMetadata> {
+    return new RequiredBuilder<O[K], I, O, CtxOptions, ErrorMetadata>(name);
+  }
+
+  virtual<K extends string>(
+    name: K,
+  ): BlankVirtualBuilder<any, I, O, CtxOptions, ErrorMetadata> {
+    return new VirtualBuilder<any, I, O, CtxOptions, ErrorMetadata>(name);
+  }
+
   get [FIELD_BUILDER_DEFINITIONS](): NS.Definitions<
     I,
     O,
@@ -242,13 +260,6 @@ class FieldBuilder<
     return this._definitions;
   }
 }
-
-type FieldMaker<
-  Input extends RealType<Input>,
-  Output extends RealType<Output> = Input,
-  CtxOptions extends ObjectType = {},
-  ErrorMetadata = DefaultFieldErrorMetadata,
-> = ReturnType<typeof newFieldMaker<Input, Output, CtxOptions, ErrorMetadata>>;
 
 function validateFields<
   I extends RealType<I>,
@@ -328,7 +339,7 @@ function validateFields<
     }
 
     if (config.type === "lax") {
-      if (config.default)
+      if (typeof config.default === "undefined")
         errorTool.add(
           fieldName,
           "Lax fields must have a default value or default resolver",
@@ -717,7 +728,7 @@ function makeOptions<
       if (fields.length < 2)
         errorTool.add(
           optionName,
-          "post-validation config expects at least 2 input fields",
+          "post-validation config expects at least 2 I fields",
         );
 
       const fieldNames = new Set<string>();
@@ -764,7 +775,7 @@ function makeOptions<
       if (fields.length < 2)
         errorTool.add(
           optionName,
-          "grouped required config expects at least 2 input fields",
+          "grouped required config expects at least 2 I fields",
         );
 
       const fieldNames = new Set<string>();

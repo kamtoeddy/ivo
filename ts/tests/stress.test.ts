@@ -29,9 +29,9 @@ describe("Stress tests — pathological input shapes", () => {
     const depth = 200; // adjust if CI can't handle this depth
     const deepObj = makeDeep(depth);
 
-    const Model = new Schema<{ payload: {} }>((b, m) =>
-      b.field(
-        m
+    const Model = new Schema<{ payload: {} }>((f) =>
+      f.field(
+        f
           .lax("payload", {})
           .validate((v) =>
             typeof v === "object" && v !== null
@@ -50,9 +50,9 @@ describe("Stress tests — pathological input shapes", () => {
     const largeCount = 20_000; // moderate large array for CI; increase for local stress runs
     const bigArray = new Array(largeCount).fill("x");
 
-    const Model = new Schema<{ payload: string[] }>((b, m) =>
-      b.field(
-        m
+    const Model = new Schema<{ payload: string[] }>((f) =>
+      f.field(
+        f
           .lax("payload", [])
           .validate((v) =>
             Array.isArray(v)
@@ -74,9 +74,9 @@ describe("Stress tests — pathological input shapes", () => {
     // const longLen = 2_147_483_647; // 200k chars (reduce for restrictive CI)
     const longStr = "a".repeat(longLen);
 
-    const Model = new Schema<{ text: string }>((b, m) =>
-      b.field(
-        m
+    const Model = new Schema<{ text: string }>((f) =>
+      f.field(
+        f
           .lax("text", "")
           .validate((v) =>
             typeof v === "string"
@@ -97,9 +97,9 @@ describe("Stress tests — pathological input shapes", () => {
     const circular: any = { name: "root" };
     circular.self = circular; // circular reference
 
-    const Model = new Schema<{ payload: {} }>((b, m) =>
-      b.field(
-        m
+    const Model = new Schema<{ payload: {} }>((f) =>
+      f.field(
+        f
           .lax("payload", {})
           .validate((v) =>
             typeof v === "object" && v !== null
