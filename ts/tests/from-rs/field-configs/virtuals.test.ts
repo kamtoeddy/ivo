@@ -1,4 +1,4 @@
-import { describe, it } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import {
   expectFailure,
   expectNoFailure,
@@ -21,10 +21,18 @@ describe('field configs.virtual', () => {
         .field(b.virtual('virtualField').validate(validator)),
     );
 
-    expectFailure(
-      toFail,
-      'Virtual fields are expected to have at least one dependency, but found none',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          'Virtual fields are expected to have at least one dependency, but found none',
+        ]),
+      );
+    }
   });
 
   it('should reject with same alias name', () => {
@@ -42,10 +50,18 @@ describe('field configs.virtual', () => {
         ),
     );
 
-    expectFailure(
-      toFail,
-      'virtual alias name must be different from field name',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          'virtual alias name must be different from field name',
+        ]),
+      );
+    }
   });
 
   it('should reject with alias as non-dependent field', () => {
@@ -62,10 +78,18 @@ describe('field configs.virtual', () => {
         .field(b.virtual('virtualField').alias('lax').validate(validator)),
     );
 
-    expectFailure(
-      toFail,
-      '"lax" is not a valid alias for field because it is not a dependent field',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          '"lax" is not a valid alias for field because it is not a dependent field',
+        ]),
+      );
+    }
   });
 
   it('should reject with alias as unrelated dependent field', () => {
@@ -90,10 +114,18 @@ describe('field configs.virtual', () => {
         ),
     );
 
-    expectFailure(
-      toFail,
-      '"dependent1" is not a valid alias for field because "dependent1" does not depend on "virtualField"',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          '"dependent1" is not a valid alias for field because "dependent1" does not depend on "virtualField"',
+        ]),
+      );
+    }
   });
 
   it('should reject if alias is same createdAt if enabled with default name', () => {
@@ -107,10 +139,18 @@ describe('field configs.virtual', () => {
       { timestamps: { createdAt: true } },
     );
 
-    expectFailure(
-      toFail,
-      '"createdAt" is not a valid alias. It is the creation timestamp',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          '"createdAt" is not a valid alias. It is the creation timestamp',
+        ]),
+      );
+    }
   });
 
   it('should reject if alias is same createdAt if enabled with custom name', () => {
@@ -125,10 +165,18 @@ describe('field configs.virtual', () => {
       { timestamps: { createdAt: 'customCreatedAt' } },
     );
 
-    expectFailure(
-      toFail,
-      '"customCreatedAt" is not a valid alias. It is the creation timestamp',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          '"customCreatedAt" is not a valid alias. It is the creation timestamp',
+        ]),
+      );
+    }
   });
 
   it('should reject if alias is same updatedAt if enabled with default name', () => {
@@ -142,10 +190,18 @@ describe('field configs.virtual', () => {
       { timestamps: { updatedAt: { nullable: true } } },
     );
 
-    expectFailure(
-      toFail,
-      '"updatedAt" is not a valid alias. It is the update timestamp',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          '"updatedAt" is not a valid alias. It is the update timestamp',
+        ]),
+      );
+    }
   });
 
   it('should reject if alias is same updatedAt if enabled with custom name', () => {
@@ -160,10 +216,18 @@ describe('field configs.virtual', () => {
       { timestamps: { updatedAt: { key: 'customUpdatedAt', nullable: true } } },
     );
 
-    expectFailure(
-      toFail,
-      '"customUpdatedAt" is not a valid alias. It is the update timestamp',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          '"customUpdatedAt" is not a valid alias. It is the update timestamp',
+        ]),
+      );
+    }
   });
 
   it('should reject if alias already used', () => {
@@ -185,10 +249,18 @@ describe('field configs.virtual', () => {
         ),
     );
 
-    expectFailure(
-      toFail,
-      '"dependent" is already the alias of "virtualField1"',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          '"dependent" is already the alias of "virtualField1"',
+        ]),
+      );
+    }
   });
 
   it('should allow virtuals with alias as direct dependent field', () => {

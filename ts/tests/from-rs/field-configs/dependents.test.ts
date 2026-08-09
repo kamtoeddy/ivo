@@ -1,4 +1,4 @@
-import { describe, it } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import {
   expectFailure,
   expectNoFailure,
@@ -13,17 +13,25 @@ describe('field configs.dependent', () => {
         .field(b.lax('lax', 1))
         .field(
           b
-            .dependent('dependent', [] as never)
+            .dependent('dependent', [])
             .default(2)
             .resolve(() => 4),
         )
         .field(b.required('required').validate(validator)),
     );
 
-    expectFailure(
-      toFail,
-      'must depend on at least one lax, required, virtual or other dependent field on your schema',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.dependent).toMatchObject(
+        expect.arrayContaining([
+          'must depend on at least one lax, required, virtual or other dependent field on your schema',
+        ]),
+      );
+    }
   });
 
   it('should reject dependency of createdAt field with default name', () => {
@@ -42,10 +50,18 @@ describe('field configs.dependent', () => {
       { timestamps: { createdAt: true } },
     );
 
-    expectFailure(
-      toFail,
-      'cannot depend on "createdAt" because it is the creation timestamp',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.dependent).toMatchObject(
+        expect.arrayContaining([
+          'cannot depend on "createdAt" because it is the creation timestamp',
+        ]),
+      );
+    }
   });
 
   it('should reject dependency of createdAt field with custom name', () => {
@@ -64,10 +80,18 @@ describe('field configs.dependent', () => {
       { timestamps: { createdAt: 'customCreatedAt' } },
     );
 
-    expectFailure(
-      toFail,
-      'cannot depend on "customCreatedAt" because it is the creation timestamp',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.dependent).toMatchObject(
+        expect.arrayContaining([
+          'cannot depend on "customCreatedAt" because it is the creation timestamp',
+        ]),
+      );
+    }
   });
 
   it('should reject dependency of updatedAt field with default name', () => {
@@ -86,10 +110,18 @@ describe('field configs.dependent', () => {
       { timestamps: { updatedAt: true } },
     );
 
-    expectFailure(
-      toFail,
-      'cannot depend on "updatedAt" because it is the update timestamp',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.dependent).toMatchObject(
+        expect.arrayContaining([
+          'cannot depend on "updatedAt" because it is the update timestamp',
+        ]),
+      );
+    }
   });
 
   it('should reject dependency of updatedAt field with custom name', () => {
@@ -108,10 +140,18 @@ describe('field configs.dependent', () => {
       { timestamps: { updatedAt: { key: 'customUpdatedAt' } } },
     );
 
-    expectFailure(
-      toFail,
-      'cannot depend on "customUpdatedAt" because it is the update timestamp',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.dependent).toMatchObject(
+        expect.arrayContaining([
+          'cannot depend on "customUpdatedAt" because it is the update timestamp',
+        ]),
+      );
+    }
   });
 
   it('should reject if any parent field provided does not belong on schema', () => {
@@ -127,10 +167,18 @@ describe('field configs.dependent', () => {
         .field(b.required('required').validate(validator)),
     );
 
-    expectFailure(
-      toFail,
-      'cannot depend on "lol" because it is not a field on your schema',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.dependent).toMatchObject(
+        expect.arrayContaining([
+          'cannot depend on "lol" because it is not a field on your schema',
+        ]),
+      );
+    }
   });
 
   it('should reject if any parent field name is same as dependent field name', () => {
@@ -146,7 +194,16 @@ describe('field configs.dependent', () => {
         .field(b.required('required').validate(validator)),
     );
 
-    expectFailure(toFail, 'cannot depend on itself');
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.dependent).toMatchObject(
+        expect.arrayContaining(['cannot depend on itself']),
+      );
+    }
   });
 
   it('should reject if duplicate parent fields are provided', () => {
@@ -162,10 +219,18 @@ describe('field configs.dependent', () => {
         .field(b.required('required').validate(validator)),
     );
 
-    expectFailure(
-      toFail,
-      '"lax" has been provided as a parent field multiple times. remove all duplicates to proceed',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.dependent).toMatchObject(
+        expect.arrayContaining([
+          '"lax" has been provided as a parent field multiple times. remove all duplicates to proceed',
+        ]),
+      );
+    }
   });
 
   it('should reject dependency of constant fields', () => {
@@ -182,7 +247,18 @@ describe('field configs.dependent', () => {
         .field(b.required('required').validate(validator)),
     );
 
-    expectFailure(toFail, 'cannot depend on "id" because it is a constant');
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.dependent).toMatchObject(
+        expect.arrayContaining([
+          'cannot depend on "id" because it is a constant',
+        ]),
+      );
+    }
   });
 
   it('should reject any redundant dependencies', () => {
@@ -204,10 +280,18 @@ describe('field configs.dependent', () => {
         .field(b.required('d').validate(validator)),
     );
 
-    expectFailure(
-      toFail,
-      'should not depend on "b" and "c" because "b" depends on "c"',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.a).toMatchObject(
+        expect.arrayContaining([
+          'should not depend on "b" and "c" because "b" depends on "c"',
+        ]),
+      );
+    }
   });
 
   it('should reject any deeply redundant dependencies', () => {
@@ -234,10 +318,18 @@ describe('field configs.dependent', () => {
         .field(b.required('d').validate(validator)),
     );
 
-    expectFailure(
-      toFail,
-      'should not depend on "b" and "d" because "b" indirectly depends on "d"',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.a).toMatchObject(
+        expect.arrayContaining([
+          'should not depend on "b" and "d" because "b" indirectly depends on "d"',
+        ]),
+      );
+    }
   });
 
   it('should reject any circular dependencies', () => {
@@ -258,7 +350,18 @@ describe('field configs.dependent', () => {
         ),
     );
 
-    expectFailure(toFail, 'circular dependency identified between "a <-> b"');
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.a).toMatchObject(
+        expect.arrayContaining([
+          'circular dependency identified between "a <-> b"',
+        ]),
+      );
+    }
   });
 
   it('should reject any deeply circular dependencies', () => {
@@ -285,10 +388,18 @@ describe('field configs.dependent', () => {
         .field(b.lax('d', 1)),
     );
 
-    expectFailure(
-      toFail,
-      'circular dependency identified between "a <-> b <-> c"',
-    );
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.a).toMatchObject(
+        expect.arrayContaining([
+          'circular dependency identified between "a <-> b <-> c"',
+        ]),
+      );
+    }
   });
 
   it('should allow dependency on normal lax or required fields', () => {

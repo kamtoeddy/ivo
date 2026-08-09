@@ -283,11 +283,11 @@ function validateFields<
   const definitionEntries = Object.entries(definitions);
 
   for (const [fieldName, config] of definitionEntries) {
-    if (fieldNames.has(fieldName)) {
-      throw new Error(
-        `\n[${fieldName}]: occurs more than once, please remove duplicatesn`,
+    if (fieldNames.has(fieldName))
+      errorTool.add(
+        fieldName,
+        'occurs more than once, please remove duplicatesn',
       );
-    }
 
     fieldNames.add(fieldName);
 
@@ -298,36 +298,26 @@ function validateFields<
 
     if (config.type === 'dependent') {
       const { dependsOn } = config;
-      let hasErrors = false;
+      const hasErrors = false;
 
-      if (typeof config.default === 'undefined') {
+      if (typeof config.default === 'undefined')
         errorTool.add(
           fieldName,
           'Dependent fields must have a default value or default resolver',
         );
 
-        hasErrors = true;
-      }
-
-      if (typeof config.resolver !== 'function') {
+      if (typeof config.resolver !== 'function')
         errorTool.add(fieldName, 'Dependent fields must have a value resolver');
 
-        hasErrors = true;
-      }
-
-      if (!dependsOn?.length) {
+      if (!dependsOn?.length)
         errorTool.add(
           fieldName,
           'Dependent fields must depend on at least one lax, required, virtual or other dependent field on your schema',
         );
-        hasErrors = true;
-      }
 
       // @ts-expect-error
-      if (dependsOn.includes(fieldName)) {
+      if (dependsOn.includes(fieldName))
         errorTool.add(fieldName, 'A field cannot depend on itself');
-        hasErrors = true;
-      }
 
       if (!hasErrors) {
         dependentConfigs.push([fieldName, config]);
@@ -357,23 +347,19 @@ function validateFields<
     const { alias } = config;
 
     if (alias) {
-      if (fieldName === alias) {
+      if (fieldName === alias)
         errorTool.add(
           fieldName,
           'virtual alias name must be different from field name',
         );
-        continue;
-      }
 
       const otherField = aliasToVirtualMap.get(alias);
 
-      if (otherField != null) {
+      if (otherField != null)
         errorTool.add(
           fieldName,
           `"${alias}" is already the alias of "${otherField}"`,
         );
-        continue;
-      }
 
       for (const [name, config] of definitionEntries) {
         if (name !== alias) continue;
@@ -396,6 +382,7 @@ function validateFields<
       }
 
       aliasToVirtualMap.set(alias, fieldName);
+
       continue;
     }
 
@@ -556,6 +543,8 @@ function makeOptions<
             hasErrors = true;
           }
 
+          fieldNames.add(fieldName);
+
           const virtualField = aliasToVirtualMap.get(fieldName);
 
           if (virtualField) {
@@ -622,6 +611,8 @@ function makeOptions<
             hasErrors = true;
           }
 
+          fieldNames.add(fieldName);
+
           const virtualField = aliasToVirtualMap.get(fieldName);
 
           if (virtualField) {
@@ -659,7 +650,7 @@ function makeOptions<
     if (typeof options.onSuccess === 'function')
       onSuccess.push(options.onSuccess);
     else {
-      const optionName = 'options.on_success';
+      const optionName = 'options.onSuccess';
 
       for (const config of toArray(options.onSuccess)) {
         if (typeof config === 'function') {
@@ -682,6 +673,8 @@ function makeOptions<
             );
             hasErrors = true;
           }
+
+          fieldNames.add(fieldName);
 
           const virtualField = aliasToVirtualMap.get(fieldName);
 
@@ -739,6 +732,8 @@ function makeOptions<
             `remove duplicates of "${fieldName}" in your grouped post-validation config`,
           );
 
+        fieldNames.add(fieldName);
+
         const virtualField = aliasToVirtualMap.get(fieldName);
 
         if (virtualField)
@@ -781,11 +776,12 @@ function makeOptions<
 
       for (const fieldName of fields) {
         if (fieldNames.has(fieldName))
-          if (fieldNames.has(fieldName))
-            errorTool.add(
-              optionName,
-              `remove duplicates of "${fieldName}" in your grouped required config`,
-            );
+          errorTool.add(
+            optionName,
+            `remove duplicates of "${fieldName}" in your grouped required config`,
+          );
+
+        fieldNames.add(fieldName);
 
         const virtualField = aliasToVirtualMap.get(fieldName);
 
