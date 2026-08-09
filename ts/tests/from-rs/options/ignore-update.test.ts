@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, it } from 'bun:test';
 import {
   expectFailure,
   expectNoFailure,
@@ -29,19 +29,10 @@ describe('options.ignoreUpdate', () => {
       { ignoreUpdate: { fields: ['lax'], resolver: () => false } },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            'grouped ignore update expects either zero (0) fields or at least 2 fields',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'grouped ignore update expects either zero (0) fields or at least 2 fields',
+    );
   });
 
   it('should reject if the fields array contains any duplicates', () => {
@@ -53,19 +44,10 @@ describe('options.ignoreUpdate', () => {
       { ignoreUpdate: { fields: ['lax', 'lax'], resolver: () => false } },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            'remove duplicates of "lax" in your grouped ignore update config',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'remove duplicates of "lax" in your grouped ignore update config',
+    );
   });
 
   it('should reject if the fields array contains any string that is not a field on schema', () => {
@@ -82,19 +64,7 @@ describe('options.ignoreUpdate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            '"invalid_field" does not exist on your schema',
-          ]),
-        }),
-      );
-    }
+    expectFailure(toFail, '"invalid_field" does not exist on your schema');
   });
 
   it('should reject if a constant is provided to the fields array', () => {
@@ -107,19 +77,10 @@ describe('options.ignoreUpdate', () => {
       { ignoreUpdate: { fields: ['lax', 'id'], resolver: () => false } },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            'only lax, required and virtual fields can belong to grouped ignore update configs; remove "id"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can belong to grouped ignore update configs; remove "id"',
+    );
   });
 
   it('should reject if a dependent field is provided to the fields array', () => {
@@ -142,19 +103,10 @@ describe('options.ignoreUpdate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            'only lax, required and virtual fields can belong to grouped ignore update configs; remove "dependent"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can belong to grouped ignore update configs; remove "dependent"',
+    );
   });
 
   it('should reject if an alias similar to a dependent field is provided to the fields array', () => {
@@ -180,19 +132,10 @@ describe('options.ignoreUpdate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            '"dependent" is an alias; use "virtualField" instead',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      '"dependent" is an alias; use "virtualField" instead',
+    );
   });
 
   it('should reject if an alias with foreign name is provided to the fields array', () => {
@@ -216,19 +159,7 @@ describe('options.ignoreUpdate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            '"alias" is an alias; use "virtualField" instead',
-          ]),
-        }),
-      );
-    }
+    expectFailure(toFail, '"alias" is an alias; use "virtualField" instead');
   });
 
   it('should reject if created_at timestamp with default name is provided to the fields array', () => {
@@ -246,19 +177,10 @@ describe('options.ignoreUpdate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            'only lax, required and virtual fields can belong to grouped ignore update configs; remove "createdAt"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can belong to grouped ignore update configs; remove "createdAt"',
+    );
   });
 
   it('should reject if created_at timestamp with custom name is provided to the fields array', () => {
@@ -276,19 +198,10 @@ describe('options.ignoreUpdate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            'only lax, required and virtual fields can belong to grouped ignore update configs; remove "customCreatedAt"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can belong to grouped ignore update configs; remove "customCreatedAt"',
+    );
   });
 
   it('should reject if updated_at timestamp with default name is provided to the fields array', () => {
@@ -306,19 +219,10 @@ describe('options.ignoreUpdate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            'only lax, required and virtual fields can belong to grouped ignore update configs; remove "updatedAt"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can belong to grouped ignore update configs; remove "updatedAt"',
+    );
   });
 
   it('should reject if updated_at timestamp with custom name is provided to the fields array', () => {
@@ -336,18 +240,9 @@ describe('options.ignoreUpdate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          ignoreUpdate: expect.arrayContaining([
-            'only lax, required and virtual fields can belong to grouped ignore update configs; remove "customUpdatedAt"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can belong to grouped ignore update configs; remove "customUpdatedAt"',
+    );
   });
 });

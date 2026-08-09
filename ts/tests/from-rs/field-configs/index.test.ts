@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, it } from 'bun:test';
 import { expectFailure, makeFx, validator } from '../../_utils';
 
 describe('field configs', () => {
@@ -10,19 +10,7 @@ describe('field configs', () => {
         .field(b.lax('lax', true).validate(validator)),
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          lax: expect.arrayContaining([
-            'occurs more than once, please remove duplicates',
-          ]),
-        }),
-      );
-    }
+    expectFailure(toFail, 'occurs more than once, please remove duplicates');
   });
 
   it('should reject if field name is the same as createdAt with default name', () => {
@@ -34,7 +22,10 @@ describe('field configs', () => {
       { timestamps: { createdAt: true } },
     );
 
-    expectFailure(toFail);
+    expectFailure(
+      toFail,
+      'is not a valid field name. It is the creation timestamp',
+    );
   });
 
   it('should reject if field name is the same as createdAt with custom name', () => {
@@ -43,7 +34,10 @@ describe('field configs', () => {
       { timestamps: { createdAt: 'customCreatedAt' } },
     );
 
-    expectFailure(toFail);
+    expectFailure(
+      toFail,
+      'is not a valid field name. It is the creation timestamp',
+    );
   });
 
   it('should reject if field name is the same as updatedAt with default name', () => {
@@ -55,7 +49,10 @@ describe('field configs', () => {
       { timestamps: { updatedAt: true } },
     );
 
-    expectFailure(toFail);
+    expectFailure(
+      toFail,
+      'is not a valid field name. It is the update timestamp',
+    );
   });
 
   it('should reject if field name is the same as updatedAt with custom name', () => {
@@ -64,6 +61,9 @@ describe('field configs', () => {
       { timestamps: { updatedAt: { key: 'customUpdatedAt' } } },
     );
 
-    expectFailure(toFail);
+    expectFailure(
+      toFail,
+      'is not a valid field name. It is the update timestamp',
+    );
   });
 });

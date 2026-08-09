@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, it } from 'bun:test';
 import { expectFailure, makeFx, validator } from '../../_utils';
 
 describe('options.postValidate', () => {
@@ -11,19 +11,7 @@ describe('options.postValidate', () => {
       { postValidate: { fields: [], validator: () => undefined } },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            'post-validation expects at least 2 fields',
-          ]),
-        }),
-      );
-    }
+    expectFailure(toFail, 'post-validation expects at least 2 fields');
   });
 
   it('should reject if fields array has just one field', () => {
@@ -35,19 +23,7 @@ describe('options.postValidate', () => {
       { postValidate: { fields: ['lax'], validator: () => undefined } },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            'post-validation expects at least 2 fields',
-          ]),
-        }),
-      );
-    }
+    expectFailure(toFail, 'post-validation expects at least 2 fields');
   });
 
   it('should reject if the fields array contains any duplicates', () => {
@@ -61,19 +37,10 @@ describe('options.postValidate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            'remove duplicates of "lax" in your post-validation config',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'remove duplicates of "lax" in your post-validation config',
+    );
   });
 
   it('should reject if the fields array contains any string that is not a field on schema', () => {
@@ -90,19 +57,7 @@ describe('options.postValidate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            '"invalid_field" does not exist on your schema',
-          ]),
-        }),
-      );
-    }
+    expectFailure(toFail, '"invalid_field" does not exist on your schema');
   });
 
   it('should reject if a constant is provided to the fields array', () => {
@@ -115,19 +70,10 @@ describe('options.postValidate', () => {
       { postValidate: { fields: ['lax', 'id'], validator: () => undefined } },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            'only lax, required and virtual fields can be post-validated; remove "id"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can be post-validated; remove "id"',
+    );
   });
 
   it('should reject if a dependent field is provided to the fields array', () => {
@@ -150,19 +96,10 @@ describe('options.postValidate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            'only lax, required and virtual fields can be post-validated; remove "dependent"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can be post-validated; remove "dependent"',
+    );
   });
 
   it('should reject if an alias similar to a dependent field is provided to the fields array', () => {
@@ -188,19 +125,10 @@ describe('options.postValidate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            '"dependent" is an alias; use "virtualField" instead',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      '"dependent" is an alias; use "virtualField" instead',
+    );
   });
 
   it('should reject if an alias with foreign name is provided to the fields array', () => {
@@ -224,19 +152,7 @@ describe('options.postValidate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            '"alias" is an alias; use "virtualField" instead',
-          ]),
-        }),
-      );
-    }
+    expectFailure(toFail, '"alias" is an alias; use "virtualField" instead');
   });
 
   it('should reject if created_at timestamp with default name is provided to the fields array', () => {
@@ -254,19 +170,10 @@ describe('options.postValidate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            'only lax, required and virtual fields can be post-validated; remove "createdAt"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can be post-validated; remove "createdAt"',
+    );
   });
 
   it('should reject if created_at timestamp with custom name is provided to the fields array', () => {
@@ -284,19 +191,10 @@ describe('options.postValidate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            'only lax, required and virtual fields can be post-validated; remove "customCreatedAt"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can be post-validated; remove "customCreatedAt"',
+    );
   });
 
   it('should reject if updated_at timestamp with default name is provided to the fields array', () => {
@@ -314,19 +212,10 @@ describe('options.postValidate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            'only lax, required and virtual fields can be post-validated; remove "updatedAt"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can be post-validated; remove "updatedAt"',
+    );
   });
 
   it('should reject if updated_at timestamp with custom name is provided to the fields array', () => {
@@ -344,18 +233,9 @@ describe('options.postValidate', () => {
       },
     );
 
-    expectFailure(toFail);
-
-    try {
-      toFail();
-    } catch (err: any) {
-      expect(err.payload).toEqual(
-        expect.objectContaining({
-          postValidate: expect.arrayContaining([
-            'only lax, required and virtual fields can be post-validated; remove "customUpdatedAt"',
-          ]),
-        }),
-      );
-    }
+    expectFailure(
+      toFail,
+      'only lax, required and virtual fields can be post-validated; remove "customUpdatedAt"',
+    );
   });
 });
