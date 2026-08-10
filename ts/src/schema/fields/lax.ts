@@ -406,31 +406,35 @@ class LaxBuilder<
 
   ignore(resolver: NS.Resolver<boolean, Input, Output, CtxOptions>) {
     this.config.ignore = resolver;
-    this.config.ignoreInit = undefined;
-    this.config.ignoreUpdate = undefined;
+    delete this.config.ignoreInit;
+    delete this.config.ignoreUpdate;
+
     return this as never;
   }
 
   ignoreInit() {
     this.config.ignoreInit = true;
-    this.config.ignore = undefined;
-    this.config.ignoreUpdate = undefined;
-    this.config.readonly = undefined;
+    delete this.config.ignore;
+    delete this.config.ignoreUpdate;
+    delete this.config.readonly;
+
     return this as never;
   }
 
   ignoreUpdate() {
     this.config.ignoreUpdate = true;
-    this.config.ignore = undefined;
-    this.config.ignoreInit = undefined;
-    this.config.readonly = undefined;
+    delete this.config.ignore;
+    delete this.config.ignoreInit;
+    delete this.config.readonly;
+
     return this as never;
   }
 
   readonly() {
     this.config.readonly = true;
-    this.config.ignoreInit = undefined;
-    this.config.ignoreUpdate = undefined;
+    delete this.config.ignoreInit;
+    delete this.config.ignoreUpdate;
+
     return this as never;
   }
 

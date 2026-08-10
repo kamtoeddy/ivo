@@ -18,27 +18,33 @@ describe('fields.required.ignore', () => {
         .field(b.lax('lax', 'default_lax_value')),
     ).getModel();
 
-    const lax = IGNORE_REQUIRED_FOR_UPDATE;
-    const required = 1;
+    let lax = IGNORE_REQUIRED_FOR_UPDATE;
+    let required = 1;
 
     const { data } = await Model.create({ lax, required }, {});
 
     expect(data).toEqual({ lax, required });
 
-    const required2 = required + 2;
-    const { error } = await Model.update(data!, { required: required2 }, {});
+    required += 1;
+    const { error } = await Model.update(data!, { required }, {});
 
     expect(error).toEqual({ isNothingToUpdate: true, payload: null });
 
-    const previous = { ...data!, lax: 'normal_lax_value' };
-
-    const { data: updates } = await Model.update(
-      previous,
-      { required: required2 },
+    lax = 'some lax value';
+    const { data: updatedData, error: updateError2 } = await Model.update(
+      data!,
+      { lax, required },
       {},
     );
 
-    expect(updates).toEqual({ required: required2 });
+    expect(updatedData).toEqual({ lax });
+    expect(updateError2).toBeNull();
+
+    const previousValues = { ...data!, ...updatedData };
+
+    const result = await Model.update(previousValues, { required }, {});
+
+    expect(result.data).toEqual({ required });
   });
 
   it('should respect the readonly rule', async () => {
@@ -99,20 +105,20 @@ describe('fields.required.ignore', () => {
       ).getModel();
 
       let lax = IGNORE;
-      let lax1 = 'lax_1';
+      let lax_1 = 'lax_1';
       let required = 'some value';
 
-      let { data } = await Model.create({ lax, lax_1: lax1, required }, {});
+      let { data } = await Model.create({ lax, lax_1, required }, {});
 
-      expect(data).toEqual({ lax, lax_1: lax1, required });
+      expect(data).toEqual({ lax, lax_1, required });
 
       lax = 'some lax value';
-      lax1 = 'lax_1';
+      lax_1 = 'lax_1';
       required = 'some value';
 
-      ({ data } = await Model.create({ lax, lax_1: lax1, required }, {}));
+      ({ data } = await Model.create({ lax, lax_1, required }, {}));
 
-      expect(data).toEqual({ lax, lax_1: lax1, required });
+      expect(data).toEqual({ lax, lax_1, required });
 
       const previous = {
         lax: defaultLaxValue,
@@ -120,28 +126,28 @@ describe('fields.required.ignore', () => {
         required: 'some value',
       };
 
-      lax1 = 'lax_1';
+      lax_1 = 'lax_1';
       let updatedRequired = 'updated value';
 
       let { data: updates } = await Model.update(
         previous,
-        { lax: IGNORE, lax_1: lax1, required: updatedRequired },
+        { lax: IGNORE, lax_1, required: updatedRequired },
         {},
       );
 
-      expect(updates).toEqual({ lax_1: lax1 });
+      expect(updates).toEqual({ lax_1 });
 
       lax = 'some lax value';
-      lax1 = 'lax_1';
+      lax_1 = 'lax_1';
       updatedRequired = 'updated value';
 
       ({ data: updates } = await Model.update(
         previous,
-        { lax, lax_1: lax1, required: updatedRequired },
+        { lax, lax_1, required: updatedRequired },
         {},
       ));
 
-      expect(updates).toEqual({ lax, lax_1: lax1, required: updatedRequired });
+      expect(updates).toEqual({ lax, lax_1, required: updatedRequired });
     });
   });
 });

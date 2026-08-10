@@ -15,9 +15,14 @@ interface HasDependsOn<
   Output,
   CtxOptions extends ObjectType,
 > {
-  default(
-    v: TypeOf<Output[K]> | NS.Resolver<Output[K], Input, Output, CtxOptions>,
-  ): HasDefault<K, Input, Output, CtxOptions>;
+  default<
+    Default extends
+      | TypeOf<Output[K]>
+      | NS.Resolver<Output[K], Input, Output, CtxOptions>,
+    DefaultState extends 'value' | 'resolver' = Default extends Function
+      ? 'resolver'
+      : 'value',
+  >(v: Default): HasDefault<K, Input, Output, CtxOptions, DefaultState>;
 }
 
 interface HasDefault<
@@ -25,10 +30,11 @@ interface HasDefault<
   Input,
   Output,
   CtxOptions extends ObjectType,
+  DefaultState extends 'value' | 'resolver' = 'resolver',
 > {
   resolve(
     resolver: NS.Resolver<Output[K], Input, Output, CtxOptions>,
-  ): BuildableDependentConfig<K, Input, Output, CtxOptions>;
+  ): BuildableDependentConfig<K, Input, Output, CtxOptions, DefaultState>;
 }
 
 type BuildableDependentConfig<
@@ -36,23 +42,27 @@ type BuildableDependentConfig<
   Input,
   Output,
   CtxOptions extends ObjectType,
+  DefaultState extends 'value' | 'resolver' = 'resolver',
   HasReadonly extends boolean = false,
   HasOnDelete extends boolean = false,
   HasOnSuccess extends boolean = false,
 > = Buildable<NS.DependentField<K, Input, Output, CtxOptions>> &
-  (HasReadonly extends true
+  (DefaultState extends 'resolver'
     ? {}
-    : {
-        readonly(): BuildableDependentConfig<
-          K,
-          Input,
-          Output,
-          CtxOptions,
-          true,
-          HasOnDelete,
-          HasOnSuccess
-        >;
-      }) &
+    : HasReadonly extends true
+      ? {}
+      : {
+          readonly(): BuildableDependentConfig<
+            K,
+            Input,
+            Output,
+            CtxOptions,
+            DefaultState,
+            true,
+            HasOnDelete,
+            HasOnSuccess
+          >;
+        }) &
   (HasOnDelete extends true
     ? {}
     : {
@@ -65,6 +75,7 @@ type BuildableDependentConfig<
           Input,
           Output,
           CtxOptions,
+          DefaultState,
           HasReadonly,
           true,
           HasOnSuccess
@@ -82,6 +93,7 @@ type BuildableDependentConfig<
           Input,
           Output,
           CtxOptions,
+          DefaultState,
           HasReadonly,
           HasOnDelete,
           true

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from '../../../../src';
 
-const NAMING_SCHEMES: { publicKey: string; alias?: string }[] = [
-  { publicKey: 'virtualField' },
-  { publicKey: 'virtualAlias', alias: 'virtualAlias' },
-  { publicKey: 'dependent', alias: 'dependent' },
+const NAMING_SCHEMES: { alias?: string }[] = [
+  {},
+  { alias: 'virtualAlias' },
+  { alias: 'dependent' },
 ];
 
 function buildVirtual(b: any, alias?: string) {
@@ -15,12 +15,13 @@ function buildVirtual(b: any, alias?: string) {
 function virtualValidator(v: unknown) {
   if (v === 'fail_validation')
     return { valid: false, reason: 'validation failed' } as const;
+
   return { valid: true } as const;
 }
 
 describe('fields.virtual.onSuccess', () => {
   it('should trigger onSuccess handlers if virtual is provided at creation', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggeredWith: string | undefined;
       const defaultDependentValue = 1;
       const defaultLaxValue = 10;
@@ -35,16 +36,16 @@ describe('fields.virtual.onSuccess', () => {
           )
           .field(b.lax('lax', defaultLaxValue))
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .onSuccess((ctx: any) => {
-                triggeredWith = ctx.rawInput[scheme.publicKey];
+                triggeredWith = ctx.rawInput[alias ?? 'virtualField'];
               }),
           ),
       ).getModel();
 
       const { data, handleSuccess } = await Model.create(
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -60,7 +61,7 @@ describe('fields.virtual.onSuccess', () => {
   });
 
   it('should trigger onSuccess handlers if virtual is provided during updates', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggeredWith: string | undefined;
       const defaultDependentValue = 1;
       const defaultLaxValue = 10;
@@ -75,10 +76,10 @@ describe('fields.virtual.onSuccess', () => {
           )
           .field(b.lax('lax', defaultLaxValue))
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .onSuccess((ctx: any) => {
-                triggeredWith = ctx.rawInput[scheme.publicKey];
+                triggeredWith = ctx.rawInput[alias ?? 'virtualField'];
               }),
           ),
       ).getModel();
@@ -90,7 +91,7 @@ describe('fields.virtual.onSuccess', () => {
 
       const { data: updates, handleSuccess } = await Model.update(
         previous,
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -103,7 +104,7 @@ describe('fields.virtual.onSuccess', () => {
   });
 
   it('should not trigger onSuccess handlers if virtual is not provided', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggered = false;
       const defaultDependentValue = 1;
       const defaultLaxValue = 10;
@@ -118,7 +119,7 @@ describe('fields.virtual.onSuccess', () => {
           )
           .field(b.lax('lax', defaultLaxValue))
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .onSuccess(() => {
                 triggered = true;
@@ -155,7 +156,7 @@ describe('fields.virtual.onSuccess', () => {
   });
 
   it('should not trigger onSuccess handlers if virtual is provided but ignored by ignore fn', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggered = false;
       const defaultDependentValue = 1;
       const defaultLaxValue = 10;
@@ -170,7 +171,7 @@ describe('fields.virtual.onSuccess', () => {
           )
           .field(b.lax('lax', defaultLaxValue))
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .ignore(() => true)
               .onSuccess(() => {
@@ -180,7 +181,7 @@ describe('fields.virtual.onSuccess', () => {
       ).getModel();
 
       let { data, handleSuccess } = await Model.create(
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -193,7 +194,7 @@ describe('fields.virtual.onSuccess', () => {
 
       const lax = defaultLaxValue + 10;
       ({ data, handleSuccess } = await Model.create(
-        { lax, [scheme.publicKey]: 'virtual_value' },
+        { lax, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       ));
 
@@ -205,7 +206,7 @@ describe('fields.virtual.onSuccess', () => {
       const { data: updates, handleSuccess: handleUpdateSuccess } =
         await Model.update(
           data,
-          { lax: lax2, [scheme.publicKey]: 'virtual_value' },
+          { lax: lax2, [alias ?? 'virtualField']: 'virtual_value' },
           {},
         );
 
@@ -218,7 +219,7 @@ describe('fields.virtual.onSuccess', () => {
   });
 
   it('should not trigger onSuccess handlers if virtual is provided but ignored by ignoreInit', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggered = false;
       const defaultDependentValue = 1;
       const defaultLaxValue = 10;
@@ -233,7 +234,7 @@ describe('fields.virtual.onSuccess', () => {
           )
           .field(b.lax('lax', defaultLaxValue))
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .ignoreInit()
               .onSuccess(() => {
@@ -243,7 +244,7 @@ describe('fields.virtual.onSuccess', () => {
       ).getModel();
 
       let { data, handleSuccess } = await Model.create(
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -256,7 +257,7 @@ describe('fields.virtual.onSuccess', () => {
 
       const lax = defaultLaxValue + 10;
       ({ data, handleSuccess } = await Model.create(
-        { lax, [scheme.publicKey]: 'virtual_value' },
+        { lax, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       ));
 
@@ -269,7 +270,7 @@ describe('fields.virtual.onSuccess', () => {
   });
 
   it('should not trigger onSuccess handlers if virtual is provided but ignored by ignoreUpdate', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggered = false;
       const defaultDependentValue = 1;
       const defaultLaxValue = 10;
@@ -284,7 +285,7 @@ describe('fields.virtual.onSuccess', () => {
           )
           .field(b.lax('lax', defaultLaxValue))
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .ignoreUpdate()
               .onSuccess(() => {
@@ -296,7 +297,7 @@ describe('fields.virtual.onSuccess', () => {
       const lax = defaultLaxValue + 10;
       const { data: updates, handleSuccess } = await Model.update(
         { dependent: defaultDependentValue, lax: defaultLaxValue },
-        { lax, [scheme.publicKey]: 'virtual_value' },
+        { lax, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -310,7 +311,7 @@ describe('fields.virtual.onSuccess', () => {
 
   describe('o.onSuccess', () => {
     it('should trigger grouped onSuccess handlers if virtual is provided at creation', async () => {
-      for (const scheme of NAMING_SCHEMES) {
+      for (const { alias } of NAMING_SCHEMES) {
         let triggered = false;
         const defaultDependentValue = 1;
         const defaultLaxValue = 10;
@@ -325,10 +326,10 @@ describe('fields.virtual.onSuccess', () => {
                   .resolve((ctx: any) => ctx.values.dependent + 1),
               )
               .field(b.lax('lax', defaultLaxValue))
-              .field(buildVirtual(b, scheme.alias).validate(virtualValidator)),
+              .field(buildVirtual(b, alias).validate(virtualValidator)),
           {
             onSuccess: {
-              fields: [scheme.publicKey] as never,
+              fields: ['virtualField'] as never,
               resolver: () => {
                 triggered = true;
               },
@@ -337,7 +338,7 @@ describe('fields.virtual.onSuccess', () => {
         ).getModel();
 
         const { data, handleSuccess } = await Model.create(
-          { [scheme.publicKey]: 'virtual_value' },
+          { [alias ?? 'virtualField']: 'virtual_value' },
           {},
         );
 
@@ -353,7 +354,7 @@ describe('fields.virtual.onSuccess', () => {
     });
 
     it('should not trigger grouped onSuccess handlers if virtual is not provided at creation', async () => {
-      for (const scheme of NAMING_SCHEMES) {
+      for (const { alias } of NAMING_SCHEMES) {
         let triggered = false;
         const defaultDependentValue = 1;
         const defaultLaxValue = 10;
@@ -368,10 +369,10 @@ describe('fields.virtual.onSuccess', () => {
                   .resolve((ctx: any) => ctx.values.dependent + 1),
               )
               .field(b.lax('lax', defaultLaxValue))
-              .field(buildVirtual(b, scheme.alias).validate(virtualValidator)),
+              .field(buildVirtual(b, alias).validate(virtualValidator)),
           {
             onSuccess: {
-              fields: [scheme.publicKey] as never,
+              fields: ['virtualField'] as never,
               resolver: () => {
                 triggered = true;
               },
@@ -400,7 +401,7 @@ describe('fields.virtual.onSuccess', () => {
     });
 
     it('should not trigger grouped onSuccess handlers if virtual is provided but ignored by ignore fn', async () => {
-      for (const scheme of NAMING_SCHEMES) {
+      for (const { alias } of NAMING_SCHEMES) {
         let triggered = false;
         const defaultDependentValue = 1;
         const defaultLaxValue = 10;
@@ -416,13 +417,13 @@ describe('fields.virtual.onSuccess', () => {
               )
               .field(b.lax('lax', defaultLaxValue))
               .field(
-                buildVirtual(b, scheme.alias)
+                buildVirtual(b, alias)
                   .validate(virtualValidator)
                   .ignore(() => true),
               ),
           {
             onSuccess: {
-              fields: [scheme.publicKey] as never,
+              fields: ['virtualField'] as never,
               resolver: () => {
                 triggered = true;
               },
@@ -431,7 +432,7 @@ describe('fields.virtual.onSuccess', () => {
         ).getModel();
 
         const { data, handleSuccess } = await Model.create(
-          { [scheme.publicKey]: 'virtual_value' },
+          { [alias ?? 'virtualField']: 'virtual_value' },
           {},
         );
 
@@ -446,7 +447,7 @@ describe('fields.virtual.onSuccess', () => {
         const { data: updates, handleSuccess: handleUpdateSuccess } =
           await Model.update(
             data,
-            { lax, [scheme.publicKey]: 'virtual_value' },
+            { lax, [alias ?? 'virtualField']: 'virtual_value' },
             {},
           );
 
@@ -459,7 +460,7 @@ describe('fields.virtual.onSuccess', () => {
     });
 
     it('should not trigger grouped onSuccess handlers if virtual is provided but ignored by ignoreInit fn at creation', async () => {
-      for (const scheme of NAMING_SCHEMES) {
+      for (const { alias } of NAMING_SCHEMES) {
         let triggered = false;
         const defaultDependentValue = 1;
         const defaultLaxValue = 10;
@@ -475,13 +476,11 @@ describe('fields.virtual.onSuccess', () => {
               )
               .field(b.lax('lax', defaultLaxValue))
               .field(
-                buildVirtual(b, scheme.alias)
-                  .validate(virtualValidator)
-                  .ignoreInit(),
+                buildVirtual(b, alias).validate(virtualValidator).ignoreInit(),
               ),
           {
             onSuccess: {
-              fields: [scheme.publicKey] as never,
+              fields: ['virtualField'] as never,
               resolver: () => {
                 triggered = true;
               },
@@ -490,7 +489,7 @@ describe('fields.virtual.onSuccess', () => {
         ).getModel();
 
         const { data, handleSuccess } = await Model.create(
-          { [scheme.publicKey]: 'virtual_value' },
+          { [alias ?? 'virtualField']: 'virtual_value' },
           {},
         );
 
@@ -506,7 +505,7 @@ describe('fields.virtual.onSuccess', () => {
     });
 
     it('should trigger grouped onSuccess handlers if virtual is provided during updates', async () => {
-      for (const scheme of NAMING_SCHEMES) {
+      for (const { alias } of NAMING_SCHEMES) {
         let triggered = false;
         const defaultDependentValue = 1;
         const defaultLaxValue = 10;
@@ -521,10 +520,10 @@ describe('fields.virtual.onSuccess', () => {
                   .resolve((ctx: any) => ctx.values.dependent + 1),
               )
               .field(b.lax('lax', defaultLaxValue))
-              .field(buildVirtual(b, scheme.alias).validate(virtualValidator)),
+              .field(buildVirtual(b, alias).validate(virtualValidator)),
           {
             onSuccess: {
-              fields: [scheme.publicKey] as never,
+              fields: ['virtualField'] as never,
               resolver: () => {
                 triggered = true;
               },
@@ -539,7 +538,7 @@ describe('fields.virtual.onSuccess', () => {
 
         const { data: updates, handleSuccess } = await Model.update(
           previous,
-          { [scheme.publicKey]: 'virtual_value' },
+          { [alias ?? 'virtualField']: 'virtual_value' },
           {},
         );
 
@@ -552,7 +551,7 @@ describe('fields.virtual.onSuccess', () => {
     });
 
     it('should not trigger grouped onSuccess handlers if virtual is not provided during updates', async () => {
-      for (const scheme of NAMING_SCHEMES) {
+      for (const { alias } of NAMING_SCHEMES) {
         let triggered = false;
         const defaultDependentValue = 1;
         const defaultLaxValue = 10;
@@ -567,10 +566,10 @@ describe('fields.virtual.onSuccess', () => {
                   .resolve((ctx: any) => ctx.values.dependent + 1),
               )
               .field(b.lax('lax', defaultLaxValue))
-              .field(buildVirtual(b, scheme.alias).validate(virtualValidator)),
+              .field(buildVirtual(b, alias).validate(virtualValidator)),
           {
             onSuccess: {
-              fields: [scheme.publicKey] as never,
+              fields: ['virtualField'] as never,
               resolver: () => {
                 triggered = true;
               },
@@ -599,7 +598,7 @@ describe('fields.virtual.onSuccess', () => {
     });
 
     it('should not trigger grouped onSuccess handlers if virtual is provided but ignored by ignoreUpdate fn', async () => {
-      for (const scheme of NAMING_SCHEMES) {
+      for (const { alias } of NAMING_SCHEMES) {
         let triggered = false;
         const defaultDependentValue = 1;
         const defaultLaxValue = 10;
@@ -615,13 +614,13 @@ describe('fields.virtual.onSuccess', () => {
               )
               .field(b.lax('lax', defaultLaxValue))
               .field(
-                buildVirtual(b, scheme.alias)
+                buildVirtual(b, alias)
                   .validate(virtualValidator)
                   .ignoreUpdate(),
               ),
           {
             onSuccess: {
-              fields: [scheme.publicKey] as never,
+              fields: ['virtualField'] as any,
               resolver: () => {
                 triggered = true;
               },
@@ -632,7 +631,7 @@ describe('fields.virtual.onSuccess', () => {
         const lax = defaultLaxValue + 10;
         const { data: updates, handleSuccess } = await Model.update(
           { dependent: defaultDependentValue, lax: defaultLaxValue },
-          { lax, [scheme.publicKey]: 'virtual_value' },
+          { lax, [alias ?? 'virtualField']: 'virtual_value' },
           {},
         );
 

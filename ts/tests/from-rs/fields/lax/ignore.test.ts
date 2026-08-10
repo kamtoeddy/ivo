@@ -33,26 +33,26 @@ describe('fields.lax.ignore', () => {
     expect(data).toEqual({ lax: defaultLaxValue, other: otherValue });
 
     const updatedLaxValue = 'updated_lax_value';
-    const otherValue2 = 'ignore_lax_for_update';
+    const otherValue1 = 'ignore_lax_for_update';
 
     const { data: updates } = await Model.update(
       data!,
-      { lax: updatedLaxValue, other: otherValue2 },
+      { lax: updatedLaxValue, other: otherValue1 },
       {},
     );
 
-    expect(updates).toEqual({ lax: updatedLaxValue, other: otherValue2 });
+    expect(updates).toEqual({ lax: updatedLaxValue, other: otherValue1 });
 
     const previous = Object.assign({}, data, updates);
-    const otherValue3 = 'some other update';
+    const otherValue2 = 'some other update';
 
     const { data: updates2 } = await Model.update(
       previous,
-      { lax: 'some lax update', other: otherValue3 },
+      { lax: 'some lax update', other: otherValue2 },
       {},
     );
 
-    expect(updates2).toEqual({ other: otherValue3 });
+    expect(updates2).toEqual({ other: otherValue2 });
   });
 
   it('should respect the ignoreInit rule', async () => {

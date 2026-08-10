@@ -237,12 +237,13 @@ describe('fields.lax', () => {
             fields: ['lax', 'lax_1'],
             handler: async (ctx) => {
               const lax2 = ctx.input.lax_2;
-              if (lax2 == null) return undefined;
+
               if (lax2 === IGNORE_WITH_SAME_ERROR)
                 return {
                   lax: EXPECTED_LAX_OR_LAX_1,
                   lax_1: EXPECTED_LAX_OR_LAX_1,
                 };
+
               return { lax: LAX_IS_MISSING, lax_1: LAX_1_IS_MISSING };
             },
           },

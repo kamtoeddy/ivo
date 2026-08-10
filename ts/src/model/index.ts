@@ -93,11 +93,8 @@ class ModelTool<
   async create(input: Partial<I>, options: CtxOptions) {
     if (!areValuesOk(input)) input = {};
 
-    const fieldsCollection = await this._filterInputFieldsAllowed();
-
-    this._initContext({
-      isUpdate: false,
-      rawInput: this._cleanInput(input, fieldsCollection),
+    const fieldsCollection = await this._filterInputFieldsAllowed({
+      rawInput: input,
       previousValues: null,
       options,
     });
@@ -166,11 +163,8 @@ class ModelTool<
     if (!areValuesOk(values) || !areValuesOk(changes))
       return this._handleUpdateError(emptyErrorTool);
 
-    const fieldsCollection = await this._filterInputFieldsAllowed();
-
-    this._initContext({
-      isUpdate: true,
-      rawInput: this._cleanInput(changes, fieldsCollection),
+    const fieldsCollection = await this._filterInputFieldsAllowed({
+      rawInput: changes,
       previousValues: values,
       options,
     });
@@ -187,10 +181,7 @@ class ModelTool<
 
     if (primaryError.hasErrors) return this._handleUpdateError(primaryError);
 
-    fieldsCollection.relevantFieldsProvided =
-      this._evaluateUpdateValidity(fieldsCollection);
-
-    if (!fieldsCollection.relevantFieldsProvided.size)
+    if (!this._isValidUpdate(fieldsCollection))
       return this._handleUpdateError(emptyErrorTool);
 
     const secondaryError = await this._reValidate(fieldsCollection);
@@ -203,12 +194,18 @@ class ModelTool<
     if (postValidationError.hasErrors)
       return this._handleUpdateError(postValidationError);
 
+    if (!this._isValidUpdate(fieldsCollection))
+      return this._handleUpdateError(emptyErrorTool);
+
     await this._sanitizeVirtuals(fieldsCollection);
 
     let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
 
     while (collection.relevantDependentConfigNames.size > 0)
       collection = await this._resolveDependentChanges(collection);
+
+    if (!this._isValidUpdate(fieldsCollection))
+      return this._handleUpdateError(emptyErrorTool);
 
     const data = this._attachTimestamps();
 
@@ -278,10 +275,10 @@ class ModelTool<
             return true as const;
           },
           get previousValues() {
-            return Object.assign({}, previousValues, values);
+            return previousValues as O;
           },
           get values() {
-            return values as O;
+            return Object.assign({}, previousValues, values);
           },
           get options() {
             return cloneWithMethods(options);
@@ -398,20 +395,6 @@ class ModelTool<
     });
   }
 
-  private _initContext(props: {
-    isUpdate: boolean;
-    rawInput: Partial<I>;
-    previousValues: O | null;
-    options: CtxOptions;
-  }) {
-    this._isUpdate = props.isUpdate;
-    this._ctxInput = {};
-    this._ctxValues = {};
-    this._ctxRawInput = deepCloneValue(props.rawInput); // TODO: cleanup and filter out non schema fields
-    this._ctxPreviousValues = deepCloneValue(props.previousValues); // TODO: cleanup and filter out non schema fields
-    this._ctxOptions = cloneWithMethods(props.options);
-  }
-
   private _setCxtInput = (updates: Partial<I>) => (this._ctxInput = updates);
   private _setCxtValues = (updates: Partial<O>) => (this._ctxValues = updates);
 
@@ -427,21 +410,27 @@ class ModelTool<
     Object.assign(this._ctxOptions, options);
 
   private _cleanInput(
-    input: Partial<I>,
+    rawInput: Partial<I>,
     fieldsCollection: FieldInfoCollection,
   ) {
-    const values: Partial<I> = {};
+    const input: Partial<I> = {};
+    const output: Partial<O> = {};
 
-    for (const [name, value] of Object.entries(input)) {
+    for (const [name, value] of Object.entries(rawInput)) {
       const info = fieldsCollection.getUnsafe(name);
 
       if (!info || info.name !== name) continue;
 
       // @ts-expect-error ikr
-      values[name] = value;
+      input[name] = value;
+
+      if (!info.isVirtual) {
+        // @ts-expect-error ikr
+        output[name] = value;
+      }
     }
 
-    return values;
+    return { input, output };
   }
 
   private _validateAllowedValues(
@@ -518,10 +507,8 @@ class ModelTool<
   private _handleInvalidValue(
     errorTool: ErrorTool<ErrorMetadata>,
     name: string,
-    validationResponse: InvalidValidatorResponse<ErrorMetadata>,
+    { reason, metadata }: InvalidValidatorResponse<ErrorMetadata>,
   ) {
-    const { reason, metadata } = validationResponse;
-
     const fieldError = makeFieldError<ErrorMetadata>(
       reason || 'validation failed',
     );
@@ -590,7 +577,7 @@ class ModelTool<
           continue;
         }
 
-        return this._updateCxtValues({ [configName]: value } as never);
+        this._updateCxtValues({ [configName]: value } as never);
       }
     }
 
@@ -647,88 +634,112 @@ class ModelTool<
     return results;
   }
 
-  private async _filterInputFieldsAllowed(): Promise<FieldInfoCollection> {
-    const _previousValues = this.ctxPreviousValues;
+  private async _filterInputFieldsAllowed({
+    options,
+    previousValues: _previousValues,
+    rawInput,
+  }: {
+    rawInput: Partial<I>;
+    previousValues: O | null;
+    options: CtxOptions;
+  }): Promise<FieldInfoCollection> {
     const fieldsCollection = this._getFieldInfoCollection();
-    const rawInput: Partial<I> = this.ctxRawInput;
+    const { input, output } = this._cleanInput(rawInput, fieldsCollection);
+
     const isUpdate = !!_previousValues;
-    const previousValues: Partial<O> = _previousValues
-      ? deepCloneValue(_previousValues)
-      : {};
-    const entityResolvers: NS.IgnoreUpdateResolver<I, O, CtxOptions>[] = [];
-    const input = deepCloneValue(rawInput);
-    const output: Partial<O> = {};
-    const fieldsProvided = new Set<string>();
-    const relevantFieldsProvided = new Set<string>();
 
-    if (isUpdate) {
-      for (const config of toArray(this.options.ignoreUpdate ?? [])) {
-        if (typeof config === 'function') entityResolvers.push(config);
-        else if (config.fields.length === 0)
-          entityResolvers.push(config.resolver);
-      }
+    this._isUpdate = isUpdate;
+    this._ctxInput = input;
+    this._ctxValues = output;
+    this._ctxRawInput = deepCloneValue(rawInput);
+    this._ctxPreviousValues = deepCloneValue(_previousValues);
+    this._ctxOptions = cloneWithMethods(options);
 
-      for (const [fieldName, value] of Object.entries(rawInput)) {
-        const fieldInfo = fieldsCollection.get(fieldName);
-
-        if (
-          fieldInfo.isVirtual ||
-          !isEqual(
-            value,
-            // @ts-expect-error ikr
-            _previousValues[fieldName],
-            this.options.equalityDepth,
-          )
-        ) {
-          relevantFieldsProvided.add(fieldName);
-
-          if (!fieldInfo.isVirtual) {
-            // @ts-expect-error ikr
-            output[fieldName] = input[fieldName];
-          }
-        } else {
-          // @ts-expect-error ikr
-          delete input[fieldName];
-        }
-
-        fieldsProvided.add(fieldName);
-      }
-    } else {
-      for (const fieldName of Object.keys(rawInput)) {
-        const fieldInfo = fieldsCollection.get(fieldName);
-
-        if (!fieldInfo.isVirtual) {
-          // @ts-expect-error ikr
-          output[fieldName] = input[fieldName];
-        }
-
-        fieldsProvided.add(fieldName);
-        relevantFieldsProvided.add(fieldName);
-      }
-    }
-
-    if (entityResolvers.length)
-      for (const task of await Promise.allSettled(
-        entityResolvers.map((resolver) =>
-          Promise.try(resolver, this._getUpdateResolverCtx()).catch(
-            () => false,
-          ),
-        ),
-      )) {
-        // if "task.value" is positive, it means "ignore"
-        if (task.status === 'fulfilled' && task.value) return fieldsCollection;
-      }
-
-    fieldsCollection.fieldsProvided = fieldsProvided;
-    fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
-
-    this._updateCxtInput(input);
-    this._updateCxtValues(output);
-
+    const previousValues: Partial<O> = _previousValues ?? {};
     const tasks: [
       string[] | readonly string[],
       () => boolean | Promise<boolean>,
     ][] = [];
+
+    const fieldsProvided = new Set<string>();
+    const relevantFieldsProvided = new Set<string>();
+
+    if (isUpdate) {
+      for (const [fieldName, value] of Object.entries(rawInput)) {
+        fieldsProvided.add(fieldName);
+        const fieldInfo = fieldsCollection.get(fieldName);
+
+        const config = this.definitions[
+          fieldInfo.configName
+        ] as NS.RequiredField<any, I, O, CtxOptions, any>;
+
+        const ignoreUpdate = config.ignoreUpdate;
+
+        if (typeof ignoreUpdate === 'function') {
+          tasks.push([
+            [fieldName],
+            () => ignoreUpdate(this._getUpdateResolverCtx()),
+          ]);
+
+          relevantFieldsProvided.add(fieldName);
+          continue;
+        }
+
+        if (
+          ignoreUpdate ||
+          (!fieldInfo.isVirtual &&
+            isEqual(
+              value,
+              // @ts-expect-error ikr
+              _previousValues[fieldName],
+              this.options.equalityDepth,
+            ))
+        ) {
+          // @ts-expect-error ikr
+          delete input[fieldName];
+
+          if (!fieldInfo.isVirtual)
+            // @ts-expect-error ikr
+            delete output[fieldName];
+
+          continue;
+        }
+
+        relevantFieldsProvided.add(fieldName);
+      }
+    } else {
+      for (const fieldName of Object.keys(rawInput)) {
+        fieldsProvided.add(fieldName);
+        const fieldInfo = fieldsCollection.get(fieldName);
+
+        const config = this.definitions[fieldInfo.configName] as NS.LaxField<
+          any,
+          I,
+          O,
+          CtxOptions,
+          any
+        >;
+
+        if (config.ignoreInit) {
+          // @ts-expect-error ikr
+          delete input[fieldName];
+
+          if (!fieldInfo.isVirtual) {
+            // @ts-expect-error ikr
+            delete output[fieldName];
+          }
+
+          continue;
+        }
+
+        relevantFieldsProvided.add(fieldName);
+      }
+    }
+
+    this._setCxtInput(input);
+    this._setCxtValues(output);
+    fieldsCollection.fieldsProvided = fieldsProvided;
+    fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
     for (const fieldName of fieldsProvided.values()) {
       const fieldInfo = fieldsCollection.get(fieldName);
@@ -769,9 +780,7 @@ class ModelTool<
           delete input[fieldName];
 
           // @ts-expect-error ikr
-          if (fieldInfo?.isOutput) delete output[fieldName];
-
-          continue;
+          if (!fieldInfo?.isVirtual) delete output[fieldName];
         }
       }
 
@@ -797,7 +806,7 @@ class ModelTool<
       delete input[fieldName];
 
       // @ts-expect-error ikr
-      if (fieldInfo.isOutput) delete output[fieldName];
+      if (!fieldInfo.isVirtual) delete output[fieldName];
     }
 
     const relevantConfigNames = Array.from(
@@ -808,24 +817,22 @@ class ModelTool<
       ),
     );
 
-    for (const config of toArray(this.options.ignore ?? [])) {
-      if (typeof config === 'function') {
-        tasks.push([relevantConfigNames, () => config(this._getContext())]);
-      } else if (config && typeof config === 'object') {
-        const fields = config.fields;
+    if (this.options.ignore)
+      for (const config of this.options.ignore) {
+        if (typeof config === 'function')
+          tasks.push([[], () => config(this._getContext())]);
+        else if (config && typeof config === 'object') {
+          const fields = config.fields;
 
-        if (fields.some((name: string) => relevantConfigNames.includes(name)))
-          tasks.push([fields, () => config.resolver(this._getContext())]);
+          if (fields.some((name) => relevantConfigNames.includes(name)))
+            tasks.push([fields, () => config.resolver(this._getContext())]);
+        }
       }
-    }
 
-    if (isUpdate) {
-      for (const config of toArray(this.options.ignoreUpdate ?? [])) {
+    if (isUpdate && this.options.ignoreUpdate)
+      for (const config of this.options.ignoreUpdate) {
         if (typeof config === 'function') {
-          tasks.push([
-            relevantConfigNames,
-            () => config(this._getUpdateResolverCtx()),
-          ]);
+          tasks.push([[], () => config(this._getUpdateResolverCtx())]);
 
           continue;
         }
@@ -838,12 +845,11 @@ class ModelTool<
             () => config.resolver(this._getUpdateResolverCtx()),
           ]);
       }
-    }
+
+    this._setCxtInput(input);
+    this._setCxtValues(output);
 
     if (!tasks.length) {
-      this._setCxtInput(input);
-      this._setCxtValues(output);
-
       fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
       return fieldsCollection;
@@ -854,6 +860,12 @@ class ModelTool<
         async ([names, resolver]) => [names, await resolver()] as const,
       ),
     )) {
+      if (ignore && !configNames.length) {
+        fieldsCollection.clear();
+
+        return fieldsCollection;
+      }
+
       for (const configName of configNames) {
         const fieldInfo = fieldsCollection.get(configName);
         const fieldName = fieldInfo.name;
@@ -865,18 +877,13 @@ class ModelTool<
           relevantFieldsProvided.delete(fieldName);
 
           // @ts-expect-error ikr
-          if (fieldInfo.isOutput) delete output[fieldName];
-
-          continue;
+          if (!fieldInfo.isVirtual) delete output[fieldName];
         }
-
-        relevantFieldsProvided.add(fieldName);
       }
     }
 
     this._setCxtInput(input);
     this._setCxtValues(output);
-
     fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
     return fieldsCollection;
@@ -896,7 +903,7 @@ class ModelTool<
 
       if (fieldsCollection.relevantConfigNames.has(configName)) continue;
 
-      if (config.type === 'required') {
+      if (config.type === 'required' && !this.isUpdate) {
         let error: string;
 
         if (typeof config.requiredError === 'function') {
@@ -968,11 +975,18 @@ class ModelTool<
       for (const [fieldName, err] of r.value) {
         if (!err) continue;
 
+        if (typeof err === 'string') {
+          errorTool.set(fieldName, makeFieldError<ErrorMetadata>(err));
+
+          continue;
+        }
+
         if (err === true) {
           errorTool.set(
             fieldName,
             makeFieldError<ErrorMetadata>(getDefaultRequiredError(fieldName)),
           );
+
           continue;
         }
 
@@ -998,9 +1012,7 @@ class ModelTool<
     return errorTool;
   }
 
-  private _evaluateUpdateValidity(
-    fieldsCollection: FieldInfoCollection,
-  ): Set<string> {
+  private _isValidUpdate(fieldsCollection: FieldInfoCollection): boolean {
     const input: Partial<I> = this.ctxInput;
     const updates: Partial<O> = this.ctxValues;
     const previousPartial: O = this.ctxPreviousValues!;
@@ -1042,8 +1054,9 @@ class ModelTool<
 
     this._setCxtInput(input);
     this._setCxtValues(updates);
+    fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
-    return relevantFieldsProvided;
+    return relevantFieldsProvided.size > 0;
   }
 
   private async _validate(
@@ -1347,11 +1360,9 @@ class ModelTool<
 
   private async _sanitizeVirtuals(fieldsCollection: FieldInfoCollection) {
     const sanitizers: [
-      KeyOf<I>,
+      string,
       NS.VirtualResolver<unknown, I, O, CtxOptions>,
     ][] = [];
-
-    const ctx = this._getContext();
 
     // `relevantFieldsProvided` is narrowed to output fields only (see its
     // NS.setter), so virtuals — the only fields that can have a `sanitizer` —
@@ -1360,18 +1371,26 @@ class ModelTool<
     for (const name of fieldsCollection.relevantConfigNames) {
       const fieldInfo = fieldsCollection.get(name);
       // @ts-expect-error ikr
-      const sanitizer = this._getDefinition(fieldInfo.configName).sanitizer;
+      const sanitizer = this.definitions[fieldInfo.configName].sanitizer;
 
-      if (sanitizer) sanitizers.push([name as KeyOf<I>, sanitizer]);
+      if (sanitizer) sanitizers.push([name, sanitizer]);
     }
 
     await Promise.allSettled(
       sanitizers.map(async ([name, sanitizer]) => {
-        await Promise.try(sanitizer, ctx)
-          .then((resolvedValue) =>
-            this._updateCxtInput({ [name]: resolvedValue } as never),
-          )
-          .catch(() => null);
+        await Promise.try(sanitizer, this._getContext()).then(
+          (resolvedValue) => {
+            if (
+              !isEqual(
+                resolvedValue,
+                // @ts-expect-error ikr
+                this._ctxInput[name],
+                this.options.equalityDepth,
+              )
+            )
+              this._updateCxtInput({ [name]: resolvedValue } as never);
+          },
+        );
       }),
     );
   }
@@ -1395,9 +1414,7 @@ class ModelTool<
     }
 
     return async () => {
-      await Promise.allSettled(
-        cleanups.map((h) => Promise.try(h, Object.freeze(ctx))),
-      );
+      await Promise.allSettled(cleanups.map((h) => Promise.try(h, ctx)));
     };
   }
 
@@ -1411,9 +1428,10 @@ class ModelTool<
     let successListeners = [] as NS.SuccessHandler<I, O, CtxOptions>[];
 
     for (const configName of relevantFields) {
-      const { onSuccess } = this.definitions[configName];
+      const config = this.definitions[configName];
 
-      if (onSuccess) successListeners = successListeners.concat(onSuccess);
+      if (config?.onSuccess)
+        successListeners = successListeners.concat(config.onSuccess);
     }
 
     if (this.options.onSuccess)
@@ -1450,15 +1468,14 @@ class ModelTool<
   ) {
     const ctx = this._getContext();
 
-    const isCreation = !ctx.isUpdate;
+    const isUpdate = ctx.isUpdate;
     const toResolve = new Set<string>();
 
     for (const configName in this.definitions) {
       const config = this.definitions[configName];
 
-      if (config.type !== 'dependent') continue;
-
       if (
+        config.type === 'dependent' &&
         toArray(config.dependsOn).some((parent) =>
           fieldsCollection.relevantDependentConfigNames.has(parent),
         )
@@ -1468,6 +1485,7 @@ class ModelTool<
 
     const fieldsResolved = new Set<string>();
     const values = this.ctxValues;
+    const prevValues = this.ctxPreviousValues ?? {};
 
     await Promise.allSettled(
       toResolve.values().map(async (name) => {
@@ -1478,35 +1496,29 @@ class ModelTool<
           CtxOptions
         >;
 
-        // readonly dependents only re-resolve while their value still
-        // matches the (static) default; once it has diverged, they're
-        // frozen. A function/async default has no stable baseline to
-        // compare against, so it's exempt and always re-resolves.
+        const isReadonly =
+          config.readonly && typeof config.default !== 'function';
+
         if (
-          !isCreation &&
-          config.readonly &&
-          typeof config.default !== 'function' &&
-          !isEqual(
-            config.default,
-            (values as any)[name],
-            this.options.equalityDepth,
-          )
+          isUpdate &&
+          isReadonly &&
+          // @ts-expect-error ikr
+          !isEqual(config.default, prevValues[name], this.options.equalityDepth)
         )
           return;
 
         const value = await Promise.try(config.resolver, ctx).catch(() =>
           // @ts-expect-error ikr
-          isCreation ? null : ctx.previousValues?.[name],
+          isUpdate ? prevValues[name] : null,
         );
 
         if (
-          !isCreation &&
-          isEqual(value, (values as any)[name], this.options.equalityDepth)
-        )
-          return;
-
-        fieldsResolved.add(name);
-        this._updateCxtValues({ [name]: value } as never);
+          // @ts-expect-error ikr
+          !isEqual(value, values[name], this.options.equalityDepth)
+        ) {
+          fieldsResolved.add(name);
+          this._updateCxtValues({ [name]: value } as never);
+        }
       }),
     );
 
@@ -1545,9 +1557,7 @@ class ModelTool<
     if (response?.reason && typeof response?.reason === 'string')
       _response.reason = response.reason;
 
-    if (response?.metadata && isRecordLike(response.metadata))
-      _response.metadata = response.metadata;
-    else _response.metadata = null;
+    _response.metadata = response.metadata ?? null;
 
     if (!_response.reason) {
       if (_response.metadata)
@@ -1690,6 +1700,12 @@ class FieldInfoCollection {
     col._relevantDependentConfigNames = names;
 
     return col;
+  }
+
+  clear() {
+    this._relevantConfigNames.clear();
+    this._relevantFieldsProvided.clear();
+    this._relevantDependentConfigNames.clear();
   }
 
   get relevantDependentConfigNames() {

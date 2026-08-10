@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { expectFailure, makeFx, validator } from '../../_utils';
+import {
+  expectFailure,
+  expectNoFailure,
+  makeFx,
+  validator,
+} from '../../_utils';
 
 describe('field configs', () => {
   it('should reject duplicate field names', () => {
@@ -108,5 +113,29 @@ describe('field configs', () => {
         ),
       ).toBeTrue();
     }
+  });
+
+  it('should reject lax fields with readonly rule + default resolver', () => {
+    const toFail = makeFx((b) => b.field(b.lax('lax', () => 1).readonly()));
+
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      expect(
+        // @ts-expect-error ikr
+        e.payload.lax.includes(
+          'The readonly rule is only valid for fields with static default values',
+        ),
+      ).toBeTrue();
+    }
+  });
+
+  it('should accept lax fields with readonly rule + static default values', () => {
+    const toPass = makeFx((b) => b.field(b.lax('lax', 1).readonly()));
+
+    expectNoFailure(toPass);
+    toPass();
   });
 });

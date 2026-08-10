@@ -198,16 +198,16 @@ describe('fields.dependent', () => {
     const Model = new Schema<
       { lax: number },
       { dependent: number; lax: number }
-    >((b) =>
-      b
+    >((f) =>
+      f
         .field(
-          b
+          f
             .dependent('dependent', 'lax')
             .default(defaultDependentValue)
             .resolve((ctx) => ctx.values.dependent! + 1)
             .readonly(),
         )
-        .field(b.lax('lax', defaultLaxValue)),
+        .field(f.lax('lax', defaultLaxValue)),
     ).getModel();
 
     let { data } = await Model.create({ lax: defaultLaxValue }, {});
@@ -218,9 +218,10 @@ describe('fields.dependent', () => {
     });
 
     let previous = data!;
-    let { data: updates } = await Model.update(previous, { lax: 200 }, {});
+    let lax = previous.lax + 1;
+    let { data: updates } = await Model.update(previous, { lax }, {});
 
-    expect(updates).toEqual({ lax: 200 });
+    expect(updates).toEqual({ lax });
 
     ({ data } = await Model.create({}, {}));
 
@@ -230,15 +231,17 @@ describe('fields.dependent', () => {
     });
 
     previous = data!;
-    ({ data: updates } = await Model.update(previous, { lax: 201 }, {}));
+    lax = previous.lax + 1;
+    ({ data: updates } = await Model.update(previous, { lax }, {}));
 
-    expect(updates).toEqual({ dependent: previous.dependent + 1, lax: 201 });
+    expect(updates).toEqual({ dependent: previous.dependent + 1, lax });
 
     previous = Object.assign({}, previous, updates);
+    lax = previous.lax + 1;
 
-    ({ data: updates } = await Model.update(previous, { lax: 3001 }, {}));
+    ({ data: updates } = await Model.update(previous, { lax }, {}));
 
-    expect(updates).toEqual({ lax: 3001 });
+    expect(updates).toEqual({ lax });
   });
 
   it('should trigger onDelete handlers with static default values', async () => {

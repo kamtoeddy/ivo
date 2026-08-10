@@ -5,9 +5,7 @@ describe('fields.timestamps', () => {
   it('should respect createdAt timestamp with default name', async () => {
     const Model = new Schema<{ lax: number }, { createdAt: Date; lax: number }>(
       (b) => b.field(b.lax('lax', 1234)),
-      {
-        timestamps: { createdAt: true, updatedAt: false },
-      },
+      { timestamps: { createdAt: true, updatedAt: false } },
     ).getModel();
 
     const lax = 400;

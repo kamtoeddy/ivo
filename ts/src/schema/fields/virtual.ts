@@ -14,19 +14,38 @@ import { extractAllowedValues } from './_utils';
 
 export { type BlankVirtualBuilder, VirtualBuilder };
 
-interface BlankVirtualBuilder<
+type BlankVirtualBuilder<
   Value extends Input[keyof Input],
   Input,
   Output,
   CtxOptions extends ObjectType,
   Metadata,
-> {
-  alias<Alias extends keyof Input>(
-    name: Alias,
-  ): BlankVirtualBuilder<Input[Alias], Input, Output, CtxOptions, Metadata>;
+  HasAlias extends boolean = false,
+> = (HasAlias extends true
+  ? {}
+  : {
+      alias<Alias extends keyof Input>(
+        name: Alias,
+      ): BlankVirtualBuilder<
+        Input[Alias],
+        Input,
+        Output,
+        CtxOptions,
+        Metadata,
+        true
+      >;
+    }) & {
   allow<const V extends Value>(
     values: ArrayOfMinSizeTwo<V>,
-  ): BuildableVirtualConfig<V, Input, Output, CtxOptions, Metadata, 'allow'>;
+  ): BuildableVirtualConfig<
+    V,
+    Input,
+    Output,
+    CtxOptions,
+    Metadata,
+    HasAlias,
+    'allow'
+  >;
   validate(
     validator: Validator<Value, Input, Output, CtxOptions, Metadata>,
   ): BuildableVirtualConfig<
@@ -35,9 +54,10 @@ interface BlankVirtualBuilder<
     Output,
     CtxOptions,
     Metadata,
+    HasAlias,
     'validate'
   >;
-}
+};
 
 /**
  * A virtual field's `validator` is mandatory at runtime, so - mirroring
@@ -52,6 +72,7 @@ type BuildableVirtualConfig<
   Output,
   CtxOptions extends ObjectType,
   Metadata,
+  HasAlias extends boolean = false,
   ValidationState extends 'allow' | 'none' | 'validate' = 'none',
   HasAllowError extends boolean = false,
   HasReValidate extends boolean = false,
@@ -60,11 +81,33 @@ type BuildableVirtualConfig<
   HasIgnore extends 'init' | 'update' | 'ignore' | 'none' = 'none',
   HasOnFailure extends boolean = false,
   HasOnSuccess extends boolean = false,
-> = (ValidationState extends 'none'
+> = (HasAlias extends true
   ? {}
-  : Buildable<
-      NS.VirtualField<never, Value, Input, Output, CtxOptions, Metadata>
-    >) &
+  : {
+      alias<Alias extends keyof Input>(
+        name: Alias,
+      ): BuildableVirtualConfig<
+        Value,
+        Input,
+        Output,
+        CtxOptions,
+        Metadata,
+        true,
+        ValidationState,
+        HasAllowError,
+        HasSanitizer,
+        HasRequired,
+        HasSanitizer,
+        HasIgnore,
+        HasOnFailure,
+        HasOnSuccess
+      >;
+    }) &
+  (ValidationState extends 'none'
+    ? {}
+    : Buildable<
+        NS.VirtualField<never, Value, Input, Output, CtxOptions, Metadata>
+      >) &
   (ValidationState extends 'allow'
     ? HasAllowError extends true
       ? {}
@@ -82,6 +125,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
+            HasAlias,
             'allow',
             true,
             HasReValidate,
@@ -106,6 +150,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
+            HasAlias,
             ValidationState,
             HasAllowError,
             true,
@@ -129,6 +174,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
+            HasAlias,
             ValidationState,
             HasAllowError,
             HasReValidate,
@@ -152,6 +198,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
+            HasAlias,
             ValidationState,
             HasAllowError,
             HasReValidate,
@@ -174,6 +221,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
+            HasAlias,
             ValidationState,
             HasAllowError,
             HasReValidate,
@@ -189,6 +237,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
+            HasAlias,
             ValidationState,
             HasAllowError,
             HasReValidate,
@@ -204,6 +253,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
+            HasAlias,
             ValidationState,
             HasAllowError,
             HasReValidate,
@@ -230,6 +280,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
+            HasAlias,
             ValidationState,
             HasAllowError,
             HasReValidate,
@@ -255,6 +306,7 @@ type BuildableVirtualConfig<
             Output,
             CtxOptions,
             Metadata,
+            HasAlias,
             ValidationState,
             HasAllowError,
             HasReValidate,
@@ -274,7 +326,7 @@ class VirtualBuilder<
   Metadata,
 > implements
     BlankVirtualBuilder<Value, Input, Output, CtxOptions, Metadata>,
-    BuildableVirtualConfig<Value, Input, Output, CtxOptions, Metadata, 'allow'>
+    BuildableVirtualConfig<Value, Input, Output, CtxOptions, Metadata>
 {
   private config: Partial<
     NS.VirtualField<never, Value, Input, Output, CtxOptions, Metadata>
@@ -333,22 +385,25 @@ class VirtualBuilder<
 
   ignore(resolver: NS.Resolver<boolean, Input, Output, CtxOptions>) {
     this.config.ignore = resolver;
-    this.config.ignoreInit = undefined;
-    this.config.ignoreUpdate = undefined;
+    delete this.config.ignoreInit;
+    delete this.config.ignoreUpdate;
+
     return this as never;
   }
 
   ignoreInit() {
     this.config.ignoreInit = true;
-    this.config.ignore = undefined;
-    this.config.ignoreUpdate = undefined;
+    delete this.config.ignore;
+    delete this.config.ignoreUpdate;
+
     return this as never;
   }
 
   ignoreUpdate() {
     this.config.ignoreUpdate = true;
-    this.config.ignore = undefined;
-    this.config.ignoreInit = undefined;
+    delete this.config.ignore;
+    delete this.config.ignoreInit;
+
     return this as never;
   }
 

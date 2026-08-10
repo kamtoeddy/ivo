@@ -9,7 +9,7 @@ import {
 
 describe('options', () => {
   describe('ignoreUpdate', () => {
-    it('should respect option to ignore updates with empty fields array', async () => {
+    it('should respect option to ignore updates as function', async () => {
       const defaultValue = 'default_lax_value';
       const IGNORE_VALUE = 'ignore_value';
 

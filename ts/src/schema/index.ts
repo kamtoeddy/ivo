@@ -320,6 +320,7 @@ function validateFields<
       );
 
     fieldNames.add(fieldName);
+    definitions[fieldName] = config;
 
     if (timestampKeys) {
       if (timestampKeys.createdAt === fieldName)
@@ -337,22 +338,23 @@ function validateFields<
     if (config.type === 'constant') {
       constantFieldNames.add(fieldName);
 
-      definitions[fieldName] = config;
       continue;
     }
 
     if (config.type === 'dependent') {
       const { dependsOn } = config;
-      let hasErrors = false;
 
-      if (typeof config.default === 'undefined') {
+      if (typeof config.default === 'undefined')
         errorTool.add(
           fieldName,
           'Dependent fields must have a default value or default resolver',
         );
 
-        hasErrors = true;
-      }
+      if (typeof config.default === 'function' && config.readonly)
+        errorTool.add(
+          fieldName,
+          'The readonly rule is only valid for fields with static default values',
+        );
 
       if (typeof config.resolver !== 'function')
         errorTool.add(fieldName, 'Dependent fields must have a value resolver');
@@ -367,11 +369,8 @@ function validateFields<
       if (dependsOn.includes(fieldName))
         errorTool.add(fieldName, `"${fieldName}" cannot depend on itself`);
 
-      if (!hasErrors) {
-        definitions[fieldName] = config;
-        dependentConfigs.push([fieldName, config]);
-        dependentFieldToParentFields.set(fieldName, dependsOn);
-      }
+      dependentConfigs.push([fieldName, config]);
+      dependentFieldToParentFields.set(fieldName, dependsOn);
 
       continue;
     }
@@ -382,7 +381,12 @@ function validateFields<
           fieldName,
           'Lax fields must have a default value or default resolver',
         );
-      else definitions[fieldName] = config;
+
+      if (typeof config.default === 'function' && config.readonly)
+        errorTool.add(
+          fieldName,
+          'The readonly rule is only valid for fields with static default values',
+        );
 
       continue;
     }
@@ -390,65 +394,50 @@ function validateFields<
     if (config.type === 'required') {
       if (!config.allow && !config.validator)
         errorTool.add(fieldName, 'Required fields must have a validator');
-      else definitions[fieldName] = config;
 
       continue;
     }
 
     const { alias } = config;
-    let hasErrors = false;
 
     if (alias) {
-      if (fieldName === alias) {
+      if (fieldName === alias)
         errorTool.add(
           fieldName,
           'virtual alias name must be different from field name',
         );
-        hasErrors = true;
-      }
 
       if (timestampKeys) {
-        if (timestampKeys.createdAt === alias) {
+        if (timestampKeys.createdAt === alias)
           errorTool.add(
             fieldName,
             `"${fieldName}" is not a valid alias. It is the creation timestamp`,
           );
-
-          hasErrors = true;
-        } else if (timestampKeys.updatedAt === alias) {
+        else if (timestampKeys.updatedAt === alias)
           errorTool.add(
             fieldName,
             `"${alias}" is not a valid alias. It is the update timestamp`,
           );
-
-          hasErrors = true;
-        }
       }
 
       const otherField = aliasToVirtualMap.get(alias);
 
-      if (otherField) {
+      if (otherField)
         errorTool.add(
           fieldName,
           `"${alias}" is already the alias of "${otherField}"`,
         );
-
-        hasErrors = true;
-      }
 
       for (const [name, config] of definitionsEntries) {
         if (name !== alias) continue;
 
         if (config.type === 'dependent') {
           // @ts-expect-error ikr
-          if (!config.dependsOn.includes(fieldName)) {
+          if (!config.dependsOn.includes(fieldName))
             errorTool.add(
               fieldName,
               `"${alias}" is not a valid alias for field because "${alias}" does not depend on "${fieldName}"`,
             );
-
-            hasErrors = true;
-          }
 
           continue;
         }
@@ -457,8 +446,6 @@ function validateFields<
           fieldName,
           `"${alias}" is not a valid alias for field because it is not a dependent field`,
         );
-
-        hasErrors = true;
       }
 
       aliasToVirtualMap.set(alias, fieldName);
@@ -476,16 +463,11 @@ function validateFields<
       }
     }
 
-    if (!hasSufficientDependencies) {
+    if (!hasSufficientDependencies)
       errorTool.add(
         fieldName,
         'Virtual fields are expected to have at least one dependency, but found none',
       );
-
-      hasErrors = true;
-    }
-
-    if (!hasErrors) definitions[fieldName] = config;
   }
 
   for (const [fieldName, config] of dependentConfigs) {
@@ -612,7 +594,6 @@ function makeOptions<
 
   if (options.ignore) {
     const ignore: NS.IgnoreConfigOptionItem<I, O, CtxOptions>[] = [];
-    let hasErrors = false;
 
     if (typeof options.ignore === 'function') ignore.push(options.ignore);
     else {
@@ -637,44 +618,37 @@ function makeOptions<
         const fieldNames = new Set<string>();
 
         for (const fieldName of fields) {
-          if (fieldNames.has(fieldName)) {
+          if (fieldNames.has(fieldName))
             errorTool.add(
               optionName,
               `remove duplicates of "${fieldName}" in your grouped ignore config`,
             );
-            hasErrors = true;
-          }
 
           fieldNames.add(fieldName);
 
           const virtualField = aliasToVirtualMap.get(fieldName);
 
-          if (virtualField) {
+          if (virtualField)
             errorTool.add(
               optionName,
               `"${fieldName}" is an alias; use "${virtualField}" instead`,
             );
-            hasErrors = true;
-          }
 
-          if (!isOneOf(definitions[fieldName]?.type, ['lax', 'virtual'])) {
+          if (!isOneOf(definitions[fieldName]?.type, ['lax', 'virtual']))
             errorTool.add(
               optionName,
               `${type_not_allowed_error} remove "${fieldName}"`,
             );
-            hasErrors = true;
-          }
         }
       }
     }
 
-    if (!hasErrors) normalizedOptions.ignore = ignore;
+    normalizedOptions.ignore = ignore;
   }
 
   if (options.ignoreUpdate) {
     const ignoreUpdate: NS.IgnoreUpdateConfigOptionItem<I, O, CtxOptions>[] =
       [];
-    let hasErrors = false;
 
     if (typeof options.ignoreUpdate === 'function')
       ignoreUpdate.push(options.ignoreUpdate);
@@ -694,36 +668,30 @@ function makeOptions<
 
         ignoreUpdate.push({ fields, resolver });
 
-        if (fields.length < 2) {
+        if (fields.length < 2)
           errorTool.add(
             optionName,
             'grouped ignore update expects at least 2 fields',
           );
-          hasErrors = true;
-        }
 
         const fieldNames = new Set<string>();
 
         for (const fieldName of fields) {
-          if (fieldNames.has(fieldName)) {
+          if (fieldNames.has(fieldName))
             errorTool.add(
               optionName,
               `remove duplicates of "${fieldName}" in your grouped ignore update config`,
             );
-            hasErrors = true;
-          }
 
           fieldNames.add(fieldName);
 
           const virtualField = aliasToVirtualMap.get(fieldName);
 
-          if (virtualField) {
+          if (virtualField)
             errorTool.add(
               optionName,
               `"${fieldName}" is an alias; use "${virtualField}" instead`,
             );
-            hasErrors = true;
-          }
 
           if (
             !isOneOf(definitions[fieldName]?.type, [
@@ -731,23 +699,32 @@ function makeOptions<
               'required',
               'virtual',
             ])
-          ) {
+          )
             errorTool.add(
               optionName,
               `${type_not_allowed_error} remove "${fieldName}"`,
             );
-            hasErrors = true;
-          }
         }
-
-        if (!hasErrors) normalizedOptions.ignoreUpdate = ignoreUpdate;
       }
     }
+
+    normalizedOptions.ignoreUpdate = ignoreUpdate;
+  }
+
+  if (options.onDelete) {
+    const onDelete: NS.DeleteHandler<O, CtxOptions>[] = [];
+
+    if (typeof options.onDelete === 'function') onDelete.push(options.onDelete);
+    else {
+      for (const config of toArray(options.onDelete))
+        if (typeof config === 'function') onDelete.push(config);
+    }
+
+    if (onDelete.length) normalizedOptions.onDelete = onDelete;
   }
 
   if (options.onSuccess) {
     const onSuccess: NS.OnSuccessConfigOptionItem<I, O, CtxOptions>[] = [];
-    let hasErrors = false;
 
     if (typeof options.onSuccess === 'function')
       onSuccess.push(options.onSuccess);
@@ -768,38 +745,32 @@ function makeOptions<
         const fieldNames = new Set<string>();
 
         for (const fieldName of fields) {
-          if (fieldNames.has(fieldName)) {
+          if (fieldNames.has(fieldName))
             errorTool.add(
               optionName,
               `remove duplicates of "${fieldName}" in your grouped on success config`,
             );
-            hasErrors = true;
-          }
 
           fieldNames.add(fieldName);
 
           const virtualField = aliasToVirtualMap.get(fieldName);
 
-          if (virtualField) {
+          if (virtualField)
             errorTool.add(
               optionName,
               `"${fieldName}" is an alias; use "${virtualField}" instead`,
             );
-            hasErrors = true;
-          }
 
-          if (!definitions[fieldName]) {
+          if (!definitions[fieldName])
             errorTool.add(
               optionName,
               `"${fieldName}" does not exist on your schema`,
             );
-            hasErrors = true;
-          }
         }
       }
     }
 
-    if (!hasErrors) normalizedOptions.onSuccess = onSuccess;
+    normalizedOptions.onSuccess = onSuccess;
   }
 
   if (options.postValidate) {
@@ -814,7 +785,6 @@ function makeOptions<
       CtxOptions,
       ErrorMetadata
     >[] = [];
-    const hasErrors = false;
 
     for (const { fields, validator } of toArray(options.postValidate)) {
       postValidate.push({ fields, validator });
@@ -854,7 +824,7 @@ function makeOptions<
       }
     }
 
-    if (!hasErrors) normalizedOptions.postValidate = postValidate;
+    normalizedOptions.postValidate = postValidate;
   }
 
   if (options.required) {
@@ -863,7 +833,6 @@ function makeOptions<
       'only lax and virtual fields can belong to grouped required configs';
     const required: NS.RequiredConfigObject<I, O, CtxOptions, ErrorMetadata>[] =
       [];
-    const hasErrors = false;
 
     for (const { fields, handler } of toArray(options.required)) {
       required.push({ fields, handler });
@@ -901,7 +870,7 @@ function makeOptions<
       }
     }
 
-    if (!hasErrors) normalizedOptions.required = required;
+    normalizedOptions.required = required;
   }
 
   if (errorTool.isPayloadLoaded) errorTool.throw();

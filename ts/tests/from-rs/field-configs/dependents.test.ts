@@ -402,6 +402,46 @@ describe('field configs.dependent', () => {
     }
   });
 
+  it('should reject readonly rule + default resolver', () => {
+    const toFail = makeFx((b) =>
+      b.field(b.lax('lax', 1)).field(
+        b
+          .dependent('dependent', 'lax')
+          .default(() => 2)
+          .resolve(() => 4)
+          .readonly(),
+      ),
+    );
+
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
+          'The readonly rule is only valid for fields with static default values',
+        ),
+      ).toBeTrue();
+    }
+  });
+
+  it('should accept readonly rule + static default values', () => {
+    const toPass = makeFx((b) =>
+      b.field(b.lax('lax', 1)).field(
+        b
+          .dependent('dependent', 'lax')
+          .default(2)
+          .resolve(() => 4)
+          .readonly(),
+      ),
+    );
+
+    expectNoFailure(toPass);
+    toPass();
+  });
+
   it('should allow dependency on normal lax or required fields', () => {
     for (const dependsOn of ['lax', 'required', ['lax', 'required'] as const]) {
       const toPass = makeFx(
@@ -410,7 +450,7 @@ describe('field configs.dependent', () => {
             .field(b.lax('lax', 1))
             .field(
               b
-                .dependent('dependent', dependsOn as never)
+                .dependent('dependent', dependsOn)
                 .default(2)
                 .resolve(() => 4),
             )

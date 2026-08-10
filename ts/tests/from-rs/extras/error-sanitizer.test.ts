@@ -21,17 +21,17 @@ function validateCoordinates(c: unknown) {
   if (coords.lon < -180 || coords.lon > 180)
     errors.push('LongitudeOutOfRange: [-180, 180]');
 
-  if (errors.length)
-    return { valid: false, reason: 'Out of range error', metadata: errors };
-
-  return { valid: true };
+  return errors.length
+    ? { valid: false, reason: 'Out of range error', metadata: errors }
+    : { valid: true };
 }
 
 describe('extras.errorSanitizer', () => {
   it('should respect custom error sanitizer', async () => {
+    type Data = { coordinates: Coordinates };
     const PlaceModel = new Schema<
-      { coordinates: Coordinates },
-      { coordinates: Coordinates },
+      Data,
+      Data,
       {},
       string[],
       Record<string, string[]>
