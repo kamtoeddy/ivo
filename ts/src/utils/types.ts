@@ -467,6 +467,13 @@ namespace NS {
     | VirtualField<any, any, Input, Output, CtxOptions, Metadata>
   >;
 
+  export type DefinitionsEntries<
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+    Metadata,
+  > = [string, Definitions<Input, Output, CtxOptions, Metadata>[string]][];
+
   export type AliasToVirtualMap<T> = Record<string, KeyOf<T>>;
 
   export type VirtualToAliasMap<T> = Record<KeyOf<T>, string>;
@@ -658,7 +665,7 @@ namespace NS {
       payload: IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
       ctxOptions: CtxOptions,
     ) => ErrorPayload;
-    timestamps?: TimeStampTool;
+    timestamps: TimeStampTool | null;
   };
 
   export type Options<

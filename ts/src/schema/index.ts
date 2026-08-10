@@ -50,21 +50,41 @@ class Schema<
     ) => FieldBuilder<I, O, CtxOptions, ErrorMetadata>,
     options: NS.Options<I, O, CtxOptions, ErrorMetadata, ErrorPayload> = {},
   ) {
-    const definitions = builder(new FieldBuilder())[FIELD_BUILDER_DEFINITIONS];
-
     const errorTool = new SchemaErrorTool();
+    let timestamps: TimeStampTool | null = null;
 
-    const aliasToVirtualMap = validateFields<I, O, CtxOptions, ErrorMetadata>(
-      definitions,
+    if (options.timestamps) {
+      const isValid = isTimestampsConfigOptionOk(options.timestamps);
+
+      if (!isValid.valid) errorTool.add('options.timestamps', isValid.reason);
+      else timestamps = new TimeStampTool(options.timestamps);
+    }
+
+    if (errorTool.isPayloadLoaded) errorTool.throw();
+
+    const definitionsEntries = builder(new FieldBuilder())[
+      FIELD_BUILDER_DEFINITIONS
+    ];
+
+    const { aliasToVirtualMap, definitions } = validateFields<
+      I,
+      O,
+      CtxOptions,
+      ErrorMetadata
+    >({
+      definitionsEntries,
       errorTool,
-    );
+      timestamps,
+    });
 
     this._definitions = definitions;
+
     this._options = makeOptions<I, O, CtxOptions, ErrorMetadata, ErrorPayload>({
       aliasToVirtualMap,
       definitions,
       errorTool,
       options,
+      timestamps,
     });
   }
 
@@ -185,7 +205,7 @@ class FieldBuilder<
   const CtxOptions extends ObjectType = {},
   const ErrorMetadata = DefaultFieldErrorMetadata,
 > {
-  private _definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>;
+  private _definitions: NS.DefinitionsEntries<I, O, CtxOptions, ErrorMetadata>;
 
   // Optional seed, used exclusively by `Schema.extend()` to carry a parent
   // schema's already-materialized definitions (real field configs, not
@@ -193,7 +213,7 @@ class FieldBuilder<
   // `field()` itself stays `Buildable`-only, so this is the only legitimate
   // way to fold pre-built definitions back into the builder pattern.
   constructor(seed: NS.Definitions<I, O, CtxOptions, ErrorMetadata> = {}) {
-    this._definitions = seed;
+    this._definitions = Object.entries(seed);
   }
 
   field<K extends keyof I | keyof O>(
@@ -202,7 +222,8 @@ class FieldBuilder<
     if (isBuildable(c)) {
       const built = c[FIELD_CONFIG_BUILD_METHOD_NAME]();
 
-      if (typeof built.name === 'string') this._definitions[built.name] = built;
+      if (typeof built.name === 'string')
+        this._definitions.push([built.name, built]);
     }
 
     return this;
@@ -250,7 +271,7 @@ class FieldBuilder<
     return new VirtualBuilder<any, I, O, CtxOptions, ErrorMetadata>(name);
   }
 
-  get [FIELD_BUILDER_DEFINITIONS](): NS.Definitions<
+  get [FIELD_BUILDER_DEFINITIONS](): NS.DefinitionsEntries<
     I,
     O,
     CtxOptions,
@@ -265,10 +286,18 @@ function validateFields<
   O extends RealType<O>,
   CtxOptions extends ObjectType,
   ErrorMetadata,
->(
-  definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>,
-  errorTool: SchemaErrorTool,
-): Map<string, string> {
+>({
+  definitionsEntries,
+  errorTool,
+  timestamps,
+}: {
+  definitionsEntries: NS.DefinitionsEntries<I, O, CtxOptions, ErrorMetadata>;
+  errorTool: SchemaErrorTool;
+  timestamps: TimeStampTool | null;
+}): {
+  aliasToVirtualMap: Map<string, string>;
+  definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>;
+} {
   const constantFieldNames = new Set<string>();
   const dependentFieldToParentFields = new Map<
     string,
@@ -276,35 +305,54 @@ function validateFields<
   >();
   const fieldNames = new Set<string>();
   const aliasToVirtualMap = new Map<string, string>();
+  const definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata> = {};
   const dependentConfigs: Array<
     [string, NS.DependentField<any, I, O, CtxOptions>]
   > = [];
 
-  const definitionEntries = Object.entries(definitions);
+  const timestampKeys = timestamps?.getKeys();
 
-  for (const [fieldName, config] of definitionEntries) {
+  for (const [fieldName, config] of definitionsEntries) {
     if (fieldNames.has(fieldName))
       errorTool.add(
         fieldName,
-        'occurs more than once, please remove duplicatesn',
+        `"${fieldName}" occurs more than once, please remove duplicates`,
       );
 
     fieldNames.add(fieldName);
 
+    if (timestampKeys) {
+      if (timestampKeys.createdAt === fieldName)
+        errorTool.add(
+          fieldName,
+          `"${fieldName}" is not a valid field name. It is the creation timestamp`,
+        );
+      else if (timestampKeys.updatedAt === fieldName)
+        errorTool.add(
+          fieldName,
+          `"${fieldName}" is not a valid field name. It is the update timestamp`,
+        );
+    }
+
     if (config.type === 'constant') {
       constantFieldNames.add(fieldName);
+
+      definitions[fieldName] = config;
       continue;
     }
 
     if (config.type === 'dependent') {
       const { dependsOn } = config;
-      const hasErrors = false;
+      let hasErrors = false;
 
-      if (typeof config.default === 'undefined')
+      if (typeof config.default === 'undefined') {
         errorTool.add(
           fieldName,
           'Dependent fields must have a default value or default resolver',
         );
+
+        hasErrors = true;
+      }
 
       if (typeof config.resolver !== 'function')
         errorTool.add(fieldName, 'Dependent fields must have a value resolver');
@@ -317,9 +365,10 @@ function validateFields<
 
       // @ts-expect-error
       if (dependsOn.includes(fieldName))
-        errorTool.add(fieldName, 'A field cannot depend on itself');
+        errorTool.add(fieldName, `"${fieldName}" cannot depend on itself`);
 
       if (!hasErrors) {
+        definitions[fieldName] = config;
         dependentConfigs.push([fieldName, config]);
         dependentFieldToParentFields.set(fieldName, dependsOn);
       }
@@ -333,6 +382,7 @@ function validateFields<
           fieldName,
           'Lax fields must have a default value or default resolver',
         );
+      else definitions[fieldName] = config;
 
       continue;
     }
@@ -340,37 +390,65 @@ function validateFields<
     if (config.type === 'required') {
       if (!config.allow && !config.validator)
         errorTool.add(fieldName, 'Required fields must have a validator');
+      else definitions[fieldName] = config;
 
       continue;
     }
 
     const { alias } = config;
+    let hasErrors = false;
 
     if (alias) {
-      if (fieldName === alias)
+      if (fieldName === alias) {
         errorTool.add(
           fieldName,
           'virtual alias name must be different from field name',
         );
+        hasErrors = true;
+      }
+
+      if (timestampKeys) {
+        if (timestampKeys.createdAt === alias) {
+          errorTool.add(
+            fieldName,
+            `"${fieldName}" is not a valid alias. It is the creation timestamp`,
+          );
+
+          hasErrors = true;
+        } else if (timestampKeys.updatedAt === alias) {
+          errorTool.add(
+            fieldName,
+            `"${alias}" is not a valid alias. It is the update timestamp`,
+          );
+
+          hasErrors = true;
+        }
+      }
 
       const otherField = aliasToVirtualMap.get(alias);
 
-      if (otherField != null)
+      if (otherField) {
         errorTool.add(
           fieldName,
           `"${alias}" is already the alias of "${otherField}"`,
         );
 
-      for (const [name, config] of definitionEntries) {
+        hasErrors = true;
+      }
+
+      for (const [name, config] of definitionsEntries) {
         if (name !== alias) continue;
 
         if (config.type === 'dependent') {
           // @ts-expect-error ikr
-          if (!config.dependsOn.includes(fieldName))
+          if (!config.dependsOn.includes(fieldName)) {
             errorTool.add(
               fieldName,
               `"${alias}" is not a valid alias for field because "${alias}" does not depend on "${fieldName}"`,
             );
+
+            hasErrors = true;
+          }
 
           continue;
         }
@@ -379,6 +457,8 @@ function validateFields<
           fieldName,
           `"${alias}" is not a valid alias for field because it is not a dependent field`,
         );
+
+        hasErrors = true;
       }
 
       aliasToVirtualMap.set(alias, fieldName);
@@ -388,18 +468,24 @@ function validateFields<
 
     let hasSufficientDependencies = false;
 
-    for (const [, config] of definitionEntries) {
+    for (const [, config] of definitionsEntries) {
       // @ts-expect-error ikr
       if (config.type === 'dependent' && config.dependsOn.includes(fieldName)) {
         hasSufficientDependencies = true;
         break;
       }
     }
-    if (!hasSufficientDependencies)
+
+    if (!hasSufficientDependencies) {
       errorTool.add(
         fieldName,
         'Virtual fields are expected to have at least one dependency, but found none',
       );
+
+      hasErrors = true;
+    }
+
+    if (!hasErrors) definitions[fieldName] = config;
   }
 
   for (const [fieldName, config] of dependentConfigs) {
@@ -408,10 +494,23 @@ function validateFields<
     const parentFieldsProvided = new Set<string>();
 
     for (const parentField of parentFields) {
+      if (timestampKeys) {
+        if (timestampKeys.createdAt === parentField)
+          errorTool.add(
+            fieldName,
+            `"${fieldName}" cannot depend on "${parentField}" because it is the creation timestamp`,
+          );
+        else if (timestampKeys.updatedAt === parentField)
+          errorTool.add(
+            fieldName,
+            `"${fieldName}" cannot depend on "${parentField}" because it is the update timestamp`,
+          );
+      }
+
       if (!fieldNames.has(parentField))
         errorTool.add(
           fieldName,
-          `cannot depend on "${parentField}" because it is not a field on your schema`,
+          `"${fieldName}" cannot depend on "${parentField}" because it is not a field on your schema`,
         );
 
       if (parentFieldsProvided.has(parentField))
@@ -423,7 +522,7 @@ function validateFields<
       if (constantFieldNames.has(parentField))
         errorTool.add(
           fieldName,
-          `cannot depend on "${parentField}" because it is a constant`,
+          `"${fieldName}" cannot depend on "${parentField}" because it is a constant`,
         );
 
       parentFieldsProvided.add(parentField);
@@ -440,14 +539,14 @@ function validateFields<
       if (depth === 0) {
         errorTool.add(
           fieldName,
-          `should not depend on "${parentField}" and "${redundantField}" because "${parentField}" depends on "${redundantField}"`,
+          `"${fieldName}" should not depend on "${parentField}" and "${redundantField}" because "${parentField}" depends on "${redundantField}"`,
         );
         continue;
       }
 
       errorTool.add(
         fieldName,
-        `should not depend on "${parentField}" and "${redundantField}" because "${parentField}" indirectly depends on "${redundantField}"`,
+        `"${fieldName}" should not depend on "${parentField}" and "${redundantField}" because "${parentField}" indirectly depends on "${redundantField}"`,
       );
     }
 
@@ -457,7 +556,7 @@ function validateFields<
       dependentFieldToParentFields,
     );
 
-    if (circularChain != null)
+    if (circularChain)
       errorTool.add(
         fieldName,
         `circular dependency identified between "${circularChain.sort().join(' <-> ')}"`,
@@ -469,7 +568,7 @@ function validateFields<
   if (!fieldNames.size)
     errorTool.add('schema fields', 'Insufficient Schema fields').throw();
 
-  return aliasToVirtualMap;
+  return { aliasToVirtualMap, definitions };
 }
 
 function makeOptions<
@@ -483,11 +582,13 @@ function makeOptions<
   definitions,
   errorTool,
   options,
+  timestamps,
 }: {
   aliasToVirtualMap: Map<string, string>;
   definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>;
   errorTool: SchemaErrorTool;
   options: NS.Options<I, O, CtxOptions, ErrorMetadata, ErrorPayload>;
+  timestamps: TimeStampTool | null;
 }): NS.InternalOptions<I, O, CtxOptions, ErrorMetadata, ErrorPayload> {
   let sanitizeError = (p: IvoErrorPayload<ErrorMetadata, KeyOf<I>>) => p;
 
@@ -506,6 +607,7 @@ function makeOptions<
     equalityDepth: options.equalityDepth ?? 1,
     // @ts-expect-error ikr
     sanitizeError,
+    timestamps,
   };
 
   if (options.ignore) {
@@ -802,13 +904,6 @@ function makeOptions<
     if (!hasErrors) normalizedOptions.required = required;
   }
 
-  if (options.timestamps) {
-    const isValid = isTimestampsConfigOptionOk(options.timestamps);
-
-    if (!isValid.valid) errorTool.add('options.timestamps', isValid.reason);
-    else normalizedOptions.timestamps = new TimeStampTool(options.timestamps);
-  }
-
   if (errorTool.isPayloadLoaded) errorTool.throw();
 
   return normalizedOptions as any;
@@ -829,8 +924,15 @@ function isTimestampsConfigOptionOk<I, O>(
   if (!Object.keys(timestamps!).length)
     return { valid, reason: 'cannot be an empty object' };
 
-  const createdAt = timestamps.createdAt as string;
-  let updatedAt = timestamps.updatedAt as string;
+  const createdAt =
+    typeof timestamps.createdAt === 'string'
+      ? timestamps.createdAt
+      : 'createdAt';
+
+  let updatedAt =
+    typeof timestamps.updatedAt === 'string'
+      ? timestamps.updatedAt
+      : 'updatedAt';
 
   if (typeof createdAt === 'string' && !createdAt.trim().length)
     return { valid, reason: "'createdAt' cannot be an empty string" };
@@ -862,10 +964,7 @@ function isTimestampsConfigOptionOk<I, O>(
       keys.includes('nullable') &&
       typeof updatedAtConfig.nullable !== 'boolean'
     )
-      return {
-        valid,
-        reason: "'updatedAt.nullable' must be a boolean",
-      };
+      return { valid, reason: "'updatedAt.nullable' must be a boolean" };
   }
 
   if (createdAt === updatedAt)

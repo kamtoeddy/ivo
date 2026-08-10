@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { expectFailure, makeFx, validator } from '../../_utils';
 
 describe('field configs', () => {
-  it('should reject if field name is already set', () => {
+  it('should reject duplicate field names', () => {
     const toFail = makeFx((b) =>
       b
         .field(b.constant('id', 1234))
@@ -15,12 +15,12 @@ describe('field configs', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.lax).toMatchObject(
-        expect.arrayContaining([
-          'occurs more than once, please remove duplicates',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.lax.includes(
+          '"lax" occurs more than once, please remove duplicates',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -38,12 +38,12 @@ describe('field configs', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.createdAt).toMatchObject(
-        expect.arrayContaining([
-          'is not a valid field name. It is the creation timestamp',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.createdAt.includes(
+          '"createdAt" is not a valid field name. It is the creation timestamp',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -58,12 +58,12 @@ describe('field configs', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.customCreatedAt).toMatchObject(
-        expect.arrayContaining([
-          'is not a valid field name. It is the creation timestamp',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.customCreatedAt.includes(
+          '"customCreatedAt" is not a valid field name. It is the creation timestamp',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -81,12 +81,12 @@ describe('field configs', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.updatedAt).toMatchObject(
-        expect.arrayContaining([
-          'is not a valid field name. It is the update timestamp',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.updatedAt.includes(
+          '"updatedAt" is not a valid field name. It is the update timestamp',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -101,12 +101,12 @@ describe('field configs', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.customUpdatedAt).toMatchObject(
-        expect.arrayContaining([
-          'is not a valid field name. It is the update timestamp',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.customUpdatedAt.includes(
+          '"customUpdatedAt" is not a valid field name. It is the update timestamp',
+        ),
+      ).toBeTrue();
     }
   });
 });

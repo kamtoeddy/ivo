@@ -25,12 +25,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.dependent).toMatchObject(
-        expect.arrayContaining([
-          'must depend on at least one lax, required, virtual or other dependent field on your schema',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
+          'Dependent fields must depend on at least one lax, required, virtual or other dependent field on your schema',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -55,12 +55,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.dependent).toMatchObject(
-        expect.arrayContaining([
-          'cannot depend on "createdAt" because it is the creation timestamp',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
+          '"dependent" cannot depend on "createdAt" because it is the creation timestamp',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -85,12 +85,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.dependent).toMatchObject(
-        expect.arrayContaining([
-          'cannot depend on "customCreatedAt" because it is the creation timestamp',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
+          '"dependent" cannot depend on "customCreatedAt" because it is the creation timestamp',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -115,12 +115,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.dependent).toMatchObject(
-        expect.arrayContaining([
-          'cannot depend on "updatedAt" because it is the update timestamp',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
+          '"dependent" cannot depend on "updatedAt" because it is the update timestamp',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -145,12 +145,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.dependent).toMatchObject(
-        expect.arrayContaining([
-          'cannot depend on "customUpdatedAt" because it is the update timestamp',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
+          '"dependent" cannot depend on "customUpdatedAt" because it is the update timestamp',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -172,12 +172,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.dependent).toMatchObject(
-        expect.arrayContaining([
-          'cannot depend on "lol" because it is not a field on your schema',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
+          '"dependent" cannot depend on "lol" because it is not a field on your schema',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -199,10 +199,10 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.dependent).toMatchObject(
-        expect.arrayContaining(['cannot depend on itself']),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes('"dependent" cannot depend on itself'),
+      ).toBeTrue();
     }
   });
 
@@ -224,12 +224,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.dependent).toMatchObject(
-        expect.arrayContaining([
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
           '"lax" has been provided as a parent field multiple times. remove all duplicates to proceed',
-        ]),
-      );
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -252,12 +252,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.dependent).toMatchObject(
-        expect.arrayContaining([
-          'cannot depend on "id" because it is a constant',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
+          '"dependent" cannot depend on "id" because it is a constant',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -285,12 +285,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.a).toMatchObject(
-        expect.arrayContaining([
-          'should not depend on "b" and "c" because "b" depends on "c"',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.a.includes(
+          '"a" should not depend on "b" and "c" because "b" depends on "c"',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -323,12 +323,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.a).toMatchObject(
-        expect.arrayContaining([
-          'should not depend on "b" and "d" because "b" indirectly depends on "d"',
-        ]),
-      );
+      expect(
+        // @ts-expect-error ikr
+        e.payload.a.includes(
+          '"a" should not depend on "b" and "d" because "b" indirectly depends on "d"',
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -355,12 +355,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.a).toMatchObject(
-        expect.arrayContaining([
+      expect(
+        // @ts-expect-error ikr
+        e.payload.a.includes(
           'circular dependency identified between "a <-> b"',
-        ]),
-      );
+        ),
+      ).toBeTrue();
     }
   });
 
@@ -393,12 +393,12 @@ describe('field configs.dependent', () => {
     try {
       toFail();
     } catch (e) {
-      // @ts-expect-error ikr
-      expect(e.payload.a).toMatchObject(
-        expect.arrayContaining([
+      expect(
+        // @ts-expect-error ikr
+        e.payload.a.includes(
           'circular dependency identified between "a <-> b <-> c"',
-        ]),
-      );
+        ),
+      ).toBeTrue();
     }
   });
 
