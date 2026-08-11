@@ -104,19 +104,22 @@ class ModelTool<
     const requiredError =
       await this._evaluateMissingRequiredFields(fieldsCollection);
 
-    if (requiredError.hasErrors) return this._handleError(requiredError);
+    if (requiredError.hasErrors)
+      return this._handleError(requiredError, fieldsCollection);
 
     const primaryError = await this._validate(fieldsCollection);
 
-    if (primaryError.hasErrors) return this._handleError(primaryError);
+    if (primaryError.hasErrors)
+      return this._handleError(primaryError, fieldsCollection);
 
     const secondaryError = await this._reValidate(fieldsCollection);
-    if (secondaryError.hasErrors) return this._handleError(secondaryError);
+    if (secondaryError.hasErrors)
+      return this._handleError(secondaryError, fieldsCollection);
 
     const postValidationError = await this._postValidate(fieldsCollection);
 
     if (postValidationError.hasErrors)
-      return this._handleError(postValidationError);
+      return this._handleError(postValidationError, fieldsCollection);
 
     await this._sanitizeVirtuals(fieldsCollection);
 
@@ -160,8 +163,8 @@ class ModelTool<
   async update(values: O, changes: Partial<I>, options: CtxOptions) {
     const emptyErrorTool = new ErrorTool<ErrorMetadata>();
 
-    if (!areValuesOk(values) || !areValuesOk(changes))
-      return this._handleUpdateError(emptyErrorTool);
+    // if (!areValuesOk(values) || !areValuesOk(changes))
+    //   return this._handleUpdateError(emptyErrorTool, fieldsCollection);
 
     const fieldsCollection = await this._filterInputFieldsAllowed({
       rawInput: changes,
@@ -170,32 +173,34 @@ class ModelTool<
     });
 
     if (!fieldsCollection.relevantConfigNames.size)
-      return this._handleUpdateError(emptyErrorTool);
+      return this._handleUpdateError(emptyErrorTool, fieldsCollection);
 
     const requiredError =
       await this._evaluateMissingRequiredFields(fieldsCollection);
 
-    if (requiredError.hasErrors) return this._handleUpdateError(requiredError);
+    if (requiredError.hasErrors)
+      return this._handleUpdateError(requiredError, fieldsCollection);
 
     const primaryError = await this._validate(fieldsCollection);
 
-    if (primaryError.hasErrors) return this._handleUpdateError(primaryError);
+    if (primaryError.hasErrors)
+      return this._handleUpdateError(primaryError, fieldsCollection);
 
     if (!this._isValidUpdate(fieldsCollection))
-      return this._handleUpdateError(emptyErrorTool);
+      return this._handleUpdateError(emptyErrorTool, fieldsCollection);
 
     const secondaryError = await this._reValidate(fieldsCollection);
 
     if (secondaryError.hasErrors)
-      return this._handleUpdateError(secondaryError);
+      return this._handleUpdateError(secondaryError, fieldsCollection);
 
     const postValidationError = await this._postValidate(fieldsCollection);
 
     if (postValidationError.hasErrors)
-      return this._handleUpdateError(postValidationError);
+      return this._handleUpdateError(postValidationError, fieldsCollection);
 
     if (!this._isValidUpdate(fieldsCollection))
-      return this._handleUpdateError(emptyErrorTool);
+      return this._handleUpdateError(emptyErrorTool, fieldsCollection);
 
     await this._sanitizeVirtuals(fieldsCollection);
 
@@ -204,8 +209,21 @@ class ModelTool<
     while (collection.relevantDependentConfigNames.size > 0)
       collection = await this._resolveDependentChanges(collection);
 
-    if (!this._isValidUpdate(fieldsCollection))
-      return this._handleUpdateError(emptyErrorTool);
+    const updatedValues = this.ctxValues;
+    let hasUpdates = false;
+
+    for (const [fieldName, value] of Object.entries(updatedValues)) {
+      // @ts-expect-error ikr
+      if (isEqual(value, values[fieldName], this.options.equalityDepth))
+        // @ts-expect-error ikr
+        delete updatedValues[fieldName];
+      else hasUpdates = true;
+    }
+
+    this._setCxtValues(updatedValues);
+
+    if (!hasUpdates)
+      return this._handleUpdateError(emptyErrorTool, fieldsCollection);
 
     const data = this._attachTimestamps();
 
@@ -1121,56 +1139,58 @@ class ModelTool<
     const errorTool = new ErrorTool<ErrorMetadata>();
 
     await Promise.allSettled(
-      fieldsCollection.relevantFieldsProvided.values().map(async (name) => {
-        const fieldInfo = fieldsCollection.get(name);
-        const configName = fieldInfo.configName;
-        const { reValidator } = this.definitions[configName] as NS.LaxField<
-          any,
-          any,
-          any,
-          any,
-          any
-        >;
+      fieldsCollection.relevantFieldsProvided
+        .values()
+        .map(async (fieldName) => {
+          const fieldInfo = fieldsCollection.get(fieldName);
+          const configName = fieldInfo.configName;
+          const { reValidator } = this.definitions[configName] as NS.LaxField<
+            any,
+            any,
+            any,
+            any,
+            any
+          >;
 
-        if (!reValidator) return;
+          if (!reValidator) return;
 
-        // @ts-expect-error ikr
-        const value = ctx.input?.[name] as never as O[KeyOf<O>];
+          // @ts-expect-error ikr
+          const value = ctx.input?.[fieldName] as never as O[KeyOf<O>];
 
-        let isValid: ValidatorResponseObject<unknown, ErrorMetadata>;
+          let isValid: ValidatorResponseObject<unknown, ErrorMetadata>;
 
-        try {
-          isValid = this._sanitizeValidationResponse<unknown>(
-            (await Promise.try(
-              reValidator,
+          try {
+            isValid = this._sanitizeValidationResponse<unknown>(
+              (await Promise.try(
+                reValidator,
+                value,
+                ctx,
+              )) as ValidatorResponseObject<unknown, ErrorMetadata>,
               value,
-              ctx,
-            )) as ValidatorResponseObject<unknown, ErrorMetadata>,
-            value,
-          );
-        } catch {
-          isValid = makeResponse<unknown, ErrorMetadata>({
-            valid: false,
-            reason: 'validation failed',
-          });
-        }
+            );
+          } catch {
+            isValid = makeResponse<unknown, ErrorMetadata>({
+              valid: false,
+              reason: 'validation failed',
+            });
+          }
 
-        if (!isValid.valid)
-          return this._handleInvalidValue(errorTool, name, isValid);
+          if (!isValid.valid)
+            return this._handleInvalidValue(errorTool, fieldName, isValid);
 
-        const { validated } = isValid;
+          const { validated } = isValid;
 
-        if (
-          !isEqual(validated, undefined) &&
-          !isEqual(validated, value, this.options.equalityDepth)
-        ) {
-          const ctxUpdate = { [configName]: validated } as never;
+          if (
+            !isEqual(validated, undefined) &&
+            !isEqual(validated, value, this.options.equalityDepth)
+          ) {
+            const ctxUpdate = { [fieldName]: validated } as never;
 
-          if (!fieldInfo.isVirtual) this._updateCxtValues(ctxUpdate);
+            if (!fieldInfo.isVirtual) this._updateCxtValues(ctxUpdate);
 
-          this._updateCxtInput(ctxUpdate);
-        }
-      }),
+            this._updateCxtInput(ctxUpdate);
+          }
+        }),
     );
 
     return errorTool;
@@ -1312,14 +1332,14 @@ class ModelTool<
 
       if (!isRecordLike(res)) return { revalidatedData: null, success: true };
 
-      for (const [name, value] of Object.entries(res)) {
-        const info = fieldsCollection.getUnsafe(name);
+      for (const [fieldName, value] of Object.entries(res)) {
+        const info = fieldsCollection.getUnsafe(fieldName);
 
         if (!info || !fields.includes(info.configName)) continue;
 
         if (typeof value === 'object' && 'validated' in (value as any)) {
           // @ts-expect-error ikr
-          revalidatedData[info.name] = (value as any).validated;
+          revalidatedData[fieldName] = (value as any).validated;
 
           continue;
         }
@@ -1368,41 +1388,43 @@ class ModelTool<
     // NS.setter), so virtuals — the only fields that can have a `sanitizer` —
     // never appear there. `relevantConfigNames` is the unfiltered, config-
     // name-mapped equivalent.
-    for (const name of fieldsCollection.relevantConfigNames) {
-      const fieldInfo = fieldsCollection.get(name);
+    for (const configName of fieldsCollection.relevantConfigNames) {
+      const fieldInfo = fieldsCollection.get(configName);
       // @ts-expect-error ikr
       const sanitizer = this.definitions[fieldInfo.configName].sanitizer;
 
-      if (sanitizer) sanitizers.push([name, sanitizer]);
+      if (sanitizer) sanitizers.push([fieldInfo.name, sanitizer]);
     }
 
     await Promise.allSettled(
-      sanitizers.map(async ([name, sanitizer]) => {
+      sanitizers.map(async ([fieldName, sanitizer]) => {
         await Promise.try(sanitizer, this._getContext()).then(
           (resolvedValue) => {
             if (
               !isEqual(
                 resolvedValue,
                 // @ts-expect-error ikr
-                this._ctxInput[name],
+                this._ctxInput[fieldName],
                 this.options.equalityDepth,
               )
             )
-              this._updateCxtInput({ [name]: resolvedValue } as never);
+              this._updateCxtInput({ [fieldName]: resolvedValue } as never);
           },
         );
       }),
     );
   }
 
-  private _makeHandleFailure() {
+  private _makeHandleFailure(fieldsCollection: FieldInfoCollection) {
     const ctx = this._getReadonlyCtx();
-    const fieldsToCleanup = getKeysAsProps(ctx.rawInput);
 
     let cleanups: NS.FailureHandler<I, O, CtxOptions>[] = [];
 
-    for (const fieldName of fieldsToCleanup) {
-      const config = this.definitions[fieldName] as NS.LaxField<
+    for (const fieldName of fieldsCollection.fieldsProvided) {
+      const info = fieldsCollection.getUnsafe(fieldName);
+      if (!info) continue;
+
+      const config = this.definitions[info.configName] as NS.LaxField<
         any,
         I,
         O,
@@ -1572,17 +1594,23 @@ class ModelTool<
     return makeResponse(_response);
   }
 
-  private _handleError(errorTool: ErrorTool<ErrorMetadata, KeyOf<I>>) {
+  private _handleError(
+    errorTool: ErrorTool<ErrorMetadata, KeyOf<I>>,
+    fieldsCollection: FieldInfoCollection,
+  ) {
     return {
       data: null,
       error: this.options.sanitizeError(errorTool.payload, this.ctxOptions),
       options: this.ctxOptions,
-      handleFailure: this._makeHandleFailure(),
+      handleFailure: this._makeHandleFailure(fieldsCollection),
       handleSuccess: null,
     };
   }
 
-  private _handleUpdateError(errorTool: ErrorTool<ErrorMetadata, KeyOf<I>>) {
+  private _handleUpdateError(
+    errorTool: ErrorTool<ErrorMetadata, KeyOf<I>>,
+    fieldsCollection: FieldInfoCollection,
+  ) {
     const options = this._getReadonlyCtx().options;
     const isNothingToUpdate = !errorTool.hasErrors;
 
@@ -1597,7 +1625,7 @@ class ModelTool<
             payload: this.options.sanitizeError(errorTool.payload, options),
           } as const),
       options,
-      handleFailure: this._makeHandleFailure(),
+      handleFailure: this._makeHandleFailure(fieldsCollection),
       handleSuccess: null,
     };
   }

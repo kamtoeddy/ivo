@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from '../../../../src';
 
-const NAMING_SCHEMES: { publicKey: string; alias?: string }[] = [
-  { publicKey: 'virtualField' },
-  { publicKey: 'virtualAlias', alias: 'virtualAlias' },
-  { publicKey: 'dependent', alias: 'dependent' },
+const NAMING_SCHEMES: { alias?: string }[] = [
+  {},
+  { alias: 'virtualAlias' },
+  { alias: 'dependent' },
 ];
 
 function buildVirtual(b: any, alias?: string) {
@@ -20,7 +20,7 @@ function virtualValidator(v: unknown) {
 
 describe('fields.virtual.onFailure', () => {
   it('should trigger onFailure handlers at creation', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggeredWith: string | undefined;
 
       const Model = new Schema<any, any>((b) =>
@@ -32,20 +32,22 @@ describe('fields.virtual.onFailure', () => {
               .resolve((ctx: any) => ctx.values.dependent + 1),
           )
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .onFailure((ctx: any) => {
-                triggeredWith = ctx.input[scheme.publicKey];
+                triggeredWith = ctx.input[alias ?? 'virtualField'];
               }),
           ),
       ).getModel();
 
       const { error, handleFailure } = await Model.create(
-        { [scheme.publicKey]: 'fail_validation' },
+        { [alias ?? 'virtualField']: 'fail_validation' },
         {},
       );
 
-      expect(error?.[scheme.publicKey]?.reason).toBe('validation failed');
+      expect(error?.[alias ?? 'virtualField']?.reason).toBe(
+        'validation failed',
+      );
 
       await handleFailure?.();
 
@@ -54,7 +56,7 @@ describe('fields.virtual.onFailure', () => {
   });
 
   it('should trigger onFailure handlers during updates', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggeredWith: string | undefined;
       const defaultDependentValue = 1;
 
@@ -67,21 +69,21 @@ describe('fields.virtual.onFailure', () => {
               .resolve((ctx: any) => ctx.values.dependent + 1),
           )
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .onFailure((ctx: any) => {
-                triggeredWith = ctx.input[scheme.publicKey];
+                triggeredWith = ctx.input[alias ?? 'virtualField'];
               }),
           ),
       ).getModel();
 
       const { error, handleFailure } = await Model.update(
         { dependent: defaultDependentValue },
-        { [scheme.publicKey]: 'fail_validation' },
+        { [alias ?? 'virtualField']: 'fail_validation' },
         {},
       );
 
-      expect(error?.payload?.[scheme.publicKey]?.reason).toBe(
+      expect(error?.payload?.[alias ?? 'virtualField']?.reason).toBe(
         'validation failed',
       );
 
@@ -92,7 +94,7 @@ describe('fields.virtual.onFailure', () => {
   });
 
   it('should trigger onFailure handlers even if provided and ignored by ignore fn at creation', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggeredWith: string | undefined;
       const defaultDependentValue = 1;
 
@@ -105,11 +107,11 @@ describe('fields.virtual.onFailure', () => {
               .resolve((ctx: any) => ctx.values.dependent + 1),
           )
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .ignore(() => true)
               .onFailure((ctx: any) => {
-                triggeredWith = ctx.rawInput[scheme.publicKey];
+                triggeredWith = ctx.rawInput[alias ?? 'virtualField'];
               }),
           )
           .field(b.virtual('virtualField2').validate(virtualValidator)),
@@ -117,13 +119,13 @@ describe('fields.virtual.onFailure', () => {
 
       const { error, handleFailure } = await Model.create(
         {
-          [scheme.publicKey]: 'update to be ignored',
+          [alias ?? 'virtualField']: 'update to be ignored',
           virtualField2: 'fail_validation',
         },
         {},
       );
 
-      expect(error?.[scheme.publicKey]).toBeUndefined();
+      expect(error?.[alias ?? 'virtualField']).toBeUndefined();
       expect(error?.virtualField2?.reason).toBe('validation failed');
 
       await handleFailure?.();
@@ -133,7 +135,7 @@ describe('fields.virtual.onFailure', () => {
   });
 
   it('should trigger onFailure handlers even if provided and ignored by ignore fn during updates', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggeredWith: string | undefined;
       const defaultDependentValue = 1;
 
@@ -146,11 +148,11 @@ describe('fields.virtual.onFailure', () => {
               .resolve((ctx: any) => ctx.values.dependent + 1),
           )
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .ignore(() => true)
               .onFailure((ctx: any) => {
-                triggeredWith = ctx.rawInput[scheme.publicKey];
+                triggeredWith = ctx.rawInput[alias ?? 'virtualField'];
               }),
           )
           .field(b.virtual('virtualField2').validate(virtualValidator)),
@@ -159,13 +161,13 @@ describe('fields.virtual.onFailure', () => {
       const { error, handleFailure } = await Model.update(
         { dependent: defaultDependentValue },
         {
-          [scheme.publicKey]: 'update to be ignored',
+          [alias ?? 'virtualField']: 'update to be ignored',
           virtualField2: 'fail_validation',
         },
         {},
       );
 
-      expect(error?.payload?.[scheme.publicKey]).toBeUndefined();
+      expect(error?.payload?.[alias ?? 'virtualField']).toBeUndefined();
       expect(error?.payload?.virtualField2?.reason).toBe('validation failed');
 
       await handleFailure?.();
@@ -175,7 +177,7 @@ describe('fields.virtual.onFailure', () => {
   });
 
   it('should trigger onFailure handlers even if provided and ignored by ignoreInit fn', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggeredWith: string | undefined;
       const defaultDependentValue = 1;
 
@@ -188,11 +190,11 @@ describe('fields.virtual.onFailure', () => {
               .resolve((ctx: any) => ctx.values.dependent + 1),
           )
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .ignoreInit()
               .onFailure((ctx: any) => {
-                triggeredWith = ctx.rawInput[scheme.publicKey];
+                triggeredWith = ctx.rawInput[alias ?? 'virtualField'];
               }),
           )
           .field(b.virtual('virtualField2').validate(virtualValidator)),
@@ -200,13 +202,13 @@ describe('fields.virtual.onFailure', () => {
 
       const { error, handleFailure } = await Model.create(
         {
-          [scheme.publicKey]: 'update to be ignored',
+          [alias ?? 'virtualField']: 'update to be ignored',
           virtualField2: 'fail_validation',
         },
         {},
       );
 
-      expect(error?.[scheme.publicKey]).toBeUndefined();
+      expect(error?.[alias ?? 'virtualField']).toBeUndefined();
       expect(error?.virtualField2?.reason).toBe('validation failed');
 
       await handleFailure?.();
@@ -216,7 +218,7 @@ describe('fields.virtual.onFailure', () => {
   });
 
   it('should trigger onFailure handlers even if provided and ignored by ignoreUpdate fn', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       let triggeredWith: string | undefined;
       const defaultDependentValue = 1;
 
@@ -229,11 +231,11 @@ describe('fields.virtual.onFailure', () => {
               .resolve((ctx: any) => ctx.values.dependent + 1),
           )
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .ignoreUpdate()
               .onFailure((ctx: any) => {
-                triggeredWith = ctx.rawInput[scheme.publicKey];
+                triggeredWith = ctx.rawInput[alias ?? 'virtualField'];
               }),
           )
           .field(b.virtual('virtualField2').validate(virtualValidator)),
@@ -242,13 +244,13 @@ describe('fields.virtual.onFailure', () => {
       const { error, handleFailure } = await Model.update(
         { dependent: defaultDependentValue },
         {
-          [scheme.publicKey]: 'update to be ignored',
+          [alias ?? 'virtualField']: 'update to be ignored',
           virtualField2: 'fail_validation',
         },
         {},
       );
 
-      expect(error?.payload?.[scheme.publicKey]).toBeUndefined();
+      expect(error?.payload?.[alias ?? 'virtualField']).toBeUndefined();
       expect(error?.payload?.virtualField2?.reason).toBe('validation failed');
 
       await handleFailure?.();

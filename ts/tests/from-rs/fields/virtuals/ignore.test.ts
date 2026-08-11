@@ -6,10 +6,10 @@ import { Schema } from '../../../../src';
  * three virtual-field naming schemes. Looping over them covers the same
  * ground without tripling the file.
  */
-const NAMING_SCHEMES: { publicKey: string; alias?: string }[] = [
-  { publicKey: 'virtualField' },
-  { publicKey: 'virtualAlias', alias: 'virtualAlias' },
-  { publicKey: 'dependent', alias: 'dependent' },
+const NAMING_SCHEMES: { alias?: string }[] = [
+  {},
+  { alias: 'virtualAlias' },
+  { alias: 'dependent' },
 ];
 
 function buildVirtual(b: any, alias?: string) {
@@ -25,7 +25,7 @@ function virtualValidator(v: unknown) {
 
 describe('fields.virtual.ignore', () => {
   it('should respect the ignore rule', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       const defaultDependentValue = 1;
       const defaultLaxValue = 10;
 
@@ -39,14 +39,14 @@ describe('fields.virtual.ignore', () => {
           )
           .field(b.lax('lax', defaultLaxValue))
           .field(
-            buildVirtual(b, scheme.alias)
+            buildVirtual(b, alias)
               .validate(virtualValidator)
               .ignore(() => true),
           ),
       ).getModel();
 
       let { data } = await Model.create(
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -57,7 +57,7 @@ describe('fields.virtual.ignore', () => {
 
       const lax = defaultLaxValue + 10;
       ({ data } = await Model.create(
-        { lax, [scheme.publicKey]: 'virtual_value' },
+        { lax, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       ));
 
@@ -66,7 +66,7 @@ describe('fields.virtual.ignore', () => {
       const lax2 = data.lax + 10;
       const { data: updates } = await Model.update(
         data,
-        { lax: lax2, [scheme.publicKey]: 'virtual_value' },
+        { lax: lax2, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -74,7 +74,7 @@ describe('fields.virtual.ignore', () => {
 
       const { error } = await Model.update(
         data,
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -83,7 +83,7 @@ describe('fields.virtual.ignore', () => {
   });
 
   it('should respect the ignoreInit rule', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       const defaultDependentValue = 1;
       const defaultLaxValue = 10;
 
@@ -97,14 +97,12 @@ describe('fields.virtual.ignore', () => {
           )
           .field(b.lax('lax', defaultLaxValue))
           .field(
-            buildVirtual(b, scheme.alias)
-              .validate(virtualValidator)
-              .ignoreInit(),
+            buildVirtual(b, alias).validate(virtualValidator).ignoreInit(),
           ),
       ).getModel();
 
       let { data } = await Model.create(
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -115,7 +113,7 @@ describe('fields.virtual.ignore', () => {
 
       const lax = defaultLaxValue + 10;
       ({ data } = await Model.create(
-        { lax, [scheme.publicKey]: 'virtual_value' },
+        { lax, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       ));
 
@@ -124,7 +122,7 @@ describe('fields.virtual.ignore', () => {
       const lax2 = data.lax + 10;
       let { data: updates } = await Model.update(
         data,
-        { lax: lax2, [scheme.publicKey]: 'virtual_value' },
+        { lax: lax2, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -132,7 +130,7 @@ describe('fields.virtual.ignore', () => {
 
       ({ data: updates } = await Model.update(
         data,
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       ));
 
@@ -141,7 +139,7 @@ describe('fields.virtual.ignore', () => {
   });
 
   it('should respect the ignoreUpdate rule', async () => {
-    for (const scheme of NAMING_SCHEMES) {
+    for (const { alias } of NAMING_SCHEMES) {
       const defaultDependentValue = 1;
       const defaultLaxValue = 10;
 
@@ -155,22 +153,20 @@ describe('fields.virtual.ignore', () => {
           )
           .field(b.lax('lax', defaultLaxValue))
           .field(
-            buildVirtual(b, scheme.alias)
-              .validate(virtualValidator)
-              .ignoreUpdate(),
+            buildVirtual(b, alias).validate(virtualValidator).ignoreUpdate(),
           ),
       ).getModel();
 
       const lax = defaultLaxValue + 10;
       let { data } = await Model.create(
-        { lax, [scheme.publicKey]: 'virtual_value' },
+        { lax, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
       expect(data).toEqual({ dependent: defaultDependentValue + 1, lax });
 
       ({ data } = await Model.create(
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       ));
 
@@ -181,7 +177,7 @@ describe('fields.virtual.ignore', () => {
 
       const lax2 = defaultLaxValue + 10;
       ({ data } = await Model.create(
-        { lax: lax2, [scheme.publicKey]: 'virtual_value' },
+        { lax: lax2, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       ));
 
@@ -190,7 +186,7 @@ describe('fields.virtual.ignore', () => {
       const lax3 = data.lax + 10;
       const { data: updates } = await Model.update(
         data,
-        { lax: lax3, [scheme.publicKey]: 'virtual_value' },
+        { lax: lax3, [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -198,7 +194,7 @@ describe('fields.virtual.ignore', () => {
 
       const { error } = await Model.update(
         data,
-        { [scheme.publicKey]: 'virtual_value' },
+        { [alias ?? 'virtualField']: 'virtual_value' },
         {},
       );
 
@@ -210,7 +206,7 @@ describe('fields.virtual.ignore', () => {
     it('should properly handle grouped ignore rule', async () => {
       const IGNORE = 'IGNORE';
 
-      for (const scheme of NAMING_SCHEMES) {
+      for (const { alias } of NAMING_SCHEMES) {
         const defaultLaxValue = 'default_lax_value';
         const defaultLax1Value = 'default_lax_1_value';
         const defaultDependentValue = 1;
@@ -226,12 +222,10 @@ describe('fields.virtual.ignore', () => {
                   .default(defaultDependentValue)
                   .resolve((ctx: any) => ctx.values.dependent + 1),
               )
-              .field(
-                buildVirtual(b, scheme.alias).validate(() => ({ valid: true })),
-              ),
+              .field(buildVirtual(b, alias).validate(() => ({ valid: true }))),
           {
             ignore: {
-              fields: [scheme.publicKey, 'lax'],
+              fields: ['virtualField', 'lax'],
               resolver: (ctx: any) => ctx.input.lax === IGNORE,
             },
           },
@@ -241,7 +235,7 @@ describe('fields.virtual.ignore', () => {
         let virtualValue = 'virtual_value';
 
         let { data } = await Model.create(
-          { lax: IGNORE, lax_1: lax1, [scheme.publicKey]: virtualValue },
+          { lax: IGNORE, lax_1: lax1, [alias ?? 'virtualField']: virtualValue },
           {},
         );
 
@@ -255,7 +249,7 @@ describe('fields.virtual.ignore', () => {
         lax1 = 'lax_1';
 
         ({ data } = await Model.create(
-          { lax, lax_1: lax1, [scheme.publicKey]: virtualValue },
+          { lax, lax_1: lax1, [alias ?? 'virtualField']: virtualValue },
           {},
         ));
 
@@ -276,7 +270,7 @@ describe('fields.virtual.ignore', () => {
 
         let { data: updates } = await Model.update(
           previous,
-          { lax: IGNORE, lax_1: lax1, [scheme.publicKey]: virtualValue },
+          { lax: IGNORE, lax_1: lax1, [alias ?? 'virtualField']: virtualValue },
           {},
         );
 
@@ -287,7 +281,7 @@ describe('fields.virtual.ignore', () => {
 
         ({ data: updates } = await Model.update(
           previous,
-          { lax, lax_1: lax1, [scheme.publicKey]: virtualValue },
+          { lax, lax_1: lax1, [alias ?? 'virtualField']: virtualValue },
           {},
         ));
 
@@ -304,7 +298,7 @@ describe('fields.virtual.ignore', () => {
     it('should properly handle grouped ignoreUpdate rule', async () => {
       const IGNORE = 'IGNORE';
 
-      for (const scheme of NAMING_SCHEMES) {
+      for (const { alias } of NAMING_SCHEMES) {
         const defaultLaxValue = 'default_lax_value';
         const defaultLax1Value = 'default_lax_1_value';
         const defaultDependentValue = 1;
@@ -320,12 +314,10 @@ describe('fields.virtual.ignore', () => {
               )
               .field(b.lax('lax', defaultLaxValue))
               .field(b.lax('lax_1', defaultLax1Value))
-              .field(
-                buildVirtual(b, scheme.alias).validate(() => ({ valid: true })),
-              ),
+              .field(buildVirtual(b, alias).validate(() => ({ valid: true }))),
           {
             ignoreUpdate: {
-              fields: ['lax', scheme.publicKey],
+              fields: ['lax', 'virtualField'],
               resolver: (ctx: any) => ctx.rawInput.lax === IGNORE,
             },
           },
@@ -336,7 +328,7 @@ describe('fields.virtual.ignore', () => {
         let virtualValue = 'some value';
 
         let { data } = await Model.create(
-          { lax, lax_1: lax1, [scheme.publicKey]: virtualValue },
+          { lax, lax_1: lax1, [alias ?? 'virtualField']: virtualValue },
           {},
         );
 
@@ -350,7 +342,7 @@ describe('fields.virtual.ignore', () => {
         lax1 = 'lax_1';
 
         ({ data } = await Model.create(
-          { lax, lax_1: lax1, [scheme.publicKey]: virtualValue },
+          { lax, lax_1: lax1, [alias ?? 'virtualField']: virtualValue },
           {},
         ));
 
@@ -371,7 +363,7 @@ describe('fields.virtual.ignore', () => {
 
         let { data: updates } = await Model.update(
           previous,
-          { lax: IGNORE, lax_1: lax1, [scheme.publicKey]: virtualValue },
+          { lax: IGNORE, lax_1: lax1, [alias ?? 'virtualField']: virtualValue },
           {},
         );
 
@@ -382,7 +374,7 @@ describe('fields.virtual.ignore', () => {
 
         ({ data: updates } = await Model.update(
           previous,
-          { lax, lax_1: lax1, [scheme.publicKey]: virtualValue },
+          { lax, lax_1: lax1, [alias ?? 'virtualField']: virtualValue },
           {},
         ));
 

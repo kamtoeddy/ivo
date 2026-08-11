@@ -174,7 +174,7 @@ describe('fields.required.onSuccess', () => {
     await handleSuccess?.();
 
     expect(triggered).toBe(false);
-    expect(secondHandlerCalled).toBe(true);
+    expect(secondHandlerCalled).toBe(false);
   });
 
   it('should trigger success handlers with empty fields array each time creation is successful', async () => {

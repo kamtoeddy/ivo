@@ -128,6 +128,7 @@ describe('ctx options threading', () => {
             const options = ctx.options;
             options.add('should not be set on ctx options');
             options.setExternalMsg(messageFromCtxOptionSetExternalMsg);
+            console.log('required logs: ', options.logs);
             ctx.updateOptions({
               logs: [...ctx.options.logs, messageIvoUpdateOptionsAPI],
             });
@@ -160,6 +161,13 @@ describe('ctx options threading', () => {
       expect(externalMsg).toBe(newExternalMsg);
       expect(o1.logs).toEqual([
         formatLogEntry(`set externalMsg to ${newExternalMsg}`),
+      ]);
+
+      const msg = 'added via add method';
+      o1.add(msg);
+      expect(o1.logs).toEqual([
+        formatLogEntry(`set externalMsg to ${newExternalMsg}`),
+        formatLogEntry(msg),
       ]);
 
       externalMsg = '';
@@ -196,6 +204,7 @@ describe('ctx options threading', () => {
       newExternalMsg = 'hello, tony';
       options.setExternalMsg(newExternalMsg);
       expect(externalMsg).toBe(newExternalMsg);
+      console.log(options);
       // NOTE: this happens because all the methods available to ctx options become pure functions
       expect(
         options.logs.includes(
