@@ -114,8 +114,11 @@ function cloneWithMethods<T>(obj: T, circularMap = new WeakMap()): T {
       const value = descriptor.value;
 
       if (typeof value === 'function') {
-        // Bind functions directly to 'copy' (its own parent object/array)
-        descriptor.value = value.bind(copy);
+        // Copy functions as-is so they resolve `this` from the object they
+        // are called on. This keeps methods on ctx-options clones operating
+        // on the clone itself rather than being permanently bound to the
+        // source object.
+        descriptor.value = value;
       } else if (typeof value === 'object' && value !== null) {
         // Recursively clone without overriding the nested context
         descriptor.value = cloneWithMethods(value, circularMap);

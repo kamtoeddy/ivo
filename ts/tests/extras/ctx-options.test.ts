@@ -128,7 +128,12 @@ describe('ctx options threading', () => {
             const options = ctx.options;
             options.add('should not be set on ctx options');
             options.setExternalMsg(messageFromCtxOptionSetExternalMsg);
-            console.log('required logs: ', options.logs);
+            expect(options.logs).toEqual([
+              formatLogEntry('should not be set on ctx options'),
+              formatLogEntry(
+                `set externalMsg to ${messageFromCtxOptionSetExternalMsg}`,
+              ),
+            ]);
             ctx.updateOptions({
               logs: [...ctx.options.logs, messageIvoUpdateOptionsAPI],
             });
@@ -197,7 +202,13 @@ describe('ctx options threading', () => {
       expect(error).toBeNull();
       expect(data).toEqual({ a: 0 });
       expect(original.logs).toEqual([]);
-      expect(options.logs).toEqual([messageIvoUpdateOptionsAPI]);
+      expect(options.logs).toEqual([
+        formatLogEntry('should not be set on ctx options'),
+        formatLogEntry(
+          `set externalMsg to ${messageFromCtxOptionSetExternalMsg}`,
+        ),
+        messageIvoUpdateOptionsAPI,
+      ]);
 
       externalMsg = '';
 
@@ -205,13 +216,19 @@ describe('ctx options threading', () => {
       options.setExternalMsg(newExternalMsg);
       expect(externalMsg).toBe(newExternalMsg);
       console.log(options);
-      // NOTE: this happens because all the methods available to ctx options become pure functions
       expect(
         options.logs.includes(
           formatLogEntry(`set externalMsg to ${newExternalMsg}`),
         ),
-      ).toBe(false);
-      expect(options.logs).toEqual([messageIvoUpdateOptionsAPI]);
+      ).toBe(true);
+      expect(options.logs).toEqual([
+        formatLogEntry('should not be set on ctx options'),
+        formatLogEntry(
+          `set externalMsg to ${messageFromCtxOptionSetExternalMsg}`,
+        ),
+        messageIvoUpdateOptionsAPI,
+        formatLogEntry(`set externalMsg to ${newExternalMsg}`),
+      ]);
     });
   });
 });
