@@ -135,7 +135,7 @@ class ModelTool<
     return {
       data,
       error: null,
-      options: this.ctxOptions,
+      options: cloneWithMethods(this.ctxOptions),
       handleFailure: null,
       handleSuccess: this._makeHandleSuccess(fieldsCollection),
     };
@@ -230,7 +230,7 @@ class ModelTool<
     return {
       data,
       error: null,
-      options: this.ctxOptions,
+      options: cloneWithMethods(this.ctxOptions),
       handleFailure: null,
       handleSuccess: this._makeHandleSuccess(fieldsCollection),
     };
@@ -331,11 +331,21 @@ class ModelTool<
     const updateOptions = this._updateCtxOptions;
 
     return Object.freeze(
-      Object.assign({}, this._getReadonlyCtx(), {
-        get updateOptions() {
-          return updateOptions;
-        },
-      }),
+      Object.defineProperties(
+        {} as IvoContext<I, O, CtxOptions>,
+        Object.assign(
+          Object.getOwnPropertyDescriptors(this._getReadonlyCtx()),
+          {
+            updateOptions: {
+              configurable: true,
+              enumerable: true,
+              get() {
+                return updateOptions;
+              },
+            },
+          },
+        ),
+      ),
     );
   }
 
@@ -1601,7 +1611,7 @@ class ModelTool<
     return {
       data: null,
       error: this.options.sanitizeError(errorTool.payload, this.ctxOptions),
-      options: this.ctxOptions,
+      options: cloneWithMethods(this.ctxOptions),
       handleFailure: this._makeHandleFailure(fieldsCollection),
       handleSuccess: null,
     };

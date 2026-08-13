@@ -202,13 +202,7 @@ describe('ctx options threading', () => {
       expect(error).toBeNull();
       expect(data).toEqual({ a: 0 });
       expect(original.logs).toEqual([]);
-      expect(options.logs).toEqual([
-        formatLogEntry('should not be set on ctx options'),
-        formatLogEntry(
-          `set externalMsg to ${messageFromCtxOptionSetExternalMsg}`,
-        ),
-        messageIvoUpdateOptionsAPI,
-      ]);
+      expect(options.logs).toEqual([messageIvoUpdateOptionsAPI]);
 
       externalMsg = '';
 
@@ -222,10 +216,6 @@ describe('ctx options threading', () => {
         ),
       ).toBe(true);
       expect(options.logs).toEqual([
-        formatLogEntry('should not be set on ctx options'),
-        formatLogEntry(
-          `set externalMsg to ${messageFromCtxOptionSetExternalMsg}`,
-        ),
         messageIvoUpdateOptionsAPI,
         formatLogEntry(`set externalMsg to ${newExternalMsg}`),
       ]);
