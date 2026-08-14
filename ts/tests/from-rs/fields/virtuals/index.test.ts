@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from '../../../../src';
+import { expectFailure, makeFx } from '../../../_utils';
 
 /**
  * The Rust suite triplicates almost every test in this file across three
@@ -904,6 +905,42 @@ describe('fields.virtual', () => {
   });
 
   describe('sanitizer', () => {
+    it('should reject invalid sanitizer', () => {
+      const values = [-1, 1, true, false, undefined, null, [], {}];
+
+      for (const sanitizer of values) {
+        const toFail = makeFx((b) =>
+          b
+            .field(
+              b
+                .dependent('dependentField', 'fieldName')
+                .default('')
+                .resolve(() => ''),
+            )
+            .field(
+              b
+                .virtual('fieldName')
+                .validate(() => true)
+                .sanitize(sanitizer as never),
+            ),
+        );
+
+        expectFailure(toFail);
+
+        try {
+          toFail();
+        } catch (err: any) {
+          expect(err.payload).toEqual(
+            expect.objectContaining({
+              fieldName: expect.arrayContaining([
+                "'sanitizer' must be a function",
+              ]),
+            }),
+          );
+        }
+      }
+    });
+
     it('should respect sanitizers if provided', async () => {
       function sanitize(value: string) {
         return `sanitized-${value}`;

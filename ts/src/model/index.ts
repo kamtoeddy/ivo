@@ -477,8 +477,7 @@ class ModelTool<
       Array.isArray(allow) ? allow : allow?.values
     ) as ArrayOfMinSizeTwo<any>;
     const defaultMetadata = { allowed: values } as never;
-
-    const isValid = !!values.find((v) =>
+    const isValid = values.some((v) =>
       isEqual(v, value, this.options.equalityDepth),
     );
 
@@ -694,8 +693,11 @@ class ModelTool<
 
     if (isUpdate) {
       for (const [fieldName, value] of Object.entries(rawInput)) {
+        const fieldInfo = fieldsCollection.getUnsafe(fieldName);
+
+        if (!fieldInfo) continue;
+
         fieldsProvided.add(fieldName);
-        const fieldInfo = fieldsCollection.get(fieldName);
 
         const config = this.definitions[
           fieldInfo.configName
@@ -737,8 +739,11 @@ class ModelTool<
       }
     } else {
       for (const fieldName of Object.keys(rawInput)) {
+        const fieldInfo = fieldsCollection.getUnsafe(fieldName);
+
+        if (!fieldInfo) continue;
+
         fieldsProvided.add(fieldName);
-        const fieldInfo = fieldsCollection.get(fieldName);
 
         const config = this.definitions[fieldInfo.configName] as NS.LaxField<
           any,
@@ -955,6 +960,20 @@ class ModelTool<
         continue;
       }
 
+      if (
+        this.isUpdate &&
+        config.type === 'lax' &&
+        config.readonly &&
+        !isEqual(
+          config.default,
+          // @ts-expect-error
+          this.ctxPreviousValues[config.name],
+          this.options.equalityDepth,
+        )
+      ) {
+        continue;
+      }
+
       // @ts-expect-error ikr
       const { alias, required } = config;
 
@@ -1019,21 +1038,19 @@ class ModelTool<
         }
 
         if (Array.isArray(err)) {
-          if (err[0])
+          const [isRequired, reason] = err;
+
+          if (isRequired)
             errorTool.set(
               fieldName,
               makeFieldError<ErrorMetadata>(
-                err[1] ?? getDefaultRequiredError(fieldName),
+                isInputFieldError(reason)
+                  ? reason
+                  : (typeof reason === 'string' ? reason.trim() : '') ||
+                      getDefaultRequiredError(fieldName),
               ),
             );
-
-          continue;
         }
-
-        errorTool.set(
-          fieldName,
-          makeFieldError<ErrorMetadata>(getDefaultRequiredError(fieldName)),
-        );
       }
     }
 

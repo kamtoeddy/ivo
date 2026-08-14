@@ -3,7 +3,7 @@ import { Schema } from '../../src';
 import { expectFailure, makeFx } from '../_utils';
 
 describe('Schema definitions', () => {
-  it('should reject if property definitions has no property', () => {
+  it('should reject if schema definitions has no field', () => {
     const toFail = makeFx((b: any) => b);
 
     expectFailure(toFail);

@@ -340,7 +340,10 @@ describe('dependent', () => {
 
         expect(data).toEqual({ laxField: '', laxField_1: 'hey' });
 
-        expect(resolversCalledStats).toEqual({ dependentField: 1 });
+        expect(resolversCalledStats).toEqual({
+          dependentField: 1,
+          dependentField_1: 1,
+        });
 
         expect(onSuccessStats).toEqual({});
       });

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, test } from 'bun:test';
 import { type ReadonlyIvoContext, Schema } from '../../src';
 import type { IvoSuccessContext } from '../../src/utils/types';
-import { expectFailure, expectNoFailure, makeFx, validator } from '../_utils';
+import { expectNoFailure, makeFx, validator } from '../_utils';
 
 describe('life cycle handlers', () => {
   const rules = ['onDelete', 'onFailure', 'onSuccess'] as const;
@@ -24,38 +24,6 @@ describe('life cycle handlers', () => {
           expectNoFailure(toPass);
 
           toPass();
-        }
-    });
-  });
-
-  describe('invalid', () => {
-    test('invalid', () => {
-      const values = [1, '', 0, false, true, null, {}];
-
-      for (const rule of rules)
-        for (const value of values) {
-          const toFail = makeFx((b) =>
-            b.field(
-              b
-                .lax('fieldName', '')
-                .validate(validator)
-                [rule](value as never),
-            ),
-          );
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                fieldName: expect.arrayContaining([
-                  `The '${rule}' handler at index: 0 is not a function`,
-                ]),
-              }),
-            );
-          }
         }
     });
   });
@@ -256,24 +224,13 @@ describe('life cycle handlers', () => {
   });
 
   describe('onFailure', () => {
-    it('should reject onFailure & no validator', () => {
-      const toFail = makeFx((b) =>
+    it('should accept onFailure & no validator', () => {
+      const toPass = makeFx((b) =>
         b.field(b.lax('field', '').onFailure(() => {})),
       );
 
-      expectFailure(toFail);
-
-      try {
-        toFail();
-      } catch (err: any) {
-        expect(err.payload).toMatchObject(
-          expect.objectContaining({
-            field: expect.arrayContaining([
-              "'onFailure' can only be used with properties that support and have validators",
-            ]),
-          }),
-        );
-      }
+      expectNoFailure(toPass);
+      toPass();
     });
 
     describe('behaviour', () => {

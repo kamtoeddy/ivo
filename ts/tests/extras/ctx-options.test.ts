@@ -209,7 +209,7 @@ describe('ctx options threading', () => {
       newExternalMsg = 'hello, tony';
       options.setExternalMsg(newExternalMsg);
       expect(externalMsg).toBe(newExternalMsg);
-      console.log(options);
+      // console.log(options);
       expect(
         options.logs.includes(
           formatLogEntry(`set externalMsg to ${newExternalMsg}`),

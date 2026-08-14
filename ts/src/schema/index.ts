@@ -1,6 +1,7 @@
 import { Model, ModelTool } from '../model';
 import {
   getKeysAsProps,
+  isEqual,
   isOneOf,
   isRecordLike,
   SchemaErrorTool,
@@ -336,6 +337,12 @@ function validateFields<
     }
 
     if (config.type === 'constant') {
+      if (isEqual(config.value, undefined))
+        errorTool.add(
+          fieldName,
+          "Constant fields cannot have 'undefined' as value",
+        );
+
       constantFieldNames.add(fieldName);
 
       continue;
@@ -373,6 +380,18 @@ function validateFields<
       dependentFieldToParentFields.set(fieldName, dependsOn);
 
       continue;
+    }
+
+    if ('allow' in config) {
+      const { allow } = config;
+
+      if (!Array.isArray(allow)) {
+        errorTool.add(fieldName, 'Allowed values must be an array');
+        continue;
+      }
+
+      if (allow.length < 2)
+        errorTool.add(fieldName, 'Allowed values must have at least 2 values');
     }
 
     if (config.type === 'lax') {
@@ -462,6 +481,9 @@ function validateFields<
         break;
       }
     }
+
+    if ('sanitizer' in config && typeof config.sanitizer !== 'function')
+      errorTool.add(fieldName, "'sanitizer' must be a function");
 
     if (!hasSufficientDependencies)
       errorTool.add(

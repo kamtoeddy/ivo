@@ -21,8 +21,4 @@ describe('lax props', () => {
       toPass();
     });
   });
-
-  // "invalid > should reject no default" discarded: `.validate()` isn't
-  // available on `LaxBuilder` until `.default()` has been called, so a
-  // field with a validator but no default is structurally unrepresentable.
 });

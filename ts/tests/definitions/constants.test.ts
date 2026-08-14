@@ -57,7 +57,7 @@ describe('constants', () => {
       const { data, error } = await User.update(user, { id: 25 });
 
       expect(data).toBeNull();
-      expect(error).toBeNull();
+      expect(error).toEqual({ isNothingToUpdate: true, payload: null });
     });
 
     it('should accept constant(true) & value(any | ()=>any)', () => {
