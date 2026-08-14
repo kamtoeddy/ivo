@@ -179,7 +179,8 @@ function makeFieldError<Metadata>(
     return value as never;
   }
 
-  if (typeof value === 'string') return { reason: value, metadata: null };
+  if (typeof value === 'string')
+    return { reason: value || fallbackMessage, metadata: null };
 
   return {
     reason: (value as any).reason ?? fallbackMessage,

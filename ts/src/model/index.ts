@@ -960,20 +960,6 @@ class ModelTool<
         continue;
       }
 
-      if (
-        this.isUpdate &&
-        config.type === 'lax' &&
-        config.readonly &&
-        !isEqual(
-          config.default,
-          // @ts-expect-error
-          this.ctxPreviousValues[config.name],
-          this.options.equalityDepth,
-        )
-      ) {
-        continue;
-      }
-
       // @ts-expect-error ikr
       const { alias, required } = config;
 
@@ -983,7 +969,7 @@ class ModelTool<
         ]);
     }
 
-    if (this.options.required) {
+    if (this.options.required)
       for (const { fields, handler } of this.options.required) {
         if (
           fields.some((configName) =>
@@ -1010,10 +996,9 @@ class ModelTool<
           return errors;
         });
       }
-    }
 
     const results = await Promise.allSettled(
-      toArray(handlers).map((h) => Promise.try(h)),
+      handlers.map((h) => Promise.try(h)),
     );
 
     for (const r of results) {
@@ -1048,6 +1033,7 @@ class ModelTool<
                   ? reason
                   : (typeof reason === 'string' ? reason.trim() : '') ||
                       getDefaultRequiredError(fieldName),
+                getDefaultRequiredError(fieldName),
               ),
             );
         }

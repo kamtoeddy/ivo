@@ -34,13 +34,6 @@ describe('required', () => {
       toPass();
     });
   });
-
-  // "invalid" discarded entirely: "required & no validator" (validate()/
-  // allow() is mandatory before [BUILD] is offered), "required(true) +
-  // default" (RequiredBuilder never exposes a `.default()` method), and
-  // "required(true) + ignoreInit" (RequiredBuilder never exposes an
-  // `.ignoreInit()` method) are all structurally unrepresentable through
-  // the builder by design.
 });
 
 describe('required runtime enforcement (strictly required, i.e. required: true)', () => {
@@ -88,14 +81,14 @@ describe('requiredBy', () => {
       bookId: 1,
       isPublished: false,
       price: null,
-      priceReadonly: null,
+      price2: null,
       priceRequiredWithoutMessage: null,
     };
 
     function validatePrice(price: unknown) {
       const validated = Number(price),
         // @ts-expect-error isNaN takes a number
-        valid = !isNaN(price) && validated;
+        valid = !isNaN(price) && !!validated;
       return { valid, validated };
     }
 
@@ -110,7 +103,7 @@ describe('requiredBy', () => {
         .field(
           b
             .lax('price', null)
-            .validate(validatePrice as never)
+            .validate(validatePrice)
             .required((ctx: any) => {
               const isPublished =
                 ctx.rawInput.isPublished ??
@@ -125,38 +118,29 @@ describe('requiredBy', () => {
         )
         .field(
           b
-            .lax('priceReadonly', null)
-            .validate(validatePrice as never)
-            .readonly()
+            .lax('price2', null)
+            .validate(validatePrice)
             .required((ctx: any) => {
               const price =
                 ctx.rawInput.price ?? ctx.input.price ?? ctx.values.price;
-              const priceReadonly =
-                ctx.rawInput.priceReadonly ??
-                ctx.input.priceReadonly ??
-                ctx.values.priceReadonly;
-              const isRequired = price === 101 && priceReadonly == null;
-              recordCalls('priceReadonly');
-              return [
-                isRequired,
-                'A priceReadonly is required when price is 101!',
-              ];
+              const price2 =
+                ctx.rawInput.price2 ?? ctx.input.price2 ?? ctx.values.price2;
+              const isRequired = price === 101 && price2 == null;
+              recordCalls('price2');
+              return [isRequired, 'A price2 is required when price is 101!'];
             }),
         )
         .field(
           b
             .lax('priceRequiredWithoutMessage', null)
-            .validate(validatePrice as never)
-            .readonly()
+            .validate(validatePrice)
             .required((ctx: any) => {
               const price =
                 ctx.rawInput.price ?? ctx.input.price ?? ctx.values.price;
-              const priceReadonly =
-                ctx.rawInput.priceReadonly ??
-                ctx.input.priceReadonly ??
-                ctx.values.priceReadonly;
+              const price2 =
+                ctx.rawInput.price2 ?? ctx.input.price2 ?? ctx.values.price2;
               recordCalls('priceRequiredWithoutMessage');
-              return price === 101 && priceReadonly == null;
+              return price === 101 && price2 == null;
             }),
         ),
     ).getModel();
@@ -176,7 +160,7 @@ describe('requiredBy', () => {
         expect(data).toEqual(book);
         expect(callsPerField).toEqual({
           price: true,
-          priceReadonly: true,
+          price2: true,
           priceRequiredWithoutMessage: true,
         });
       });
@@ -193,14 +177,11 @@ describe('requiredBy', () => {
           bookId: 1,
           isPublished: true,
           price: 2000,
-          priceReadonly: null,
+          price2: null,
           priceRequiredWithoutMessage: null,
         });
-        // `price` was provided (relevant), so its `required` callback is
-        // skipped entirely — only ms that weren't given a value get
-        // evaluated for required-ness.
         expect(callsPerField).toEqual({
-          priceReadonly: true,
+          price2: true,
           priceRequiredWithoutMessage: true,
         });
       });
@@ -224,7 +205,7 @@ describe('requiredBy', () => {
 
         expect(callsPerField).toEqual({
           price: true,
-          priceReadonly: true,
+          price2: true,
           priceRequiredWithoutMessage: true,
         });
       });
@@ -238,7 +219,7 @@ describe('requiredBy', () => {
               bookId: 1,
               isPublished: false,
               price: null,
-              priceReadonly: null,
+              price2: null,
               priceRequiredWithoutMessage: null,
             },
             { isPublished: true, price: 20 },
@@ -250,26 +231,21 @@ describe('requiredBy', () => {
         const { data } = await toPass();
 
         expect(data).toEqual({ isPublished: true, price: 20 });
-        // `price` was provided (relevant), so skipped.
         expect(callsPerField).toEqual({
-          priceReadonly: true,
+          price2: true,
           priceRequiredWithoutMessage: true,
         });
       });
 
       it('should pass if condition is met during updates of readonly', async () => {
-        const toPass = () =>
-          Book.update(book, { price: 101, priceReadonly: 201 }, {});
+        const toPass = () => Book.update(book, { price: 101, price2: 201 }, {});
 
         expectNoFailure(toPass);
 
         const { data } = await toPass();
 
-        expect(data).toEqual({ price: 101, priceReadonly: 201 });
-        // `price` and `priceReadonly` were both provided, so skipped.
-        expect(callsPerField).toEqual({
-          priceRequiredWithoutMessage: true,
-        });
+        expect(data).toEqual({ price: 101, price2: 201 });
+        expect(callsPerField).toEqual({ priceRequiredWithoutMessage: true });
       });
 
       it('should reject if condition is not met during updates', async () => {
@@ -278,7 +254,7 @@ describe('requiredBy', () => {
             bookId: 1,
             isPublished: false,
             price: null,
-            priceReadonly: null,
+            price2: null,
           },
           { isPublished: true },
           {},
@@ -292,7 +268,11 @@ describe('requiredBy', () => {
           },
         });
 
-        expect(callsPerField).toEqual({ price: true, priceReadonly: true });
+        expect(callsPerField).toEqual({
+          price: true,
+          price2: true,
+          priceRequiredWithoutMessage: true,
+        });
       });
 
       it('should reject if condition is not met during updates of readonly', async () => {
@@ -300,8 +280,8 @@ describe('requiredBy', () => {
 
         expect(data).toBeNull();
         expect(error?.payload).toMatchObject({
-          priceReadonly: {
-            reason: 'A priceReadonly is required when price is 101!',
+          price2: {
+            reason: 'A price2 is required when price is 101!',
             metadata: null,
           },
           priceRequiredWithoutMessage: {
@@ -310,10 +290,8 @@ describe('requiredBy', () => {
           },
         });
 
-        // `price` was provided, so skipped; `priceReadonly` and
-        // `priceRequiredWithoutMessage` weren't, so both get evaluated.
         expect(callsPerField).toEqual({
-          priceReadonly: true,
+          price2: true,
           priceRequiredWithoutMessage: true,
         });
       });
@@ -324,23 +302,19 @@ describe('requiredBy', () => {
             bookId: 1,
             isPublished: false,
             price: null,
-            priceReadonly: 3000,
+            price2: 3000,
             priceRequiredWithoutMessage: null,
           },
-          { priceReadonly: 101, priceRequiredWithoutMessage: 2000 },
+          { price2: 101, priceRequiredWithoutMessage: 2000 },
           {},
         );
 
         expect(error).toBeNull();
-        expect(data).toEqual({ priceRequiredWithoutMessage: 2000 });
-        // `priceReadonly`'s previous value (3000) already diverged from its
-        // default (null), so it's permanently locked — its `required`
-        // callback isn't re-evaluated. `priceRequiredWithoutMessage` was
-        // provided, so it's skipped too. Only `price` (untouched) is
-        // evaluated.
-        expect(callsPerField).toEqual({
-          price: true,
+        expect(data).toEqual({
+          price2: 101,
+          priceRequiredWithoutMessage: 2000,
         });
+        expect(callsPerField).toEqual({ price: true });
       });
     });
 
@@ -385,20 +359,16 @@ describe('requiredBy', () => {
     describe('behaviour when a non-string value is returned as message from required function', () => {
       describe('should respect InputField', () => {
         const responses = [
-          // [{ reason: "lol" }, { reason: "lol" }],
+          [{ reason: 'lol' }, { reason: 'lol' }],
           [
             { reason: 'lol', metadata: { shouldWork: true } },
             { reason: 'lol', metadata: { shouldWork: true } },
           ],
-          // [
-          //   { reason: "", metadata: null },
-          //   { reason: "'price' is required", metadata: null },
-          // ],
-          // [
-          //   { metadata: null },
-          //   { reason: "'price' is required", metadata: null },
-          // ],
-          // [{}, { reason: "'price' is required" }],
+          [
+            { reason: '', metadata: null },
+            { reason: "'price' is required", metadata: null },
+          ],
+          [{}, { reason: "'price' is required" }],
         ];
 
         for (const [provided, expected] of responses) {
@@ -411,7 +381,7 @@ describe('requiredBy', () => {
                 b
                   .lax('price', null)
                   .validate(validator)
-                  .required((): never => [true, provided] as never),
+                  .required(() => [true, provided] as never),
               ),
           ).getModel();
 
@@ -439,7 +409,6 @@ describe('requiredBy', () => {
             );
 
             expect(data).toBeNull();
-
             expect(error?.payload).toMatchObject({
               price: expect.objectContaining(expected),
             });
@@ -823,30 +792,13 @@ describe('requiredBy', () => {
       }
     });
 
-    it('should accept requiredBy + readonly', () => {
-      const toPass = makeFx((b) =>
-        b.field(
-          b
-            .lax('fieldName', '')
-            .validate(validator)
-            .readonly()
-            .required(() => true),
-        ),
-      );
-
-      expectNoFailure(toPass);
-
-      toPass();
-    });
-
     it('should accept requiredBy + ignoreInit', () => {
       const toPass = makeFx((b) =>
         b.field(
           b
             .lax('fieldName', '')
             .validate(validator)
-            .readonly()
-            .ignoreInit(() => true)
+            .ignoreInit()
             .required(() => true),
         ),
       );
