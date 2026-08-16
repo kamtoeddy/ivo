@@ -99,7 +99,7 @@ describe('fields.required.ignore', () => {
         {
           ignoreUpdate: {
             fields: ['lax', 'required'],
-            resolver: (ctx) => ctx.rawInput.lax === IGNORE,
+            handler: (ctx) => ctx.rawInput.lax === IGNORE,
           },
         },
       ).getModel();

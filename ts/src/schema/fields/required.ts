@@ -143,7 +143,7 @@ type BuildableRequiredConfig<
           HasOnSuccess
         >;
         ignoreUpdate(
-          resolver: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>,
+          resolver: NS.IgnoreUpdateHandler<Input, Output, CtxOptions>,
         ): BuildableRequiredConfig<
           Value,
           Input,
@@ -283,7 +283,7 @@ class RequiredBuilder<
     return this as never;
   }
 
-  ignoreUpdate(resolver: NS.IgnoreUpdateResolver<Input, Output, CtxOptions>) {
+  ignoreUpdate(resolver: NS.IgnoreUpdateHandler<Input, Output, CtxOptions>) {
     this.config.ignoreUpdate = resolver;
     return this as never;
   }

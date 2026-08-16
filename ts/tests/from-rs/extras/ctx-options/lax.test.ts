@@ -374,7 +374,7 @@ describe('extras.ctxOptions.lax', () => {
   });
 
   describe('o.postValidate & o.onSuccess', () => {
-    it('should properly update ctx options in post-validators and provide those updates in grouped onSuccess handlers with no fields at creation', async () => {
+    it('should properly update ctx options in post-validators and provide those updates in global success function handlers at creation', async () => {
       const DEFAULT_VALUE = 1;
       const MESSAGE = 'ctx_options updated in post_validator';
       let triggeredWith: string | undefined;
@@ -402,11 +402,8 @@ describe('extras.ctxOptions.lax', () => {
               return undefined;
             },
           },
-          onSuccess: {
-            fields: [] as never,
-            resolver: (ctx) => {
-              triggeredWith = ctx.options.messages[0];
-            },
+          onSuccess: (ctx) => {
+            triggeredWith = ctx.options.messages[0];
           },
         },
       ).getModel();
@@ -455,7 +452,7 @@ describe('extras.ctxOptions.lax', () => {
           },
           onSuccess: {
             fields: ['lax', 'lax_1'],
-            resolver: (ctx) => {
+            handler: (ctx) => {
               triggeredWith = ctx.options.messages[0];
             },
           },

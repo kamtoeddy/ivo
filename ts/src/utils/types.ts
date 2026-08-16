@@ -318,7 +318,7 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = {
     fields: ArrayOfMinSizeTwo<KeyOf<Input & Output>>;
-    resolver:
+    handler:
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
   };
@@ -356,7 +356,7 @@ namespace NS {
     ctx: InitResolverCtx<Input, CtxOptions>,
   ) => TypeOf<T> | Promise<TypeOf<T>>;
 
-  export type IgnoreUpdateResolver<
+  export type IgnoreUpdateHandler<
     Input,
     Output,
     CtxOptions extends ObjectType = {},
@@ -377,7 +377,7 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = {
     fields: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
-    resolver: Resolver<boolean, Input, Output, CtxOptions>;
+    handler: Resolver<boolean, Input, Output, CtxOptions>;
   };
 
   export type IgnoreConfigOptionItem<
@@ -398,7 +398,7 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = {
     fields: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
-    resolver: IgnoreUpdateResolver<Input, Output, CtxOptions>;
+    handler: IgnoreUpdateHandler<Input, Output, CtxOptions>;
   };
 
   export type IgnoreUpdateConfigOptionItem<
@@ -406,7 +406,7 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > =
-    | IgnoreUpdateResolver<Input, Output, CtxOptions>
+    | IgnoreUpdateHandler<Input, Output, CtxOptions>
     | IgnoreUpdateConfigObject<Input, Output, CtxOptions>;
 
   export type IgnoreUpdateConfigOption<
@@ -585,7 +585,7 @@ namespace NS {
     requiredError?:
       | string
       | ((ctx: InitResolverCtx<Input, CtxOptions>) => string);
-    ignoreUpdate?: true | IgnoreUpdateResolver<Input, Output, CtxOptions>;
+    ignoreUpdate?: true | IgnoreUpdateHandler<Input, Output, CtxOptions>;
     validator?: Validator<Value, Input, Output, CtxOptions, Metadata>;
     reValidator?: ReValidator<Value, Input, Output, CtxOptions, Metadata>;
     onDelete?:

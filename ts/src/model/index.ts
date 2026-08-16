@@ -91,8 +91,6 @@ class ModelTool<
   }
 
   async create(input: Partial<I>, options: CtxOptions) {
-    if (!areValuesOk(input)) input = {};
-
     const fieldsCollection = await this._filterInputFieldsAllowed({
       rawInput: input,
       previousValues: null,
@@ -142,8 +140,6 @@ class ModelTool<
   }
 
   async delete(data: O, options: CtxOptions) {
-    if (!areValuesOk(data)) return;
-
     let handlers: NS.DeleteHandler<O, CtxOptions>[] = this.options.onDelete
       ? this.options.onDelete
       : [];
@@ -162,9 +158,6 @@ class ModelTool<
 
   async update(values: O, changes: Partial<I>, options: CtxOptions) {
     const emptyErrorTool = new ErrorTool<ErrorMetadata>();
-
-    // if (!areValuesOk(values) || !areValuesOk(changes))
-    //   return this._handleUpdateError(emptyErrorTool, fieldsCollection);
 
     const fieldsCollection = await this._filterInputFieldsAllowed({
       rawInput: changes,
@@ -858,7 +851,7 @@ class ModelTool<
           const fields = config.fields;
 
           if (fields.some((name) => relevantConfigNames.includes(name)))
-            tasks.push([fields, () => config.resolver(this._getContext())]);
+            tasks.push([fields, () => config.handler(this._getContext())]);
         }
       }
 
@@ -875,7 +868,7 @@ class ModelTool<
         if (fields.some((name: string) => relevantConfigNames.includes(name)))
           tasks.push([
             fields,
-            () => config.resolver(this._getUpdateResolverCtx()),
+            () => config.handler(this._getUpdateResolverCtx()),
           ]);
       }
 
@@ -1471,18 +1464,13 @@ class ModelTool<
 
     if (this.options.onSuccess)
       for (const config of this.options.onSuccess) {
-        if (!config) continue;
-
         if (typeof config === 'function') {
           successListeners = successListeners.concat(config);
           continue;
         }
 
-        if (
-          config.fields.length === 0 ||
-          config.fields.some((name) => relevantFields.has(name))
-        )
-          successListeners = successListeners.concat(config.resolver);
+        if (config.fields.some((configName) => relevantFields.has(configName)))
+          successListeners = successListeners.concat(config.handler);
       }
 
     return async () => {
@@ -1669,10 +1657,6 @@ class Model<
 
   update = (values: Output, changes: Partial<Input>, options: CtxOptions) =>
     this.modelFactory().update(values, changes, options);
-}
-
-function areValuesOk(values: unknown) {
-  return values && typeof values === 'object';
 }
 
 function getValidationFailedResponse(value: unknown) {

@@ -317,8 +317,8 @@ describe('Schema.options.equalityDepth', () => {
           expect(err).toMatchObject({
             message: 'INVALID_SCHEMA',
             payload: {
-              equalityDepth: expect.arrayContaining([
-                "'equalityDepth' must be a number between 0 and +Infinity",
+              'option.equalityDepth': expect.arrayContaining([
+                'expected a number greater than or equal to 0',
               ]),
             },
           });

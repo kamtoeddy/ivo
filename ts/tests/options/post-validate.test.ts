@@ -68,46 +68,24 @@ describe('Schema.options.postValidate', () => {
 
       describe('invalid', () => {
         describe("should reject if 'fields' is not an array or does not contain valid input keys of schema", () => {
-          const commonError = [
-            '"fields" must be an array of at least 2 input fields of your schema',
-          ];
-
           const values = [
-            [-1, commonError],
-            [0, commonError],
-            [1, commonError],
-            [null, commonError],
-            [undefined, commonError],
-            [true, commonError],
-            [false, commonError],
-            ['', commonError],
-            ['invalid', commonError],
-            [{}, commonError],
-            [{ fields: [] }, commonError],
-            [{ validator: [] }, commonError],
-            [() => {}, commonError],
-            [[], commonError],
-            [['lol'], commonError],
             [
-              ['lol', 'lolol'],
-              [
-                '"lol" cannot be post-validated',
-                '"lolol" cannot be post-validated',
-              ],
+              ['fieldName1', 'fieldName1'],
+              'remove duplicates of "fieldName1" in your grouped post-validation config',
             ],
-            [['fieldName1', 'lolol'], ['"lolol" cannot be post-validated']],
-            [['fieldName1', 'fieldName1'], commonError],
             [
               ['fieldName1', 'fieldName2', 'lol'],
-              ['"lol" cannot be post-validated'],
+
+              'only lax, required and virtual fields can be post-validated remove "lol"',
             ],
             [
               ['fieldName1', 'dependent'],
-              ['"dependent" cannot be post-validated'],
+
+              'only lax, required and virtual fields can be post-validated remove "dependent"',
             ],
           ] as const;
 
-          test.each(values)('', (fields, errors) => {
+          test.each(values)('', (fields, error) => {
             const toFail = makeFx(
               (b) =>
                 b
@@ -129,7 +107,9 @@ describe('Schema.options.postValidate', () => {
             } catch (err: any) {
               expect(err).toMatchObject({
                 message: 'INVALID_SCHEMA',
-                payload: { postValidate: expect.arrayContaining(errors) },
+                payload: {
+                  'options.postValidate': expect.arrayContaining([error]),
+                },
               });
             }
           });
@@ -177,37 +157,12 @@ describe('Schema.options.postValidate', () => {
               expect(err).toMatchObject({
                 message: 'INVALID_SCHEMA',
                 payload: {
-                  postValidate: expect.arrayContaining([
-                    '"validator" must be a function or array of functions',
+                  'options.postValidate': expect.arrayContaining([
+                    'validator must be a function or array of functions',
                   ]),
                 },
               });
             }
-          }
-        });
-
-        it('should reject if config has never extra property', () => {
-          const toFail = makeFx(getValidSchema(), {
-            postValidate: {
-              fields: ['fieldName1', 'fieldName2'],
-              validator() {},
-              lol: true,
-            },
-          });
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: 'INVALID_SCHEMA',
-              payload: {
-                postValidate: expect.arrayContaining([
-                  'Config must be an object with keys "fields" and "validator" or an array of "PostValidateConfig"',
-                ]),
-              },
-            });
           }
         });
 
@@ -240,8 +195,8 @@ describe('Schema.options.postValidate', () => {
               expect(err).toMatchObject({
                 message: 'INVALID_SCHEMA',
                 payload: {
-                  postValidate: expect.arrayContaining([
-                    '"validator" cannot be an empty array',
+                  'options.postValidate': expect.arrayContaining([
+                    'validator must be a function or array of functions',
                   ]),
                 },
               });
@@ -290,10 +245,10 @@ describe('Schema.options.postValidate', () => {
               expect(err).toMatchObject({
                 message: 'INVALID_SCHEMA',
                 payload: {
-                  postValidate: expect.arrayContaining(
+                  'options.postValidate': expect.arrayContaining(
                     values.map(
-                      (_, i) =>
-                        `"validator" at index ${i} must be a function or array of functions`,
+                      () =>
+                        'validator must be a function or array of functions',
                     ),
                   ),
                 },
@@ -386,8 +341,8 @@ describe('Schema.options.postValidate', () => {
               expect(err).toMatchObject({
                 message: 'INVALID_SCHEMA',
                 payload: {
-                  postValidate: expect.arrayContaining([
-                    'Config at index 1:  "validator" cannot be an empty array',
+                  'options.postValidate': expect.arrayContaining([
+                    'validator must be a function or array of functions',
                   ]),
                 },
               });
@@ -441,10 +396,10 @@ describe('Schema.options.postValidate', () => {
               expect(err).toMatchObject({
                 message: 'INVALID_SCHEMA',
                 payload: {
-                  postValidate: expect.arrayContaining(
+                  'options.postValidate': expect.arrayContaining(
                     values.map(
-                      (_, i) =>
-                        `Config at index 1:  "validator" at index ${i} must be a function or array of functions`,
+                      () =>
+                        'validator must be a function or array of functions',
                     ),
                   ),
                 },
@@ -461,23 +416,18 @@ describe('Schema.options.postValidate', () => {
       let providedfieldsStats: Record<string, number> = {};
       let ctxStats: Record<string, unknown> = {};
 
-      function handlePostValidate(
-        field: string,
-        ctx: any,
-        propsProvided: string[],
-      ) {
+      function handlePostValidate(field: string, ctx: any) {
         ctxStats[field] = ctx;
 
-        if (propsProvided.includes(field))
+        if (field in ctx.input)
           providedfieldsStats[field] = (providedfieldsStats[field] ?? 0) + 1;
       }
 
       function makePostValidationConfig(fields: string[]) {
         return {
           fields,
-          validator(ctx: any, propsProvided: string[]) {
-            for (const field of fields)
-              handlePostValidate(field, ctx, propsProvided);
+          validator(ctx: any) {
+            for (const field of fields) handlePostValidate(field, ctx);
           },
         };
       }
@@ -639,9 +589,8 @@ describe('Schema.options.postValidate', () => {
           ).getModel();
 
           function makePostValidator() {
-            return (ctx: any, propsProvided: string[]) => {
-              for (const field of fields)
-                handlePostValidate(field, ctx, propsProvided);
+            return (ctx: any) => {
+              for (const field of fields) handlePostValidate(field, ctx);
             };
           }
 
@@ -883,9 +832,7 @@ describe('Schema.options.postValidate', () => {
                   // @ts-expect-error ikr
                   fields: fields1,
                   validator: [
-                    // @ts-expect-error ikr
                     makePostValidator(fields1),
-                    // @ts-expect-error ikr
                     makePostValidator(fields1),
                   ],
                 },
@@ -895,11 +842,8 @@ describe('Schema.options.postValidate', () => {
                   // @ts-expect-error ikr
                   fields: fields2,
                   validator: [
-                    // @ts-expect-error ikr
                     makePostValidator(fields2),
-                    // @ts-expect-error ikr
                     makePostValidator(fields2),
-                    // @ts-expect-error ikr
                     makePostValidator(fields2),
                   ],
                 },
@@ -908,9 +852,8 @@ describe('Schema.options.postValidate', () => {
           ).getModel();
 
           function makePostValidator(fields: string[]) {
-            return (ctx: any, propsProvided: string[]) => {
-              for (const field of fields)
-                handlePostValidate(field, ctx, propsProvided);
+            return (ctx: any) => {
+              for (const field of fields) handlePostValidate(field, ctx);
             };
           }
 
@@ -1140,7 +1083,7 @@ describe('Schema.options.postValidate', () => {
         // @ts-expect-error ikr
         const res2 = await Model.update({}, { p2: 'updated', d1: 'updated' });
         expect(res2.data).toBeNull();
-        expect(res2.error).toMatchObject({
+        expect(res2.error?.payload).toMatchObject({
           p1: expect.objectContaining({ reason: 'failed to validate' }),
           d1: expect.objectContaining({ reason: 'lolz' }),
         });
@@ -1190,8 +1133,8 @@ describe('Schema.options.postValidate', () => {
         );
         expect(res6.data).toBeNull();
         // @ts-expect-error ikr
-        expect(Object.keys(res6.error).length).toBe(3);
-        expect(res6.error).toEqual({
+        expect(Object.keys(res6.error?.payload).length).toBe(3);
+        expect(res6.error?.payload).toEqual({
           // @ts-expect-error ikr
           d1: expect.objectContaining({
             reason: 'validation failed',
@@ -1216,8 +1159,8 @@ describe('Schema.options.postValidate', () => {
         const res8 = await Model.update({}, { d1: 'throw' });
         expect(res8.data).toBeNull();
         // @ts-expect-error ikr
-        expect(Object.keys(res8.error).length).toBe(1);
-        expect(res8.error).toEqual({
+        expect(Object.keys(res8.error?.payload).length).toBe(1);
+        expect(res8.error?.payload).toEqual({
           // @ts-expect-error ikr
           d1: expect.objectContaining({ reason: 'validation failed' }),
         });
@@ -1550,7 +1493,7 @@ describe('Schema.options.postValidate', () => {
           // const createRes = await Model.create({},{});
 
           // expect(createRes.data).toBeNull();
-          // expect(createRes.error).toMatchObject({
+          // expect(createRes.error?.payload).toMatchObject({
           //   // p1: expect.objectContaining({ reason: "failed to validate" }),
           //   // // p2: expect.objectContaining({ reason: "p2" }),
           //   // // p3: expect.objectContaining({ reason: "error1" }),
@@ -1603,7 +1546,7 @@ describe('Schema.options.postValidate', () => {
             {},
           );
           expect(updateRes.data).toBeNull();
-          expect(updateRes.error).toMatchObject({
+          expect(updateRes.error?.payload).toMatchObject({
             p1: expect.objectContaining({ reason: 'failed to validate' }),
             d1: expect.objectContaining({ reason: 'lolz' }),
           });
@@ -1623,7 +1566,7 @@ describe('Schema.options.postValidate', () => {
           );
 
           expect(updateRes1.data).toBeNull();
-          expect(updateRes1.error).toMatchObject({
+          expect(updateRes1.error?.payload).toMatchObject({
             p2: expect.objectContaining({ reason: 'validation failed' }),
             d1: expect.objectContaining({ reason: 'validation failed' }),
           });
@@ -1639,7 +1582,7 @@ describe('Schema.options.postValidate', () => {
           const updateRes2 = await Model.update({}, { d1: 'return error' });
 
           expect(updateRes2.data).toBeNull();
-          expect(updateRes2.error).toMatchObject({
+          expect(updateRes2.error?.payload).toMatchObject({
             d1: expect.objectContaining({ reason: 'error returned' }),
           });
 
@@ -1824,7 +1767,7 @@ describe('Schema.options.postValidate', () => {
           // @ts-expect-error ikr
           const updateRes1 = await Model.update({}, { d1: 'throw' });
           expect(updateRes1.data).toBeNull();
-          expect(updateRes1.error).toMatchObject({
+          expect(updateRes1.error?.payload).toMatchObject({
             d1: expect.objectContaining({ reason: 'validation failed' }),
           });
 
@@ -1836,7 +1779,7 @@ describe('Schema.options.postValidate', () => {
           const updateRes2 = await Model.update({}, { d1: 'return error' }, {});
 
           expect(updateRes2.data).toBeNull();
-          expect(updateRes2.error).toMatchObject({
+          expect(updateRes2.error?.payload).toMatchObject({
             d1: expect.objectContaining({ reason: 'error returned' }),
           });
 
@@ -1852,7 +1795,7 @@ describe('Schema.options.postValidate', () => {
           );
 
           expect(updateRes3.data).toBeNull();
-          expect(updateRes3.error).toMatchObject({
+          expect(updateRes3.error?.payload).toMatchObject({
             d1: expect.objectContaining({ reason: 'validation failed' }),
           });
 
@@ -1871,7 +1814,7 @@ describe('Schema.options.postValidate', () => {
           );
 
           expect(updateRes4.data).toBeNull();
-          expect(updateRes4.error).toMatchObject({
+          expect(updateRes4.error?.payload).toMatchObject({
             d1: expect.objectContaining({ reason: 'error returned' }),
           });
 

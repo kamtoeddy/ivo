@@ -208,7 +208,7 @@ describe('fields.lax.onSuccess', () => {
     expect(triggered).toBe(false);
   });
 
-  it('should trigger success handlers with empty fields array each time creation is successful', async () => {
+  it('should trigger global success function handlers each time creation is successful', async () => {
     let triggered = false;
     const defaultLax = 1234;
     const defaultLax1 = 5678;
@@ -217,11 +217,8 @@ describe('fields.lax.onSuccess', () => {
       (b) =>
         b.field(b.lax('lax', defaultLax)).field(b.lax('lax_1', defaultLax1)),
       {
-        onSuccess: {
-          fields: [] as never,
-          resolver: () => {
-            triggered = true;
-          },
+        onSuccess: () => {
+          triggered = true;
         },
       },
     ).getModel();
@@ -235,7 +232,7 @@ describe('fields.lax.onSuccess', () => {
     expect(triggered).toBe(true);
   });
 
-  it('should trigger success handlers with empty fields array each time update is successful', async () => {
+  it('should trigger global success function each time update is successful', async () => {
     let triggered = false;
     const defaultLax = 1234;
     const defaultLax1 = 5678;
@@ -244,11 +241,8 @@ describe('fields.lax.onSuccess', () => {
       (b) =>
         b.field(b.lax('lax', defaultLax)).field(b.lax('lax_1', defaultLax1)),
       {
-        onSuccess: {
-          fields: [] as never,
-          resolver: () => {
-            triggered = true;
-          },
+        onSuccess: () => {
+          triggered = true;
         },
       },
     ).getModel();

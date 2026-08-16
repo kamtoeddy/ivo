@@ -60,7 +60,7 @@ describe('Schema.options.onSuccess', () => {
           [
             () => {},
             {
-              fields: ['fieldName1', 'fieldName1', 'constant'],
+              fields: ['fieldName1', 'fieldName2', 'constant'],
               handler: [() => {}, () => {}],
             },
             {
@@ -149,7 +149,7 @@ describe('Schema.options.onSuccess', () => {
 
     describe('invalid', () => {
       it('should reject if any of the fields passed in config object are not valid fields or virtuals', () => {
-        const invalidFielderties = [
+        const invalidFields = [
           1,
           0,
           -14,
@@ -162,44 +162,39 @@ describe('Schema.options.onSuccess', () => {
           [],
         ];
 
-        const schemaWithInvalidFielderties = makeFx(getValidSchema(), {
-          onSuccess: { fields: invalidFielderties, handler: () => {} },
+        const schemaWithInvalidFields = makeFx(getValidSchema(), {
+          onSuccess: { fields: invalidFields, handler: () => {} },
         });
 
-        expectFailure(schemaWithInvalidFielderties);
+        expectFailure(schemaWithInvalidFields);
 
         try {
-          schemaWithInvalidFielderties();
+          schemaWithInvalidFields();
         } catch (err: any) {
-          expect(err).toMatchObject({
-            message: 'INVALID_SCHEMA',
-            payload: {
-              onSuccess: expect.arrayContaining(
-                invalidFielderties.map(
-                  (field) =>
-                    `"${field}" is not a property or virtual on your schema`,
-                ),
+          expect(err.payload['options.onSuccess']).toMatchObject(
+            expect.arrayContaining(
+              invalidFields.map(
+                (field) => `"${field}" is not a valid field on your schema`,
               ),
-            },
-          });
+            ),
+          );
         }
 
-        const schemaWithNestedInvalidFielderties = makeFx(getValidSchema(), {
-          onSuccess: [{ fields: invalidFielderties, handler: () => {} }],
+        const schemaWithNestedInvalidFields = makeFx(getValidSchema(), {
+          onSuccess: [{ fields: invalidFields, handler: () => {} }],
         });
 
-        expectFailure(schemaWithNestedInvalidFielderties);
+        expectFailure(schemaWithNestedInvalidFields);
 
         try {
-          schemaWithNestedInvalidFielderties();
+          schemaWithNestedInvalidFields();
         } catch (err: any) {
           expect(err).toMatchObject({
             message: 'INVALID_SCHEMA',
             payload: {
-              onSuccess: expect.arrayContaining(
-                invalidFielderties.map(
-                  (field) =>
-                    `Config at index 0: "${field}" is not a property or virtual on your schema`,
+              'options.onSuccess': expect.arrayContaining(
+                invalidFields.map(
+                  (field) => `"${field}" is not a valid field on your schema`,
                 ),
               ),
             },
@@ -414,7 +409,6 @@ describe('Schema.options.onSuccess', () => {
           {
             onSuccess: {
               fields: ['const1', 'const2'],
-              // @ts-expect-error failed to properly infer
               handler: onOptionSuccess(['const1', 'const2']),
             },
           },
@@ -469,10 +463,9 @@ describe('Schema.options.onSuccess', () => {
               .field(b.virtual('virtual2').validate(validator)),
           {
             onSuccess: [
-              onOptionSuccess(['dependent']),
+              onOptionSuccess(['always']),
               {
                 fields: ['lax', 'lax2'],
-                // @ts-expect-error failed to properly infer
                 handler: [
                   onOptionSuccess(['lax', 'lax2']),
                   onOptionSuccess(['lax2']),
@@ -480,17 +473,14 @@ describe('Schema.options.onSuccess', () => {
               },
               {
                 fields: ['virtual1', 'virtual2'],
-                // @ts-expect-error failed to properly infer
                 handler: onOptionSuccess(['virtual1', 'virtual2']),
               },
               {
                 fields: ['required', 'const'],
-                // @ts-expect-error failed to properly infer
                 handler: onOptionSuccess(['required', 'const']),
               },
               {
                 fields: ['required2', 'dependent'],
-                // @ts-expect-error failed to properly infer
                 handler: onOptionSuccess(['required2', 'dependent']),
               },
             ],
@@ -499,10 +489,7 @@ describe('Schema.options.onSuccess', () => {
 
         it("should trigger all related 'success' listeners at creation", async () => {
           const { data, handleSuccess } = await Model.create(
-            {
-              required: 100,
-              required2: 100,
-            },
+            { required: 100, required2: 100 },
             {},
           );
 
@@ -510,8 +497,9 @@ describe('Schema.options.onSuccess', () => {
 
           expect(data).not.toBeNull();
           expect(successValuesFromOptions).toEqual({
+            always: 1,
             const: 1,
-            dependent: 2,
+            dependent: 1,
             lax: 1,
             lax2: 2,
             required: 1,
@@ -521,11 +509,7 @@ describe('Schema.options.onSuccess', () => {
 
         it("should trigger 'success' listeners of virtual at creation if they are provided", async () => {
           const { data, handleSuccess } = await Model.create(
-            {
-              required: 100,
-              required2: 100,
-              virtual1: 4,
-            },
+            { required: 100, required2: 100, virtual1: 4 },
             {},
           );
 
@@ -533,8 +517,9 @@ describe('Schema.options.onSuccess', () => {
 
           expect(data).not.toBeNull();
           expect(successValuesFromOptions).toEqual({
+            always: 1,
             const: 1,
-            dependent: 2,
+            dependent: 1,
             lax: 1,
             lax2: 2,
             required: 1,
@@ -565,8 +550,8 @@ describe('Schema.options.onSuccess', () => {
 
           expect(data).not.toBeNull();
           expect(successValuesFromOptions).toEqual({
+            always: 1,
             const: 1,
-            dependent: 1,
             required: 1,
           });
 
@@ -582,7 +567,8 @@ describe('Schema.options.onSuccess', () => {
 
             expect(data).not.toBeNull();
             expect(successValuesFromOptions).toEqual({
-              dependent: 2,
+              always: 1,
+              dependent: 1,
               required2: 1,
               virtual1: 1,
               virtual2: 1,

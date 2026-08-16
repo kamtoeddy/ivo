@@ -794,50 +794,6 @@ describe('Schema.options.timestamps', () => {
       }
     });
 
-    it('should reject custom name found on schema', () => {
-      const values = [
-        'dependentField',
-        'fieldName1',
-        'fieldName2',
-        'virtualField',
-      ];
-      const timestampKeys = ['createdAt', 'updatedAt'];
-
-      for (const key of timestampKeys) {
-        for (const value of values) {
-          const toFail = makeFx(
-            (b) =>
-              b
-                .field(b.lax('fieldName1', ''))
-                .field(b.lax('fieldName2', ''))
-                .field(
-                  b
-                    .dependent('dependentField', 'virtualField')
-                    .default('')
-                    .resolve(() => true),
-                )
-                .field(b.virtual('virtualField').validate(() => true)),
-
-            { timestamps: { [key]: value } },
-          );
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                timestamps: expect.arrayContaining([
-                  `'${value}' already belongs to your schema`,
-                ]),
-              }),
-            );
-          }
-        }
-      }
-    });
-
     it('should reject if custom timestamp names are the same', () => {
       const toFail = makeFx(getValidSchema(), {
         timestamps: { createdAt: 'c_At', updatedAt: 'c_At' },

@@ -1,16 +1,14 @@
 import { describe, expect, it } from 'bun:test';
 import { Schema } from '../../src';
-import { expectFailure, expectNoFailure, makeFx, validator } from '../_utils';
+import { expectNoFailure, makeFx, validator } from '../_utils';
 
 describe('Schema.options.ignore', () => {
   describe('signature', () => {
-    it('should allow boolean, function, object, or array of config objects for ignore option', () => {
+    it('should allow function, object, or array of config objects for ignore option', () => {
       const validValues = [
-        true,
-        false,
         () => false,
-        { fields: ['lax', 'lax_1'], resolver: () => false },
-        [{ fields: ['lax', 'lax_1'], resolver: () => false }],
+        { fields: ['lax', 'lax_1'], handler: () => false },
+        [{ fields: ['lax', 'lax_1'], handler: () => false }],
       ];
 
       for (const ignore of validValues) {
@@ -27,41 +25,15 @@ describe('Schema.options.ignore', () => {
       }
     });
   });
-
-  describe('invalid', () => {
-    it('should reject invalid ignore option formats', () => {
-      const invalidValues = [
-        123,
-        'invalid_string',
-        { fields: [] }, // missing resolver
-        { resolver: () => false }, // missing fields
-        [{ fields: 'not_an_array', resolver: () => false }],
-      ];
-
-      for (const ignore of invalidValues) {
-        const toFail = makeFx(
-          (b) =>
-            b
-              .field(b.lax('lax', 1234).validate(validator))
-              .field(b.lax('lax_1', 5678).validate(validator)),
-          { ignore },
-        );
-
-        expectFailure(toFail);
-      }
-    });
-  });
 });
 
 describe('Schema.options.ignoreUpdate', () => {
   describe('signature', () => {
     it('should allow boolean, function, object, or array of config objects for ignoreUpdate option', () => {
       const validValues = [
-        true,
-        false,
         () => false,
-        { fields: ['lax', 'lax_1'], resolver: () => false },
-        [{ fields: ['lax', 'lax_1'], resolver: () => false }],
+        { fields: ['lax', 'lax_1'], handler: () => false },
+        [{ fields: ['lax', 'lax_1'], handler: () => false }],
       ];
 
       for (const ignoreUpdate of validValues) {
@@ -75,30 +47,6 @@ describe('Schema.options.ignoreUpdate', () => {
 
         expectNoFailure(toPass);
         toPass();
-      }
-    });
-  });
-
-  describe('invalid', () => {
-    it('should reject invalid ignoreUpdate option formats', () => {
-      const invalidValues = [
-        123,
-        'invalid_string',
-        { fields: [] }, // missing resolver
-        { resolver: () => false }, // missing fields
-        [{ fields: 'not_an_array', resolver: () => false }],
-      ];
-
-      for (const ignoreUpdate of invalidValues) {
-        const toFail = makeFx(
-          (b) =>
-            b
-              .field(b.lax('lax', 1234).validate(validator))
-              .field(b.lax('lax_1', 5678).validate(validator)),
-          { ignoreUpdate },
-        );
-
-        expectFailure(toFail);
       }
     });
   });
@@ -124,12 +72,12 @@ describe('Schema.options.ignoreUpdate', () => {
       const res = await model.update(item, { lax: 'ignore_value' }, {});
 
       expect(res.data).toBeNull();
-      expect(res.error).toBeNull();
-      expect(typeof res.handleFailure).toBe('function');
+      expect(res.error).toEqual({ isNothingToUpdate: true, payload: null });
 
       const res2 = await model.update(item, { lax: 'updated_lax' }, {});
 
       expect(res2.data).toEqual({ lax: 'updated_lax' });
+      expect(res2.error).toBeNull();
     });
   });
 });

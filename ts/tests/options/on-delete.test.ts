@@ -127,8 +127,8 @@ describe('Schema.options.onDelete', () => {
           expect(err).toMatchObject({
             message: 'INVALID_SCHEMA',
             payload: {
-              onDelete: expect.arrayContaining([
-                "The 'onDelete' handler at index: 0 is not a function",
+              'options.onDelete': expect.arrayContaining([
+                'expected a function or an array of functions',
               ]),
             },
           });

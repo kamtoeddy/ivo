@@ -596,9 +596,11 @@ function makeOptions<
 }): NS.InternalOptions<I, O, CtxOptions, ErrorMetadata, ErrorPayload> {
   let sanitizeError = (p: IvoErrorPayload<ErrorMetadata, KeyOf<I>>) => p;
 
-  if (typeof options.sanitizeError === 'function') {
-    // @ts-expect-error ikr
-    sanitizeError = options.sanitizeError;
+  if ('sanitizeError' in options) {
+    if (typeof options.sanitizeError === 'function') {
+      // @ts-expect-error ikr
+      sanitizeError = options.sanitizeError;
+    } else errorTool.add('option.sanitizeError', 'expected a function');
   }
 
   const normalizedOptions: NS.InternalOptions<
@@ -614,7 +616,19 @@ function makeOptions<
     timestamps,
   };
 
-  if (options.ignore) {
+  if ('equalityDepth' in options) {
+    const { equalityDepth } = options;
+
+    if (typeof equalityDepth === 'number' && equalityDepth >= 0)
+      normalizedOptions.equalityDepth = equalityDepth;
+    else
+      errorTool.add(
+        'option.equalityDepth',
+        'expected a number greater than or equal to 0',
+      );
+  }
+
+  if ('ignore' in options) {
     const ignore: NS.IgnoreConfigOptionItem<I, O, CtxOptions>[] = [];
 
     if (typeof options.ignore === 'function') ignore.push(options.ignore);
@@ -630,9 +644,10 @@ function makeOptions<
           continue;
         }
 
-        const { fields, resolver } = config;
+        // @ts-expect-error ikr
+        const { fields, handler } = config;
 
-        ignore.push({ fields, resolver });
+        ignore.push({ fields, handler });
 
         if (fields.length < 2)
           errorTool.add(optionName, 'grouped ignore expects at least 2 fields');
@@ -668,7 +683,7 @@ function makeOptions<
     normalizedOptions.ignore = ignore;
   }
 
-  if (options.ignoreUpdate) {
+  if ('ignoreUpdate' in options) {
     const ignoreUpdate: NS.IgnoreUpdateConfigOptionItem<I, O, CtxOptions>[] =
       [];
 
@@ -686,9 +701,10 @@ function makeOptions<
           continue;
         }
 
-        const { fields, resolver } = config;
+        // @ts-expect-error ikr
+        const { fields, handler } = config;
 
-        ignoreUpdate.push({ fields, resolver });
+        ignoreUpdate.push({ fields, handler });
 
         if (fields.length < 2)
           errorTool.add(
@@ -733,19 +749,25 @@ function makeOptions<
     normalizedOptions.ignoreUpdate = ignoreUpdate;
   }
 
-  if (options.onDelete) {
-    const onDelete: NS.DeleteHandler<O, CtxOptions>[] = [];
+  if ('onDelete' in options) {
+    if (
+      typeof options.onDelete === 'function' ||
+      (Array.isArray(options.onDelete) &&
+        options.onDelete.every((h) => typeof h === 'function'))
+    ) {
+      const onDelete: NS.DeleteHandler<O, CtxOptions>[] = toArray(
+        options.onDelete,
+      );
 
-    if (typeof options.onDelete === 'function') onDelete.push(options.onDelete);
-    else {
-      for (const config of toArray(options.onDelete))
-        if (typeof config === 'function') onDelete.push(config);
-    }
-
-    if (onDelete.length) normalizedOptions.onDelete = onDelete;
+      if (onDelete.length) normalizedOptions.onDelete = onDelete;
+    } else
+      errorTool.add(
+        'options.onDelete',
+        'expected a function or an array of functions',
+      );
   }
 
-  if (options.onSuccess) {
+  if ('onSuccess' in options) {
     const onSuccess: NS.OnSuccessConfigOptionItem<I, O, CtxOptions>[] = [];
 
     if (typeof options.onSuccess === 'function')
@@ -760,9 +782,10 @@ function makeOptions<
           continue;
         }
 
-        const { fields, resolver } = config;
+        // @ts-expect-error ikr
+        const { fields, handler } = config;
 
-        onSuccess.push({ fields, resolver });
+        onSuccess.push({ fields, handler });
 
         const fieldNames = new Set<string>();
 
@@ -777,16 +800,19 @@ function makeOptions<
 
           const virtualField = aliasToVirtualMap.get(fieldName);
 
-          if (virtualField)
+          if (virtualField) {
             errorTool.add(
               optionName,
               `"${fieldName}" is an alias; use "${virtualField}" instead`,
             );
 
+            continue;
+          }
+
           if (!definitions[fieldName])
             errorTool.add(
               optionName,
-              `"${fieldName}" does not exist on your schema`,
+              `"${fieldName}" is not a valid field on your schema`,
             );
         }
       }
@@ -795,7 +821,7 @@ function makeOptions<
     normalizedOptions.onSuccess = onSuccess;
   }
 
-  if (options.postValidate) {
+  if ('postValidate' in options) {
     const optionName = 'options.postValidate';
     const type_not_allowed_error =
       'only lax, required and virtual fields can be post-validated';
@@ -808,6 +834,7 @@ function makeOptions<
       ErrorMetadata
     >[] = [];
 
+    // @ts-expect-error ikr
     for (const { fields, validator } of toArray(options.postValidate)) {
       postValidate.push({ fields, validator });
 
@@ -815,6 +842,25 @@ function makeOptions<
         errorTool.add(
           optionName,
           'post-validation config expects at least 2 I fields',
+        );
+
+      if (
+        typeof validator !== 'function' &&
+        !(
+          Array.isArray(validator) &&
+          validator.length > 0 &&
+          validator.every(
+            (v) =>
+              typeof v === 'function' ||
+              (Array.isArray(v) &&
+                v.length > 0 &&
+                v.every((v1) => typeof v1 === 'function')),
+          )
+        )
+      )
+        errorTool.add(
+          optionName,
+          'validator must be a function or array of functions',
         );
 
       const fieldNames = new Set<string>();
@@ -849,13 +895,14 @@ function makeOptions<
     normalizedOptions.postValidate = postValidate;
   }
 
-  if (options.required) {
+  if ('required' in options) {
     const optionName = 'options.required';
     const type_not_allowed_error =
       'only lax and virtual fields can belong to grouped required configs';
     const required: NS.RequiredConfigObject<I, O, CtxOptions, ErrorMetadata>[] =
       [];
 
+    // @ts-expect-error ikr
     for (const { fields, handler } of toArray(options.required)) {
       required.push({ fields, handler });
 

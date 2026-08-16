@@ -485,7 +485,7 @@ describe('fields.dependent', () => {
       {
         onSuccess: {
           fields: ['dependent'] as never,
-          resolver: () => {
+          handler: () => {
             triggered = true;
           },
         },
@@ -527,7 +527,7 @@ describe('fields.dependent', () => {
       {
         onSuccess: {
           fields: ['dependent'] as never,
-          resolver: () => {
+          handler: () => {
             triggered = true;
           },
         },
@@ -567,7 +567,7 @@ describe('fields.dependent', () => {
       {
         onSuccess: {
           fields: ['dependent'] as never,
-          resolver: () => {
+          handler: () => {
             triggered = true;
           },
         },
@@ -613,7 +613,7 @@ describe('fields.dependent', () => {
       {
         onSuccess: {
           fields: ['dependent'] as never,
-          resolver: () => {
+          handler: () => {
             triggered = true;
           },
         },
@@ -657,7 +657,7 @@ describe('fields.dependent', () => {
       {
         onSuccess: {
           fields: ['dependent'] as never,
-          resolver: () => {
+          handler: () => {
             triggered = true;
           },
         },

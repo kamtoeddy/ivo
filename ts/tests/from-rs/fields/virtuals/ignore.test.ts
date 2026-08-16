@@ -226,7 +226,7 @@ describe('fields.virtual.ignore', () => {
           {
             ignore: {
               fields: ['virtualField', 'lax'],
-              resolver: (ctx: any) => ctx.input.lax === IGNORE,
+              handler: (ctx: any) => ctx.input.lax === IGNORE,
             },
           },
         ).getModel();
@@ -318,7 +318,7 @@ describe('fields.virtual.ignore', () => {
           {
             ignoreUpdate: {
               fields: ['lax', 'virtualField'],
-              resolver: (ctx: any) => ctx.rawInput.lax === IGNORE,
+              handler: (ctx: any) => ctx.rawInput.lax === IGNORE,
             },
           },
         ).getModel();

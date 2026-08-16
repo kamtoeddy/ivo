@@ -177,7 +177,7 @@ describe('fields.required.onSuccess', () => {
     expect(secondHandlerCalled).toBe(false);
   });
 
-  it('should trigger success handlers with empty fields array each time creation is successful', async () => {
+  it('should trigger global success function handlers each time creation is successful', async () => {
     let triggered = false;
 
     const Model = new Schema<{ required: number; required_1: number }>(
@@ -186,11 +186,8 @@ describe('fields.required.onSuccess', () => {
           .field(b.required('required').validate(() => ({ valid: true })))
           .field(b.required('required_1').validate(() => ({ valid: true }))),
       {
-        onSuccess: {
-          fields: [] as never,
-          resolver: () => {
-            triggered = true;
-          },
+        onSuccess: () => {
+          triggered = true;
         },
       },
     ).getModel();
@@ -213,7 +210,7 @@ describe('fields.required.onSuccess', () => {
     expect(triggered).toBe(true);
   });
 
-  it('should trigger success handlers with empty fields array each time update is successful', async () => {
+  it('should trigger global success function handlers each time update is successful', async () => {
     let triggered = false;
 
     const Model = new Schema<{ required: number; required_1: number }>(
@@ -222,11 +219,8 @@ describe('fields.required.onSuccess', () => {
           .field(b.required('required').validate(() => ({ valid: true })))
           .field(b.required('required_1').validate(() => ({ valid: true }))),
       {
-        onSuccess: {
-          fields: [] as never,
-          resolver: () => {
-            triggered = true;
-          },
+        onSuccess: () => {
+          triggered = true;
         },
       },
     ).getModel();

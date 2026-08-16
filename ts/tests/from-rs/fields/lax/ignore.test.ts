@@ -148,7 +148,7 @@ describe('fields.lax.ignore', () => {
         {
           ignore: {
             fields: ['lax', 'lax_1'],
-            resolver: (ctx) => ctx.input.lax === IGNORE,
+            handler: (ctx) => ctx.input.lax === IGNORE,
           },
         },
       ).getModel();
@@ -222,7 +222,7 @@ describe('fields.lax.ignore', () => {
         {
           ignoreUpdate: {
             fields: ['lax', 'lax_1'],
-            resolver: (ctx) => ctx.rawInput.lax === IGNORE,
+            handler: (ctx) => ctx.rawInput.lax === IGNORE,
           },
         },
       ).getModel();

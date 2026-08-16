@@ -330,7 +330,7 @@ describe('fields.virtual.onSuccess', () => {
           {
             onSuccess: {
               fields: ['virtualField'] as never,
-              resolver: () => {
+              handler: () => {
                 triggered = true;
               },
             },
@@ -373,7 +373,7 @@ describe('fields.virtual.onSuccess', () => {
           {
             onSuccess: {
               fields: ['virtualField'] as never,
-              resolver: () => {
+              handler: () => {
                 triggered = true;
               },
             },
@@ -424,7 +424,7 @@ describe('fields.virtual.onSuccess', () => {
           {
             onSuccess: {
               fields: ['virtualField'] as never,
-              resolver: () => {
+              handler: () => {
                 triggered = true;
               },
             },
@@ -481,7 +481,7 @@ describe('fields.virtual.onSuccess', () => {
           {
             onSuccess: {
               fields: ['virtualField'] as never,
-              resolver: () => {
+              handler: () => {
                 triggered = true;
               },
             },
@@ -524,7 +524,7 @@ describe('fields.virtual.onSuccess', () => {
           {
             onSuccess: {
               fields: ['virtualField'] as never,
-              resolver: () => {
+              handler: () => {
                 triggered = true;
               },
             },
@@ -570,7 +570,7 @@ describe('fields.virtual.onSuccess', () => {
           {
             onSuccess: {
               fields: ['virtualField'] as never,
-              resolver: () => {
+              handler: () => {
                 triggered = true;
               },
             },
@@ -621,7 +621,7 @@ describe('fields.virtual.onSuccess', () => {
           {
             onSuccess: {
               fields: ['virtualField'] as any,
-              resolver: () => {
+              handler: () => {
                 triggered = true;
               },
             },
