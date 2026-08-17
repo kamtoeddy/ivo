@@ -4,6 +4,139 @@ use ivo::{
 use std::{future::ready, panic};
 
 #[test]
+#[should_panic(expected = "[virtual_field]: occurs more than once, please remove duplicates")]
+fn should_reject_if_field_name_is_already_set() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+        dependent: i32,
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
+    struct DataInput {
+        lax: String,
+        virtual_field: String,
+    }
+
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
+        |f| {
+            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
+                .field(lax_field("lax").default(1))
+                .field(
+                    dependent_field("dependent")
+                        .default(1)
+                        .depends_on(["virtual_field"])
+                        .resolve(|_, _| ready(2)),
+                )
+                .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
+                .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(
+    expected = "[created_at]: is not a valid field name. It is the creation timestamp on"
+)]
+fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        created_at: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
+    struct DataInput {
+        _c: String,
+    }
+
+    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
+        |f| {
+            f.field(virtual_field("created_at").validate(|_: String, _, _| ready(Ok(None))))
+                .timestamps(|t| t.resolve(|| "Date.now()").created_at(None))
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(
+    expected = "[custom_created_at]: is not a valid field name. It is the creation timestamp on"
+)]
+fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        custom_created_at: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
+    struct DataInput {
+        _c: String,
+    }
+
+    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
+        |f| {
+            f.field(virtual_field("custom_created_at").validate(|_: String, _, _| ready(Ok(None))))
+                .timestamps(|t| {
+                    t.resolve(|| "Date.now()")
+                        .created_at(Some("custom_created_at"))
+                })
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(expected = "[updated_at]: is not a valid field name. It is the update timestamp on")]
+fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        updated_at: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
+    struct DataInput {
+        _c: String,
+    }
+
+    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
+        |f| {
+            f.field(virtual_field("updated_at").validate(|_: String, _, _| ready(Ok(None))))
+                .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(
+    expected = "[custom_updated_at]: is not a valid field name. It is the update timestamp on"
+)]
+fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        custom_updated_at: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
+    struct DataInput {
+        _c: String,
+    }
+
+    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
+        |f| {
+            f.field(virtual_field("custom_updated_at").validate(|_: String, _, _| ready(Ok(None))))
+                .timestamps(|t| {
+                    t.resolve(|| "Date.now()")
+                        .optional_updated_at(Some("custom_updated_at"))
+                })
+        },
+        |o| o,
+    );
+}
+
+#[test]
 #[should_panic(
     expected = "[virtual_field]: Virtual fields are expected to have at least one dependency, but found none"
 )]

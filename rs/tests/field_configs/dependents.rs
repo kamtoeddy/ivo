@@ -5,6 +5,40 @@ use ivo::{
 use std::{future::ready, panic};
 
 #[test]
+#[should_panic(expected = "[dependent]: occurs more than once, please remove duplicates")]
+fn should_reject_if_field_name_is_already_set() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
+    struct DataInput {
+        lax: String,
+    }
+
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
+        |f| {
+            f.field(lax_field("lax").default(1))
+                .field(
+                    dependent_field("dependent")
+                        .default(2)
+                        .depends_on(["lax"])
+                        .resolve(|_, _| ready(4)),
+                )
+                .field(
+                    dependent_field("dependent")
+                        .default(2)
+                        .depends_on(["lax"])
+                        .resolve(|_, _| ready(4)),
+                )
+        },
+        |o| o,
+    );
+}
+
+#[test]
 #[should_panic(
     expected = "[dependent]: must depend on at least one lax, required, virtual or other dependent field on your schema"
 )]
@@ -266,6 +300,39 @@ fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(expected = "[dependent]: is an output field. It must be present on \u{1b}[1mData")]
+fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
+    struct DataInput {
+        lax: String,
+        virtual_field: String,
+    }
+
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
+        |f| {
+            f.field(
+                dependent_field("dependent")
+                    .default(1)
+                    .depends_on(["lax"])
+                    .resolve(|_, _| ready(12)),
+            )
+            .field(
+                lax_field("lax")
+                    .default("default".into())
+                    .validate(|v: String, _, _| ready(Ok(Some(v)))),
+            )
+            .field(virtual_field("virtual_field").validate(|v: String, _, _| ready(Ok(Some(v)))))
         },
         |o| o,
     );
