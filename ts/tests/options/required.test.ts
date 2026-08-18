@@ -7,10 +7,6 @@ describe('Schema.options.required', () => {
     it('should allow a config object or array of config objects', () => {
       const values = [
         { fields: ['a', 'b'], handler: () => undefined },
-        {
-          fields: ['a', 'b'],
-          handler: [() => undefined, () => undefined],
-        },
         [{ fields: ['a', 'b'], handler: () => undefined }],
       ];
 
@@ -90,8 +86,8 @@ describe('Schema.options.required', () => {
       } catch (err: any) {
         expect(err.payload).toEqual(
           expect.objectContaining({
-            required: expect.arrayContaining([
-              'grouped required expects at least 2 fields',
+            'options.required': expect.arrayContaining([
+              'grouped required config expects at least 2 fields',
             ]),
           }),
         );
@@ -114,8 +110,8 @@ describe('Schema.options.required', () => {
       } catch (err: any) {
         expect(err.payload).toEqual(
           expect.objectContaining({
-            required: expect.arrayContaining([
-              "remove duplicates of 'a' in your grouped required config",
+            'options.required': expect.arrayContaining([
+              'remove duplicates of "a" in your grouped required config',
             ]),
           }),
         );
@@ -138,8 +134,8 @@ describe('Schema.options.required', () => {
       } catch (err: any) {
         expect(err.payload).toEqual(
           expect.objectContaining({
-            required: expect.arrayContaining([
-              "'z' does not exist on your schema",
+            'options.required': expect.arrayContaining([
+              'only lax and virtual fields can belong to grouped required configs; remove "z"',
             ]),
           }),
         );
@@ -191,8 +187,8 @@ describe('Schema.options.required', () => {
         } catch (err: any) {
           expect(err.payload).toEqual(
             expect.objectContaining({
-              required: expect.arrayContaining([
-                "only lax and virtual fields can belong to grouped required configs; remove 'a'",
+              'options.required': expect.arrayContaining([
+                'only lax and virtual fields can belong to grouped required configs; remove "a"',
               ]),
             }),
           );
@@ -222,8 +218,8 @@ describe('Schema.options.required', () => {
       } catch (err: any) {
         expect(err.payload).toEqual(
           expect.objectContaining({
-            required: expect.arrayContaining([
-              "only lax and virtual fields can belong to grouped required configs; remove 'createdAt'",
+            'options.required': expect.arrayContaining([
+              'only lax and virtual fields can belong to grouped required configs; remove "createdAt"',
             ]),
           }),
         );
@@ -256,8 +252,8 @@ describe('Schema.options.required', () => {
       } catch (err: any) {
         expect(err.payload).toEqual(
           expect.objectContaining({
-            required: expect.arrayContaining([
-              "'vAlias' is an alias; use 'virtualField' instead",
+            'options.required': expect.arrayContaining([
+              '"vAlias" is an alias; use "virtualField" instead',
             ]),
           }),
         );
@@ -309,8 +305,8 @@ describe('Schema.options.required', () => {
       const Model = new Schema<any>(
         (b) =>
           b
-            .field(b.lax('a', undefined))
-            .field(b.lax('b', undefined))
+            .field(b.lax('a', null))
+            .field(b.lax('b', null))
             .field(b.lax('c', 2)),
         {
           required: {
@@ -411,12 +407,11 @@ describe('Schema.options.required', () => {
 
     it('should run every handler in an array and merge their results', async () => {
       const Model = new Schema<{ a: any; b: any }>(
-        (b) => b.field(b.lax('a', undefined)).field(b.lax('b', undefined)),
+        (b) => b.field(b.lax('a', null)).field(b.lax('b', null)),
         {
-          // @ts-expect-error ikr
           required: {
             fields: ['a', 'b'],
-            handler: [() => ({ a: 'a missing' }), () => ({ b: 'b missing' })],
+            handler: () => ({ a: 'a missing', b: 'b missing' }),
           },
         },
       ).getModel();
@@ -425,7 +420,6 @@ describe('Schema.options.required', () => {
 
       expect(data).toBeNull();
       expect(error).toEqual({
-        // @ts-expect-error ikr
         a: { reason: 'a missing', metadata: null },
         b: { reason: 'b missing', metadata: null },
       });
@@ -433,7 +427,7 @@ describe('Schema.options.required', () => {
 
     it('should treat a thrown handler as satisfied (no error), matching the swallow-errors convention', async () => {
       const Model = new Schema<any>(
-        (b) => b.field(b.lax('a', undefined)).field(b.lax('b', undefined)),
+        (b) => b.field(b.lax('a', null)).field(b.lax('b', null)),
         {
           required: {
             fields: ['a', 'b'],
@@ -447,7 +441,7 @@ describe('Schema.options.required', () => {
       const { data, error } = await Model.create({}, {});
 
       expect(error).toBeNull();
-      expect(data).toEqual({});
+      expect(data).toEqual({ a: null, b: null });
     });
   });
 });

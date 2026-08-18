@@ -635,7 +635,7 @@ function makeOptions<
     else {
       const optionName = 'options.ignore';
       const type_not_allowed_error =
-        'only lax and virtual fields can belong to grouped ignore configs';
+        'only lax and virtual fields can belong to grouped ignore configs;';
 
       for (const config of toArray(options.ignore)) {
         if (typeof config === 'function') {
@@ -841,7 +841,7 @@ function makeOptions<
       if (fields.length < 2)
         errorTool.add(
           optionName,
-          'post-validation config expects at least 2 I fields',
+          'post-validation config expects at least 2 fields',
         );
 
       if (
@@ -898,19 +898,32 @@ function makeOptions<
   if ('required' in options) {
     const optionName = 'options.required';
     const type_not_allowed_error =
-      'only lax and virtual fields can belong to grouped required configs';
+      'only lax and virtual fields can belong to grouped required configs;';
     const required: NS.RequiredConfigObject<I, O, CtxOptions, ErrorMetadata>[] =
       [];
 
     // @ts-expect-error ikr
     for (const { fields, handler } of toArray(options.required)) {
       required.push({ fields, handler });
+      let hasErrors = false;
 
-      if (fields.length < 2)
+      if (!Array.isArray(fields) || fields.length < 2) {
         errorTool.add(
           optionName,
-          'grouped required config expects at least 2 I fields',
+          'grouped required config expects at least 2 fields',
         );
+        hasErrors = true;
+      }
+
+      if (typeof handler !== 'function') {
+        errorTool.add(
+          optionName,
+          'the hander of grouped required config must a function',
+        );
+        hasErrors = true;
+      }
+
+      if (hasErrors) continue;
 
       const fieldNames = new Set<string>();
 
