@@ -5,6 +5,7 @@ pub mod internal;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use crate::{
+    model::fields_collection::InputFieldInfo,
     schema::{
         fields::{base::InternalFieldConfig, TimestampConfig},
         options::base::SchemaOptions,
@@ -35,6 +36,8 @@ pub struct IvoModel<
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions> = DefaultErrorSanitizer,
 > {
     pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
+    pub(crate) field_infos: HashMap<&'static str, InputFieldInfo<'static>>,
+    pub(crate) dependent_children: HashMap<&'static str, Vec<&'static str>>,
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorSanitizer>,
     pub(crate) timestamp_configs: Option<TimestampConfig<Timestamp>>,
 }

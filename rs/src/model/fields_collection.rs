@@ -10,34 +10,19 @@ use crate::{
     IvoErrorSanitizer, IvoStruct,
 };
 
-pub(super) struct FieldInfoCollection<
-    'a,
-    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
-    O: IvoStruct,
-    CtxOptions: Clone,
-    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
-> {
-    fields: HashMap<&'a str, InputFieldInfo<'a>>,
+pub(super) struct FieldInfoCollection<'a> {
+    fields: &'a HashMap<&'static str, InputFieldInfo<'static>>,
     fields_provided: HashSet<String>,
     relevant_fields_provided: HashSet<String>,
     relevant_dependent_config_names: HashSet<String>,
     relevant_config_names: HashSet<String>,
-    field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
 }
 
-impl<
-        'a,
-        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
-        O: IvoStruct,
-        CtxOptions: Clone,
-        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
-    > FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>
-{
+impl<'a> FieldInfoCollection<'a> {
     #[inline]
-    pub fn new(field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>) -> Self {
+    pub fn new(fields: &'a HashMap<&'static str, InputFieldInfo<'static>>) -> Self {
         Self {
-            field_configs,
-            fields: Self::parse_fields(field_configs),
+            fields,
             relevant_config_names: HashSet::new(),
             fields_provided: HashSet::new(),
             relevant_fields_provided: HashSet::new(),
@@ -111,81 +96,79 @@ impl<
     }
 
     #[inline(always)]
-    pub fn is_relevant_dependent_config_name(&self, config_name: &str) -> bool {
-        self.relevant_dependent_config_names.contains(config_name)
+    pub fn relevant_dependent_config_names(&self) -> &HashSet<String> {
+        &self.relevant_dependent_config_names
     }
 
     #[inline(always)]
-    pub fn get(&'a self, field_name: &str) -> &'a InputFieldInfo<'a> {
+    pub fn get(&self, field_name: &str) -> &InputFieldInfo<'static> {
         self.fields.get(field_name).unwrap()
     }
+}
 
-    fn parse_fields(
-        field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
-    ) -> HashMap<&'a str, InputFieldInfo<'a>> {
-        let mut fields = HashMap::new();
+#[inline]
+pub(crate) fn parse_field_infos<
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
+    O: IvoStruct,
+    CtxOptions: Clone,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
+>(
+    field_configs: &InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
+) -> HashMap<&'static str, InputFieldInfo<'static>> {
+    let mut fields = HashMap::new();
 
-        for (config_name, config) in field_configs.iter() {
-            match config {
-                InternalFieldConfig {
-                    alias,
-                    field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
-                    ..
-                } => {
-                    let is_virtual = matches!(config.field_type, FieldType::Virtual);
+    for (config_name, config) in field_configs.iter() {
+        match config {
+            InternalFieldConfig {
+                alias,
+                field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
+                ..
+            } => {
+                let is_virtual = matches!(config.field_type, FieldType::Virtual);
 
+                fields.insert(
+                    *config_name,
+                    InputFieldInfo {
+                        config_name,
+                        name: config_name,
+                        is_virtual,
+                    },
+                );
+
+                if let Some(name) = alias {
                     fields.insert(
-                        *config_name,
+                        *name,
                         InputFieldInfo {
                             config_name,
-                            name: config_name,
+                            name,
                             is_virtual,
                         },
                     );
 
-                    if let Some(name) = alias {
-                        fields.insert(
-                            *name,
-                            InputFieldInfo {
-                                config_name,
-                                name,
-                                is_virtual,
-                            },
-                        );
-
-                        // necessary for group validations and resolvers
-                        fields.insert(
-                            *config_name,
-                            InputFieldInfo {
-                                config_name,
-                                name,
-                                is_virtual,
-                            },
-                        );
-                    }
+                    // necessary for group validations and resolvers
+                    fields.insert(
+                        *config_name,
+                        InputFieldInfo {
+                            config_name,
+                            name,
+                            is_virtual,
+                        },
+                    );
                 }
-                _ => {
-                    continue;
-                }
-            };
-        }
-
-        fields
+            }
+            _ => {
+                continue;
+            }
+        };
     }
+
+    fields
 }
 
-impl<
-        'a,
-        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
-        O: IvoStruct,
-        CtxOptions: Clone,
-        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
-    > Clone for FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>
-{
+impl<'a> Clone for FieldInfoCollection<'a> {
     fn clone(&self) -> Self {
         Self {
-            field_configs: self.field_configs,
-            fields: self.fields.clone(),
+            fields: self.fields,
             fields_provided: self.fields_provided.clone(),
             relevant_config_names: self.relevant_config_names.clone(),
             relevant_fields_provided: self.relevant_fields_provided.clone(),
@@ -195,7 +178,7 @@ impl<
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct InputFieldInfo<'a> {
+pub(crate) struct InputFieldInfo<'a> {
     pub name: &'a str,
     pub config_name: &'a str,
     pub is_virtual: bool,

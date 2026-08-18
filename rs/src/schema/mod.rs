@@ -3,6 +3,7 @@ pub mod options;
 mod types;
 
 use crate::__private_types::IvoInputStruct;
+use crate::model::fields_collection::parse_field_infos;
 use crate::schema::options::types::{IgnoreOptionConfig, IgnoreUpdateOptionConfig};
 use crate::schema::{
     fields::{
@@ -72,11 +73,41 @@ impl<
             &output_field_names,
         );
 
+        let field_infos = parse_field_infos(&field_configs);
+        let dependent_children = Self::make_dependent_children(&field_configs);
+
         Self {
             field_configs,
+            field_infos,
+            dependent_children,
             options,
             timestamp_configs: fields.timestamp_config,
         }
+    }
+
+    #[inline]
+    fn make_dependent_children(
+        field_configs: &InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
+    ) -> HashMap<&'static str, Vec<&'static str>> {
+        let mut dependent_children: HashMap<&'static str, Vec<&'static str>> = HashMap::new();
+
+        for (config_name, config) in field_configs.iter() {
+            if let InternalFieldConfig {
+                field_type: FieldType::Dependent,
+                depends_on: Some(ref depends_on),
+                ..
+            } = config
+            {
+                for parent in depends_on {
+                    dependent_children
+                        .entry(*parent)
+                        .or_default()
+                        .push(*config_name);
+                }
+            }
+        }
+
+        dependent_children
     }
 
     #[track_caller]

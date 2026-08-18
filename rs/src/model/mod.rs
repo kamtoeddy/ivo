@@ -1,7 +1,7 @@
 #![allow(type_alias_bounds)]
 
 mod error_tool;
-mod fields_collection;
+pub(crate) mod fields_collection;
 
 use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
@@ -82,7 +82,7 @@ impl<
             .filter_input_fields_allowed(
                 None,
                 input,
-                FieldInfoCollection::new(&self.field_configs),
+                FieldInfoCollection::new(&self.field_infos),
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -281,7 +281,7 @@ impl<
             .filter_input_fields_allowed(
                 Some(&old_partial_values),
                 updates,
-                FieldInfoCollection::new(&self.field_configs),
+                FieldInfoCollection::new(&self.field_infos),
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -517,7 +517,7 @@ impl<
         &'b self,
         mut ctx: IvoContext<I, O>,
         previous_values: O,
-        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: FieldInfoCollection<'a>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> UpdateResult<'b, O, CtxOptions, ErrorSanitizer> {
         Arc::make_mut(&mut ctx)
@@ -699,7 +699,7 @@ impl<
 
     async fn validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::Metadata>> {
@@ -799,7 +799,7 @@ impl<
 
     async fn re_validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::Metadata>> {
@@ -876,7 +876,7 @@ impl<
 
     async fn post_validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::Metadata>> {
@@ -1031,7 +1031,7 @@ impl<
 
     async fn sanitize_virtuals<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<I::Partial> {
@@ -1080,53 +1080,52 @@ impl<
 
     async fn resolve_dependent_values<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<(O::Partial, HashSet<String>)> {
+        let mut dependents_to_resolve = HashSet::new();
+
+        for parent in fields_collection.relevant_dependent_config_names() {
+            if let Some(children) = self.dependent_children.get(parent.as_str()) {
+                for child in children {
+                    dependents_to_resolve.insert(*child);
+                }
+            }
+        }
+
+        if dependents_to_resolve.is_empty() {
+            return None;
+        }
+
         let mut resolvers = vec![];
         let previous_values: Option<O::Partial> = ctx.previous_values().map(|v| v.into());
         let is_update = previous_values.as_ref().is_some();
         let previous_values = previous_values.unwrap_or_default();
 
-        for (field_name, config) in self.field_configs.iter() {
-            match config {
-                InternalFieldConfig {
-                    field_type: FieldType::Dependent,
-                    depends_on: Some(ref depends_on),
-                    resolver: Some(ref resolver),
+        for field_name in dependents_to_resolve {
+            let config = &self.field_configs[field_name];
+
+            let Some(resolver) = config.resolver.as_ref() else {
+                continue;
+            };
+
+            if is_update {
+                if let InternalFieldConfig {
+                    default: Some(DefaultValue::Static(default_value)),
+                    ignore_update: Some(IsFieldProvisionEnabled::Readonly),
                     ..
-                } if depends_on
-                    .iter()
-                    .any(|parent| fields_collection.is_relevant_dependent_config_name(parent)) =>
+                } = config
                 {
-                    if !is_update {
-                        resolvers.push((field_name, resolver));
-
+                    // readonly means: don't update if value has changed
+                    // i.e: only update if prev_value == default_value
+                    if !previous_values.ivo_internal_is_value_equal(field_name, default_value) {
                         continue;
                     }
-
-                    // handle readonly during updates
-                    if let InternalFieldConfig {
-                        field_type: FieldType::Dependent,
-                        default: Some(DefaultValue::Static(default_value)),
-                        ignore_update: Some(IsFieldProvisionEnabled::Readonly),
-                        ..
-                    } = config
-                    {
-                        // readonly means: don't update if value has changed
-                        // i.e: only update if prev_value == default_value
-                        if previous_values.ivo_internal_is_value_equal(field_name, default_value) {
-                            resolvers.push((field_name, resolver));
-                        }
-
-                        continue;
-                    }
-
-                    resolvers.push((field_name, resolver));
                 }
-                _ => {}
             }
+
+            resolvers.push((field_name, resolver));
         }
 
         if resolvers.is_empty() {
@@ -1164,14 +1163,10 @@ impl<
         &'a self,
         previous_values: Option<&O::Partial>,
         input_values: &I::Partial,
-        mut fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        mut fields_collection: FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> (
-        I::Partial,
-        O::Partial,
-        FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
-    ) {
+    ) -> (I::Partial, O::Partial, FieldInfoCollection<'a>) {
         let is_update = previous_values.is_some();
         let previous_values = previous_values.cloned().unwrap_or_default();
 
@@ -1430,7 +1425,7 @@ impl<
 
     async fn evaluate_missing_required_fields<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<(), IvoErrorPayload<ErrorSanitizer::Metadata>> {
@@ -1584,7 +1579,7 @@ impl<
         ctx: &mut IvoContext<I, O>,
         previous_values: &O,
         old_partial_values: &O::Partial,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
     ) -> HashSet<String> {
         let mut input = ctx.input();
         let mut changes = ctx.changes();
@@ -1624,7 +1619,7 @@ impl<
 
     fn prepare_failure_handlers<'a>(
         &self,
-        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'_> {
@@ -1664,7 +1659,7 @@ impl<
 
     fn prepare_success_handlers<'a>(
         &self,
-        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'_> {
