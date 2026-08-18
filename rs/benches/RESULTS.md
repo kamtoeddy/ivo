@@ -81,14 +81,64 @@ This optimization is included in the final numbers above. Its effect is most vis
 
 `cargo test`: 892 passed; 0 failed.
 
+## Optimization #3 — Release-profile tuning
+
+**Change**: Enabled full link-time optimization (`lto = true`) and a single codegen unit (`codegen-units = 1`) for release builds in `Cargo.toml`. This improves inlining and runtime performance at the cost of slower release compile times.
+
+**Files modified**:
+
+- `Cargo.toml` — added `[profile.release]` with `lto = true` and `codegen-units = 1`.
+
+### Results vs. previous state (after optimizations #1 and #2)
+
+| Benchmark                                   | After #1+#2 | After #3 | Change |
+| ------------------------------------------- | ----------- | -------- | ------ |
+| minimal create                              | 2.19 µs     | 2.05 µs  | -6.4%  |
+| user create                                 | 8.14 µs     | 7.58 µs  | -6.9%  |
+| create 20 required fields (sync validators) | 33.61 µs    | 32.65 µs | -2.9%  |
+| dependent chain length 10                   | 8.76 µs     | 8.15 µs  | -7.0%  |
+| create 10 readonly lax fields               | 19.55 µs    | 18.31 µs | -6.3%  |
+| no-op update                                | 750 ns      | 632 ns   | -15.7% |
+| single field update                         | 3.28 µs     | 2.99 µs  | -8.8%  |
+
+| Memory stress benchmark       | After #1+#2 | After #3 | Change |
+| ----------------------------- | ----------- | -------- | ------ |
+| memory minimal create x1000   | 2.14 ms     | 2.06 ms  | -3.7%  |
+| memory user create x1000      | 8.14 ms     | 7.58 ms  | -6.9%  |
+| memory 20 fields create x1000 | 33.59 ms    | 32.39 ms | -3.6%  |
+| memory no-op update x1000     | 735 µs      | 630 µs   | -14.3% |
+
+### Cumulative results vs. original baseline
+
+| Benchmark                                   | Baseline | Optimized | Change |
+| ------------------------------------------- | -------- | --------- | ------ |
+| minimal create                              | 2.26 µs  | 2.05 µs   | -9.3%  |
+| user create                                 | 8.45 µs  | 7.58 µs   | -10.3% |
+| create 20 required fields (sync validators) | 34.78 µs | 32.65 µs  | -6.1%  |
+| dependent chain length 10                   | 9.32 µs  | 8.15 µs   | -12.6% |
+| create 10 readonly lax fields               | 20.02 µs | 18.31 µs  | -8.5%  |
+| no-op update                                | 1.06 µs  | 632 ns    | -40.4% |
+| single field update                         | 3.72 µs  | 2.99 µs   | -19.6% |
+
+| Memory stress benchmark       | Baseline | Optimized | Change |
+| ----------------------------- | -------- | --------- | ------ |
+| memory minimal create x1000   | 2.27 ms  | 2.06 ms   | -9.3%  |
+| memory user create x1000      | 8.38 ms  | 7.58 ms   | -9.5%  |
+| memory 20 fields create x1000 | 34.79 ms | 32.39 ms  | -6.9%  |
+| memory no-op update x1000     | 1.07 ms  | 630 µs    | -41.1% |
+
+`cargo test`: 892 passed; 0 failed.
+
+Release-profile tuning gives a uniform ~3-7% improvement across create paths and a larger ~14-16% improvement on update paths. Combined with the schema-level caches, `no-op update` is now ~40% faster than the original baseline.
+
 ## Highest-Impact Optimization Opportunities (Remaining)
 
 Based on code review and these baseline numbers:
 
 1. ~~**Cache `FieldInfoCollection` per schema** — it is rebuilt from scratch on every `create`/`update`.~~ ✅ Applied.
 2. ~~**Pre-compute dependency order** per schema to avoid scanning all definitions each dependent-resolution round.~~ ✅ Applied (cached `dependent_children`).
-3. **Avoid `Box<dyn CloneableAny>` per field** — every field value is heap-allocated and cloned repeatedly.
-4. **Specialize synchronous handlers** — even `ready(...)` validators go through `BoxFuture` and `join_all`.
-5. **Reduce partial-struct cloning** — context accessors clone on every call, and update rebuilds the full output struct after each phase.
-6. **Generate const field-name tables in `ivo-derive`** to replace runtime string matching in generated methods.
-7. **Add release-profile tuning** (`lto`, `codegen-units=1`) for published builds.
+3. ~~**Add release-profile tuning** (`lto`, `codegen-units=1`) for published builds.~~ ✅ Applied.
+4. **Avoid `Box<dyn CloneableAny>` per field** — every field value is heap-allocated and cloned repeatedly.
+5. **Specialize synchronous handlers** — even `ready(...)` validators go through `BoxFuture` and `join_all`.
+6. **Reduce partial-struct cloning** — context accessors clone on every call, and update rebuilds the full output struct after each phase.
+7. **Generate const field-name tables in `ivo-derive`** to replace runtime string matching in generated methods.
