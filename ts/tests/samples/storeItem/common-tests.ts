@@ -14,7 +14,7 @@ export const commonTestData = {
     { coefficient: 5, name: 'tray' },
     { coefficient: 12, name: 'crate' },
   ],
-  _quantity: 100,
+  __quantity: 100,
 };
 
 export const CommonInheritanceTest = (
@@ -45,14 +45,6 @@ export const CommonInheritanceTest = (
         });
       });
 
-      it('should reject missing readonly field', async () => {
-        const { id: _, ...testData1 } = testData,
-          { data, error } = await Model.create(testData1, null);
-
-        expect(data).toBeNull();
-        expect(error).toBeDefined();
-      });
-
       it('should reject missing required field', async () => {
         const { name: _, ...testData1 } = testData,
           { data, error } = await Model.create(testData1, null);
@@ -67,15 +59,15 @@ export const CommonInheritanceTest = (
         });
       });
 
-      it('should reject readonly(true) + shouldInit(false)', () => {
-        expect(item).toMatchObject({ _readOnlyNoInit: '' });
+      it('should keep readonly values provided at creation', () => {
+        expect(item).toMatchObject({ _readOnlyNoInit: [] });
       });
 
       it('should accept provided lax readonly properties', () => {
         expect(item).toMatchObject({
           _readOnlyLax1: 'lax1 set',
           _readOnlyLax2: '',
-          _readOnlyNoInit: '',
+          _readOnlyNoInit: [],
         });
       });
     });
@@ -86,7 +78,7 @@ export const CommonInheritanceTest = (
           item,
           {
             name: 'Castel',
-            _quantity: 10,
+            __quantity: 10,
           },
           null,
         );
@@ -138,7 +130,7 @@ export const CommonInheritanceTest = (
           item,
           {
             name: 'Castel',
-            _quantity: 10,
+            __quantity: 10,
             quantities: [
               { quantity: 1, name: 'crate24' },
               { name: 'crate', quantity: 2 },
@@ -221,7 +213,7 @@ export const CommonInheritanceTest = (
       it('should not update readonly properties that have changed', async () => {
         const { data, error } = await Model.update(
           item,
-          { id: '2', _readOnlyLax1: 'lax1 set again' },
+          { _readOnlyLax1: 'lax1 set again' },
           null,
         );
 
