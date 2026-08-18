@@ -1,6 +1,5 @@
 import { Model, ModelTool } from '../model';
 import {
-  getKeysAsProps,
   isEqual,
   isOneOf,
   isRecordLike,
@@ -14,7 +13,6 @@ import {
   FIELD_CONFIG_BUILD_METHOD_NAME,
   type IvoErrorPayload,
   type KeyOf,
-  LIFE_CYCLES,
   type NS,
   type ObjectType,
   type PostValidationConfig,
@@ -58,7 +56,11 @@ class Schema<
       const isValid = isTimestampsConfigOptionOk(options.timestamps);
 
       if (!isValid.valid) errorTool.add('options.timestamps', isValid.reason);
-      else timestamps = new TimeStampTool(options.timestamps);
+      else
+        timestamps =
+          options.timestamps instanceof TimeStampTool
+            ? options.timestamps
+            : new TimeStampTool(options.timestamps);
     }
 
     if (errorTool.isPayloadLoaded) errorTool.throw();
@@ -147,7 +149,7 @@ class Schema<
     >;
 
     toArray(remove ?? [])?.forEach(
-      (prop) => delete (_definitions as never)?.[prop],
+      (fieldName) => delete _definitions?.[fieldName],
     );
 
     const options_ = {} as NS.Options<
@@ -158,14 +160,17 @@ class Schema<
       ExtendedErrorPayload
     >;
 
-    if (useParentOptions)
-      getKeysAsProps(this.options)
-        .filter(
-          (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as never),
-        )
-        .forEach((prop) => {
-          options_[prop] = this.options[prop] as never;
-        });
+    if (useParentOptions) {
+      options_.equalityDepth = this.options.equalityDepth;
+
+      // @ts-expect-error ikr
+      options_.sanitizeError = this.options.sanitizeError;
+
+      if ('timestamps' in this.options) {
+        // @ts-expect-error ikr
+        options_.timestamps = this.options.timestamps;
+      }
+    }
 
     return new Schema<
       ExtendedI,
@@ -206,15 +211,15 @@ class FieldBuilder<
   const CtxOptions extends ObjectType = {},
   const ErrorMetadata = DefaultFieldErrorMetadata,
 > {
-  private _definitions: NS.DefinitionsEntries<I, O, CtxOptions, ErrorMetadata>;
+  private _definitions: NS.DefinitionsEntries<I, O, CtxOptions, ErrorMetadata> =
+    [];
+  private _seeded = new Set<string>();
 
-  // Optional seed, used exclusively by `Schema.extend()` to carry a parent
-  // schema's already-materialized definitions (real field configs, not
-  // `Buildable`s) into a fresh builder before the extension closure runs -
-  // `field()` itself stays `Buildable`-only, so this is the only legitimate
-  // way to fold pre-built definitions back into the builder pattern.
   constructor(seed: NS.Definitions<I, O, CtxOptions, ErrorMetadata> = {}) {
-    this._definitions = Object.entries(seed);
+    for (const tuple of Object.entries(seed)) {
+      this._definitions.push(tuple);
+      this._seeded.add(tuple[0]);
+    }
   }
 
   field<K extends keyof I | keyof O>(
@@ -223,8 +228,15 @@ class FieldBuilder<
     if (isBuildable(c)) {
       const built = c[FIELD_CONFIG_BUILD_METHOD_NAME]();
 
-      if (typeof built.name === 'string')
+      if (typeof built.name === 'string') {
         this._definitions.push([built.name, built]);
+
+        if (this._seeded.has(built.name))
+          this._definitions.splice(
+            this._definitions.findIndex(([cName]) => cName === built.name),
+            1,
+          );
+      }
     }
 
     return this;
@@ -311,7 +323,7 @@ function validateFields<
     [string, NS.DependentField<any, I, O, CtxOptions>]
   > = [];
 
-  const timestampKeys = timestamps?.getKeys();
+  const timestampKeys = timestamps?.keys;
 
   for (const [fieldName, config] of definitionsEntries) {
     if (fieldNames.has(fieldName))

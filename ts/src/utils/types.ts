@@ -5,7 +5,6 @@ export type {
   ArrayOfMinSizeTwo,
   Buildable,
   DefaultFieldErrorMetadata,
-  DefinitionRule,
   FieldError,
   InputFieldError,
   InputPayload,
@@ -34,15 +33,7 @@ export type {
   XOR,
 };
 
-export {
-  ALLOWED_OPTIONS,
-  CONSTANT_RULES,
-  DEFINITION_RULES,
-  FIELD_CONFIG_BUILD_METHOD_NAME,
-  LIFE_CYCLES,
-  TimeStampTool,
-  VIRTUAL_RULES,
-};
+export { FIELD_CONFIG_BUILD_METHOD_NAME, TimeStampTool };
 
 type ObjectType<T = Record<string, unknown>> = T extends object
   ? T extends unknown[]
@@ -289,8 +280,6 @@ type PostValidationConfig<
 type KeyOf<T> = Extract<keyof T, string>;
 
 namespace NS {
-  export type LifeCycle = (typeof LIFE_CYCLES)[number];
-
   export type DeleteHandler<Output, CtxOptions extends ObjectType> = (
     data: Readonly<Output>,
     options: Readonly<CtxOptions>,
@@ -790,70 +779,6 @@ type ReValidator<
 type ArrayOfMinSizeOne<T> = [T, ...T[]] | readonly [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]] | readonly [T, T, ...T[]];
 
-const DEFINITION_RULES = [
-  'name',
-  'type',
-  'alias',
-  'allow',
-  'constant',
-  'default',
-  'dependsOn',
-  'ignore',
-  'onDelete',
-  'onFailure',
-  'onSuccess',
-  'readonly',
-  'resolver',
-  'required',
-  'reValidator',
-  'sanitizer',
-  'ignoreInit',
-  'ignoreUpdate',
-  'validator',
-  'value',
-  'virtual',
-] as const;
-
-type DefinitionRule = (typeof DEFINITION_RULES)[number];
-
-const ALLOWED_OPTIONS: NS.OptionsKey<unknown, unknown>[] = [
-  'equalityDepth',
-  'ignore',
-  'ignoreUpdate',
-  'onDelete',
-  'onSuccess',
-  'postValidate',
-  'required',
-  'sanitizeError',
-  'timestamps',
-];
-const CONSTANT_RULES = [
-  'name',
-  'type',
-  'constant',
-  'onDelete',
-  'onSuccess',
-  'value',
-];
-const VIRTUAL_RULES = [
-  'name',
-  'type',
-  'alias',
-  'allow',
-  'ignore',
-  'sanitizer',
-  'onFailure',
-  'onSuccess',
-  'required',
-  'reValidator',
-  'ignoreInit',
-  'ignoreUpdate',
-  'validator',
-  'virtual',
-];
-
-const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
-
 type IvoErrorPayload<Metadata, Keys extends string> = {
   [K in Keys]?: FieldError<Metadata>;
 };
@@ -878,12 +803,9 @@ type XOR<T, U> = (T | U extends object
   ? (Without<T, U> & U) | ((Without<U, T> & T) & {})
   : T | U) & {};
 
-type TimestampKey = KeyOf<NS.Timestamp>;
-
 const IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT = true;
 
 class TimeStampTool {
-  private _keys: TimestampKey[];
   private timestamps: NS.Timestamp;
   private nullable: boolean;
 
@@ -895,10 +817,6 @@ class TimeStampTool {
         ? (timestamps.updatedAt.nullable ??
           IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT)
         : IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT;
-
-    this._keys = Object.keys(this.timestamps).filter(
-      (key) => key.length > 0,
-    ) as TimestampKey[];
   }
 
   private _makeTimestamps(timestamps: NS.Options<any, any, any>['timestamps']) {
@@ -931,20 +849,11 @@ class TimeStampTool {
     return { createdAt, updatedAt };
   }
 
-  getKeys() {
-    return {
-      createdAt: this.timestamps.createdAt,
-      updatedAt: this.timestamps.updatedAt,
-    };
+  get keys() {
+    return this.timestamps;
   }
-
-  isTimestampKey = (key: string) => this._keys.includes(key as TimestampKey);
 
   get isNullable() {
     return this.nullable;
-  }
-
-  get withTimestamps() {
-    return !!(this.timestamps.createdAt || this.timestamps.updatedAt);
   }
 }

@@ -3,7 +3,6 @@ import {
   deepCloneValue,
   ErrorTool,
   getDefaultRequiredError,
-  getKeysAsProps,
   isEqual,
   isFunctionLike,
   isInputFieldError,
@@ -232,9 +231,7 @@ class ModelTool<
   private _getFieldInfoCollection(): FieldInfoCollection {
     const fields: Map<string, InputFieldInfo> = new Map();
 
-    for (const configName of getKeysAsProps(this.definitions)) {
-      const config = this.definitions[configName]!;
-
+    for (const [configName, config] of Object.entries(this.definitions)) {
       if (config.type === 'constant' || config.type === 'dependent') continue;
 
       const isVirtual = config.type === 'virtual';
@@ -632,7 +629,7 @@ class ModelTool<
 
     if (!this.options.timestamps) return values;
 
-    const { createdAt, updatedAt } = this.options.timestamps.getKeys();
+    const { createdAt, updatedAt } = this.options.timestamps.keys;
     let results = Object.assign({}, values);
 
     const now = new Date();
@@ -1231,10 +1228,12 @@ class ModelTool<
     const handleRevalidatedData = (revalidatedData: Partial<O> | null) => {
       if (!revalidatedData) return;
 
-      for (const fieldName of getKeysAsProps(revalidatedData)) {
+      for (const fieldName of Object.keys(revalidatedData)) {
         const fieldInfo = fieldsCollection.getUnsafe(fieldName);
 
+        // @ts-expect-error ikr
         const validated = revalidatedData[fieldName];
+
         if (!fieldInfo || isEqual(validated, undefined)) continue;
 
         if (

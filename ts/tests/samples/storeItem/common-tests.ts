@@ -99,7 +99,7 @@ export const CommonInheritanceTest = (
       });
 
       it('should ignore properties that have not changed', async () => {
-        const { data, error, handleFailure } = await Model.update(
+        const { data, error } = await Model.update(
           item,
           {
             name: 'beer',
@@ -111,8 +111,7 @@ export const CommonInheritanceTest = (
         );
 
         expect(data).toBeNull();
-        expect(error).toBeNull();
-        expect(typeof handleFailure).toBe('function');
+        expect(error).toMatchObject({ isNothingToUpdate: true, payload: null });
       });
 
       it('should update on virtuals', async () => {
@@ -167,29 +166,25 @@ export const CommonInheritanceTest = (
 
         expect(update).toMatchObject({ _readOnlyLax2: 'haha' });
 
-        const { data, error, handleFailure } = await Model.update(
+        const { data, error } = await Model.update(
           { ...item, ...update },
           { _readOnlyLax2: 'lax1 set again' },
           null,
         );
 
         expect(data).toBeNull();
-        expect(error).toBeNull();
-        expect(typeof handleFailure).toBe('function');
+        expect(error).toMatchObject({ isNothingToUpdate: true, payload: null });
       });
 
       it('should not update dependent properties', async () => {
-        const { data, error, handleFailure } = await Model.update(
+        const { data, error } = await Model.update(
           item,
-          {
-            quantityChangeCounter: 0,
-          },
+          { quantityChangeCounter: 0 },
           null,
         );
 
         expect(data).toBeNull();
-        expect(error).toBeNull();
-        expect(typeof handleFailure).toBe('function');
+        expect(error).toMatchObject({ isNothingToUpdate: true, payload: null });
       });
 
       it('should update dependent properties on virtuals', async () => {
@@ -213,32 +208,25 @@ export const CommonInheritanceTest = (
           null,
         );
 
-        const { data, error, handleFailure } = await Model.update(
+        const { data, error } = await Model.update(
           { ...item, ...update },
-          {
-            _virtualForDependentReadOnly: 'haha',
-          },
+          { _virtualForDependentReadOnly: 'haha' },
           null,
         );
 
         expect(data).toBeNull();
-        expect(error).toBeNull();
-        expect(typeof handleFailure).toBe('function');
+        expect(error).toMatchObject({ isNothingToUpdate: true, payload: null });
       });
 
       it('should not update readonly properties that have changed', async () => {
-        const { data, error, handleFailure } = await Model.update(
+        const { data, error } = await Model.update(
           item,
-          {
-            id: '2',
-            _readOnlyLax1: 'lax1 set again',
-          },
+          { id: '2', _readOnlyLax1: 'lax1 set again' },
           null,
         );
 
         expect(data).toBeNull();
-        expect(error).toBeNull();
-        expect(typeof handleFailure).toBe('function');
+        expect(error).toMatchObject({ isNothingToUpdate: true, payload: null });
       });
     });
   });
@@ -307,7 +295,7 @@ export const CommonInheritanceTest = (
       );
 
       expect(data).toBeNull();
-      expect(error).toMatchObject({
+      expect(error.payload).toMatchObject({
         _laxField: { reason: 'Invalid lax field' },
         name: expect.objectContaining({ reason: 'too_short' }),
       });

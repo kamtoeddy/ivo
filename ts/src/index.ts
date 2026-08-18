@@ -1,6 +1,5 @@
 export { Schema } from './schema';
 export {
-  getKeysAsProps,
   isEqual,
   isFieldError,
   isFunctionLike,

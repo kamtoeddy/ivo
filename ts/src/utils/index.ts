@@ -6,7 +6,6 @@ import type {
   FieldError,
   InputFieldError,
   InputPayload,
-  KeyOf,
   ObjectType,
   TypeOf,
   ValidationResponse,
@@ -20,7 +19,6 @@ export {
   cloneWithMethods,
   deepCloneValue,
   getDefaultRequiredError,
-  getKeysAsProps,
   getSetValuesAsProps,
   getUnique,
   getUniqueBy,
@@ -214,10 +212,6 @@ function makeResponse<T = undefined, Metadata = DefaultFieldErrorMetadata>(
     reason,
     valid,
   } as ValidationResponse<TypeOf<T>, Metadata>;
-}
-
-function getKeysAsProps<T>(object: T) {
-  return Object.keys(object as object) as KeyOf<T>[];
 }
 
 function getSetValuesAsProps<T>(set: Set<T>) {
