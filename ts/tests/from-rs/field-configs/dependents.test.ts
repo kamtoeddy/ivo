@@ -7,6 +7,38 @@ import {
 } from '../../_utils';
 
 describe('field configs.dependent', () => {
+  it('should reject if field name is already set', () => {
+    const toFail = makeFx((b) =>
+      b
+        .field(b.lax('lax', 1))
+        .field(
+          b
+            .dependent('dependent', 'lax')
+            .default(2)
+            .resolve(() => 4),
+        )
+        .field(
+          b
+            .dependent('dependent', 'lax')
+            .default(2)
+            .resolve(() => 4),
+        ),
+    );
+
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      expect(
+        // @ts-expect-error ikr
+        e.payload.dependent.includes(
+          '"dependent" occurs more than once, please remove duplicates',
+        ),
+      ).toBeTrue();
+    }
+  });
+
   it('should reject if parent array is empty', () => {
     const toFail = makeFx((b) =>
       b

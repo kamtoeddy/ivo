@@ -7,6 +7,115 @@ import {
 } from '../../_utils';
 
 describe('field configs.virtual', () => {
+  it('should reject if field name is already set', () => {
+    const toFail = makeFx((b) =>
+      b
+        .field(b.constant('id', 1234))
+        .field(b.lax('lax', 1))
+        .field(
+          b
+            .dependent('dependent', 'virtualField')
+            .default(1)
+            .resolve(() => 2),
+        )
+        .field(b.virtual('virtualField').validate(validator))
+        .field(b.virtual('virtualField').validate(validator)),
+    );
+
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.virtualField).toMatchObject(
+        expect.arrayContaining([
+          '"virtualField" occurs more than once, please remove duplicates',
+        ]),
+      );
+    }
+  });
+
+  it('should reject if field name is the same as createdAt with default name', () => {
+    const toFail = makeFx(
+      (b) => b.field(b.virtual('createdAt').validate(validator)),
+      { timestamps: { createdAt: true } },
+    );
+
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.createdAt).toMatchObject(
+        expect.arrayContaining([
+          '"createdAt" is not a valid field name. It is the creation timestamp',
+        ]),
+      );
+    }
+  });
+
+  it('should reject if field name is the same as createdAt with custom name', () => {
+    const toFail = makeFx(
+      (b) => b.field(b.virtual('customCreatedAt').validate(validator)),
+      { timestamps: { createdAt: 'customCreatedAt' } },
+    );
+
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.customCreatedAt).toMatchObject(
+        expect.arrayContaining([
+          '"customCreatedAt" is not a valid field name. It is the creation timestamp',
+        ]),
+      );
+    }
+  });
+
+  it('should reject if field name is the same as updatedAt with default name', () => {
+    const toFail = makeFx(
+      (b) => b.field(b.virtual('updatedAt').validate(validator)),
+      { timestamps: { updatedAt: { nullable: true } } },
+    );
+
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.updatedAt).toMatchObject(
+        expect.arrayContaining([
+          '"updatedAt" is not a valid field name. It is the update timestamp',
+        ]),
+      );
+    }
+  });
+
+  it('should reject if field name is the same as updatedAt with custom name', () => {
+    const toFail = makeFx(
+      (b) => b.field(b.virtual('customUpdatedAt').validate(validator)),
+      { timestamps: { updatedAt: { key: 'customUpdatedAt', nullable: true } } },
+    );
+
+    expectFailure(toFail);
+
+    try {
+      toFail();
+    } catch (e) {
+      // @ts-expect-error ikr
+      expect(e.payload.customUpdatedAt).toMatchObject(
+        expect.arrayContaining([
+          '"customUpdatedAt" is not a valid field name. It is the update timestamp',
+        ]),
+      );
+    }
+  });
+
   it('should reject if virtual field does not have any dependency', () => {
     const toFail = makeFx((b) =>
       b
