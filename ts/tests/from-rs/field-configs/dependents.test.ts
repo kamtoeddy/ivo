@@ -34,7 +34,7 @@ describe('field configs.dependent', () => {
     }
   });
 
-  it('should reject dependency of createdAt field with default name', () => {
+  it('should reject dependency on createdAt field with default name', () => {
     const toFail = makeFx(
       (b) =>
         b
@@ -64,7 +64,7 @@ describe('field configs.dependent', () => {
     }
   });
 
-  it('should reject dependency of createdAt field with custom name', () => {
+  it('should reject dependency on createdAt field with custom name', () => {
     const toFail = makeFx(
       (b) =>
         b
@@ -94,7 +94,7 @@ describe('field configs.dependent', () => {
     }
   });
 
-  it('should reject dependency of updatedAt field with default name', () => {
+  it('should reject dependency on updatedAt field with default name', () => {
     const toFail = makeFx(
       (b) =>
         b
@@ -124,7 +124,7 @@ describe('field configs.dependent', () => {
     }
   });
 
-  it('should reject dependency of updatedAt field with custom name', () => {
+  it('should reject dependency on updatedAt field with custom name', () => {
     const toFail = makeFx(
       (b) =>
         b
@@ -233,7 +233,7 @@ describe('field configs.dependent', () => {
     }
   });
 
-  it('should reject dependency of constant fields', () => {
+  it('should reject dependency on constant fields', () => {
     const toFail = makeFx((b) =>
       b
         .field(b.constant('id', 1234))

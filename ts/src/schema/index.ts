@@ -54,7 +54,7 @@ class Schema<
     const errorTool = new SchemaErrorTool();
     let timestamps: TimeStampTool | null = null;
 
-    if (options.timestamps) {
+    if ('timestamps' in options) {
       const isValid = isTimestampsConfigOptionOk(options.timestamps);
 
       if (!isValid.valid) errorTool.add('options.timestamps', isValid.reason);
@@ -957,7 +957,7 @@ function isTimestampsConfigOptionOk<I, O>(
   if (typeProveded === 'boolean') return { valid: true };
 
   if (!isRecordLike(timestamps))
-    return { valid, reason: "should be 'boolean' or 'non null object'" };
+    return { valid, reason: 'expected "boolean" or "non null object"' };
 
   if (!Object.keys(timestamps!).length)
     return { valid, reason: 'cannot be an empty object' };
