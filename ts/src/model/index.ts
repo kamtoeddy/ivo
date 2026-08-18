@@ -46,6 +46,11 @@ class ModelTool<
   ErrorMetadata = DefaultFieldErrorMetadata,
   ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<I>>,
 > {
+  private static _fieldInfoMapCache = new WeakMap<
+    NS.Definitions<any, any, any, any>,
+    Map<string, InputFieldInfo>
+  >();
+
   constructor(
     private definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>,
     private options: NS.InternalOptions<
@@ -229,31 +234,37 @@ class ModelTool<
   }
 
   private _getFieldInfoCollection(): FieldInfoCollection {
-    const fields: Map<string, InputFieldInfo> = new Map();
+    let fields = ModelTool._fieldInfoMapCache.get(this.definitions);
 
-    for (const [configName, config] of Object.entries(this.definitions)) {
-      if (config.type === 'constant' || config.type === 'dependent') continue;
+    if (!fields) {
+      fields = new Map();
 
-      const isVirtual = config.type === 'virtual';
+      for (const [configName, config] of Object.entries(this.definitions)) {
+        if (config.type === 'constant' || config.type === 'dependent') continue;
 
-      fields.set(
-        configName,
-        new InputFieldInfo({ name: configName, configName, isVirtual }),
-      );
-
-      const aliasName = (config as { alias?: string }).alias;
-
-      if (aliasName) {
-        fields.set(
-          aliasName,
-          new InputFieldInfo({ name: aliasName, configName, isVirtual }),
-        );
+        const isVirtual = config.type === 'virtual';
 
         fields.set(
           configName,
-          new InputFieldInfo({ name: aliasName, configName, isVirtual }),
+          new InputFieldInfo({ name: configName, configName, isVirtual }),
         );
+
+        const aliasName = (config as { alias?: string }).alias;
+
+        if (aliasName) {
+          fields.set(
+            aliasName,
+            new InputFieldInfo({ name: aliasName, configName, isVirtual }),
+          );
+
+          fields.set(
+            configName,
+            new InputFieldInfo({ name: aliasName, configName, isVirtual }),
+          );
+        }
       }
+
+      ModelTool._fieldInfoMapCache.set(this.definitions, fields);
     }
 
     return new FieldInfoCollection(fields);

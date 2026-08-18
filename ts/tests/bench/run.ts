@@ -272,18 +272,23 @@ async function runMemory(): Promise<BenchResult[]> {
 }
 
 async function main() {
+  const outputPath = process.argv[2] ?? 'tests/bench/results/baseline.json';
+  const runName = outputPath.includes('/')
+    ? outputPath.split('/').pop()!.replace('.json', '')
+    : outputPath.replace('.json', '');
+
   const throughput = await runThroughput();
   const memory = await runMemory();
 
   const run = {
-    name: 'ivo-baseline',
+    name: runName,
     date: new Date().toISOString(),
     runtime: `Bun ${Bun.version}`,
     results: [...throughput, ...memory],
   };
 
-  saveResults(run);
-  console.log(`\nResults saved to tests/bench/results/baseline.json`);
+  saveResults(run, outputPath);
+  console.log(`\nResults saved to ${outputPath}`);
 }
 
 main();

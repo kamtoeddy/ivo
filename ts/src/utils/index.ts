@@ -93,10 +93,42 @@ function cloneWithMethods<T>(obj: T, circularMap = new WeakMap()): T {
   // Prevent infinite loops with circular references
   if (circularMap.has(obj)) return circularMap.get(obj);
 
-  // 2. Initialize the clone preserving prototype (handles custom classes & Arrays)
-  const copy: any = Array.isArray(obj)
-    ? []
-    : Object.create(Object.getPrototypeOf(obj));
+  // Fast path for arrays: avoid descriptor overhead for the common case
+  if (Array.isArray(obj)) {
+    const copy: any[] = [];
+    circularMap.set(obj, copy);
+
+    for (let i = 0; i < obj.length; i++) {
+      const value = obj[i];
+      copy[i] =
+        typeof value === 'object' && value !== null
+          ? cloneWithMethods(value, circularMap)
+          : value;
+    }
+
+    return copy as T;
+  }
+
+  // Fast path for plain objects: copy enumerable own properties directly.
+  // Preserves methods by reference so they resolve `this` from the clone.
+  const proto = Object.getPrototypeOf(obj);
+  if (proto === Object.prototype || proto === null) {
+    const copy: any = proto === null ? Object.create(null) : {};
+    circularMap.set(obj, copy);
+
+    for (const key of Object.keys(obj)) {
+      const value = (obj as any)[key];
+      copy[key] =
+        typeof value === 'object' && value !== null
+          ? cloneWithMethods(value, circularMap)
+          : value;
+    }
+
+    return copy as T;
+  }
+
+  // 2. Initialize the clone preserving prototype (handles custom classes)
+  const copy: any = Object.create(Object.getPrototypeOf(obj));
 
   circularMap.set(obj, copy);
 
