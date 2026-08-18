@@ -3,9 +3,9 @@ name: Rust CI
 on:
   pull_request:
   push:
-    branches: ['main']
+    branches: ["main", "ts-v-2"]
     paths:
-      - 'rs/**'
+      - "rs/**"
 
 jobs:
   test:

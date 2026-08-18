@@ -3,9 +3,9 @@ name: TS Bun CI
 on:
   pull_request:
   push:
-    branches: ['main', 'ts-v-2']
+    branches: ["main", "ts-v-2"]
     paths:
-      - 'ts/**'
+      - "ts/**"
 
 jobs:
   build-and-test:
