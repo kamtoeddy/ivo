@@ -26,3 +26,11 @@ création, utilisé pour déclencher un changement sur un ou plusieurs champs qu
 - [Ignore](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore.rs)
 - [Ignore init](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore_init.rs)
 - [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore_update.rs)
+
+## Essayez dans le navigateur
+
+`virtual_field` est un champ d'entrée virtuel. Le champ de sortie `dependent` utilise sa valeur lorsqu'elle
+est fournie, sinon il retombe sur la valeur par défaut. Laissez `virtual_field` vide ou supprimez-le pour
+voir la valeur par défaut.
+
+<RustPlayground demo="virtuals" />

@@ -1,52 +1,52 @@
-import { themes as prismThemes } from 'prism-react-renderer';
-import type { Config } from '@docusaurus/types';
-import type * as Preset from '@docusaurus/preset-classic';
-import type { Options as DocsPluginOptions } from '@docusaurus/plugin-content-docs';
+import { themes as prismThemes } from "prism-react-renderer";
+import type { Config } from "@docusaurus/types";
+import type * as Preset from "@docusaurus/preset-classic";
+import type { Options as DocsPluginOptions } from "@docusaurus/plugin-content-docs";
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
-const organizationName = 'kamtoeddy';
-const projectName = 'ivo';
+const organizationName = "kamtoeddy";
+const projectName = "ivo";
 const repoUrl = `https://github.com/${organizationName}/${projectName}`;
 
 const config: Config = {
-  title: 'ivo',
-  tagline: 'The schema validator that brings user stories to life',
-  favicon: 'img/favicon.ico',
+  title: "ivo",
+  tagline: "The schema validator that brings user stories to life",
+  favicon: "img/favicon.png",
 
   future: {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
   },
 
   // TODO(phase 7): replace with the real Cloudflare Pages URL once the project is created
-  url: 'https://ivo.pages.dev',
-  baseUrl: '/',
+  url: "https://ivo.pages.dev",
+  baseUrl: "/",
 
   organizationName,
   projectName,
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: "throw",
   markdown: {
     hooks: {
-      onBrokenMarkdownLinks: 'warn',
+      onBrokenMarkdownLinks: "warn",
     },
   },
 
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'fr'],
+    defaultLocale: "en",
+    locales: ["en", "fr"],
   },
 
   presets: [
     [
-      'classic',
+      "classic",
       {
         // Docs are served by two dedicated plugin instances below (ts + rs)
         // instead of the preset's default single docs instance.
         docs: false,
         blog: false,
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: "./src/css/custom.css",
         },
       } satisfies Preset.Options,
     ],
@@ -54,34 +54,34 @@ const config: Config = {
 
   plugins: [
     [
-      '@docusaurus/plugin-content-docs',
+      "@docusaurus/plugin-content-docs",
       {
-        id: 'ts',
-        path: 'docs-ts',
-        routeBasePath: 'docs/ts',
-        sidebarPath: './sidebars-ts.ts',
+        id: "ts",
+        path: "docs-ts",
+        routeBasePath: "docs/ts",
+        sidebarPath: "./sidebars-ts.ts",
         editUrl: `${repoUrl}/tree/main/docs/docs-ts/`,
         includeCurrentVersion: true,
         // v2.0.0 (docs-ts/, the "current" version) isn't released yet - keep the
         // latest *released* version as the default landing point, and expose the
         // in-progress v2.0.0 docs under /docs/ts/next/ until it ships (see
         // Phase 6 in TODO.md).
-        lastVersion: '1.9.0',
+        lastVersion: "1.9.0",
         versions: {
           current: {
-            label: '2.0.0 (unreleased)',
-            path: 'next',
+            label: "2.0.0 (unreleased)",
+            path: "next",
           },
         },
       } satisfies DocsPluginOptions,
     ],
     [
-      '@docusaurus/plugin-content-docs',
+      "@docusaurus/plugin-content-docs",
       {
-        id: 'rs',
-        path: 'docs-rs',
-        routeBasePath: 'docs/rs',
-        sidebarPath: './sidebars-rs.ts',
+        id: "rs",
+        path: "docs-rs",
+        routeBasePath: "docs/rs",
+        sidebarPath: "./sidebars-rs.ts",
         editUrl: `${repoUrl}/tree/main/docs/docs-rs/`,
         // Rust only ever documents the latest API - no version history to
         // preserve, so no ts_versioned_docs-style folder exists here and this
@@ -91,63 +91,64 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/docusaurus-social-card.jpg',
+    image: "img/social-card.png",
     colorMode: {
-      defaultMode: 'light',
+      defaultMode: "light",
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'ivo',
+      title: "ivo",
       logo: {
-        alt: 'ivo logo',
-        src: 'img/logo.svg',
+        alt: "ivo logo",
+        src: "img/logo.svg",
+        srcDark: "img/logo.svg",
       },
       items: [
         {
-          type: 'docSidebar',
-          docsPluginId: 'ts',
-          sidebarId: 'tsSidebar',
-          position: 'left',
-          label: 'TypeScript',
+          type: "docSidebar",
+          docsPluginId: "ts",
+          sidebarId: "tsSidebar",
+          position: "left",
+          label: "TypeScript",
         },
         {
-          type: 'docSidebar',
-          docsPluginId: 'rs',
-          sidebarId: 'rsSidebar',
-          position: 'left',
-          label: 'Rust',
+          type: "docSidebar",
+          docsPluginId: "rs",
+          sidebarId: "rsSidebar",
+          position: "left",
+          label: "Rust",
         },
         {
-          type: 'docsVersionDropdown',
-          docsPluginId: 'ts',
-          position: 'right',
+          type: "docsVersionDropdown",
+          docsPluginId: "ts",
+          position: "right",
         },
         {
-          type: 'localeDropdown',
-          position: 'right',
+          type: "localeDropdown",
+          position: "right",
         },
         {
           href: repoUrl,
-          label: 'GitHub',
-          position: 'right',
+          label: "GitHub",
+          position: "right",
         },
       ],
     },
     footer: {
-      style: 'dark',
+      style: "dark",
       links: [
         {
-          title: 'Docs',
+          title: "Docs",
           items: [
-            { label: 'TypeScript', to: '/docs/ts' },
-            { label: 'Rust', to: '/docs/rs' },
+            { label: "TypeScript", to: "/docs/ts" },
+            { label: "Rust", to: "/docs/rs" },
           ],
         },
         {
-          title: 'More',
+          title: "More",
           items: [
-            { label: 'GitHub', href: repoUrl },
-            { label: 'Issues', href: `${repoUrl}/issues` },
+            { label: "GitHub", href: repoUrl },
+            { label: "Issues", href: `${repoUrl}/issues` },
           ],
         },
       ],
@@ -156,7 +157,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ['rust', 'bash', 'json'],
+      additionalLanguages: ["rust", "bash", "json"],
     },
   } satisfies Preset.ThemeConfig,
 };

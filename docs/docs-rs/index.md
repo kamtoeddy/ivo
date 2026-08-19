@@ -85,18 +85,14 @@ resolvers.
 
 ## Defining a schema
 
-Fields on a schema fall into one of five categories - see each for rules and a runnable example:
+Fields on a schema fall into one of six categories - see each for rules and a runnable example:
 
 - [Constant fields](./definitions/constants.md)
 - [Dependent fields](./definitions/dependents.md)
 - [Lax fields](./definitions/lax.md)
 - [Required fields](./definitions/required.md)
+- [Timestamps](./definitions/timestamps.md)
 - [Virtual fields](./definitions/virtuals.md)
-
-Timestamps (`created_at`/`updated_at`) can be synchronized automatically - see
-[Default names](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/timestamps_with_default_names.rs)
-and
-[Custom names](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/timestamps_with_custom_names.rs).
 
 ## Schema options
 
@@ -139,3 +135,13 @@ type IvoErrorPayload<Metadata: Clone> = HashMap<String, FieldError<Metadata>>;
 
 To customize this payload, provide an implementation of the `IvoErrorSanitizer` trait - see
 [this example](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/extras/error_sanitizer.rs).
+
+## API reference
+
+The prose docs above cover the high-level concepts. For the exhaustive generated API reference
+(types, functions, derive macros), see:
+
+- **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — hosted rustdoc for published crates.
+  (Not yet available because `ivo` has not been published to crates.io.)
+- **Local rustdoc** — run `cargo doc --no-deps --open` from the `rs/` directory to browse the same
+  generated reference locally.

@@ -87,19 +87,15 @@ requis groupés.
 
 ## Définir un schéma
 
-Les champs d'un schéma appartiennent à l'une des cinq catégories suivantes - consultez chacune
+Les champs d'un schéma appartiennent à l'une des six catégories suivantes - consultez chacune
 pour les règles et un exemple exécutable :
 
 - [Champs constants](./definitions/constants.md)
 - [Champs dépendants](./definitions/dependents.md)
 - [Champs lax](./definitions/lax.md)
 - [Champs requis](./definitions/required.md)
+- [Horodatages](./definitions/timestamps.md)
 - [Champs virtuels](./definitions/virtuals.md)
-
-Les horodatages (`created_at`/`updated_at`) peuvent être synchronisés automatiquement - voir
-[noms par défaut](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/timestamps_with_default_names.rs)
-et
-[noms personnalisés](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/timestamps_with_custom_names.rs).
 
 ## Options du schéma
 
@@ -142,3 +138,13 @@ type IvoErrorPayload<Metadata: Clone> = HashMap<String, FieldError<Metadata>>;
 
 Pour personnaliser ce payload, fournissez une implémentation du trait `IvoErrorSanitizer` - voir
 [cet exemple](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/extras/error_sanitizer.rs).
+
+## Référence API
+
+Les documents ci-dessus couvrent les concepts de haut niveau. Pour la référence API exhaustive
+(types, fonctions, macros dérivées) générée par rustdoc, consultez :
+
+- **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — rustdoc hébergé pour les crates publiées.
+  (Pas encore disponible car `ivo` n'a pas été publié sur crates.io.)
+- **rustdoc local** — exécutez `cargo doc --no-deps --open` depuis le répertoire `rs/` pour consulter
+  la même référence générée localement.

@@ -31,8 +31,10 @@ architecture rationale and directory layout.
 - [x] Author `docs-rs/` content from `rs/README.md`, structured to mirror the TS docs' page
       layout (index, life-cycles, validators, definitions/{constants,dependents,lax,required,virtuals})
       for parity between the two languages
-- [ ] Link out to rustdoc/docs.rs from `docs-rs/` for the exhaustive generated API reference
-      (types/functions) rather than duplicating it by hand (docs.rs publish not set up yet)
+- [x] Link out to rustdoc/docs.rs from `docs-rs/` for the exhaustive generated API reference
+      (types/functions) rather than duplicating it by hand. Added an "API reference" section on
+      `docs-rs/index.md` (and its French translation) linking to docs.rs plus local `cargo doc`
+      instructions, since `ivo` has not been published to crates.io yet.
 - [x] Cross-link `rs/examples/*.rs` and `rs/tests/**` from the relevant `docs-rs/` pages (as GitHub
       blob URLs - files outside `/docs` aren't part of the Docusaurus content graph)
 
@@ -63,15 +65,16 @@ architecture rationale and directory layout.
       tints), replacing the default Docusaurus green
 - [x] Nav drawer / sidebar collapse are Infima defaults (responsive out of the box); the
       hand-written `QuickLinks` table relies on Infima's global `table { display: block; overflow:
-      auto }` for horizontal scroll on narrow viewports (verified in built CSS) - no wrapper needed
-- [ ] Playground component stacking (editor above output) at mobile widths - revisit once Phase
-      3/4 components exist
+auto }` for horizontal scroll on narrow viewports (verified in built CSS) - no wrapper needed
+- [x] Playground component stacking (editor above output) at mobile widths - `RustPlayground` CSS
+      already stacks panes vertically at `max-width: 768px`; verified after adding the new Phase 4
+      demos.
 - [x] Landing page (`src/pages/index.tsx`): real hero copy, 3-item feature grid
       (`HomepageFeatures`), and a `QuickLinks` component mirroring the root `README.md`'s "Quick
       links" table (TS/Rust docs, main demo, examples) - verified rendered links resolve
-- [ ] Brand assets are still Docusaurus placeholders (`static/img/logo.svg`, `favicon.ico`,
-      `docusaurus-social-card.jpg`) - no image-generation tooling available this session; needs a
-      real `ivo` logo/favicon/social-card pass
+- [x] Brand assets: replaced Docusaurus placeholders with `ivo`-branded `logo.svg`, `favicon.png`
+      and `social-card.png` (generated from SVG via `sips`). Updated `docusaurus.config.ts` to use
+      the new assets.
 
 ## Phase 3 - TypeScript playground
 
@@ -82,16 +85,17 @@ architecture rationale and directory layout.
 - [x] Registered globally for MDX via `src/theme/MDXComponents.tsx`, so docs pages use
       `<TsPlayground />` with no per-file import
 - [x] Embedded in v1.9.0's "Defining a schema" page: `scripts/import-ts-docs.mjs` appends a `## Try
-      it in the browser` section with a runnable schema example to the *imported copy* of
+it in the browser` section with a runnable schema example to the _imported copy_ of
       `index.md` only (not the GitHub-facing source in `ts/docs/`, where raw JSX would render
       oddly as plain markdown). Build succeeds; `BrowserOnly` fallback confirmed present in the
       built HTML
 - [ ] Not yet verified in an actual browser (no browser-automation tool available this session) -
       confirm the Sandpack iframe loads and the example runs before calling this done
 - [ ] v2.0.0 (`docs-ts/index.md`) still a placeholder - deferred to Phase 6 (no real API to demo
-      yet); add its own `<TsPlayground ivoVersion="2.0.0" .../>` once that content is authored
+      yet); add its own `<TsPlayground ivoVersion="2.0.0" .../>` once that content is authored.
+      **Blocked on Phase 6.**
 - [ ] Fallback path for v2.0.0 once authored but not yet published to npm: load a locally-built
-      ESM bundle instead of resolving from the registry
+      ESM bundle instead of resolving from the registry. **Blocked on v2.0.0 content.**
 
 ## Phase 4 - Rust playground
 
@@ -106,9 +110,9 @@ architecture rationale and directory layout.
 - [x] `src/components/RustPlayground/` MDX component: `BrowserOnly` + dynamic `import()` of the
       built JS glue, JSON `<textarea>` input + "Run" button + output pane, responsive (stacks on
       ≤768px, matching the Phase 2 note), registered globally via `src/theme/MDXComponents.tsx`
-- [x] Embedded `<RustPlayground demo="..." />` in `docs-rs/definitions/{constants,lax,required}.md`
+- [x] Embedded `<RustPlayground demo="..." />` in `docs-rs/definitions/{constants,dependents,lax,required,timestamps,virtuals}.md`
 - [x] **Verified end-to-end, not just "builds"**: ran the built wasm module directly in Node
-      (bypassing the browser) against all 3 demos - output matches the original examples' own
+      (bypassing the browser) against all 6 demos - output matches the original examples' own
       assertions exactly, including the literal required-field error message
       (`"username" is required!`) from `rs/examples/required.rs`. Also confirmed webpack correctly
       rehashes the `.wasm` binary reference in the production bundle (`grep` for the emitted
@@ -116,9 +120,9 @@ architecture rationale and directory layout.
 - [ ] Not yet click-tested in an actual browser (no browser-automation tool available this
       session) - the Node-level and bundle-level checks above are strong signals but aren't a
       substitute for seeing it run
-- [ ] `virtuals`, `dependents`, `timestamps` demos not yet implemented (only 3 of the 6 originally
-      scoped demos - `constants`, `lax_defaults`, `required` - to prove the pipeline first;
-      `dependents`/`virtuals` need the `dependsOn`/alias wiring which is more involved)
+- [x] `virtuals`, `dependents`, `timestamps` demos implemented in `wasm/ivo-playground/src/lib.rs`
+      and registered in the `DEMOS` map of `src/components/RustPlayground/index.tsx`. Added
+      `docs-rs/definitions/timestamps.md` (and its French translation) so the new demo has a home.
 - [x] Documented the maintenance convention (new `rs/examples/*.rs` needs a matching wasm export)
       in both this file and the `DEMOS` map comment in `RustPlayground/index.tsx`
 
@@ -135,11 +139,12 @@ architecture rationale and directory layout.
       `QuickLinks` to use `@docusaurus/Translate`/`translate()` (not hardcoded strings), then
       filled in the 17 generated `homepage.*` keys in `i18n/fr/code.json`. Verified both locales
       render correctly in the built HTML (`grep` for French vs. English homepage text)
-- [x] `docs-rs/` translated into French (all 8 pages:
-      `i18n/fr/docusaurus-plugin-content-docs-rs/current/**`). Build's own broken-anchor checker
-      caught one cross-reference that needed updating for the translated heading slug
+- [x] `docs-rs/` translated into French (all 9 pages:
+      `i18n/fr/docusaurus-plugin-content-docs-rs/current/**`, including the new `timestamps.md` and
+      the "API reference" section added to `index.md`). Build's own broken-anchor checker caught
+      cross-references that needed updating for translated heading slugs
       (`#custom-context-options` → `#options-de-contexte-personnalisées`) - same technique used in
-      Phase 1. All 8 French URLs verified 200 via a served build
+      Phase 1. All French URLs verified 200 via a served build
 - [ ] `docs-ts/` (v2.0.0 placeholder) and `ts_versioned_docs/version-1.9.0/` not yet translated -
       v1.9.0 alone is ~1500 lines across 11 files; deliberately not rushing a full technical
       translation of that volume in one pass (mistranslating a validation-rule nuance is worse

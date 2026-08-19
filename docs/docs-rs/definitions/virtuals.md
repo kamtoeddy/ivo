@@ -26,3 +26,10 @@ to trigger a change in one or more fields that depend on it.
 - [Ignore](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore.rs)
 - [Ignore init](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore_init.rs)
 - [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore_update.rs)
+
+## Try it in the browser
+
+`virtual_field` is a virtual input field. The output `dependent` uses its value when provided, otherwise
+it falls back to a default. Leave `virtual_field` empty or remove it to see the default.
+
+<RustPlayground demo="virtuals" />

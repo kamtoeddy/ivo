@@ -22,3 +22,10 @@ mis à jour que lorsque `username` change).
 - [Valeurs par défaut](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_defaults.rs)
 - [Dépendant d'un dépendant](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_on_dependent.rs)
 - [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_readonly.rs)
+
+## Essayez dans le navigateur
+
+`value` est un champ lax avec une valeur par défaut de `0`. `computed` est un champ dépendant qui vaut
+`value + 1` (avec sa propre valeur par défaut de secours de `1`).
+
+<RustPlayground demo="dependents" />
