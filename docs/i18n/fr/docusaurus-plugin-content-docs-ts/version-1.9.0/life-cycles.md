@@ -1,24 +1,24 @@
 ---
-title: "Life Cycles"
+title: "Cycles de vie"
 ---
 
-# Life Cycles
+# Cycles de vie
 
-## The Operation Context
+## Le contexte de l'opération
 
-This is an object comprized of a mix of input and output values of the instance during a life cycle operation ( creation or update ) plus any virtual properties (if present during the operation) defined in your schema.
+Il s'agit d'un objet composé d'un mélange de valeurs d'entrée et de sortie de l'instance pendant une opération de cycle de vie (création ou mise à jour), ainsi que de toutes les propriétés virtuelles (si elles sont présentes pendant l'opération) définies dans votre schéma.
 
 ```ts
-import { type Context } from 'ivo';
+import { type Context } from "ivo";
 
 type Ctx = Context<Input, Output>;
 ```
 
-### Context Options
+### Options du contexte
 
-This is a way of providing extra information (related or not related to your schema) to operations like creation, updates and deletion. Some good usecases would be **dependency injection (DI)** and **internationalization (i18n)**
+C'est un moyen de fournir des informations supplémentaires (liées ou non à votre schéma) aux opérations de création, de mise à jour et de suppression. De bons cas d'utilisation seraient l'**injection de dépendances (DI)** et l'**internationalisation (i18n)**.
 
-How to use:
+Comment utiliser :
 
 ```ts
 type UserInput = {
@@ -33,12 +33,12 @@ type User = {
 };
 
 interface UserRepo {
-  findByEmail: (email: User['email']) => Promise<User | null>;
+  findByEmail: (email: User["email"]) => Promise<User | null>;
   //  ... other methods
 }
 
 type CtxOptions = {
-  lang: 'en' | 'de' | 'fr'; // lang for i18n
+  lang: "en" | "de" | "fr"; // lang for i18n
   userRepo: UserRepo; // userRepo for DI
 };
 
@@ -49,12 +49,12 @@ const Model = new Schema<UserInput, User, CtxOptions>({
     required: true,
     async validator(value, { options: { userRepo } }) {
       if (!isEmail(value))
-        return { valid: false, reason: 'Invalid email provided' };
+        return { valid: false, reason: "Invalid email provided" };
 
       const isEmailTaken = await userRepo.findByEmail(value);
 
       return isEmailTaken
-        ? { valid: false, reason: 'email already taken' }
+        ? { valid: false, reason: "email already taken" }
         : true;
     },
   },
@@ -62,16 +62,16 @@ const Model = new Schema<UserInput, User, CtxOptions>({
 }).getModel();
 
 // 2) pass it to related operations
-import { userRepo } from 'data-access/users';
+import { userRepo } from "data-access/users";
 
 // creating an entity   👇
-Model.create(input, { lang: 'en', userRepo });
+Model.create(input, { lang: "en", userRepo });
 
 // updating an entity             👇
-Model.update(entity, changes, { lang: 'en', userRepo });
+Model.update(entity, changes, { lang: "en", userRepo });
 
 // deleting an entity    👇
-Model.delete(entity, { lang: 'en', userRepo });
+Model.delete(entity, { lang: "en", userRepo });
 
 // 3) access the context options as below
 
@@ -83,16 +83,16 @@ function validateName(value, summary: IvoSummary<UserInput, User, CtxOptions>) {
   // ... further processing
 
   // update options
-  updateOptions({ lang: 'de' });
+  updateOptions({ lang: "de" });
 
   return true;
 }
 ```
 
-## The Operation Summary
+## Le résumé de l'opération
 
 ```ts
-import type { Context, IvoSummary, ReadonlyIvoSummary } from 'ivo';
+import type { Context, IvoSummary, ReadonlyIvoSummary } from "ivo";
 
 type Input = {};
 type Output = {};
@@ -156,13 +156,13 @@ type FailureHandler = (
 type HandlerWithSummary = (summary: ReadonlySummary) => void | Promise<void>;
 ```
 
-## Life Cycle handlers
+## Gestionnaires de cycle de vie
 
-These are functions that are invoked during a life cycle operation (`creation`, `failure` or `update`)
+Ce sont des fonctions qui sont invoquées pendant une opération de cycle de vie (`création`, `échec` ou `mise à jour`).
 
 ### onDelete
 
-A void function or array of void functions(async / sync) you want to execute every time an instance of your model gets deleted. That is; every time the **`model.delete`** method is invoked. These listeners have access to a context without virtauls even if passed to the delete method of the model. Default **[ ]**. They are expected to respect the signature below
+Une fonction `void` ou un tableau de fonctions `void` (async/sync) que vous souhaitez exécuter chaque fois qu'une instance de votre modèle est supprimée. C'est-à-dire chaque fois que la méthode **`model.delete`** est invoquée. Ces écouteurs ont accès à un contexte sans propriétés virtuelles, même s'ils sont passés à la méthode `delete` du modèle. Valeur par défaut **[ ]**. Elles doivent respecter la signature ci-dessous.
 
 ```ts
 // signature
@@ -172,18 +172,18 @@ function onDelete(data: Output, options: CtxOptions) {
 }
 
 // how to trigger after deleting an entity
-Model.delete(entity, { lang: 'en' });
+Model.delete(entity, { lang: "en" });
 ```
 
 ### onFailure
 
-A function or array of functions(async / sync) you want to execute every time the **`create`** & **`update`** operations are unsuccessful. Default **[ ]**.
+Une fonction ou un tableau de fonctions (async/sync) que vous souhaitez exécuter chaque fois que les opérations **`create`** et **`update`** échouent. Valeur par défaut **[ ]**.
 
-> N.B: They are only allowed on properties that support and have validators.
+> N.B. : elles ne sont autorisées que sur les propriétés qui prennent en charge et disposent de validateurs.
 
-These handlers have to be triggered manually by invoking the handleFailure method of the operation's results object returned by the create & update methods of your models.
+Ces gestionnaires doivent être déclenchés manuellement en invoquant la méthode `handleFailure` de l'objet de résultats de l'opération retourné par les méthodes `create` et `update` de vos modèles.
 
-> If the operation is successful, `error` and `handleFailure` will be `null`
+> Si l'opération réussit, `error` et `handleFailure` seront `null`.
 
 ```js
 // signature
@@ -201,11 +201,11 @@ if (error) await handleFailure();
 
 ### onSuccess
 
-A function, [config object](#config-objects) or array of config objects or functions(async / sync) you want to execute every time the **`create`** & **`update`** operations are successful. Handlers for this event should expect the operation's summary as only parameter. Default **[ ]**. Handlers are expected to respect the `type HandlerWithSummary` as shown above.
+Une fonction, un [objet de configuration](#objets-de-configuration) ou un tableau d'objets de configuration ou de fonctions (async/sync) que vous souhaitez exécuter chaque fois que les opérations **`create`** et **`update`** réussissent. Les gestionnaires de cet événement doivent attendre le résumé de l'opération comme seul paramètre. Valeur par défaut **[ ]**. Les gestionnaires doivent respecter le `type HandlerWithSummary` comme indiqué ci-dessus.
 
-These handlers have to be triggered manually by invoking the handleSuccess method of the operation's results object returned by the create & update methods of your models.
+Ces gestionnaires doivent être déclenchés manuellement en invoquant la méthode `handleSuccess` de l'objet de résultats de l'opération retourné par les méthodes `create` et `update` de vos modèles.
 
-> N.B: If the operation is unsuccessful, `data` and `handleSuccess` will be `null`
+> N.B. : si l'opération échoue, `data` et `handleSuccess` seront `null`.
 
 ```js
 // signature
@@ -222,9 +222,9 @@ const { data, error, handleSuccess } = await UserModel.create(userData);
 if (data) await handleSuccess();
 ```
 
-#### Config objects
+#### Objets de configuration
 
-These were introduced in version 1.4.1 to allow for more simplicity and flexibility when dealing with success handlers related to more than one property. A success config object should have the following shape:
+Ils ont été introduits dans la version 1.4.1 pour permettre plus de simplicité et de flexibilité lors de la gestion des gestionnaires de succès liés à plusieurs propriétés. Un objet de configuration de succès doit avoir la forme suivante :
 
 ```ts
 type ConfigObject = {
@@ -233,7 +233,7 @@ type ConfigObject = {
 };
 ```
 
-Example:
+Exemple :
 
 ```ts
 const Model = new Schema<Input, Output>(definitions, {
@@ -248,7 +248,7 @@ const Model = new Schema<Input, Output>(definitions, {
 // or
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: {
-    properties: ['email', 'name'],
+    properties: ["email", "name"],
     handler, // always executed at creation during updates with either email or name
   },
 });
@@ -256,7 +256,7 @@ const Model = new Schema<Input, Output>(definitions, {
 // or
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: {
-    properties: ['email', 'name'],
+    properties: ["email", "name"],
     handler: [handler1, handler2], // always executed at creation during updates with either email or name
   },
 });
@@ -265,24 +265,24 @@ const Model = new Schema<Input, Output>(definitions, {
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: [
     handler1, // executed during all success operations
-    { properties: ['id', 'email'], handler: handler2 },
-    { properties: ['firstName', 'lastName'], handler: [handler3, handler4] },
+    { properties: ["id", "email"], handler: handler2 },
+    { properties: ["firstName", "lastName"], handler: [handler3, handler4] },
   ],
 });
 
 // ✅ as from v1.5.1 you can provide subsets of other configs
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: [
-    { properties: ['id', 'email', 'firstName'], handler: handler2 },
-    { properties: ['email', 'firstName'], handler: [handler3, handler4] },
+    { properties: ["id", "email", "firstName"], handler: handler2 },
+    { properties: ["email", "firstName"], handler: [handler3, handler4] },
   ],
 });
 
 // ❌ this is not allowed
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: [
-    { properties: ['id', 'email'], handler: [handler1, handler2] },
-    { properties: ['email', 'id'], handler: handler3 },
+    { properties: ["id", "email"], handler: [handler1, handler2] },
+    { properties: ["email", "id"], handler: handler3 },
   ],
 });
 ```

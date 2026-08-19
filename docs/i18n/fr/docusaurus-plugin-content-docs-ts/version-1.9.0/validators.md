@@ -1,12 +1,12 @@
 ---
-title: "Validators"
+title: "Validateurs"
 ---
 
-# Validators
+# Validateurs
 
-A validator is a function that assesses the validity of a property (meaning one validator per property). It can be sync/async but is expected to behave as below.
+Un validateur est une fonction qui évalue la validité d'une propriété (c'est-à-dire un validateur par propriété). Il peut être synchrone/asynchrone, mais doit se comporter comme indiqué ci-dessous.
 
-Properties that can have validators are allowed have upto 2 validators (1 Primary & 1 Secondary) `N.B: they have slightly different signatures`
+Les propriétés pouvant avoir des validateurs peuvent en avoir jusqu'à 2 (1 principal et 1 secondaire) `N.B: they have slightly different signatures`
 
 ```ts
 import type { IvoSummary } from "ivo";
@@ -31,7 +31,10 @@ type ValidationResults =
       valid: false;
     };
 
-function primaryValidator(value: any, summary: IvoSummary<Input, Output, CtxOptions>) {
+function primaryValidator(
+  value: any,
+  summary: IvoSummary<Input, Output, CtxOptions>,
+) {
   // validation logic here
 
   if (valid) return { valid, validated };
@@ -76,20 +79,20 @@ const Model = new Schema({
 });
 ```
 
-In the code snippet above we have 2 validators; `validator1` and `validator2`
+Dans l'extrait de code ci-dessus, nous avons 2 validateurs ; `validator1` et `validator2`
 
-Although both work just the same, we `validator1` is recommended because:
+Bien que les deux fonctionnent de la même manière, `validator1` est recommandé car :
 
-- it is good to provided the reason why the validation failed and
-- returning the `validated` value tells TypeScript more about the type of that property especially if have not explicitly provided the input & output interfaces of your schema
+- il est préférable de fournir la raison pour laquelle la validation a échoué ;
+- retourner la valeur `validated` donne à TypeScript plus d'informations sur le type de cette propriété, notamment si vous n'avez pas explicitement fourni les interfaces d'entrée et de sortie de votre schéma.
 
-> N.B: if the validator does not return a validated value or it is undefined, the direct value passed will be used even `undefined`.
+> N.B : si le validateur ne retourne pas de valeur validée ou si celle-ci est `undefined`, la valeur directement passée sera utilisée, même `undefined`.
 
-> N.B: if the validator happens to throw an error, the validation of the said property will fail with reason `validation failed`
+> N.B : si le validateur lève une erreur, la validation de ladite propriété échouera avec la raison `validation failed`
 
-## Post validation
+## Validation postérieure
 
-If you find the need to perform multiple validation steps on more than one field, you can achieve this with the `postValidate` option of your schema.
+Si vous avez besoin d'effectuer plusieurs étapes de validation sur plus d'un champ, vous pouvez le faire avec l'option `postValidate` de votre schéma.
 
 ### PostValidationConfig:
 
@@ -118,15 +121,15 @@ type Options = {
 };
 ```
 
-As illustrated in the example above, the PostValidateConfig is an object that expects two properties:
+Comme illustré dans l'exemple ci-dessus, `PostValidateConfig` est un objet qui attend deux propriétés :
 
-- `properties` an array of at least two unique input properties on your schema
+- `properties` : un tableau d'au moins deux propriétés d'entrée uniques de votre schéma
 - `validator`
-  - A function or array of (sync/async) functions that will determine the validity of the operation with respect to it's properties.
-  - This validator(s) is/are invoked immediately after dependent properties are resolved and if at least one of the properties of it's config has been provided during updates but always gets called at creation
-  - `N.B` if validator is an array, the validators at depth level 1 will run sequencially while the validators at depth level 2 will run in parallel
+  - Une fonction ou un tableau de fonctions (synchrones/asynchrones) qui détermineront la validité de l'opération par rapport à ses propriétés.
+  - Ce(s) validateur(s) est/sont invoqué(s) immédiatement après la résolution des propriétés dépendantes, et si au moins une des propriétés de sa configuration a été fournie lors d'une mise à jour, mais il est toujours appelé lors de la création
+  - `N.B` : si le validateur est un tableau, les validateurs au niveau de profondeur 1 s'exécutent séquentiellement, tandis que ceux au niveau de profondeur 2 s'exécutent en parallèle
 
-> **If the postValidate option is an array, every set of properties has to be unique for each config**
+> **Si l'option `postValidate` est un tableau, chaque ensemble de propriétés doit être unique pour chaque configuration.**
 
 ```ts
 // ❌ both configs have wxactly the same properties
@@ -154,7 +157,7 @@ const schema = new Schema(definitions, {
 });
 ```
 
-Example:
+Exemple :
 
 ```ts
 type EventInput = {
@@ -167,14 +170,14 @@ type EventInput = {
 type Event = { id: number } & EventInput;
 ```
 
-Assuming the structure above reperesents an event (entity) in an event management system you are building. This event has an id, host, guests, startTime and stopTime as properties and the requirements are as follows:
+En supposant que la structure ci-dessus représente un événement (entité) dans un système de gestion d'événements que vous construisez. Cet événement a les propriétés id, host, guests, startTime et stopTime, et les exigences sont les suivantes :
 
-- the host and guests must be ids of valid users in the system
-- startTime must be greater than stopTime
-- only the id of the event cannot be changed
-- whenever host, guests, startTime or stopTime are modified, you have to make sure that the new state of the event respects the availability of the host and all guests i.e. host and guests should not be booked for another event in the said time frame
+- le `host` et les `guests` doivent être des identifiants d'utilisateurs valides dans le système
+- `startTime` doit être supérieur à `stopTime`
+- seul l'`id` de l'événement ne peut pas être modifié
+- chaque fois que `host`, `guests`, `startTime` ou `stopTime` sont modifiés, vous devez vous assurer que le nouvel état de l'événement respecte la disponibilité du `host` et de tous les `guests`, c'est-à-dire que le `host` et les `guests` ne doivent pas être réservés pour un autre événement pendant cette période
 
-With the above requirements, it is clear we have to perform individual validations for host, guests, startTime and stopTime followed by a cross field validation for all 4 properties
+Avec les exigences ci-dessus, il est clair que nous devons effectuer des validations individuelles pour `host`, `guests`, `startTime` et `stopTime`, suivies d'une validation inter-champs pour les 4 propriétés.
 
 ```ts
 const Model = new Schema(
@@ -224,34 +227,34 @@ const Model = new Schema(
 ).getModel();
 ```
 
-> N.B: **This option is not inherited during schema extension**
+> N.B : **Cette option n'est pas héritée lors de l'extension d'un schéma.**
 
-> N.B: if the post-validator happens to throw an error, the validation of the provided properties related to this validator will all fail with reason `validation failed`
+> N.B : si le post-validateur lève une erreur, la validation des propriétés fournies liées à ce validateur échouera toutes avec la raison `validation failed`
 
-## Validation flow
+## Flux de validation
 
-Data validation can occur in multiple stages depending on your schema's configuration
+La validation des données peut se dérouler en plusieurs étapes selon la configuration de votre schéma.
 
-1. Primary validation
+1. Validation principale
 
-   - At this stage, primary validators are triggered, default and constant values are assigned or generated
-   - The operation's ctx here is not safe because it is just made up of raw input but can be updated by the validated values returned from validators
+   - À ce stade, les validateurs principaux sont déclenchés, les valeurs par défaut et constantes sont attribuées ou générées
+   - Le `ctx` de l'opération ici n'est pas sûr, car il est constitué de données brutes, mais il peut être mis à jour par les valeurs validées retournées par les validateurs
 
-1. Conditional required validation
+1. Validation conditionnelle des champs requis
 
-   - Here, conditional required properties are evaluated
-   - The operation's ctx here is already safe because of the validated values from the Primary validation stage would have been used to update the ctx
-   - The operation's ctx cannot be updated at this stage
+   - Ici, les propriétés requises conditionnelles sont évaluées
+   - Le `ctx` de l'opération est déjà sûr, car les valeurs validées de l'étape de validation principale ont été utilisées pour mettre à jour le `ctx`
+   - Le `ctx` de l'opération ne peut pas être mis à jour à ce stade
 
-1. Secondary validation
+1. Validation secondaire
 
-   - This is where secondary validators get triggered
-   - The operation's ctx here is also safe because of the Primary validation and can be updated by the validated values returned from validators
+   - C'est ici que les validateurs secondaires sont déclenchés
+   - Le `ctx` de l'opération est également sûr grâce à la validation principale et peut être mis à jour par les valeurs validées retournées par les validateurs
 
-1. Post validation
+1. Validation postérieure
 
-   - Here, post-validation checks are evaluated with a safe operation ctx
-   - To update the operation's ctx, the validator can return the validated value like below
+   - Ici, les vérifications post-validation sont évaluées avec un `ctx` d'opération sûr
+   - Pour mettre à jour le `ctx` de l'opération, le validateur peut retourner la valeur validée comme ci-dessous
 
    ```ts
    function postValidator({}: IvoSummary) {
@@ -262,19 +265,19 @@ Data validation can occur in multiple stages depending on your schema's configur
    }
    ```
 
-   > N.B: Any attempt to update the value of a property (using the method above) not registered in a specific post-validation config will be ignored
+   > N.B : toute tentative de mise à jour de la valeur d'une propriété (en utilisant la méthode ci-dessus) non enregistrée dans une configuration de post-validation spécifique sera ignorée
 
-1. Sanitization of virtual properties more on this [here](./definitions/virtuals.md#sanitizer)
+1. Assainissement des propriétés virtuelles ; plus d'informations [ici](./definitions/virtuals.md#sanitiser)
 
-1. Resolvement of dependent properties more on this [here](./definitions/dependents.md)
+1. Résolution des propriétés dépendantes ; plus d'informations [ici](./definitions/dependents.md)
 
-## Built-in validation helpers
+## Aides de validation intégrées
 
-Here are some built-in validators you could use study to build your own validators:
+Voici quelques validateurs intégrés que vous pouvez étudier pour construire vos propres validateurs :
 
 ### validateBoolean
 
-To validate boolean values
+Pour valider les valeurs booléennes
 
 ```ts
 import { validateBoolean } from "ivo";
@@ -286,7 +289,7 @@ console.log(validateBoolean(false)); // { valid: true, validated: false }
 
 ### validateCreditCard
 
-A tiny utility method to test if a credit/debit **`Card Number`** is valid; not the credit card itself
+Une petite méthode utilitaire pour tester si un **`numéro de carte`** de crédit/débit est valide ; pas la carte elle-même.
 
 ```ts
 import { validateCreditCard } from "ivo";
@@ -301,7 +304,7 @@ console.log(validateCreditCard("5420596721435293"));
 // { valid: true, validated: "5420596721435293"}
 ```
 
-It returns:
+Elle retourne :
 
 ```ts
 type ValidationResponse =
@@ -311,7 +314,7 @@ type ValidationResponse =
 
 ### validateEmail
 
-To validate emails
+Pour valider les adresses e-mail
 
 ```ts
 import { validateEmail } from "ivo";
@@ -321,16 +324,16 @@ console.log(validateEmail("dbj jkdbZvjkbv")); // { reason: "Invalid email", vali
 validateEmail(" john@doe.com"); // {  valid: true, validated: "john@doe.com" }
 ```
 
-#### Parameters
+#### Paramètres
 
-| Position | Property    | Type   | Description                                       |
-| -------- | ----------- | ------ | ------------------------------------------------- |
-| 1        | value       | any    | The value you wish to validate                    |
-| 2        | customRegEx | RegExp | The custom regular expression that should be used |
+| Position | Propriété   | Type   | Description                                     |
+| -------- | ----------- | ------ | ----------------------------------------------- |
+| 1        | value       | any    | La valeur que vous souhaitez valider            |
+| 2        | customRegEx | RegExp | L'expression régulière personnalisée à utiliser |
 
 ### makeArrayValidator
 
-You could validate an array of values of your choice. An array of primitives or objects.
+Vous pouvez valider un tableau de valeurs de votre choix. Un tableau de primitives ou d'objets.
 
 ```ts
 import { makeArrayValidator } from "ivo";
@@ -355,19 +358,19 @@ console.log(validate(invalids)); // { reason: "Expected a non-empty array", vali
 
 #### Options
 
-| Property  | Type            | Description                                                                             |
-| --------- | --------------- | --------------------------------------------------------------------------------------- |
-| filter    | function        | A sync or async function to filter the array. Default: **(data) => false**              |
-| modifier  | function        | A sync or async function to modify (format) individual values. Default: **undefined**   |
-| sorted    | boolean         | Whether array should be sorted. Default: **true**                                       |
-| sorter    | function        | Function to sort values. Default: **undefined**                                         |
-| sortOrder | 'asc' \| 'desc' | Order used to do comparison check when sorted: true and sorter: undefined               |
-| unique    | boolean         | Whether array should contain unique values. Default: **true**                           |
-| uniqueKey | string          | A key(property) on objects in array used as unique criteria. e.g: "id". Default: **""** |
+| Propriété | Type            | Description                                                                                                         |
+| --------- | --------------- | ------------------------------------------------------------------------------------------------------------------- |
+| filter    | function        | Une fonction synchrone ou asynchrone pour filtrer le tableau. Par défaut : **(data) => false**                      |
+| modifier  | function        | Une fonction synchrone ou asynchrone pour modifier (formater) les valeurs individuelles. Par défaut : **undefined** |
+| sorted    | boolean         | Indique si le tableau doit être trié. Par défaut : **true**                                                         |
+| sorter    | function        | Fonction pour trier les valeurs. Par défaut : **undefined**                                                         |
+| sortOrder | 'asc' \| 'desc' | Ordre utilisé pour la comparaison lorsque `sorted` vaut `true` et `sorter` vaut `undefined`                         |
+| unique    | boolean         | Indique si le tableau doit contenir des valeurs uniques. Par défaut : **true**                                      |
+| uniqueKey | string          | Une clé (propriété) des objets du tableau utilisée comme critère d'unicité, par exemple : "id". Par défaut : **""** |
 
 ### makeNumberValidator
 
-To validate numbers
+Pour valider les nombres
 
 ```ts
 import { makeNumberValidator } from "ivo";
@@ -409,7 +412,7 @@ console.log(makeNumberValidator({ allow: [0, -1, 35] }, 30)); // { reason: "Valu
 
 ### makeStringValidator
 
-To validate strings
+Pour valider les chaînes de caractères
 
 ```ts
 import { makeStringValidator } from "ivo";

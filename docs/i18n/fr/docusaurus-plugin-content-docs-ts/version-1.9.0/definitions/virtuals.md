@@ -1,28 +1,28 @@
 ---
-title: "Virtual Properties"
+title: "Propriétés virtuelles"
 ---
 
-## Virtual Properties
+## Propriétés virtuelles
 
-These properties are used to manipulate dependent properties at the level of your model but won't appear on instances, hence don't go to you database.
+Ces propriétés servent à manipuler des propriétés dépendantes au niveau de votre modèle, mais n'apparaissent pas sur les instances et ne sont donc pas envoyées dans votre base de données.
 
-- They (virtuals) must have:
+- Elles (les virtuelles) doivent avoir :
 
   - `virtual: true`
-  - A validator and
-  - At least one property that depends on it
+  - Un validateur et
+  - Au moins une propriété qui dépend d'elles
 
-- They can have (**`shouldInit: false`**) or `shouldInit` as a function
-- They can have (**`shouldUpdate: false`**) or `shouldUpdate` as a function
-- They can have `required` as a function
-- They can have [aliases](#aliases)
-- They can have [sanitizers](#sanitizer)
-- They **CANNOT** be dependent, defaulted, strictly required nor readonly
+- Elles peuvent avoir (**`shouldInit: false`**) ou `shouldInit` sous forme de fonction
+- Elles peuvent avoir (**`shouldUpdate: false`**) ou `shouldUpdate` sous forme de fonction
+- Elles peuvent avoir `required` sous forme de fonction
+- Elles peuvent avoir des [alias](#alias)
+- Elles peuvent avoir des [sanitizeurs](#sanitiser)
+- Elles **NE PEUVENT PAS** être dépendantes, avoir de valeur par défaut, être strictement requises ni en lecture seule
 
-Example:
+Exemple :
 
 ```ts
-import { Schema } from 'ivo';
+import { Schema } from "ivo";
 
 type UserInput = {
   blockUser: boolean;
@@ -37,7 +37,7 @@ const User = new Schema<UserInput, User>({
   blockUser: { virtual: true, validator: validateBoolean },
   isBlocked: {
     default: false,
-    dependsOn: 'blockUser',
+    dependsOn: "blockUser",
     resolver: ({ ctx }) => ctx.blockUser,
   },
 }).getModel();
@@ -49,29 +49,29 @@ function validateBoolean(value) {
 }
 
 // creating
-const user = await User.create({ blockUser: true, name: 'Peter' });
+const user = await User.create({ blockUser: true, name: "Peter" });
 
 console.log(user); // { isBlocked: true }
 ```
 
-The results of the above operation is an object with a single property `isBlocked`. `name` is missing because it does not belong to our schema but `blockUser` is missing because it is virtual and because it was provided, the value of isBlocked is true instead of the default(false).
+Le résultat de l'opération ci-dessus est un objet avec une seule propriété `isBlocked`. `name` est absent car il n'appartient pas à notre schéma, mais `blockUser` est absent car il est virtuel et, comme il a été fourni, la valeur de `isBlocked` est `true` au lieu de la valeur par défaut (`false`).
 
-The same concept applies to the `update` operation.
+Le même concept s'applique à l'opération `update`.
 
-## Aliases
+## Alias
 
-An alias is just an extra **external** name for a virtual property
+Un alias est simplement un nom **externe** supplémentaire pour une propriété virtuelle.
 
-### How to define an alias
+### Comment définir un alias
 
-- Only virtuals can have aliases
-- an alias must be of type `string`
-- cannot be the name of another property or virtual on your model (except if the alias is the name of a dependent property on that virtual)
-- for best results with TS, the type definitions provided should correspond for your alias and it's virtual property (see in example 1 below)
+- Seules les propriétés virtuelles peuvent avoir des alias
+- Un alias doit être de type `string`
+- Il ne peut pas être le nom d'une autre propriété ou virtuelle de votre modèle (sauf si l'alias est le nom d'une propriété dépendante de cette virtuelle)
+- Pour de meilleurs résultats avec TypeScript, les définitions de types fournies doivent correspondre pour votre alias et sa propriété virtuelle (voir l'exemple 1 ci-dessous)
 
-### Examples
+### Exemples
 
-Example 1: Alias with name of related dependent property
+Exemple 1 : Alias portant le nom d'une propriété dépendante associée
 
 ```ts
 type Input = {
@@ -89,11 +89,11 @@ type Aliases = {
 const StoreItem = new Schema<Input, Output, Aliases>({
   quantity: {
     default: 0,
-    dependsOn: '_virtualQuantity',
+    dependsOn: "_virtualQuantity",
     resolver: ({ ctx }) => ctx._virtualQuantity,
   },
   _virtualQuantity: {
-    alias: 'quantity',
+    alias: "quantity",
     vitual: true,
     validator: validateVirtualQuantity,
   },
@@ -108,7 +108,7 @@ const { data: item2 } = await StoreItem.create({ quantity: 100 });
 console.log(item1, item2); // { quantity: 100 } { quantity: 100 }
 ```
 
-If the virtual and the alias are provided at the same time, the last value is considered
+Si la propriété virtuelle et l'alias sont fournis en même temps, la dernière valeur est prise en compte.
 
 ```ts
 const { data: item1 } = await StoreItem.create({
@@ -124,17 +124,17 @@ const { data: item2 } = await StoreItem.create({
 console.log(item1, item2); // { quantity: 100 } { quantity: 5 }
 ```
 
-Example 2: Alias with unrelated name
+Exemple 2 : Alias avec un nom non lié
 
 ```ts
 const StoreItem = new Schema({
   quantity: {
     default: 0,
-    dependsOn: '_virtualQuantity',
+    dependsOn: "_virtualQuantity",
     resolver: ({ ctx }) => ctx._virtualQuantity,
   },
   _virtualQuantity: {
-    alias: 'qty',
+    alias: "qty",
     vitual: true,
     validator: validateVirtualQuantity,
   },
@@ -149,18 +149,18 @@ const { data: item2 } = await StoreItem.create({ qty: 100 });
 console.log(item1, item2); // { quantity: 100 } { quantity: 100 }
 ```
 
-> N.B: Do not try to access virtuals on the [`operation ctx`](../life-cycles.md#the-operation-context) with their aliases because they are not recognised there. Aliases only work when passed to the `create` & `update` methods of your models
+> N.B : n'essayez pas d'accéder aux propriétés virtuelles dans le [`contexte d'opération`](../life-cycles.md#le-contexte-de-lopération) avec leurs alias, car elles ne sont pas reconnues là-bas. Les alias ne fonctionnent que lorsqu'ils sont passés aux méthodes `create` et `update` de vos modèles.
 
-## Sanitizer
+## Sanitiser
 
-This should be used when your virtual property may exist in more than one form. This function is executed immediately the last validation step (post-validaton) is complete. This function could be synchronous or asynchronous and has access to only one argument, the [operation summary](../life-cycles.md#the-operation-summary)
+Ceci doit être utilisé lorsque votre propriété virtuelle peut exister sous plusieurs formes. Cette fonction est exécutée dès que la dernière étape de validation (post-validation) est terminée. Elle peut être synchrone ou asynchrone et n'a accès qu'à un seul argument, le [résumé d'opération](../life-cycles.md#le-résumé-de-lopération).
 
-A good usecase would be when a dealing with file uploads. The example below shows how you could upload a file to a file or cloud storage, get the metadata you'll need to persist as metadata. After sanitization, the resolver of properties that depend (`metadata` in our case) on the these virtuals are run with the new values of the virtual properties
+Un bon cas d'usage serait la gestion d'envois de fichiers. L'exemple ci-dessous montre comment vous pourriez téléverser un fichier vers un stockage local ou cloud, puis obtenir les métadonnées que vous souhaitez persister. Après l'assainissement, le résolveur des propriétés qui dépendent (`metadata` dans notre cas) de ces virtuelles est exécuté avec les nouvelles valeurs des propriétés virtuelles.
 
-> N.B: if the sanitizer happens to throw an error, the value before sanitization will be used
+> N.B : si le sanitisateur lève une erreur, la valeur avant assainissement sera utilisée.
 
 ```ts
-import { Schema, type IvoSummary } from 'ivo';
+import { Schema, type IvoSummary } from "ivo";
 
 type FileMetadata = { size: number; url: string };
 
@@ -178,8 +178,8 @@ type Output = {
 const FileModel = new Schema<Input, Output>({
   id: { constant: true, value: generateID },
   metadata: {
-    default: { size: 0, url: '' },
-    dependsOn: 'file',
+    default: { size: 0, url: "" },
+    dependsOn: "file",
     resolver: ({ ctx }) => ctx.file as FileMetadata,
   },
   name: { required: true, validator: validateName },

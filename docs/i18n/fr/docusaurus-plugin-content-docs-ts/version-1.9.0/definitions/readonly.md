@@ -1,20 +1,28 @@
 ---
-title: "Readonly Properties"
+title: "Propriétés en lecture seule"
 ---
 
-# Readonly Properties
+# Propriétés en lecture seule
 
-Such a property's value will be changed at most twice depending on your usecase. Any attempt to modify the value after it has changed will be ignored.
+La valeur d'une telle propriété ne changera au maximum que deux fois selon votre cas d'utilisation.
+Toute tentative de modification de la valeur après qu'elle a changé sera ignorée.
 
-- If set to `true`, will be required at initialization and will never allow updates.
-- If set to `true` with shouldInit: false, will not be initialized but allowed to update only once.
-- If set to `lax`, will not be required at creation nor during updates (unless conditionally required). Once it's value is different from the default value, it'll not accept further updates.
+- Si elle est définie sur `true`, elle sera requise lors de l'initialisation et n'autorisera jamais de
+  mises à jour.
+- Si elle est définie sur `true` avec `shouldInit: false`, elle ne sera pas initialisée mais autorisera
+  une seule mise à jour.
+- Si elle est définie sur `lax`, elle ne sera pas requise lors de la création ni lors des mises à jour
+  (sauf si elle est requise conditionnellement). Lorsque sa valeur diffère de la valeur par défaut,
+  elle n'acceptera plus de mises à jour.
 
-They **`cannot be strictly required`** but can be [conditionally required](./required.md#conditionally-required-properties)
+Elles **`ne peuvent pas être strictement requises`** mais peuvent être
+[requises conditionnellement](./required.md#propriétés-conditionnellement-requises)
 
-They should have a default value if they are [dependent](./dependents.md), [conditionally required](./required.md#conditionally-required-properties) or have their initialization blocked (i.e. `shouldInit: false`)
+Elles doivent avoir une valeur par défaut si elles sont [dépendantes](./dependents.md),
+[requises conditionnellement](./required.md#propriétés-conditionnellement-requises) ou si leur
+initialisation est bloquée (c'est-à-dire `shouldInit: false`)
 
-Example:
+Exemple :
 
 ```ts
 import { Schema } from "ivo";

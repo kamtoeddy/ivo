@@ -1,12 +1,12 @@
 ---
-title: "Required Properties"
+title: "Propriétés requises"
 ---
 
-# Required Properties
+# Propriétés requises
 
-A property with `required: true` is one that must be provided at creation. It must have a validator and cannot have a default value
+Une propriété avec `required: true` est une propriété qui doit être fournie lors de la création. Elle doit avoir un validateur et ne peut pas avoir de valeur par défaut.
 
-Example:
+Exemple :
 
 ```ts
 import { Schema } from "ivo";
@@ -17,21 +17,21 @@ const userSchema = new Schema({
 });
 ```
 
-## Conditionally Required Properties
+## Propriétés conditionnellement requises
 
 ```ts
 type RequiredError = string | { reason?: string; metadata?: object | null };
 ```
 
-Such a property is required depending on the summary of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, RequiredError]` | `Promise<boolean | [boolean, RequiredError]>`.
+Une telle propriété est requise en fonction du résumé de l'opération. La valeur de **`required`** doit être une fonction qui retourne `boolean` | `[boolean, RequiredError]` | `Promise<boolean | [boolean, RequiredError]>`.
 
-> N.B: If the required error is not provided or if the value provided for requiredError is not a string, `[propertyName] is required!` will be used.
+> N.B. : Si l'erreur de la propriété requise n'est pas fournie ou si la valeur fournie pour `requiredError` n'est pas une chaîne de caractères, `[propertyName] is required!` sera utilisé.
 
-> N.B: If nothing is returned, the operation will proceed with `required: false`
+> N.B. : Si aucune valeur n'est retournée, l'opération continuera avec `required: false`.
 
-> N.B: if the required function happens to throw an error, the operation will proceed with `required: false`
+> N.B. : si la fonction `required` lance une erreur, l'opération continuera avec `required: false`.
 
-Example:
+Exemple :
 
 ```ts
 import { Schema, type IvoSummary } from "ivo";

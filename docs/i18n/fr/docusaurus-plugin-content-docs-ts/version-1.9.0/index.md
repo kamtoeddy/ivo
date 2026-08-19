@@ -1,18 +1,18 @@
 ---
-title: "Defining a schema"
+title: "Définir un schéma"
 ---
 
-# Defining a schema
+# Définir un schéma
 
-Clean schema considers a property to be properly defined if it is `dependent`, `readonly`, `required`, a `virtual` or has a `default` value other than _undefined_
+Clean schema considère qu'une propriété est correctement définie si elle est `dependent`, `readonly`, `required`, une `virtual` ou si elle possède une valeur `default` autre que _undefined_
 
-> N.B: Clean schema will throw an error if a property is not properly defined.
-> The Schema constructor accepts 2 arguments:
+> N.B : Clean schema lèvera une erreur si une propriété n'est pas correctement définie.
+> Le constructeur Schema accepte 2 arguments :
 
-1. definitions (required)
-1. [options (optional)](#options)
+1. definitions (obligatoire)
+1. [options (optionnel)](#options)
 
-The schema constructor also takes two generic types you could use to improve on the type inference of your `Input` & `Output` data.
+Le constructeur de schéma prend également deux types génériques que vous pouvez utiliser pour améliorer l'inférence de types de vos données `Input` & `Output`.
 
 ```ts
 const userSchema = new Schema<Input, Output>(definitions, options);
@@ -50,36 +50,36 @@ const userSchema = new Schema<UserInput, User>({
 const UserModel = userSchema.getModel();
 ```
 
-## Properties of a model
+## Propriétés d'un modèle
 
-These methods are async because custom validators could be async as well.
+Ces méthodes sont asynchrones car les validateurs personnalisés peuvent également être asynchrones.
 
-| Property | Type     | Description                                    |
-| -------- | -------- | ---------------------------------------------- |
-| create   | function | Async method to create an instance             |
-| delete   | function | Async method to trigger all onDelete listeners |
-| update   | function | Async method to update an instance             |
+| Propriété | Type     | Description                                                    |
+| --------- | -------- | -------------------------------------------------------------- |
+| create    | function | Méthode asynchrone pour créer une instance                     |
+| delete    | function | Méthode asynchrone pour déclencher tous les écouteurs onDelete |
+| update    | function | Méthode asynchrone pour mettre à jour une instance             |
 
-## Accepted rules
+## Règles acceptées
 
-| Property     | Type                         | Description                                                                                                                                                     |
-| ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| allow        | any[ ] \| object             | used to specify the values that should be accepted for a property. [See more](./definitions/allowed-values.md#allowed-values)                                   |
-| constant     | boolean                      | use with **`value`** rule to specify a property with a forever constant value. [more](./definitions/constants.md#constant-properties)                           |
-| default      | any \| function              | the default value of a propterty. [more](./definitions/defaults.md#default-values)                                                                              |
-| dependsOn    | string \| string[ ]          | a property or list of property the said property depends on. [more](./definitions/dependents.md)                                           |
-| ignore       | function                     | a function used to determine whether the input value of a property should be ignored. This acts as `shouldInit` + `shouldUpdate`                                |
-| onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                                         |
-| onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                      |
-| onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                         |
-| readonly     | boolean \| 'lax'             | a propterty whose value should not change [more](./definitions/readonly.md)                                                                 |
-| required     | boolean \| function          | a property that must be set during an operation [more](./definitions/required.md)                                                           |
-| sanitizer    | function                     | This could be used to transform a virtual property before their dependent properties get resolved. [more](./definitions/virtuals.md#sanitizer)                  |
-| shouldInit   | false \| function(): boolean | A boolean or setter that tells ivo whether or not a property should be initialized.                                                                             |
-| shouldUpdate | false \| function(): boolean | A boolean or setter that tells ivo whether or not a property should be initialized.                                                                             |
-| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](./validators.md)                                             |
-| value        | any \| function              | value or setter of constant property. [more](./definitions/constants.md#constant-properties)                                                                   |
-| virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./definitions/virtuals.md#virtual-properties) |
+| Propriété    | Type                         | Description                                                                                                                                                                                             |
+| ------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| allow        | any[ ] \| object             | utilisé pour spécifier les valeurs qui doivent être acceptées pour une propriété. [En savoir plus](./definitions/allowed-values.md#valeurs-autorisées)                                                  |
+| constant     | boolean                      | à utiliser avec la règle **`value`** pour spécifier une propriété avec une valeur constante. [plus](./definitions/constants.md#propriétés-constantes)                                                   |
+| default      | any \| function              | la valeur par défaut d'une propriété. [plus](./definitions/defaults.md#valeurs-par-défaut)                                                                                                              |
+| dependsOn    | string \| string[ ]          | une propriété ou une liste de propriétés dont dépend ladite propriété. [plus](./definitions/dependents.md)                                                                                              |
+| ignore       | function                     | une fonction utilisée pour déterminer si la valeur d'entrée d'une propriété doit être ignorée. Cela agit comme `shouldInit` + `shouldUpdate`                                                            |
+| onDelete     | function \| function[ ]      | exécuté lorsque la méthode delete d'un modèle est invoquée [plus](./life-cycles.md#ondelete)                                                                                                            |
+| onFailure    | function \| function[ ]      | exécuté après une opération infructueuse [plus](./life-cycles.md#onfailure)                                                                                                                             |
+| onSuccess    | function \| function[ ]      | exécuté après une opération réussie [plus](./life-cycles.md#onsuccess)                                                                                                                                  |
+| readonly     | boolean \| 'lax'             | une propriété dont la valeur ne doit pas changer [plus](./definitions/readonly.md)                                                                                                                      |
+| required     | boolean \| function          | une propriété qui doit être définie pendant une opération [plus](./definitions/required.md)                                                                                                             |
+| sanitizer    | function                     | Cela peut être utilisé pour transformer une propriété virtuelle avant que ses propriétés dépendantes ne soient résolues. [plus](./definitions/virtuals.md#sanitiser)                                    |
+| shouldInit   | false \| function(): boolean | Un booléen ou un setter qui indique à ivo si une propriété doit être initialisée ou non.                                                                                                                |
+| shouldUpdate | false \| function(): boolean | Un booléen ou un setter qui indique à ivo si une propriété doit être initialisée ou non.                                                                                                                |
+| validator    | function                     | Une fonction (async / sync) utilisée pour valider la valeur d'une propriété. [plus](./validators.md)                                                                                                    |
+| value        | any \| function              | valeur ou setter d'une propriété constante. [plus](./definitions/constants.md#propriétés-constantes)                                                                                                    |
+| virtual      | boolean                      | une propriété d'assistance qui peut être utilisée pour fournir un contexte supplémentaire mais n'apparaît pas sur les instances de votre modèle [plus](./definitions/virtuals.md#propriétés-virtuelles) |
 
 ## Options
 
@@ -122,17 +122,17 @@ const options: SchemaOptions = {}
 const schema = new Schema<Input, Output, CtxOptions, ErrorToolClass>(definitions, options)
 ```
 
-More details on the `Context` & `Summary` utiliies can be found [here](./life-cycles.md#the-operation-context)
+Plus de détails sur les utilitaires `Context` & `Summary` peuvent être trouvés [ici](./life-cycles.md#le-contexte-de-lopération)
 
-### equalityDepth (default: 1)
+### equalityDepth (défaut : 1)
 
-This is the number used to determine if the value of a property has changed during updates.
+C'est le nombre utilisé pour déterminer si la valeur d'une propriété a changé pendant les mises à jour.
 
-To determine if a property has changed, it's value is compared against it's default value and previous value. Because object equality is not always straightforward, the `equalityDepth` provided is used to determine if properties of your schema that accept objects (which may have nested objects) as values have changed during updates
+Pour déterminer si une propriété a changé, sa valeur est comparée à sa valeur par défaut et à sa valeur précédente. Comme l'égalité entre objets n'est pas toujours évidente, la valeur `equalityDepth` fournie est utilisée pour déterminer si les propriétés de votre schéma qui acceptent des objets (qui peuvent avoir des objets imbriqués) comme valeurs ont changé pendant les mises à jour.
 
-The possible values allowed for this number range from `0` to `+Infinity`. The default value is `1`, which means **one level of nesting**.
+Les valeurs possibles pour ce nombre vont de `0` à `+Infinity`. La valeur par défaut est `1`, ce qui signifie **un niveau d'imbrication**.
 
-Here is a snippet to demonstrate how changing just the arragement of values of nested properties (without even changing their actual values) can affect the results of an update:
+Voici un extrait pour démontrer comment le simple changement d'arrangement des valeurs de propriétés imbriquées (sans même changer leurs valeurs réelles) peut affecter les résultats d'une mise à jour :
 
 ```ts
 const user = {
@@ -207,7 +207,7 @@ Model.update(user, {
 
 ### errorTool
 
-This is a class which will be used to manage your validation errors, hence giving you the power to have custom validation errors. See example [here](https://github.com/kamtoeddy/ivo/blob/main/ts/tests/extras/error-sanitizer.ts)
+C'est une classe qui sera utilisée pour gérer vos erreurs de validation, vous donnant ainsi le pouvoir d'avoir des erreurs de validation personnalisées. Voir l'exemple [ici](https://github.com/kamtoeddy/ivo/blob/main/ts/tests/extras/error-sanitizer.ts)
 
 ```ts
 import type { ValidationErrorMessage, IErrorTool } from "ivo";
@@ -242,27 +242,27 @@ type IValidationError<ExtraData extends ObjectType = {}> = ({
 
 ### onDelete
 
-This could be a function or an array of functions with the `DeleteListener` signature above. These functions would be triggered together with the onDelete listeners of individual properties when the `Model.delete` method is invoked. See more [here](./life-cycles.md#ondelete)
+Cela peut être une fonction ou un tableau de fonctions avec la signature `DeleteListener` ci-dessus. Ces fonctions seront déclenchées en même temps que les écouteurs onDelete des propriétés individuelles lorsque la méthode `Model.delete` est invoquée. En savoir plus [ici](./life-cycles.md#ondelete)
 
 ### onSuccess
 
-This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
+Cela peut être une fonction ou un tableau de fonctions avec la signature `SuccessListener` ci-dessus. Ces fonctions seront déclenchées en même temps que les écouteurs onSuccess des propriétés individuelles lorsque la méthode handleSuccess est invoquée lors de la création et pendant les mises à jour de toute propriété. En savoir plus [ici](./life-cycles.md#onsuccess)
 
 ### postValidate
 
-To validate integrity of more than one field after initial validation. More on this [here](./validators.md#post-validation)
+Pour valider l'intégrité de plusieurs champs après la validation initiale. Plus d'informations [ici](./validators.md#validation-postérieure)
 
 ### setMissingDefaultsOnUpdate
 
-A boolean. If set to `true`, it'll check all defaultable properties of the existing data passed to the model's update method `Model.update(existingData, updates)`, for all the properties with value `undefined` it'll generate their default values, add these them to the operation's context before validating the updates provided.
+Un booléen. S'il est défini sur `true`, il vérifiera toutes les propriétés pouvant avoir une valeur par défaut des données existantes passées à la méthode de mise à jour du modèle `Model.update(existingData, updates)`, et pour toutes les propriétés ayant la valeur `undefined`, il générera leurs valeurs par défaut, les ajoutera au contexte de l'opération avant de valider les mises à jour fournies.
 
-If the update operation is successful, the newly generated default values will also be added to the updated values returned if not already present on the updated values. Default **false**
+Si l'opération de mise à jour réussit, les valeurs par défaut nouvellement générées seront également ajoutées aux valeurs mises à jour retournées si elles ne sont pas déjà présentes dans les valeurs mises à jour. Valeur par défaut **false**
 
-### shouldUpdate (default: true)
+### shouldUpdate (défaut : true)
 
-A boolean or a function that expects the operation's summary and returns a boolean value. This value is read/computed before the values provided during updates have been validated.
+Un booléen ou une fonction qui attend le résumé de l'opération et retourne une valeur booléenne. Cette valeur est lue/calculée avant que les valeurs fournies pendant les mises à jour aient été validées.
 
-If it's value or computed value if true, validations for updates will proceed else, the operation will fail with error message `Nothing to update`
+Si sa valeur ou sa valeur calculée est true, les validations des mises à jour se poursuivront, sinon l'opération échouera avec le message d'erreur `Nothing to update`
 
 ```ts
 new Schema(
@@ -271,11 +271,11 @@ new Schema(
 );
 ```
 
-### timestamps (default: false)
+### timestamps (défaut : false)
 
-If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation & during update. But you can overwrite the options and use your own properties like in the example below. Default **false**
+Si timestamps est défini sur true, vous aurez automatiquement les propriétés `createdAt` et `updatedAt` attachées aux instances de votre modèle lors de la création et pendant la mise à jour. Mais vous pouvez remplacer les options et utiliser vos propres propriétés comme dans l'exemple ci-dessous. Valeur par défaut **false**
 
-Overwrite one
+Remplacer une seule
 
 ```js
 let transactionSchema = new Schema(definitions, {
@@ -283,7 +283,7 @@ let transactionSchema = new Schema(definitions, {
 });
 ```
 
-Or both
+Ou les deux
 
 ```js
 let transactionSchema = new Schema(definitions, {
@@ -291,7 +291,7 @@ let transactionSchema = new Schema(definitions, {
 });
 ```
 
-To use one timestamp alone, pass false for the timestamp key to eliminate
+Pour utiliser un seul timestamp, passez false pour la clé du timestamp à éliminer
 
 ```js
 let transactionSchema = new Schema(definitions, {
@@ -304,7 +304,7 @@ let transactionSchema = new Schema(definitions, {
 });
 ```
 
-As of v1.6.1, `updated_at` is `null` at creation
+À partir de la v1.6.1, `updated_at` est `null` à la création
 
 ```js
 // make updatedAt non-nullable
@@ -318,60 +318,60 @@ let transactionSchema = new Schema(definitions, {
 });
 ```
 
-### useParentOptions (default: true)
+### useParentOptions (défaut : true)
 
-When extending schemas, extended schemas automatically inherit all options(except life cycle methods) of base schema. Setting `useParentOptions: false` in extended schema option will prevent this behaviour. Default is `true`
+Lors de l'extension de schémas, les schémas étendus héritent automatiquement de toutes les options (sauf les méthodes de cycle de vie) du schéma de base. Définir `useParentOptions: false` dans les options du schéma étendu empêchera ce comportement. La valeur par défaut est `true`
 
-## Try it in the browser
+## Essayez-le dans le navigateur
 
 <TsPlayground
-  ivoVersion="1.9.0"
-  code={`
+ivoVersion="1.9.0"
+code={`
 import { Schema, type IvoSummary } from 'ivo';
 
 type UserInput = {
-  email: string | null;
-  username: string;
+email: string | null;
+username: string;
 };
 
 type User = {
-  id: string;
-  createdAt: Date;
-  email: string | null;
-  username: string;
+id: string;
+createdAt: Date;
+email: string | null;
+username: string;
 };
 
 const userSchema = new Schema<UserInput, User>(
-  {
-    id: { constant: true, value: () => Math.random().toString(36).slice(2) },
-    email: {
-      default: null,
-      validator: (value: string) =>
-        typeof value === 'string' && value.includes('@')
-          ? true
-          : { valid: false, reason: 'Invalid email' },
-    },
-    username: {
-      required: true,
-      validator: (value: string) =>
-        value.length >= 3
-          ? true
-          : { valid: false, reason: 'Username too short' },
-    },
-  },
-  { timestamps: true },
+{
+id: { constant: true, value: () => Math.random().toString(36).slice(2) },
+email: {
+default: null,
+validator: (value: string) =>
+typeof value === 'string' && value.includes('@')
+? true
+: { valid: false, reason: 'Invalid email' },
+},
+username: {
+required: true,
+validator: (value: string) =>
+value.length >= 3
+? true
+: { valid: false, reason: 'Username too short' },
+},
+},
+{ timestamps: true },
 );
 
 const UserModel = userSchema.getModel();
 
 async function main() {
-  const { data, error } = await UserModel.create({
-    email: 'john.doe@mail.com',
-    username: 'john_doe',
-  });
+const { data, error } = await UserModel.create({
+email: 'john.doe@mail.com',
+username: 'john_doe',
+});
 
-  console.log('data:', data);
-  console.log('error:', error);
+console.log('data:', data);
+console.log('error:', error);
 }
 
 main();

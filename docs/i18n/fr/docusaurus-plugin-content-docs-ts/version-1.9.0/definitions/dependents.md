@@ -1,21 +1,21 @@
 ---
-title: "Dependent Properties"
+title: "Propriétés dépendantes"
 ---
 
-# Dependent Properties
+# Propriétés dépendantes
 
-Any external attempt to modify the value of the a dependent property will be ignored; making it's value solely modifiable via their resolver functions.
+Toute tentative externe de modifier la valeur d'une propriété dépendante sera ignorée ; sa valeur ne peut donc être modifiée que par ses fonctions résolveur.
 
-One such property `must` have the following rules:
+Une telle propriété `doit` avoir les règles suivantes :
 
-- **default**: This is a [value or function](./defaults.md#default-values) that will be used as (or used to generate a) default value for the said property
-- **dependsOn**: At least one other property or [`virtual`](./virtuals.md#virtual-properties) of your model it should depend on. It could be a string or an array of properties.
-- **resolver**: A function (sync or async) that would be invoked to generate the said property's new value when any of it's dependencies changes. This function is invoked after the last validation step (post-validaton) and [sanitizers](./virtuals.md#sanitizer) have been run.
-  > N.B: if the resolver happens to throw an error, the value of the property will be `null` at creation but if this happens during an update, the property will be ignored
+- **default** : Il s'agit d'une [valeur ou fonction](./defaults.md#valeurs-par-défaut) qui sera utilisée comme valeur par défaut (ou pour générer une valeur par défaut) pour ladite propriété
+- **dependsOn** : Au moins une autre propriété ou un [`virtual`](./virtuals.md#propriétés-virtuelles) de votre modèle dont elle doit dépendre. Il peut s'agir d'une chaîne de caractères ou d'un tableau de propriétés.
+- **resolver** : Une fonction (synchrone ou asynchrone) qui sera invoquée pour générer la nouvelle valeur de ladite propriété lorsque l'une de ses dépendances change. Cette fonction est invoquée après la dernière étape de validation (post-validation) et l'exécution des [sanitizers](./virtuals.md#sanitiser).
+  > N.B : si le résolveur lève une erreur, la valeur de la propriété sera `null` lors de la création, mais si cela se produit lors d'une mise à jour, la propriété sera ignorée
 
-Dependent properties could also be used in combination with other rules like [**readonly**](./readonly.md), [**life cycle handlers**](../life-cycles.md#life-cycle-handlers), etc. but **`cannot be required`**
+Les propriétés dépendantes peuvent également être utilisées en combinaison avec d'autres règles comme [**readonly**](./readonly.md), [**gestionnaires de cycle de vie**](../life-cycles.md#gestionnaires-de-cycle-de-vie), etc., mais **`ne peuvent pas être required`**
 
-Example:
+Exemple :
 
 ```ts
 import { Schema, type IvoSummary } from "ivo";

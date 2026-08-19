@@ -1,17 +1,17 @@
 ---
-title: "Extending Schemas"
+title: "Extension des schémas"
 ---
 
-## Extending Schemas
+## Extension des schémas
 
-For any schema that inherits from another, call the extend method on the parent schema like in the example below
+Pour tout schéma qui hérite d'un autre, appelez la méthode extend sur le schéma parent comme dans l'exemple ci-dessous.
 
-> N.B:
+> N.B.:
 >
-> - To overwrite a property, you just do it in the property definitions.
-> - [postValidate](../index.md#postvalidate), [shouldUpdate](../index.md#shouldupdate-default-true) and lifecycles are the only options that are not inherited
+> - Pour écraser une propriété, il suffit de le faire dans les définitions de propriétés.
+> - [postValidate](../index.md#postvalidate), [shouldUpdate](../index.md#shouldupdate-défaut--true) et les cycles de vie sont les seules options qui ne sont pas héritées.
 
-Example:
+Exemple:
 
 ```ts
 const baseSchema = new Schema(

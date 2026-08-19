@@ -32,7 +32,7 @@ test.describe("ivo docs site", () => {
     }) => {
       await page.goto("/fr/docs/ts/1.9.0");
       await expect(
-        page.locator("text=Defining a schema").first(),
+        page.locator("text=Définir un schéma").first(),
       ).toBeVisible();
       await expect(
         page.locator("text=Page Not Found").first(),
@@ -57,7 +57,7 @@ test.describe("ivo docs site", () => {
       await page.getByRole("link", { name: /français/i }).click();
       await expect(page).toHaveURL(/\/fr\/docs\/ts\/1\.9\.0\/?$/);
       await expect(
-        page.locator("text=Defining a schema").first(),
+        page.locator("text=Définir un schéma").first(),
       ).toBeVisible();
     });
 
