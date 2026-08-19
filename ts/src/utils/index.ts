@@ -365,30 +365,3 @@ function _serialize(dt: unknown, revert = false) {
     return dt;
   }
 }
-
-// const original = {
-//   name: "Root",
-//   items: [1, 2, 3], // Has array methods like push()
-//   nested: {
-//     val: 10,
-//     increment() {
-//       this.val++;
-//     },
-//   },
-//   push(value: number) {
-//     this.items.push(value);
-//   },
-// };
-
-// const cloned = cloneWithMethods(original);
-
-// // Test 1: Nested array mutation
-// cloned.items.push(4);
-// cloned.push(24);
-// console.log("cloned items:", cloned.items); // [1, 2, 3, 4]
-// console.log("original items:", original.items); // [1, 2, 3] (unaffected)
-
-// // Test 2: Nested method binding
-// cloned.nested.increment();
-// console.log("cloned nested val:", cloned.nested.val); // 11
-// console.log("original nested val:", original.nested.val); // 10 (unaffected)

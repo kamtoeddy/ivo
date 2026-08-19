@@ -2,7 +2,7 @@
   "name": "ivo",
   "author": "kamtoeddy",
   "description": "The schema valitator that brings user stories to life",
-  "version": "2.0.0-beta.2",
+  "version": "2.0.0",
   "scripts": {
     "build": "tsdown",
     "build:dev": "tsdown",
@@ -17,7 +17,7 @@
     "typecheck:test": "clear; tsc --noEmit -p tests/tsconfig.json"
   },
   "license": "../LICENSE",
-  "homepage": "https://github.com/kamtoeddy/ivo/ts/#readme",
+  "homepage": "https://ivo.kamtoeddy.com/docs/ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kamtoeddy/ivo.git"
