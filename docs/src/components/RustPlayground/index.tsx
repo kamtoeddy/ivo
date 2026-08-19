@@ -1,6 +1,14 @@
 import { useState, type ReactNode } from "react";
 import BrowserOnly from "@docusaurus/BrowserOnly";
+import CodeBlock from "@theme/CodeBlock";
 import styles from "./styles.module.css";
+
+import constantsSource from "./sources/constants.rs";
+import laxDefaultsSource from "./sources/lax_defaults.rs";
+import requiredSource from "./sources/required.rs";
+import virtualsSource from "./sources/virtuals.rs";
+import dependentsSource from "./sources/dependents.rs";
+import timestampsSource from "./sources/timestamps.rs";
 
 // One entry per wasm-exported demo (see docs/wasm/ivo-playground/src/lib.rs).
 // Adding a new curated rs/examples/*.rs demo means adding both the wasm export
@@ -10,31 +18,37 @@ const DEMOS = {
     label: "Constant fields",
     wasmFn: "constantsCreate",
     defaultInput: '{\n  "username": "john-doe"\n}',
+    source: constantsSource,
   },
   lax_defaults: {
     label: "Lax fields (defaults)",
     wasmFn: "laxDefaultsCreate",
     defaultInput: "{}",
+    source: laxDefaultsSource,
   },
   required: {
     label: "Required fields",
     wasmFn: "requiredCreate",
     defaultInput: "{}",
+    source: requiredSource,
   },
   virtuals: {
     label: "Virtual fields",
     wasmFn: "virtualsCreate",
     defaultInput: '{\n  "virtual_field": "hello"\n}',
+    source: virtualsSource,
   },
   dependents: {
     label: "Dependent fields",
     wasmFn: "dependentsCreate",
     defaultInput: '{\n  "value": 10\n}',
+    source: dependentsSource,
   },
   timestamps: {
     label: "Timestamps",
     wasmFn: "timestampsCreate",
     defaultInput: '{\n  "username": "john-doe"\n}',
+    source: timestampsSource,
   },
 } as const;
 
@@ -81,34 +95,41 @@ function RustPlaygroundImpl({ demo }: RustPlaygroundProps): ReactNode {
   }
 
   return (
-    <div className={styles.playground}>
-      <div className={styles.pane}>
-        <label
-          className={styles.label}
-          htmlFor={`rust-playground-input-${demo}`}
-        >
-          Input (JSON)
-        </label>
-        <textarea
-          id={`rust-playground-input-${demo}`}
-          className={styles.textarea}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          spellCheck={false}
-        />
-      </div>
-      <div className={styles.pane}>
-        <div className={styles.outputHeader}>
-          <span className={styles.label}>Output</span>
-          <button
-            className="button button--primary button--sm"
-            onClick={run}
-            disabled={running}
+    <div>
+      <CodeBlock language="rust" title="Schema / model code">
+        {config.source}
+      </CodeBlock>
+      <div className={styles.playground}>
+        <div className={styles.pane}>
+          <label
+            className={styles.label}
+            htmlFor={`rust-playground-input-${demo}`}
           >
-            {running ? "Running…" : "Run"}
-          </button>
+            Input (JSON)
+          </label>
+          <textarea
+            id={`rust-playground-input-${demo}`}
+            className={styles.textarea}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            spellCheck={false}
+          />
         </div>
-        <pre className={styles.output}>{output || "// click Run"}</pre>
+        <div className={styles.pane}>
+          <div className={styles.outputHeader}>
+            <span className={styles.label}>Output</span>
+            <button
+              className="button button--primary button--sm"
+              onClick={run}
+              disabled={running}
+            >
+              {running ? "Running…" : "Run"}
+            </button>
+          </div>
+          <pre className={styles.output} data-testid="rust-playground-output">
+            {output || "// click Run"}
+          </pre>
+        </div>
       </div>
     </div>
   );

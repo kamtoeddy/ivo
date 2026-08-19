@@ -16,7 +16,7 @@ cargo add ivo
 
 ## Defining structs
 
-```rs
+```rust
 use chrono::{DateTime, Utc};
 use ivo::{IvoInputStruct, IvoStruct};
 
@@ -45,7 +45,7 @@ struct User {
 
 Deriving `IvoStruct` on `User` generates a `PartialUser` struct, plus helper methods:
 
-```rs
+```rust
 impl IvoStruct for User {
     fn append_updates(&mut self, updates: &Self::Partial);
     fn clone_with_updates(&self, updates: &Self::Partial) -> Self;
@@ -59,7 +59,7 @@ impl From<User> for PartialUser {
 `PartialUser` gets a constructor, `set_*`/`with_*` builder methods and `unset_*` methods per
 field, plus `into_option()` and `is_empty()`:
 
-```rs
+```rust
 struct PartialUser {
     id: Option<String>,
     created_at: Option<Timestamp>,
@@ -122,7 +122,7 @@ operation. See the
 
 The default payload returned for unsuccessful operations has the signature:
 
-```rs
+```rust
 type DefaultFieldErrorMetadata = ();
 
 struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {

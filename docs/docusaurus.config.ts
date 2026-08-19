@@ -9,6 +9,21 @@ const organizationName = "kamtoeddy";
 const projectName = "ivo";
 const repoUrl = `https://github.com/${organizationName}/${projectName}`;
 
+// Allow importing Rust source files as raw strings in the RustPlayground
+// component so readers can see the schema/model code behind each demo.
+function rawRsSourcePlugin() {
+  return {
+    name: "raw-rs-source-plugin",
+    configureWebpack() {
+      return {
+        module: {
+          rules: [{ test: /\.rs$/, type: "asset/source" }],
+        },
+      };
+    },
+  };
+}
+
 const config: Config = {
   title: "ivo",
   tagline: "The schema validator that brings user stories to life",
@@ -92,6 +107,7 @@ const config: Config = {
         // plugin instance is unversioned by default.
       } satisfies DocsPluginOptions,
     ],
+    rawRsSourcePlugin,
   ],
 
   themeConfig: {
