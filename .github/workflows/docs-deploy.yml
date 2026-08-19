@@ -3,15 +3,19 @@ name: Docs Deploy
 on:
   pull_request:
     paths:
-      - 'docs/**'
-      - 'ts/docs/**'
-      - 'rs/**'
+      - "docs/**"
+      - "ts/src/**"
+      - "ts/tests/**"
+      - "ts/docs/**"
+      - "rs/**"
   push:
-    branches: ['main']
+    branches: ["main"]
     paths:
-      - 'docs/**'
-      - 'ts/docs/**'
-      - 'rs/**'
+      - "docs/**"
+      - "ts/src/**"
+      - "ts/tests/**"
+      - "ts/docs/**"
+      - "rs/**"
 
 jobs:
   build:
@@ -49,6 +53,12 @@ jobs:
 
       - name: ⚒️ Build site
         run: bun run build
+
+      - name: ⭐ Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: ✅ Run E2E tests
+        run: bun run test:e2e
 
       # Requires CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID repo secrets and a
       # Cloudflare Pages project named "ivo-docs" - see /docs/TODO.md Phase 7 for

@@ -1,10 +1,10 @@
 # Docs website - TODO
 
 Build plan for the `ivo` documentation website (this `/docs` directory): a single Docusaurus
-site covering both the TypeScript (`/ts`, v1.9.0 + v2.0.0 only - see scope decision below) and
-Rust (`/rs`, latest API only) implementations, with light/dark/auto theming, interactive
-playgrounds for both languages, and English + French i18n. See [`README.md`](./README.md) for the
-architecture rationale and directory layout.
+site covering both the TypeScript (`/ts`, v1.9.0 + v2.0.0 only - see scope decision below) and Rust
+(`/rs`, latest API only) implementations, with light/dark/auto theming, interactive playgrounds for
+both languages, and English + French i18n. See [`README.md`](./README.md) for the architecture
+rationale and directory layout.
 
 ## Phase 0 - Scaffold
 
@@ -12,10 +12,10 @@ architecture rationale and directory layout.
 - [x] Strip default blog plugin/content (not needed)
 - [x] Configure two `@docusaurus/plugin-content-docs` instances: `id: 'ts'` (versioned,
       `path: 'docs-ts'`, `routeBasePath: 'docs/ts'`) and `id: 'rs'` (unversioned,
-      `path: 'docs-rs'`, `routeBasePath: 'docs/rs'`)
+      `path: 'docs-rs'`, `routeBasePath: 'docs/rs`)
 - [x] Basic nav bar (TypeScript / Rust doc links, version dropdown, locale dropdown, GitHub),
       footer
-- [x] Verify `bun run build` produces a working site (`bun run start` for local dev)
+- [x] Verify `bun run build` produces a working site (`bun run dev` for local dev)
 
 ## Phase 1 - Content migration
 
@@ -65,7 +65,7 @@ architecture rationale and directory layout.
       tints), replacing the default Docusaurus green
 - [x] Nav drawer / sidebar collapse are Infima defaults (responsive out of the box); the
       hand-written `QuickLinks` table relies on Infima's global `table { display: block; overflow:
-auto }` for horizontal scroll on narrow viewports (verified in built CSS) - no wrapper needed
+    auto }` for horizontal scroll on narrow viewports (verified in built CSS) - no wrapper needed
 - [x] Playground component stacking (editor above output) at mobile widths - `RustPlayground` CSS
       already stacks panes vertically at `max-width: 768px`; verified after adding the new Phase 4
       demos.
@@ -85,25 +85,25 @@ auto }` for horizontal scroll on narrow viewports (verified in built CSS) - no w
 - [x] Registered globally for MDX via `src/theme/MDXComponents.tsx`, so docs pages use
       `<TsPlayground />` with no per-file import
 - [x] Embedded in v1.9.0's "Defining a schema" page: `scripts/import-ts-docs.mjs` appends a `## Try
-it in the browser` section with a runnable schema example to the _imported copy_ of
+    it in the browser` section with a runnable schema example to the _imported copy_ of
       `index.md` only (not the GitHub-facing source in `ts/docs/`, where raw JSX would render
       oddly as plain markdown). Build succeeds; `BrowserOnly` fallback confirmed present in the
       built HTML
-- [ ] Not yet verified in an actual browser (no browser-automation tool available this session) -
-      confirm the Sandpack iframe loads and the example runs before calling this done
-- [ ] v2.0.0 (`docs-ts/index.md`) still a placeholder - deferred to Phase 6 (no real API to demo
-      yet); add its own `<TsPlayground ivoVersion="2.0.0" .../>` once that content is authored.
-      **Blocked on Phase 6.**
-- [ ] Fallback path for v2.0.0 once authored but not yet published to npm: load a locally-built
-      ESM bundle instead of resolving from the registry. **Blocked on v2.0.0 content.**
+- [x] v2.0.0 (`docs-ts/`) content authored and wrapped in `<TsPlayground ivoVersion="local">`,
+      using a locally-built ESM bundle (`docs/static/ivo-2.0.0/`) since v2.0.0 is not yet on npm.
+- [x] Playground rendering verified end-to-end via Playwright e2e tests (iframe/Sandpack wrapper
+      appears and loads).
+- [ ] Not yet verified that every edited playground example runs without runtime errors - e2e
+      currently checks presence, not console output. Add functional output assertions if needed.
 
 ## Phase 4 - Rust playground
 
 - [x] New crate `docs/wasm/ivo-playground/` (own `Cargo.toml`, path-deps on `../../../rs`, not a
-      member of `rs/`'s workspace) with `wasm-bindgen` async exports for 3 curated demos:
-      `constantsCreate`, `laxDefaultsCreate`, `requiredCreate` - each mirroring its
-      `rs/examples/*.rs` counterpart's field config exactly (structure copied from the real
-      example, handlers/prints dropped since the playground only needs create-and-show-result)
+      member of `rs/`'s workspace) with `wasm-bindgen` async exports for 6 curated demos:
+      `constantsCreate`, `laxDefaultsCreate`, `requiredCreate`, `virtualsCreate`,
+      `dependentsCreate`, `timestampsCreate` - each mirroring its `rs/examples/*.rs` counterpart's
+      field config exactly (structure copied from the real example, handlers/prints dropped since
+      the playground only needs create-and-show-result)
 - [x] `scripts/build-rust-wasm.sh`: checks for `wasm-pack` + `wasm32-unknown-unknown` target,
       `wasm-pack build --target web --out-dir ../../static/wasm/ivo-playground`. Re-run confirmed
       fast/idempotent
@@ -117,12 +117,8 @@ it in the browser` section with a runnable schema example to the _imported copy_
       (`"username" is required!`) from `rs/examples/required.rs`. Also confirmed webpack correctly
       rehashes the `.wasm` binary reference in the production bundle (`grep` for the emitted
       hashed filename in the built JS chunk) and serves it with `content-type: application/wasm`
-- [ ] Not yet click-tested in an actual browser (no browser-automation tool available this
-      session) - the Node-level and bundle-level checks above are strong signals but aren't a
-      substitute for seeing it run
-- [x] `virtuals`, `dependents`, `timestamps` demos implemented in `wasm/ivo-playground/src/lib.rs`
-      and registered in the `DEMOS` map of `src/components/RustPlayground/index.tsx`. Added
-      `docs-rs/definitions/timestamps.md` (and its French translation) so the new demo has a home.
+- [x] Playground rendering and interactivity verified via Playwright e2e tests (click Run and check
+      output).
 - [x] Documented the maintenance convention (new `rs/examples/*.rs` needs a matching wasm export)
       in both this file and the `DEMOS` map comment in `RustPlayground/index.tsx`
 
@@ -139,26 +135,20 @@ it in the browser` section with a runnable schema example to the _imported copy_
       `QuickLinks` to use `@docusaurus/Translate`/`translate()` (not hardcoded strings), then
       filled in the 17 generated `homepage.*` keys in `i18n/fr/code.json`. Verified both locales
       render correctly in the built HTML (`grep` for French vs. English homepage text)
-- [x] `docs-rs/` translated into French (all 9 pages:
-      `i18n/fr/docusaurus-plugin-content-docs-rs/current/**`, including the new `timestamps.md` and
-      the "API reference" section added to `index.md`). Build's own broken-anchor checker caught
-      cross-references that needed updating for translated heading slugs
-      (`#custom-context-options` → `#options-de-contexte-personnalisées`) - same technique used in
-      Phase 1. All French URLs verified 200 via a served build
-- [ ] `docs-ts/` (v2.0.0 placeholder) and `ts_versioned_docs/version-1.9.0/` not yet translated -
-      v1.9.0 alone is ~1500 lines across 11 files; deliberately not rushing a full technical
-      translation of that volume in one pass (mistranslating a validation-rule nuance is worse
-      than leaving it English-with-a-fallback for now). Real next step, not abandoned.
+- [x] `docs-rs/` translated into French (all pages).
+- [x] `docs-ts/` (v2.0.0) translated into French.
+- [ ] `ts_versioned_docs/version-1.9.0/` not yet fully translated into French - copied English
+      content into `i18n/fr/docusaurus-plugin-content-docs-ts/version-1.9.0/` as a fallback so
+      routes exist and don't 404. Full translation is the remaining i18n work.
 
 ## Phase 6 - v2.0.0 content authoring
 
-- [ ] Blocked on: `ts/TODO.md` builder-pattern migration finishing (definitions test migration +
-      remaining phases)
-- [ ] Author `docs-ts/` ("current"/next version, currently a placeholder page) against the final
-      builder API surface (`ts/src/schema/fields/{lax,required,virtual}.ts`, `constants.ts`,
-      `dependents.ts`)
-- [ ] On v2.0.0 release: cut `docs-ts/` as the `version-2.0.0` versioned snapshot, update
-      `lastVersion` in `docusaurus.config.ts` from `'1.9.0'` to `'2.0.0'`
+- [x] Author `docs-ts/` ("current" version = v2.0.0) against the final builder-pattern API surface
+      (`ts/src/schema/fields/{lax,required,virtual}.ts`, `constants.ts`, `dependents.ts`)
+- [x] Standardise versioning for release: `lastVersion: "current"` so v2.0.0 is the default landing
+      version; v1.9.0 archived at `/docs/ts/1.9.0`.
+- [ ] On v2.0.0 release: cut `docs-ts/` as the `version-2.0.0` versioned snapshot with
+      `docusaurus docs:version ts 2.0.0`, then reset `docs-ts/` for the next development cycle.
 
 ## Phase 7 - CI/CD (Cloudflare Pages)
 
@@ -167,26 +157,24 @@ it in the browser` section with a runnable schema example to the _imported copy_
       Runs `scripts/import-ts-docs.mjs` + `scripts/build-rust-wasm.sh` (via `dtolnay/rust-toolchain`
       with the `wasm32-unknown-unknown` target + `jetli/wasm-pack-action`, matching this session's
       verified local toolchain), then `bun install && bun run build`
+- [x] Added `.github/workflows/docs-e2e.yml` to run Playwright e2e tests against the built site on
+      PRs and pushes to `main`.
 - [x] Deploy step wired via `cloudflare/pages-action@v1`, `directory: docs/build`,
       `projectName: ivo-docs`, gated to `push` + `refs/heads/main` only
-- [x] Kept fully separate from the existing `rs-ci.yml` / `ts-*-ci.yml` workflows (own file, own
-      path filters)
 - [ ] **Blocked on user action** (external accounts, can't be done by the agent): create a
       Cloudflare Pages project named `ivo-docs`, add `CLOUDFLARE_API_TOKEN` +
       `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions repo secrets, and update `url` in
       `docusaurus.config.ts` from the `ivo.pages.dev` placeholder to the real assigned domain once
       known
 - [ ] Not yet run in actual GitHub Actions (no CI access this session) - the individual commands
-      (`node scripts/import-ts-docs.mjs`, `bash scripts/build-rust-wasm.sh`, `bun run build`) were
-      all verified locally in this session, but the workflow YAML itself is unexercised
+      and e2e tests were verified locally, but the workflow YAML itself is unexercised
 
 ## Known gaps / explicit scope decisions
 
 - TS docs cover v1.9.0 + v2.0.0 only, not the full v0.0.1-v1.8.0 history (explicit scope decision
   made mid-build; `ts/docs/` remains the historical record for older versions).
-- Full French translation is out of scope for launch beyond site chrome + Rust docs + the TS
-  content that exists; ships incrementally as Phase 5/6 land.
+- Full French translation of v1.9.0 is out of scope for launch; it currently falls back to English
+  content so routes don't 404.
 - Rust playground supports curated demos with editable JSON input, not arbitrary Rust source -
   running arbitrary Rust in-browser would require a sandboxed compile backend, rejected as
   unnecessary infra/security burden for a docs site.
-- v2.0.0 docs cannot be authored until the builder-pattern API in `ts/TODO.md` is finalized.
