@@ -1,0 +1,10 @@
+# Ignore all wasm-pack output by default, except the files the RustPlayground
+# component imports at build time. These must be present for Cloudflare Pages
+# deployments because the build environment does not run wasm-pack.
+*
+!.gitignore
+!ivo_playground.js
+!ivo_playground.d.ts
+!ivo_playground_bg.wasm
+!ivo_playground_bg.wasm.d.ts
+!package.json

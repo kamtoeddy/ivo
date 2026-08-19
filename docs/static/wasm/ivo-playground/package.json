@@ -1,0 +1,15 @@
+{
+  "name": "ivo-playground",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "ivo_playground_bg.wasm",
+    "ivo_playground.js",
+    "ivo_playground.d.ts"
+  ],
+  "main": "ivo_playground.js",
+  "types": "ivo_playground.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
