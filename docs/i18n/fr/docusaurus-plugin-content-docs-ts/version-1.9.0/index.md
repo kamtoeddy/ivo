@@ -4,7 +4,7 @@ title: "Définir un schéma"
 
 # Définir un schéma
 
-Clean schema considère qu'une propriété est correctement définie si elle est `dependent`, `readonly`, `required`, une `virtual` ou si elle possède une valeur `default` autre que _undefined_
+Une propriété de schéma est considérée comme correctement définie lorsqu'elle est l'un des types de champs intégrés : une [Constante](./definitions/constants), une [Dépendante](./definitions/dependents), une [Lax](./definitions/lax), une [Requise](./definitions/required), une [Virtuelle](./definitions/virtuals) ou un [Timestamp](./definitions/timestamps)
 
 > N.B : Clean schema lèvera une erreur si une propriété n'est pas correctement définie.
 > Le constructeur Schema accepte 2 arguments :
@@ -64,15 +64,15 @@ Ces méthodes sont asynchrones car les validateurs personnalisés peuvent égale
 
 | Propriété    | Type                         | Description                                                                                                                                                                                             |
 | ------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| allow        | any[ ] \| object             | utilisé pour spécifier les valeurs qui doivent être acceptées pour une propriété. [En savoir plus](./definitions/allowed-values.md#valeurs-autorisées)                                                  |
+| allow        | any[ ] \| object             | utilisé pour spécifier les valeurs qui doivent être acceptées pour une propriété. [En savoir plus](./definitions/lax)                                                                                   |
 | constant     | boolean                      | à utiliser avec la règle **`value`** pour spécifier une propriété avec une valeur constante. [plus](./definitions/constants.md#propriétés-constantes)                                                   |
-| default      | any \| function              | la valeur par défaut d'une propriété. [plus](./definitions/defaults.md#valeurs-par-défaut)                                                                                                              |
+| default      | any \| function              | la valeur par défaut d'une propriété. [plus](./definitions/lax)                                                                                                                                         |
 | dependsOn    | string \| string[ ]          | une propriété ou une liste de propriétés dont dépend ladite propriété. [plus](./definitions/dependents.md)                                                                                              |
 | ignore       | function                     | une fonction utilisée pour déterminer si la valeur d'entrée d'une propriété doit être ignorée. Cela agit comme `shouldInit` + `shouldUpdate`                                                            |
 | onDelete     | function \| function[ ]      | exécuté lorsque la méthode delete d'un modèle est invoquée [plus](./life-cycles.md#ondelete)                                                                                                            |
 | onFailure    | function \| function[ ]      | exécuté après une opération infructueuse [plus](./life-cycles.md#onfailure)                                                                                                                             |
 | onSuccess    | function \| function[ ]      | exécuté après une opération réussie [plus](./life-cycles.md#onsuccess)                                                                                                                                  |
-| readonly     | boolean \| 'lax'             | une propriété dont la valeur ne doit pas changer [plus](./definitions/readonly.md)                                                                                                                      |
+| readonly     | boolean \| 'lax'             | une propriété dont la valeur ne doit pas changer [plus](./definitions/lax)                                                                                                                              |
 | required     | boolean \| function          | une propriété qui doit être définie pendant une opération [plus](./definitions/required.md)                                                                                                             |
 | sanitizer    | function                     | Cela peut être utilisé pour transformer une propriété virtuelle avant que ses propriétés dépendantes ne soient résolues. [plus](./definitions/virtuals.md#sanitiser)                                    |
 | shouldInit   | false \| function(): boolean | Un booléen ou un setter qui indique à ivo si une propriété doit être initialisée ou non.                                                                                                                |

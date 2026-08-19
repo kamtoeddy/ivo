@@ -1,5 +1,6 @@
 ---
 title: "Validators"
+sidebar_position: 4
 ---
 
 # Validators
@@ -31,7 +32,10 @@ type ValidationResults =
       valid: false;
     };
 
-function primaryValidator(value: any, summary: IvoSummary<Input, Output, CtxOptions>) {
+function primaryValidator(
+  value: any,
+  summary: IvoSummary<Input, Output, CtxOptions>,
+) {
   // validation logic here
 
   if (valid) return { valid, validated };

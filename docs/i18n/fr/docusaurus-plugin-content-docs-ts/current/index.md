@@ -23,69 +23,69 @@ déclarés avec `b.required(...)`, `b.lax(...)`, `b.constant(...)`, `b.dependent
 `b.virtual(...)`, puis passés à `b.field(...)`.
 
 <TsPlayground
-  ivoVersion="local"
-  code={`import { Schema } from "ivo";
+ivoVersion="local"
+code={`import { Schema } from "ivo";
 
 async function main() {
-  type UserInput = {
-    email: string | null;
-    phoneNumber: string | null;
-    username: string;
-  };
+type UserInput = {
+email: string | null;
+phoneNumber: string | null;
+username: string;
+};
 
-  type User = {
-    id: string;
-    createdAt: Date;
-    email: string | null;
-    phoneNumber: string | null;
-    updatedAt: Date | null;
-    username: string;
-    usernameLastUpdatedAt: Date | null;
-  };
+type User = {
+id: string;
+createdAt: Date;
+email: string | null;
+phoneNumber: string | null;
+updatedAt: Date | null;
+username: string;
+usernameLastUpdatedAt: Date | null;
+};
 
-  const isEmailOrPhoneRequired = ({ input }: any) => [
-    !input.email && !input.phoneNumber,
-    "Fournissez un email ou un numéro de téléphone",
-  ];
+const isEmailOrPhoneRequired = ({ input }: any) => [
+!input.email && !input.phoneNumber,
+"Fournissez un email ou un numéro de téléphone",
+];
 
-  const validateEmail = (value: string | null) =>
-    value && value.includes("@")
-      ? true
-      : { valid: false, reason: "Email invalide" };
+const validateEmail = (value: string | null) =>
+value && value.includes("@")
+? true
+: { valid: false, reason: "Email invalide" };
 
-  const validatePhoneNumber = (value: string | null) =>
-    value && value.length >= 5
-      ? true
-      : { valid: false, reason: "Numéro de téléphone invalide" };
+const validatePhoneNumber = (value: string | null) =>
+value && value.length >= 5
+? true
+: { valid: false, reason: "Numéro de téléphone invalide" };
 
-  const validateUsername = (value: string) =>
-    value.length >= 3
-      ? true
-      : { valid: false, reason: "Le nom d'utilisateur doit faire au moins 3 caractères" };
+const validateUsername = (value: string) =>
+value.length >= 3
+? true
+: { valid: false, reason: "Le nom d'utilisateur doit faire au moins 3 caractères" };
 
-  const userSchema = new Schema<UserInput, User>(
-    (b) =>
-      b
-        .field(b.constant("id", () => "user-123"))
-        .field(
-          b
-            .lax("email", null)
-            .required(isEmailOrPhoneRequired)
-            .validate(validateEmail),
-        )
-        .field(
-          b
-            .lax("phoneNumber", null)
-            .required(isEmailOrPhoneRequired)
-            .validate(validatePhoneNumber),
-        )
-        .field(
-          b
-            .required("username")
-            .validate(validateUsername)
-            .ignoreUpdate(({ previousValues }) => {
-              const last = previousValues.usernameLastUpdatedAt;
-              if (!last) return false;
+const userSchema = new Schema<UserInput, User>(
+(b) =>
+b
+.field(b.constant("id", () => "user-123"))
+.field(
+b
+.lax("email", null)
+.required(isEmailOrPhoneRequired)
+.validate(validateEmail),
+)
+.field(
+b
+.lax("phoneNumber", null)
+.required(isEmailOrPhoneRequired)
+.validate(validatePhoneNumber),
+)
+.field(
+b
+.required("username")
+.validate(validateUsername)
+.ignoreUpdate(({ previousValues }) => {
+const last = previousValues.usernameLastUpdatedAt;
+if (!last) return false;
 
               const thirtyDays = 2_592_000_000;
               return new Date().getTime() - last.getTime() < thirtyDays;
@@ -98,19 +98,20 @@ async function main() {
             .resolve(({ isUpdate }) => (isUpdate ? new Date() : null)),
         ),
     { timestamps: true },
-  );
 
-  const UserModel = userSchema.getModel();
+);
 
-  const { data, error } = await UserModel.create({
-    email: "john.doe@mail.com",
-    username: "john_doe",
-  });
-  console.log("created:", data);
+const UserModel = userSchema.getModel();
 
-  const user = { ...data!, updatedAt: new Date() };
-  const { data: updated } = await UserModel.update(user, { username: "johndoe" });
-  console.log("updated:", updated);
+const { data, error } = await UserModel.create({
+email: "john.doe@mail.com",
+username: "john_doe",
+});
+console.log("created:", data);
+
+const user = { ...data!, updatedAt: new Date() };
+const { data: updated } = await UserModel.update(user, { username: "johndoe" });
+console.log("updated:", updated);
 
 }
 
@@ -121,11 +122,11 @@ main();`}
 
 Le modèle renvoyé par `schema.getModel()` expose des méthodes asynchrones :
 
-| Méthode  | Description                                                        |
-| -------- | ------------------------------------------------------------------ |
-| `create` | Crée une nouvelle instance à partir d'une entrée partielle.        |
-| `update` | Applique une mise à jour partielle à une instance existante.       |
-| `delete` | Déclenche tous les écouteurs `onDelete` sur l'entité fournie.      |
+| Méthode  | Description                                                   |
+| -------- | ------------------------------------------------------------- |
+| `create` | Crée une nouvelle instance à partir d'une entrée partielle.   |
+| `update` | Applique une mise à jour partielle à une instance existante.  |
+| `delete` | Déclenche tous les écouteurs `onDelete` sur l'entité fournie. |
 
 ## Créer une entité
 
@@ -181,15 +182,19 @@ console.log(data);
 
 ## Catégories de champs
 
-- [Valeurs autorisées](./definitions/allowed-values.md)
 - [Champs constants](./definitions/constants.md)
-- [Valeurs par défaut](./definitions/defaults.md)
 - [Champs dépendants](./definitions/dependents.md)
-- [Extension de schémas](./definitions/extend-schemas.md)
 - [Champs lax](./definitions/lax.md)
-- [Champs en lecture seule](./definitions/readonly.md)
 - [Champs requis](./definitions/required.md)
+- [Timestamps](./definitions/timestamps)
 - [Champs virtuels](./definitions/virtuals.md)
+
+## Autres sujets
+
+- [Extension de schémas](./definitions/extend-schemas.md)
+- [Options du schéma](./options.md)
+- [Cycles de vie](./life-cycles.md)
+- [Validateurs](./validators.md)
 
 ## Options du schéma
 
@@ -209,17 +214,17 @@ new Schema((b) => ..., {
 });
 ```
 
-| Option          | Description                                                                   |
-| --------------- | ----------------------------------------------------------------------------- |
+| Option          | Description                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------- |
 | `equalityDepth` | Profondeur d'imbrication utilisée pour comparer les valeurs lors des mises à jour (défaut : `1`). |
-| `sanitizeError` | Transforme le payload d'erreur avant qu'il ne soit renvoyé.                   |
-| `onDelete`      | Écouteur(s) global(aux) invoqué(s) par `model.delete`.                        |
-| `onSuccess`     | Écouteur(s) global(aux) invoqué(s) après une création/mise à jour réussie.    |
-| `postValidate`  | Configuration de validation transversale (`fields` + `validator`).            |
-| `ignore`        | Ignore les champs d'entrée lorsque le gestionnaire renvoie `true`.            |
-| `ignoreUpdate`  | Ignore les valeurs de mise à jour des champs listés lorsque le gestionnaire renvoie `true`. |
-| `required`      | Contrainte requise transversale (`fields` + `handler`).                       |
-| `timestamps`    | Active `createdAt`/`updatedAt` (booléen ou `{ createdAt?, updatedAt? }`).     |
+| `sanitizeError` | Transforme le payload d'erreur avant qu'il ne soit renvoyé.                                       |
+| `onDelete`      | Écouteur(s) global(aux) invoqué(s) par `model.delete`.                                            |
+| `onSuccess`     | Écouteur(s) global(aux) invoqué(s) après une création/mise à jour réussie.                        |
+| `postValidate`  | Configuration de validation transversale (`fields` + `validator`).                                |
+| `ignore`        | Ignore les champs d'entrée lorsque le gestionnaire renvoie `true`.                                |
+| `ignoreUpdate`  | Ignore les valeurs de mise à jour des champs listés lorsque le gestionnaire renvoie `true`.       |
+| `required`      | Contrainte requise transversale (`fields` + `handler`).                                           |
+| `timestamps`    | Active `createdAt`/`updatedAt` (booléen ou `{ createdAt?, updatedAt? }`).                         |
 
 Voir [Cycles de vie](./life-cycles.md) et [Validateurs](./validators.md) pour en savoir plus.
 

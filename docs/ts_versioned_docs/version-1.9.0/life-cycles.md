@@ -1,5 +1,6 @@
 ---
 title: "Life Cycles"
+sidebar_position: 3
 ---
 
 # Life Cycles
@@ -9,7 +10,7 @@ title: "Life Cycles"
 This is an object comprized of a mix of input and output values of the instance during a life cycle operation ( creation or update ) plus any virtual properties (if present during the operation) defined in your schema.
 
 ```ts
-import { type Context } from 'ivo';
+import { type Context } from "ivo";
 
 type Ctx = Context<Input, Output>;
 ```
@@ -33,12 +34,12 @@ type User = {
 };
 
 interface UserRepo {
-  findByEmail: (email: User['email']) => Promise<User | null>;
+  findByEmail: (email: User["email"]) => Promise<User | null>;
   //  ... other methods
 }
 
 type CtxOptions = {
-  lang: 'en' | 'de' | 'fr'; // lang for i18n
+  lang: "en" | "de" | "fr"; // lang for i18n
   userRepo: UserRepo; // userRepo for DI
 };
 
@@ -49,12 +50,12 @@ const Model = new Schema<UserInput, User, CtxOptions>({
     required: true,
     async validator(value, { options: { userRepo } }) {
       if (!isEmail(value))
-        return { valid: false, reason: 'Invalid email provided' };
+        return { valid: false, reason: "Invalid email provided" };
 
       const isEmailTaken = await userRepo.findByEmail(value);
 
       return isEmailTaken
-        ? { valid: false, reason: 'email already taken' }
+        ? { valid: false, reason: "email already taken" }
         : true;
     },
   },
@@ -62,16 +63,16 @@ const Model = new Schema<UserInput, User, CtxOptions>({
 }).getModel();
 
 // 2) pass it to related operations
-import { userRepo } from 'data-access/users';
+import { userRepo } from "data-access/users";
 
 // creating an entity   👇
-Model.create(input, { lang: 'en', userRepo });
+Model.create(input, { lang: "en", userRepo });
 
 // updating an entity             👇
-Model.update(entity, changes, { lang: 'en', userRepo });
+Model.update(entity, changes, { lang: "en", userRepo });
 
 // deleting an entity    👇
-Model.delete(entity, { lang: 'en', userRepo });
+Model.delete(entity, { lang: "en", userRepo });
 
 // 3) access the context options as below
 
@@ -83,7 +84,7 @@ function validateName(value, summary: IvoSummary<UserInput, User, CtxOptions>) {
   // ... further processing
 
   // update options
-  updateOptions({ lang: 'de' });
+  updateOptions({ lang: "de" });
 
   return true;
 }
@@ -92,7 +93,7 @@ function validateName(value, summary: IvoSummary<UserInput, User, CtxOptions>) {
 ## The Operation Summary
 
 ```ts
-import type { Context, IvoSummary, ReadonlyIvoSummary } from 'ivo';
+import type { Context, IvoSummary, ReadonlyIvoSummary } from "ivo";
 
 type Input = {};
 type Output = {};
@@ -172,7 +173,7 @@ function onDelete(data: Output, options: CtxOptions) {
 }
 
 // how to trigger after deleting an entity
-Model.delete(entity, { lang: 'en' });
+Model.delete(entity, { lang: "en" });
 ```
 
 ### onFailure
@@ -248,7 +249,7 @@ const Model = new Schema<Input, Output>(definitions, {
 // or
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: {
-    properties: ['email', 'name'],
+    properties: ["email", "name"],
     handler, // always executed at creation during updates with either email or name
   },
 });
@@ -256,7 +257,7 @@ const Model = new Schema<Input, Output>(definitions, {
 // or
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: {
-    properties: ['email', 'name'],
+    properties: ["email", "name"],
     handler: [handler1, handler2], // always executed at creation during updates with either email or name
   },
 });
@@ -265,24 +266,24 @@ const Model = new Schema<Input, Output>(definitions, {
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: [
     handler1, // executed during all success operations
-    { properties: ['id', 'email'], handler: handler2 },
-    { properties: ['firstName', 'lastName'], handler: [handler3, handler4] },
+    { properties: ["id", "email"], handler: handler2 },
+    { properties: ["firstName", "lastName"], handler: [handler3, handler4] },
   ],
 });
 
 // ✅ as from v1.5.1 you can provide subsets of other configs
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: [
-    { properties: ['id', 'email', 'firstName'], handler: handler2 },
-    { properties: ['email', 'firstName'], handler: [handler3, handler4] },
+    { properties: ["id", "email", "firstName"], handler: handler2 },
+    { properties: ["email", "firstName"], handler: [handler3, handler4] },
   ],
 });
 
 // ❌ this is not allowed
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: [
-    { properties: ['id', 'email'], handler: [handler1, handler2] },
-    { properties: ['email', 'id'], handler: handler3 },
+    { properties: ["id", "email"], handler: [handler1, handler2] },
+    { properties: ["email", "id"], handler: handler3 },
   ],
 });
 ```

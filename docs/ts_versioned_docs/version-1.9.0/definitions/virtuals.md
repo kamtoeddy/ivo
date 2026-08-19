@@ -1,28 +1,22 @@
 ---
-title: "Virtual Properties"
+title: "Virtuals"
+sidebar_position: 5
 ---
 
-## Virtual Properties
+# Virtuals
 
-These properties are used to manipulate dependent properties at the level of your model but won't appear on instances, hence don't go to you database.
+Virtual properties are helper properties used during operations but they do not appear on model instances. They are useful for transforming input before it reaches dependent properties.
 
-- They (virtuals) must have:
+## Defining a virtual
 
-  - `virtual: true`
-  - A validator and
-  - At least one property that depends on it
+A virtual field requires:
 
-- They can have (**`shouldInit: false`**) or `shouldInit` as a function
-- They can have (**`shouldUpdate: false`**) or `shouldUpdate` as a function
-- They can have `required` as a function
-- They can have [aliases](#aliases)
-- They can have [sanitizers](#sanitizer)
-- They **CANNOT** be dependent, defaulted, strictly required nor readonly
-
-Example:
+- `virtual: true`
+- a `validator`
+- at least one dependent property that uses `dependsOn`
 
 ```ts
-import { Schema } from 'ivo';
+import { Schema } from "ivo";
 
 type UserInput = {
   blockUser: boolean;
@@ -32,49 +26,62 @@ type User = {
   isBlocked: boolean;
 };
 
-// definition
-const User = new Schema<UserInput, User>({
+const UserModel = new Schema<UserInput, User>({
   blockUser: { virtual: true, validator: validateBoolean },
   isBlocked: {
     default: false,
-    dependsOn: 'blockUser',
+    dependsOn: "blockUser",
     resolver: ({ ctx }) => ctx.blockUser,
   },
 }).getModel();
 
-function validateBoolean(value) {
-  if (![false, true].includes(value))
-    return { valid: false, reason: `${value} is not a boolean` };
-  return { valid: true };
-}
-
 // creating
-const user = await User.create({ blockUser: true, name: 'Peter' });
+const user = await UserModel.create({ blockUser: true, name: "Peter" });
 
 console.log(user); // { isBlocked: true }
 ```
 
-The results of the above operation is an object with a single property `isBlocked`. `name` is missing because it does not belong to our schema but `blockUser` is missing because it is virtual and because it was provided, the value of isBlocked is true instead of the default(false).
+The `name` property is ignored because it is not in the schema. `blockUser` is virtual, so it does not appear on the output, but its value still drives the dependent `isBlocked` property.
 
-The same concept applies to the `update` operation.
+## Validation
+
+Virtuals must have a `validator`. They may also have a `reValidator` and can be conditionally required.
+
+```ts
+const schema = new Schema({
+  avatarFile: {
+    virtual: true,
+    validator: validateFile,
+    reValidator: validateFileSize,
+  },
+});
+```
+
+## Allowed values
+
+Virtuals support `allow` to restrict accepted input values.
+
+```ts
+const schema = new Schema({
+  status: {
+    virtual: true,
+    allow: ["active", "inactive"],
+    validator: validateStatus,
+  },
+});
+```
 
 ## Aliases
 
-An alias is just an extra **external** name for a virtual property
+An alias is an extra external name for a virtual property.
 
-### How to define an alias
-
-- Only virtuals can have aliases
-- an alias must be of type `string`
-- cannot be the name of another property or virtual on your model (except if the alias is the name of a dependent property on that virtual)
-- for best results with TS, the type definitions provided should correspond for your alias and it's virtual property (see in example 1 below)
-
-### Examples
-
-Example 1: Alias with name of related dependent property
+- Only virtuals can have aliases.
+- An alias must be a string.
+- It cannot be the name of another property or virtual unless it is the name of a dependent property of that virtual.
 
 ```ts
 type Input = {
+  quantity?: number;
   _virtualQuantity?: number;
 };
 
@@ -89,78 +96,33 @@ type Aliases = {
 const StoreItem = new Schema<Input, Output, Aliases>({
   quantity: {
     default: 0,
-    dependsOn: '_virtualQuantity',
+    dependsOn: "_virtualQuantity",
     resolver: ({ ctx }) => ctx._virtualQuantity,
   },
   _virtualQuantity: {
-    alias: 'quantity',
-    vitual: true,
+    alias: "quantity",
+    virtual: true,
     validator: validateVirtualQuantity,
   },
 }).getModel();
 
-// this
+// these are equivalent
 const { data: item1 } = await StoreItem.create({ _virtualQuantity: 100 });
-
-// is the same as this
 const { data: item2 } = await StoreItem.create({ quantity: 100 });
 
 console.log(item1, item2); // { quantity: 100 } { quantity: 100 }
 ```
 
-If the virtual and the alias are provided at the same time, the last value is considered
+If both the virtual and its alias are provided, the last value wins.
 
-```ts
-const { data: item1 } = await StoreItem.create({
-  quantity: 20,
-  _virtualQuantity: 100,
-});
-
-const { data: item2 } = await StoreItem.create({
-  _virtualQuantity: 11,
-  quantity: 5,
-});
-
-console.log(item1, item2); // { quantity: 100 } { quantity: 5 }
-```
-
-Example 2: Alias with unrelated name
-
-```ts
-const StoreItem = new Schema({
-  quantity: {
-    default: 0,
-    dependsOn: '_virtualQuantity',
-    resolver: ({ ctx }) => ctx._virtualQuantity,
-  },
-  _virtualQuantity: {
-    alias: 'qty',
-    vitual: true,
-    validator: validateVirtualQuantity,
-  },
-}).getModel();
-
-// this
-const { data: item1 } = await StoreItem.create({ _virtualQuantity: 100 });
-
-// is the same as this
-const { data: item2 } = await StoreItem.create({ qty: 100 });
-
-console.log(item1, item2); // { quantity: 100 } { quantity: 100 }
-```
-
-> N.B: Do not try to access virtuals on the [`operation ctx`](../life-cycles.md#the-operation-context) with their aliases because they are not recognised there. Aliases only work when passed to the `create` & `update` methods of your models
+> **Note:** Do not access virtuals by their aliases in the operation context. Aliases only work when passed to `create` and `update`.
 
 ## Sanitizer
 
-This should be used when your virtual property may exist in more than one form. This function is executed immediately the last validation step (post-validaton) is complete. This function could be synchronous or asynchronous and has access to only one argument, the [operation summary](../life-cycles.md#the-operation-summary)
-
-A good usecase would be when a dealing with file uploads. The example below shows how you could upload a file to a file or cloud storage, get the metadata you'll need to persist as metadata. After sanitization, the resolver of properties that depend (`metadata` in our case) on the these virtuals are run with the new values of the virtual properties
-
-> N.B: if the sanitizer happens to throw an error, the value before sanitization will be used
+Use a sanitizer when a virtual may exist in more than one form. It runs after the last validation step and can transform the virtual value before dependent resolvers run.
 
 ```ts
-import { Schema, type IvoSummary } from 'ivo';
+import { Schema, type IvoSummary } from "ivo";
 
 type FileMetadata = { size: number; url: string };
 
@@ -177,23 +139,55 @@ type Output = {
 
 const FileModel = new Schema<Input, Output>({
   id: { constant: true, value: generateID },
+  name: { required: true, validator: validateName },
   metadata: {
-    default: { size: 0, url: '' },
-    dependsOn: 'file',
+    default: { size: 0, url: "" },
+    dependsOn: "file",
     resolver: ({ ctx }) => ctx.file as FileMetadata,
   },
-  name: { required: true, validator: validateName },
   file: {
-    vitual: true,
+    virtual: true,
     sanitizer: sanitizeFile,
     validator: validateFile,
   },
 }).getModel();
 
 async function sanitizeFile({ ctx: { file } }: IvoSummary<Input, Output>) {
-  // upload file
-  const { size, url } = await uploadFile(file);
-
+  const { size, url } = await uploadFile(file as File);
   return { size, url } as FileMetadata;
 }
 ```
+
+> **Note:** If the sanitizer throws, the value before sanitization is used.
+
+## Ignore rules
+
+Virtuals support `ignore`, `ignoreInit`, and `ignoreUpdate`.
+
+## Lifecycle hooks
+
+Virtuals support `onFailure` and `onSuccess` handlers.
+
+## Limitations
+
+- Virtuals cannot be dependent.
+- Virtuals cannot have a `default` value.
+- Virtuals cannot be strictly required, but they can be conditionally required.
+- Virtuals cannot be readonly.
+
+## API summary
+
+| Option       | Type                     | Required | Description                                                       |
+| ------------ | ------------------------ | -------- | ----------------------------------------------------------------- |
+| virtual      | `true`                   | Yes      | Marks the property as virtual.                                    |
+| validator    | `function`               | Yes      | Primary validator.                                                |
+| reValidator  | `function`               | No       | Secondary validator.                                              |
+| alias        | `string`                 | No       | External alias for the virtual.                                   |
+| sanitizer    | `function`               | No       | Transforms the virtual after validation.                          |
+| allow        | `any[] \| object`        | No       | Allowed values and optional custom error.                         |
+| required     | `function`               | No       | Conditionally requires the virtual.                               |
+| ignore       | `function`               | No       | Determines whether input should be ignored.                       |
+| ignoreInit   | `true`                   | No       | Ignores the virtual during creation.                              |
+| ignoreUpdate | `true`                   | No       | Ignores the virtual during updates.                               |
+| onFailure    | `function \| function[]` | No       | Handler(s) invoked after a failed create or update operation.     |
+| onSuccess    | `function \| function[]` | No       | Handler(s) invoked after a successful create or update operation. |

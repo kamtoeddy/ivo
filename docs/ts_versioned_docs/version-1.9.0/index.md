@@ -1,10 +1,11 @@
 ---
 title: "Defining a schema"
+sidebar_position: 1
 ---
 
 # Defining a schema
 
-Clean schema considers a property to be properly defined if it is `dependent`, `readonly`, `required`, a `virtual` or has a `default` value other than _undefined_
+A schema property is considered properly defined when it is one of the built-in field types: a [Constant](./definitions/constants.md), [Dependent](./definitions/dependents.md), [Lax](./definitions/lax.md), [Required](./definitions/required.md), [Virtual](./definitions/virtuals.md), or a [Timestamp](./definitions/timestamps.md).
 
 > N.B: Clean schema will throw an error if a property is not properly defined.
 > The Schema constructor accepts 2 arguments:
@@ -62,24 +63,24 @@ These methods are async because custom validators could be async as well.
 
 ## Accepted rules
 
-| Property     | Type                         | Description                                                                                                                                                     |
-| ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| allow        | any[ ] \| object             | used to specify the values that should be accepted for a property. [See more](./definitions/allowed-values.md#allowed-values)                                   |
-| constant     | boolean                      | use with **`value`** rule to specify a property with a forever constant value. [more](./definitions/constants.md#constant-properties)                           |
-| default      | any \| function              | the default value of a propterty. [more](./definitions/defaults.md#default-values)                                                                              |
-| dependsOn    | string \| string[ ]          | a property or list of property the said property depends on. [more](./definitions/dependents.md)                                           |
-| ignore       | function                     | a function used to determine whether the input value of a property should be ignored. This acts as `shouldInit` + `shouldUpdate`                                |
-| onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                                         |
-| onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                      |
-| onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                         |
-| readonly     | boolean \| 'lax'             | a propterty whose value should not change [more](./definitions/readonly.md)                                                                 |
-| required     | boolean \| function          | a property that must be set during an operation [more](./definitions/required.md)                                                           |
-| sanitizer    | function                     | This could be used to transform a virtual property before their dependent properties get resolved. [more](./definitions/virtuals.md#sanitizer)                  |
-| shouldInit   | false \| function(): boolean | A boolean or setter that tells ivo whether or not a property should be initialized.                                                                             |
-| shouldUpdate | false \| function(): boolean | A boolean or setter that tells ivo whether or not a property should be initialized.                                                                             |
-| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](./validators.md)                                             |
-| value        | any \| function              | value or setter of constant property. [more](./definitions/constants.md#constant-properties)                                                                   |
-| virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./definitions/virtuals.md#virtual-properties) |
+| Property     | Type                         | Description                                                                                                                                    |
+| ------------ | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| allow        | any[ ] \| object             | used to specify the values that should be accepted for a property. [See more](./definitions/lax.md#allowed-values)                             |
+| constant     | boolean                      | use with **`value`** rule to specify a property with a forever constant value. [more](./definitions/constants.md)                              |
+| default      | any \| function              | the default value of a property. [more](./definitions/lax.md#default-values)                                                                   |
+| dependsOn    | string \| string[ ]          | a property or list of property the said property depends on. [more](./definitions/dependents.md)                                               |
+| ignore       | function                     | a function used to determine whether the input value of a property should be ignored. This acts as `shouldInit` + `shouldUpdate`               |
+| onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                        |
+| onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                     |
+| onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                        |
+| readonly     | boolean \| 'lax'             | a property whose value should not change. [more](./definitions/lax.md#readonly)                                                                |
+| required     | boolean \| function          | a property that must be set during an operation [more](./definitions/required.md)                                                              |
+| sanitizer    | function                     | This could be used to transform a virtual property before their dependent properties get resolved. [more](./definitions/virtuals.md#sanitizer) |
+| shouldInit   | false \| function(): boolean | A boolean or setter that tells ivo whether or not a property should be initialized.                                                            |
+| shouldUpdate | false \| function(): boolean | A boolean or setter that tells ivo whether or not a property should be initialized.                                                            |
+| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](./validators.md)                                                   |
+| value        | any \| function              | value or setter of constant property. [more](./definitions/constants.md)                                                                       |
+| virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./definitions/virtuals.md)   |
 
 ## Options
 
@@ -325,53 +326,53 @@ When extending schemas, extended schemas automatically inherit all options(excep
 ## Try it in the browser
 
 <TsPlayground
-  ivoVersion="1.9.0"
-  code={`
+ivoVersion="1.9.0"
+code={`
 import { Schema, type IvoSummary } from 'ivo';
 
 type UserInput = {
-  email: string | null;
-  username: string;
+email: string | null;
+username: string;
 };
 
 type User = {
-  id: string;
-  createdAt: Date;
-  email: string | null;
-  username: string;
+id: string;
+createdAt: Date;
+email: string | null;
+username: string;
 };
 
 const userSchema = new Schema<UserInput, User>(
-  {
-    id: { constant: true, value: () => Math.random().toString(36).slice(2) },
-    email: {
-      default: null,
-      validator: (value: string) =>
-        typeof value === 'string' && value.includes('@')
-          ? true
-          : { valid: false, reason: 'Invalid email' },
-    },
-    username: {
-      required: true,
-      validator: (value: string) =>
-        value.length >= 3
-          ? true
-          : { valid: false, reason: 'Username too short' },
-    },
-  },
-  { timestamps: true },
+{
+id: { constant: true, value: () => Math.random().toString(36).slice(2) },
+email: {
+default: null,
+validator: (value: string) =>
+typeof value === 'string' && value.includes('@')
+? true
+: { valid: false, reason: 'Invalid email' },
+},
+username: {
+required: true,
+validator: (value: string) =>
+value.length >= 3
+? true
+: { valid: false, reason: 'Username too short' },
+},
+},
+{ timestamps: true },
 );
 
 const UserModel = userSchema.getModel();
 
 async function main() {
-  const { data, error } = await UserModel.create({
-    email: 'john.doe@mail.com',
-    username: 'john_doe',
-  });
+const { data, error } = await UserModel.create({
+email: 'john.doe@mail.com',
+username: 'john_doe',
+});
 
-  console.log('data:', data);
-  console.log('error:', error);
+console.log('data:', data);
+console.log('error:', error);
 }
 
 main();

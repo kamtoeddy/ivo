@@ -22,19 +22,19 @@ ivoVersion="local"
 code={`import { Schema } from "ivo";
 
 async function main() {
-  function validateUsername(username: string) {
-  if (username.length < 3) {
-  return { valid: false, reason: "Username must be at least 3 characters" };
-  }
-  return true;
-  }
+function validateUsername(username: string) {
+if (username.length < 3) {
+return { valid: false, reason: "Username must be at least 3 characters" };
+}
+return true;
+}
 
-  const UserModel = new Schema<any, { username: string }>((b) =>
-  b.field(b.required("username").validate(validateUsername)),
-  ).getModel();
+const UserModel = new Schema<any, { username: string }>((b) =>
+b.field(b.required("username").validate(validateUsername)),
+).getModel();
 
-  const { data, error } = await UserModel.create({ username: "ab" });
-  console.log({ data, error: error?.payload });
+const { data, error } = await UserModel.create({ username: "ab" });
+console.log({ data, error: error?.payload });
 
 }
 
@@ -75,3 +75,5 @@ As an alternative to a validator, you can restrict a field to a fixed set of val
 ```ts
 b.required("role").allow(["admin", "editor", "viewer"]);
 ```
+
+See [Lax fields](./definitions/lax.md#allowed-values), [Required fields](./definitions/required.md#allowed-values), and [Virtual fields](./definitions/virtuals.md#allowed-values) for details.
