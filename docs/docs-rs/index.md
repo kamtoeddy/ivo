@@ -141,7 +141,8 @@ To customize this payload, provide an implementation of the `IvoErrorSanitizer` 
 The prose docs above cover the high-level concepts. For the exhaustive generated API reference
 (types, functions, derive macros), see:
 
-- **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — hosted rustdoc for published crates.
-  (Not yet available because `ivo` has not been published to crates.io.)
+- **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — hosted rustdoc for the published crate.
+- **[crates.io/crates/ivo](https://crates.io/crates/ivo)** — crate registry page (versions, dependencies,
+  README).
 - **Local rustdoc** — run `cargo doc --no-deps --open` from the `rs/` directory to browse the same
   generated reference locally.
