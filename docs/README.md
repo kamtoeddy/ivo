@@ -61,6 +61,25 @@ docs/
   see live validation output — no backend, no code-exec surface. New files added to
   `rs/examples/` need a matching wasm export to appear in the playground.
 
+## Development
+
+```bash
+bun install
+bun run dev            # English dev server (default locale)
+bun run dev:fr         # French dev server
+bun run build          # Production build for all locales
+bun run serve          # Serve the built site locally
+bun run typecheck      # TypeScript check
+bun run test:e2e       # Playwright e2e tests against the built site
+```
+
+### i18n in dev mode
+
+Docusaurus only builds **one locale at a time** in dev mode. `bun run dev` serves the default
+(English) locale, so switching to French from the locale dropdown will 404 — this is expected and
+does not affect the production build. Use `bun run dev:fr` to develop against the French locale, or
+use `bun run build && bun run serve` to test the full multi-locale site locally.
+
 ## Content sourcing rules
 
 - The v1.9.0 versioned doc is imported (not hand-copied) from `ts/docs/v1.9.0/` via
