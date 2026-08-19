@@ -1022,7 +1022,6 @@ describe('Schema.options.postValidate', () => {
           {
             postValidate: [
               {
-                // @ts-expect-error ikr
                 fields: ['p1', 'v'],
                 // @ts-expect-error ikr
                 validator(ctx) {
@@ -1437,7 +1436,6 @@ describe('Schema.options.postValidate', () => {
             {
               postValidate: [
                 {
-                  // @ts-expect-error ikr
                   fields: ['p1', 'v'],
                   validator: [
                     () => {
@@ -1628,7 +1626,6 @@ describe('Schema.options.postValidate', () => {
             {
               postValidate: [
                 {
-                  // @ts-expect-error ikr
                   fields: ['p1', 'v'],
                   validator: [
                     (ctx) => {

@@ -233,7 +233,7 @@ type RequiredOptionHandler<
   | Promise<undefined | ResponseErrorObject<Metadata, Input>>;
 
 type PostValidator<
-  InputKeys extends KeyOf<Input>,
+  InputKeys extends KeyOf<Input> | (string & {}),
   Input,
   Output,
   CtxOptions extends ObjectType,
@@ -243,6 +243,7 @@ type PostValidator<
   | true
   | void
   | ResponseErrorObject<Metadata, Input>
+  // @ts-expect-error ikr
   | PostValidatorSanitizedResponse<InputKeys, Input, Output>
   | Promise<
       | undefined
@@ -250,6 +251,7 @@ type PostValidator<
       // biome-ignore lint/suspicious/noConfusingVoidType: lol
       | void
       | ResponseErrorObject<Metadata, Input>
+      // @ts-expect-error ikr
       | PostValidatorSanitizedResponse<InputKeys, Input, Output>
     >;
 
@@ -260,7 +262,7 @@ type PostValidatorSanitizedResponse<K extends KeyOf<Input>, Input, Output> = {
 };
 
 type PostValidationConfig<
-  K extends KeyOf<Input>,
+  K extends KeyOf<Input> | (string & {}),
   Input,
   Output,
   CtxOptions extends ObjectType,
@@ -306,7 +308,7 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > = {
-    fields: ArrayOfMinSizeTwo<KeyOf<Input & Output>>;
+    fields: ArrayOfMinSizeTwo<KeyOf<Input & Output> | (string & {})>;
     handler:
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
@@ -365,7 +367,7 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > = {
-    fields: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
+    fields: ArrayOfMinSizeTwo<KeyOf<Input> | (string & {})>;
     handler: Resolver<boolean, Input, Output, CtxOptions>;
   };
 
@@ -386,7 +388,7 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > = {
-    fields: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
+    fields: ArrayOfMinSizeTwo<KeyOf<Input> | (string & {})>;
     handler: IgnoreUpdateHandler<Input, Output, CtxOptions>;
   };
 
@@ -414,7 +416,7 @@ namespace NS {
     CtxOptions extends ObjectType,
     Metadata,
   > = {
-    fields: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
+    fields: ArrayOfMinSizeTwo<KeyOf<Input> | (string & {})>;
     handler: RequiredOptionHandler<Input, Output, CtxOptions, Metadata>;
   };
 
@@ -642,7 +644,6 @@ namespace NS {
       | OnSuccessConfigObject<Input, Output, CtxOptions>
     )[];
     postValidate?: PostValidationConfig<
-      // @ts-expect-error ikr
       string,
       Input,
       Output,
@@ -671,7 +672,7 @@ namespace NS {
     onSuccess?: OnSuccessConfigOption<Input, Output, CtxOptions>;
     postValidate?:
       | PostValidationConfig<
-          KeyOf<Input>,
+          KeyOf<Input> | (string & {}),
           Input,
           Output,
           CtxOptions,
@@ -679,7 +680,7 @@ namespace NS {
         >
       | ArrayOfMinSizeOne<
           PostValidationConfig<
-            KeyOf<Input>,
+            KeyOf<Input> | (string & {}),
             Input,
             Output,
             CtxOptions,
