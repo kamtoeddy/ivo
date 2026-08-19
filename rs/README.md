@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kamtoeddy/ivo/main/docs/static/img/logo.png" alt="ivo logo" width="120" />
+</p>
+
 # Rust Implementation
 
 This is the documentation of the Rust implementation of ivo.

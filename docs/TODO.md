@@ -65,16 +65,16 @@ rationale and directory layout.
       tints), replacing the default Docusaurus green
 - [x] Nav drawer / sidebar collapse are Infima defaults (responsive out of the box); the
       hand-written `QuickLinks` table relies on Infima's global `table { display: block; overflow:
-    auto }` for horizontal scroll on narrow viewports (verified in built CSS) - no wrapper needed
+auto }` for horizontal scroll on narrow viewports (verified in built CSS) - no wrapper needed
 - [x] Playground component stacking (editor above output) at mobile widths - `RustPlayground` CSS
       already stacks panes vertically at `max-width: 768px`; verified after adding the new Phase 4
       demos.
 - [x] Landing page (`src/pages/index.tsx`): real hero copy, 3-item feature grid
       (`HomepageFeatures`), and a `QuickLinks` component mirroring the root `README.md`'s "Quick
       links" table (TS/Rust docs, main demo, examples) - verified rendered links resolve
-- [x] Brand assets: replaced Docusaurus placeholders with `ivo`-branded `logo.svg`, `favicon.png`
-      and `social-card.png` (generated from SVG via `sips`). Updated `docusaurus.config.ts` to use
-      the new assets.
+- [x] Brand assets: replaced Docusaurus placeholders with `ivo`-branded `logo.svg/png`, generated
+      favicon/touch icon sizes via `scripts/generate-brand-assets.mjs`, and a `social-card.png`.
+      Updated `docusaurus.config.ts` to use the new assets and `headTags` for icons / webmanifest.
 
 ## Phase 3 - TypeScript playground
 
@@ -85,7 +85,7 @@ rationale and directory layout.
 - [x] Registered globally for MDX via `src/theme/MDXComponents.tsx`, so docs pages use
       `<TsPlayground />` with no per-file import
 - [x] Embedded in v1.9.0's "Defining a schema" page: `scripts/import-ts-docs.mjs` appends a `## Try
-    it in the browser` section with a runnable schema example to the _imported copy_ of
+it in the browser` section with a runnable schema example to the _imported copy_ of
       `index.md` only (not the GitHub-facing source in `ts/docs/`, where raw JSX would render
       oddly as plain markdown). Build succeeds; `BrowserOnly` fallback confirmed present in the
       built HTML

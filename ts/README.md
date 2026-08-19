@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kamtoeddy/ivo/main/docs/static/img/logo.png" alt="ivo logo" width="120" />
+</p>
+
 # TypeScript Implementation
 
 This is the documentation of the TypeScript implementation of ivo.
@@ -12,16 +16,16 @@ $ npm i ivo
 
 ```js
 // CJS
-const { Schema } = require('ivo');
+const { Schema } = require("ivo");
 
 // ESM
-import { Schema } from 'ivo';
+import { Schema } from "ivo";
 ```
 
 # Defining a schema
 
 ```ts
-import { Schema, type IvoSummary } from 'ivo';
+import { Schema, type IvoSummary } from "ivo";
 
 type UserInput = {
   email: string | null;
@@ -67,7 +71,7 @@ const userSchema = new Schema<UserInput, User>(
     },
     usernameLastUpdatedAt: {
       default: null,
-      dependsOn: 'username',
+      dependsOn: "username",
       resolver: ({ isUpdate }) => (isUpdate ? new Date() : null),
     },
   },
@@ -83,14 +87,14 @@ function isEmailOrPhoneRequired({
 async function makeSureEmailIsUnique(email: string) {
   const userWithEmail = await usersDb.findByEmail(email);
 
-  return userWithEmail ? { valid: false, reason: 'Email already taken' } : true;
+  return userWithEmail ? { valid: false, reason: "Email already taken" } : true;
 }
 
 async function makeSureUsernameIsUnique(username: string) {
   const userWithUsername = await usersDb.findByUsername(username);
 
   return userWithUsername
-    ? { valid: false, reason: 'Username already taken' }
+    ? { valid: false, reason: "Username already taken" }
     : true;
 }
 
@@ -102,10 +106,10 @@ const UserModel = userSchema.getModel();
 
 ```ts
 const { data, error } = await UserModel.create({
-  email: 'john.doe@mail.com',
+  email: "john.doe@mail.com",
   id: 5, // will be ignored because it is a constant property
-  name: 'John Doe', // will be ignored because it is not on schema
-  username: 'john_doe',
+  name: "John Doe", // will be ignored because it is not on schema
+  username: "john_doe",
   updatedAt: new Date(), // will be ignored because it is a timestamp
   usernameLastUpdatedAt: new Date(), // will be ignored because it is a dependent property
 });
@@ -132,13 +136,13 @@ await usersDb.insertOne(data);
 ```ts
 const user = await usersDb.findByID(101);
 
-if (!user) return handleError({ message: 'User not found' });
+if (!user) return handleError({ message: "User not found" });
 
 const { data, error } = await UserModel.update(user, {
   usernameLastUpdatedAt: add(new Date(), { days: 31 }), // dependent property -> will be ignored
   id: 75, // constant property -> will be ignored
   age: 34, // not on schema -> will be ignored
-  username: 'johndoe',
+  username: "johndoe",
 });
 
 if (error) return handleError(error);
@@ -157,7 +161,7 @@ await usersDb.updateByID(user.id, data);
 // any further attempt to update 'username' will be ignored until
 // the 'shouldUpdate' rule returns true
 
-const { error } = await UserModel.update(user, { username: 'john-doe' });
+const { error } = await UserModel.update(user, { username: "john-doe" });
 
 console.log(error);
 // {
