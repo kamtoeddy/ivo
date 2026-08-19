@@ -25,7 +25,7 @@ import { Schema } from "ivo";
 # Defining a schema
 
 ```ts
-import { Schema, type IvoSummary } from "ivo";
+import { Schema } from "ivo";
 
 type UserInput = {
   email: string | null;
@@ -44,45 +44,51 @@ type User = {
 };
 
 const userSchema = new Schema<UserInput, User>(
+  (b) =>
+    b
+      .field(b.constant("id", generateUserID))
+      .field(
+        b
+          .lax("email", null)
+          .validate(validateEmail)
+          .reValidate(makeSureEmailIsUnique),
+      )
+      .field(b.lax("phoneNumber", null).validate(validatePhoneNumber))
+      .field(
+        b
+          .required("username")
+          .validate(validateUsername)
+          .reValidate(makeSureUsernameIsUnique)
+          .ignoreUpdate(({ previousValues }) => {
+            const usernameLastUpdatedAt = previousValues.usernameLastUpdatedAt;
+
+            if (!usernameLastUpdatedAt) return false;
+
+            const timeDifferenceInMillisecs =
+              new Date().getTime() - usernameLastUpdatedAt.getTime();
+            const thirtyDaysInMillisecs = 2_592_000_000;
+
+            return timeDifferenceInMillisecs < thirtyDaysInMillisecs;
+          }),
+      )
+      .field(
+        b
+          .dependent("usernameLastUpdatedAt", "username")
+          .default(null)
+          .resolve(({ isUpdate }) => (isUpdate ? new Date() : null)),
+      ),
   {
-    id: { constant: true, value: generateUserID },
-    email: {
-      default: null,
-      required: isEmailOrPhoneRequired,
-      validator: [validateEmail, makeSureEmailIsUnique],
-    },
-    phoneNumber: {
-      default: null,
-      required: isEmailOrPhoneRequired,
-      validator: validatePhoneNumber,
-    },
-    username: {
-      required: true,
-      validator: [validateUsername, makeSureUsernameIsUnique],
-      shouldUpdate({ usernameLastUpdatedAt }) {
-        if (!usernameLastUpdatedAt) return true;
-
-        const timeDifferenceInMillisecs =
-          new Date().getTime() - usernameLastUpdatedAt.getTime();
-        const thirtyDaysInMillisecs = 2_592_000_000;
-
-        return timeDifferenceInMillisecs >= thirtyDaysInMillisecs;
+    timestamps: true,
+    required: {
+      fields: ["email", "phoneNumber"],
+      handler({ values: { email, phoneNumber } }) {
+        return !email && !phoneNumber
+          ? 'Provide "email" or "phone" number'
+          : false;
       },
     },
-    usernameLastUpdatedAt: {
-      default: null,
-      dependsOn: "username",
-      resolver: ({ isUpdate }) => (isUpdate ? new Date() : null),
-    },
   },
-  { timestamps: true },
 );
-
-function isEmailOrPhoneRequired({
-  ctx: { email, phoneNumber },
-}: IvoSummary<UserInput, User>) {
-  return [!email && !phoneNumber, 'Provide "email" or "phone" number'] as const;
-}
 
 async function makeSureEmailIsUnique(email: string) {
   const userWithEmail = await usersDb.findByEmail(email);
@@ -172,26 +178,4 @@ console.log(error);
 
 ## Docs
 
-- [Defining a schema](./docs/v1.9.0/index.md#defining-a-schema)
-  - [allowed values](./docs/v1.9.0/definitions/allowed-values.md#allowed-values)
-  - [constant properties](./docs/v1.9.0/definitions/constants.md#constant-properties)
-  - [default values](./docs/v1.9.0/definitions/defaults.md#default-values)
-  - [dependent properties](./docs/v1.9.0/definitions/dependents.md#dependent-properties)
-  - [readonly properties](./docs/v1.9.0/definitions/readonly.md#readonly-properties)
-  - [required properties](./docs/v1.9.0/definitions/required.md#required-properties)
-  - [virtual properties](./docs/v1.9.0/definitions/virtuals.md#virtual-properties)
-  - [validators](./docs/v1.9.0/validators.md#validators)
-  - [Extending Schemas](./docs/v1.9.0/definitions/extend-schemas.md#extending-schemas)
-  - [The Operation ctx](./docs/v1.9.0/life-cycles.md#the-operation-ctxt)
-  - [The Operation Summary](./docs/v1.9.0/life-cycles.md#the-operation-summary)
-  - [Life Cycles & Handlers](./docs/v1.9.0/life-cycles.md#life-cycle-listeners)
-
-  - [onDelete](./docs/v1.9.0/life-cycles.md#ondelete)
-  - [onFailure](./docs/v1.9.0/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v1.9.0/life-cycles.md#onsuccess)
-
-  - [Options](./docs/v1.9.0/index.md#options)
-  - [Custom validation errors](./docs/v1.9.0/index.md#errortool)
-  - [Extra features](./docs/v1.9.0/life-cycles.md#ctx-options)
-
-- [Changelog](./docs/CHANGELOG.md#changelog)
+[Read the docs](https://ivo.kamtoeddy.com/docs/ts)
