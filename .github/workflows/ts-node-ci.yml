@@ -3,7 +3,7 @@ name: TS Node CI
 on:
   pull_request:
   push:
-    branches: ["main", "ts-v-2"]
+    branches: ["main"]
     paths:
       - "ts/**"
 
