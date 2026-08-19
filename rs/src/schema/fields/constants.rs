@@ -5,8 +5,7 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                IntoDeleteHandler, IntoSuccessHandler, IntoValueResolverWithSharedInput,
-                ValueResolverWithSharedInput,
+                ConstantValue, IntoConstantValueResolver, IntoDeleteHandler, IntoSuccessHandler,
             },
         },
         types::{DeleteHandler, FieldValue, No, SuccessHandler, Yes},
@@ -28,7 +27,8 @@ pub struct ConstantFieldBuilder<
     HasDelete = No,
     HasSuccess = No,
 > {
-    value: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
+    name: &'static str,
+    value: Option<ConstantValue<ErasedValue, I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
     // markers...
@@ -50,8 +50,9 @@ impl<
         ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, HasDelete, HasSuccess>
 {
-    pub const fn new() -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Self {
+            name,
             value: None,
             on_delete_fns: None,
             on_success_fns: None,
@@ -77,7 +78,7 @@ impl<
     for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, HasDelete, HasSuccess>
 {
     fn default() -> Self {
-        Self::new()
+        Self::new("")
     }
 }
 
@@ -94,6 +95,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
+            name: self.name,
             field_type: FieldType::Constant,
             value: self.value,
             on_delete_fns: self.on_delete_fns,
@@ -113,7 +115,8 @@ impl<
 {
     pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         ConstantFieldBuilder {
-            value: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
+            name: self.name,
+            value: Some(ConstantValue::Static(erase_value(value))),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
@@ -125,10 +128,11 @@ impl<
         resolver: F,
     ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes>
     where
-        F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
+        F: IntoConstantValueResolver<T, I, O, CtxOptions>,
     {
         ConstantFieldBuilder {
-            value: Some(ValueResolverWithSharedInput::Func(resolver.into_uniform())),
+            name: self.name,
+            value: Some(ConstantValue::Func(resolver.into_uniform())),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
@@ -157,6 +161,7 @@ impl<
         let h = handler.into_handler();
 
         ConstantFieldBuilder {
+            name: self.name,
             value: self.value,
             on_delete_fns: Some(match self.on_delete_fns {
                 Some(hs) => {
@@ -195,6 +200,7 @@ impl<
         let h = handler.into_handler();
 
         ConstantFieldBuilder {
+            name: self.name,
             value: self.value,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: Some(match self.on_success_fns {

@@ -1,6 +1,6 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
+use ivo::{required_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 #[async_std::main]
 async fn main() {
@@ -63,12 +63,11 @@ pub struct Data {
     pub username: String,
 }
 
-pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
-    Model::new(
+pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
+    IvoModel::new(
         |f| {
             f.field(
-                "username",
-                IvoField::REQUIRED
+                required_field("username")
                     .validate(|_, _, _| ready(Ok(None::<String>)))
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         println!(

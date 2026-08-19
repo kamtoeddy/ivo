@@ -6,9 +6,8 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                IntoDeleteHandler, IntoSuccessHandler, IntoUniformResolver,
-                IntoValueResolverWithSharedInput, IsFieldProvisionEnabled,
-                ValueResolverWithSharedInput,
+                DefaultValue, IntoDefaultValueResolver, IntoDeleteHandler, IntoSuccessHandler,
+                IntoUniformResolver, IsFieldProvisionEnabled,
             },
         },
         types::{
@@ -36,7 +35,8 @@ pub struct DependentFieldBuilder<
     HasDelete = No,
     HasSuccess = No,
 > {
-    default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
+    name: &'static str,
+    default: Option<DefaultValue<ErasedValue, I, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
     resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
     ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
@@ -80,8 +80,9 @@ impl<
         HasSuccess,
     >
 {
-    pub const fn new() -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Self {
+            name,
             default: None,
             depends_on: None,
             resolver: None,
@@ -128,7 +129,7 @@ impl<
     >
 {
     fn default() -> Self {
-        Self::new()
+        Self::new("")
     }
 }
 
@@ -159,6 +160,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
+            name: self.name,
             field_type: FieldType::Dependent,
             default: self.default,
             depends_on: self.depends_on,
@@ -184,7 +186,8 @@ impl<
         value: T,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         DependentFieldBuilder {
-            default: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
+            name: self.name,
+            default: Some(DefaultValue::Static(erase_value(value))),
             ..Default::default()
         }
     }
@@ -194,12 +197,11 @@ impl<
         default_fn: F,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, YesComputed>
     where
-        F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
+        F: IntoDefaultValueResolver<T, I, CtxOptions>,
     {
         DependentFieldBuilder {
-            default: Some(ValueResolverWithSharedInput::Func(
-                default_fn.into_uniform(),
-            )),
+            name: self.name,
+            default: Some(DefaultValue::Func(default_fn.into_uniform())),
             ..Default::default()
         }
     }
@@ -219,6 +221,7 @@ impl<
         fields: [&'static str; N],
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes> {
         DependentFieldBuilder {
+            name: self.name,
             default: self.default,
             depends_on: Some(Vec::from(fields)),
             ..Default::default()
@@ -243,6 +246,7 @@ impl<
         R: IntoUniformResolver<T, I, O, CtxOptions>,
     {
         DependentFieldBuilder {
+            name: self.name,
             default: self.default,
             depends_on: self.depends_on,
             resolver: Some(resolver.into_uniform()),
@@ -295,6 +299,7 @@ impl<
         HasSuccess,
     > {
         DependentFieldBuilder {
+            name: self.name,
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
@@ -352,6 +357,7 @@ impl<
         let h = handler.into_handler();
 
         DependentFieldBuilder {
+            name: self.name,
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
@@ -420,6 +426,7 @@ impl<
         let h = handler.into_handler();
 
         DependentFieldBuilder {
+            name: self.name,
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,

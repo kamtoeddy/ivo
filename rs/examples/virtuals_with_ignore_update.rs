@@ -1,6 +1,9 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
+use ivo::{
+    dependent_field, lax_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoShared,
+    IvoStruct,
+};
 
 const DEFAULT_LAX_VALUE: &str = "DEFAULT_LAX_VALUE";
 const DEFAULT_DEPENDENT_VALUE: &str = "DEFAULT_DEPENDENT_VALUE";
@@ -136,12 +139,11 @@ pub struct Data {
     pub dependent: String,
 }
 
-pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
-    Model::new(
+pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
+    IvoModel::new(
         |f| {
             f.field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_LAX_VALUE.to_string())
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
@@ -164,8 +166,7 @@ pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
                     }),
             )
             .field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_DEPENDENT_VALUE.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -190,8 +191,7 @@ pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_, _, _| ready(Ok(None::<String>)))
                     .ignore_update()
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {

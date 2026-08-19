@@ -1,0 +1,30 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* ivo brand palette (indigo) - overrides the Docusaurus default green. */
+:root {
+  --ifm-color-primary: #4f46e5;
+  --ifm-color-primary-dark: #4338ca;
+  --ifm-color-primary-darker: #3f34bd;
+  --ifm-color-primary-darkest: #342b9c;
+  --ifm-color-primary-light: #6366f1;
+  --ifm-color-primary-lighter: #7477f3;
+  --ifm-color-primary-lightest: #a5b4fc;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, dark mode uses a lighter tint of the same hue. */
+[data-theme='dark'] {
+  --ifm-color-primary: #818cf8;
+  --ifm-color-primary-dark: #6b76f5;
+  --ifm-color-primary-darker: #5f6af4;
+  --ifm-color-primary-darkest: #3f46e8;
+  --ifm-color-primary-light: #97a1f9;
+  --ifm-color-primary-lighter: #a3acfa;
+  --ifm-color-primary-lightest: #c7cefc;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}

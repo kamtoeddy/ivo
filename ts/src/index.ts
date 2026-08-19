@@ -1,46 +1,28 @@
-export { type IvoResultInfo, Schema } from './schema';
-
-export type {
-  ArrayOfMinSizeOne,
-  ArrayOfMinSizeTwo,
-  Context,
-  IvoSummary,
-  KeyOf,
-  Merge,
-  ReadonlyIvoSummary,
-  RealType,
-  SetterFnData,
-  ValidatorResponse,
-  ValidatorResponseObject,
-  XOR,
-} from './schema/types';
-export type {
-  ErrorPayload,
-  FieldError,
-  IErrorTool,
-  InputFieldError,
-  InputPayload,
-  IValidationError,
-  ValidationErrorMessage,
-} from './schema/utils';
+export { Schema } from './schema';
 export {
-  ERRORS,
-  isFieldError,
-  isInputFieldError,
-  makeFieldError,
-  SCHEMA_ERRORS,
-  VALIDATION_ERRORS,
-} from './schema/utils';
-export {
-  type FieldKey,
-  getKeysAsProps,
   isEqual,
+  isFieldError,
   isFunctionLike,
+  isInputFieldError,
   isNullOrUndefined,
   isOneOf,
   isPropertyOf,
   isRecordLike,
-  type ObjectType,
+  makeFieldError,
   toArray,
 } from './utils';
+export type {
+  ArrayOfMinSizeOne,
+  ArrayOfMinSizeTwo,
+  FieldError,
+  InputFieldError,
+  InputPayload,
+  IvoContext,
+  KeyOf,
+  ReadonlyIvoContext,
+  RealType,
+  ValidatorResponse,
+  ValidatorResponseObject,
+  XOR,
+} from './utils/types';
 export * from './validators';

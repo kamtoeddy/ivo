@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{required_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -15,11 +15,10 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         required: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -76,11 +75,10 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         required: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -142,11 +140,10 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
         required: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -216,11 +213,10 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         required2: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -240,16 +236,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "required2",
-                IvoField::REQUIRED.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(required_field("required2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -300,11 +293,10 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         required2: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -324,16 +316,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .field(
-                "required2",
-                IvoField::REQUIRED.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(required_field("required2").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );

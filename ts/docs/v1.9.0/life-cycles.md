@@ -1,4 +1,6 @@
-# The Operation Context
+# Life Cycles
+
+## The Operation Context
 
 This is an object comprized of a mix of input and output values of the instance during a life cycle operation ( creation or update ) plus any virtual properties (if present during the operation) defined in your schema.
 
@@ -8,7 +10,7 @@ import { type Context } from 'ivo';
 type Ctx = Context<Input, Output>;
 ```
 
-## Context Options
+### Context Options
 
 This is a way of providing extra information (related or not related to your schema) to operations like creation, updates and deletion. Some good usecases would be **dependency injection (DI)** and **internationalization (i18n)**
 
@@ -83,7 +85,7 @@ function validateName(value, summary: IvoSummary<UserInput, User, CtxOptions>) {
 }
 ```
 
-# The Operation Summary
+## The Operation Summary
 
 ```ts
 import type { Context, IvoSummary, ReadonlyIvoSummary } from 'ivo';

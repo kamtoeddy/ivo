@@ -1,7 +1,9 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
-use ivo::{IvoErrorPayload, IvoErrorSanitizer, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{
+    required_field, IvoErrorPayload, IvoErrorSanitizer, IvoInputStruct, IvoModel, IvoStruct,
+};
 
 async fn should_respect_custom_error_sanitizer() {
     let r = PLACE_MODEL
@@ -163,13 +165,12 @@ type PlacesCtxOptions = Option<(String, Coodinates)>;
 type PlacesTimestamp = ();
 
 static PLACE_MODEL: LazyLock<
-    Model<Place, Place, PlacesCtxOptions, PlacesTimestamp, ErrorSanitizer>,
+    IvoModel<Place, Place, PlacesCtxOptions, PlacesTimestamp, ErrorSanitizer>,
 > = LazyLock::new(|| {
-    Model::new(
+    IvoModel::new(
         |f| {
             f.field(
-                "coordinates",
-                IvoField::REQUIRED.validate(|c: Coodinates, _, _| {
+                required_field("coordinates").validate(|c: Coodinates, _, _| {
                     if c.lat.is_nan() || c.lon.is_nan() {
                         return ready(Err(("InvalidNumber".into(), None)));
                     }

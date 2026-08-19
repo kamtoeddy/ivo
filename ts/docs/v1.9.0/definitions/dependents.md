@@ -9,7 +9,7 @@ One such property `must` have the following rules:
 - **resolver**: A function (sync or async) that would be invoked to generate the said property's new value when any of it's dependencies changes. This function is invoked after the last validation step (post-validaton) and [sanitizers](./virtuals.md#sanitizer) have been run.
   > N.B: if the resolver happens to throw an error, the value of the property will be `null` at creation but if this happens during an update, the property will be ignored
 
-Dependent properties could also be used in combination with other rules like [**readonly**](./readonly.md#readonly-properties), [**life cycle handlers**](../life-cycles.md#life-cycle-handlers), etc. but **`cannot be required`**
+Dependent properties could also be used in combination with other rules like [**readonly**](./readonly.md), [**life cycle handlers**](../life-cycles.md#life-cycle-handlers), etc. but **`cannot be required`**
 
 Example:
 

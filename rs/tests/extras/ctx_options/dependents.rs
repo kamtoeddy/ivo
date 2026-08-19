@@ -1,6 +1,9 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
+use ivo::{
+    dependent_field, lax_field, IvoContext, IvoCtxOptions, IvoInputStruct, IvoModel,
+    IvoRwCtxOptions, IvoStruct,
+};
 
 use crate::async_test_matrix;
 
@@ -42,11 +45,10 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in default value resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default_fn(async |_, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
@@ -67,8 +69,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
                     }),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_LAX_VALUE)
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -119,11 +120,10 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in value resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default_fn(async |_, _| DEFAULT_DEPENDENT_VALUE)
                     .depends_on(["lax"])
                     .resolve(
@@ -144,8 +144,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
                     }),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_LAX_VALUE)
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -196,11 +195,10 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in value resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default_fn(async |_, _| DEFAULT_DEPENDENT_VALUE)
                     .depends_on(["lax"])
                     .resolve(
@@ -221,8 +219,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
                     }),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_LAX_VALUE)
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )

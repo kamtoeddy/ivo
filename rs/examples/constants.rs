@@ -1,8 +1,8 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
+use ivo::{constant_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
-type DataModel = Model<DataInput, Data>;
+type DataModel = IvoModel<DataInput, Data>;
 
 const CONSTANT_VALUE: i32 = 1234;
 const DEFAULT_USERNAME: &str = "default-username";
@@ -79,11 +79,10 @@ pub struct Data {
 }
 
 pub static DATA_MODEL_WITH_STATIC_VALUE: LazyLock<DataModel> = LazyLock::new(|| {
-    Model::new(
+    IvoModel::new(
         |f| {
             f.field(
-                "id",
-                IvoField::CONSTANT
+                constant_field("id")
                     .value(CONSTANT_VALUE)
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         println!("\n[on_success]: id = {}", ctx.values().id.unwrap());
@@ -97,8 +96,7 @@ pub static DATA_MODEL_WITH_STATIC_VALUE: LazyLock<DataModel> = LazyLock::new(|| 
                     }),
             )
             .field(
-                "username",
-                IvoField::LAX
+                lax_field("username")
                     .default(DEFAULT_USERNAME.into())
                     .validate(|_, _, _| ready(Ok(None::<String>))),
             )
@@ -108,11 +106,10 @@ pub static DATA_MODEL_WITH_STATIC_VALUE: LazyLock<DataModel> = LazyLock::new(|| 
 });
 
 pub static DATA_MODEL_WITH_DYNAMIC_VALUE: LazyLock<DataModel> = LazyLock::new(|| {
-    Model::new(
+    IvoModel::new(
         |f| {
             f.field(
-                "id",
-                IvoField::CONSTANT
+                constant_field("id")
                     .value_fn(|_, _| ready(CONSTANT_VALUE))
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         println!("\n[on_success]: id = {}", ctx.values().id.unwrap());
@@ -126,8 +123,7 @@ pub static DATA_MODEL_WITH_DYNAMIC_VALUE: LazyLock<DataModel> = LazyLock::new(||
                     }),
             )
             .field(
-                "username",
-                IvoField::LAX
+                lax_field("username")
                     .default(DEFAULT_USERNAME.into())
                     .validate(|_, _, _| ready(Ok(None::<String>))),
             )

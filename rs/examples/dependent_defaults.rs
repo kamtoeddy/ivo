@@ -1,12 +1,12 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
+use ivo::{dependent_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 const DEFAULT_DEPENDENT: i32 = 1;
 const DEFAULT_LAX_VALUE: i32 = 100;
 const DEFAULT_USERNAME: &str = "default-username";
 
-type DataModel = Model<DataInput, Data>;
+type DataModel = IvoModel<DataInput, Data>;
 
 #[async_std::main]
 async fn main() {
@@ -251,11 +251,10 @@ pub struct Data {
 type Ctx = IvoContext<DataInput, Data>;
 
 pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|| {
-    Model::new(
+    IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default_fn(|_, _| ready(DEFAULT_DEPENDENT))
                     .depends_on(["lax", "username"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
@@ -274,8 +273,7 @@ pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(
                     }),
             )
             .field(
-                "username",
-                IvoField::LAX
+                lax_field("username")
                     .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
                     .on_success(|ctx: Ctx, _| {
                         println!(
@@ -292,8 +290,7 @@ pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(
                     }),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_LAX_VALUE)
                     .on_success(|ctx: Ctx, _| {
                         println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
@@ -302,8 +299,7 @@ pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(
                     }),
             )
             .field(
-                "unrelated_lax",
-                IvoField::LAX
+                lax_field("unrelated_lax")
                     .default(DEFAULT_LAX_VALUE)
                     .on_success(|ctx: Ctx, _| {
                         println!(
@@ -320,11 +316,10 @@ pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(
 });
 
 pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|| {
-    Model::new(
+    IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_DEPENDENT)
                     .depends_on(["lax", "username"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
@@ -343,8 +338,7 @@ pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|
                     }),
             )
             .field(
-                "username",
-                IvoField::LAX
+                lax_field("username")
                     .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
                     .on_success(|ctx: Ctx, _| {
                         println!(
@@ -361,8 +355,7 @@ pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|
                     }),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(DEFAULT_LAX_VALUE)
                     .on_success(|ctx: Ctx, _| {
                         println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
@@ -371,8 +364,7 @@ pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|
                     }),
             )
             .field(
-                "unrelated_lax",
-                IvoField::LAX
+                lax_field("unrelated_lax")
                     .default(DEFAULT_LAX_VALUE)
                     .on_success(|ctx: Ctx, _| {
                         println!(

@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
+use ivo::{constant_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -18,10 +18,10 @@ async fn should_respect_constants_with_static_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("constant", IvoField::CONSTANT.value(constant))
-                .field("lax", IvoField::LAX.default(20))
+            f.field(constant_field("constant").value(constant))
+                .field(lax_field("lax").default(20))
         },
         |o| o,
     );
@@ -79,13 +79,10 @@ async fn should_respect_constants_with_computed_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field(
-                "constant",
-                IvoField::CONSTANT.value_fn(move |_, _| ready(constant)),
-            )
-            .field("lax", IvoField::LAX.default(20))
+            f.field(constant_field("constant").value_fn(move |_, _| ready(constant)))
+                .field(lax_field("lax").default(20))
         },
         |o| o,
     );
@@ -143,24 +140,21 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field(
-                "constant",
-                IvoField::CONSTANT
-                    .value(constant)
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        if true {
-                            panic!(
-                                "[constant]: on_delete triggered with value: {}",
-                                data.constant
-                            );
-                        }
+            f.field(constant_field("constant").value(constant).on_delete(
+                |data: IvoShared<Data>, _| {
+                    if true {
+                        panic!(
+                            "[constant]: on_delete triggered with value: {}",
+                            data.constant
+                        );
+                    }
 
-                        ready(())
-                    }),
-            )
-            .field("lax", IvoField::LAX.default(20))
+                    ready(())
+                },
+            ))
+            .field(lax_field("lax").default(20))
         },
         |o| o,
     );
@@ -187,11 +181,10 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "constant",
-                IvoField::CONSTANT
+                constant_field("constant")
                     .value_fn(move |_, _| ready(constant))
                     .on_delete(|data: IvoShared<Data>, _| {
                         if true {
@@ -205,7 +198,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
                     })
                     .on_delete(|_, _| ready(())),
             )
-            .field("lax", IvoField::LAX.default(20))
+            .field(lax_field("lax").default(20))
         },
         |o| o,
     );
@@ -232,24 +225,21 @@ async fn should_trigger_on_success_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field(
-                "constant",
-                IvoField::CONSTANT.value(constant).on_success(
-                    |ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[constant]: on_success triggered with value: {}",
-                                ctx.values().constant.unwrap()
-                            );
-                        }
+            f.field(constant_field("constant").value(constant).on_success(
+                |ctx: IvoContext<DataInput, Data>, _| {
+                    if true {
+                        panic!(
+                            "[constant]: on_success triggered with value: {}",
+                            ctx.values().constant.unwrap()
+                        );
+                    }
 
-                        ready(())
-                    },
-                ),
-            )
-            .field("lax", IvoField::LAX.default(20))
+                    ready(())
+                },
+            ))
+            .field(lax_field("lax").default(20))
         },
         |o| o,
     );
@@ -286,11 +276,10 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "constant",
-                IvoField::CONSTANT
+                constant_field("constant")
                     .value_fn(move |_, _| ready(constant))
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
@@ -304,7 +293,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
                     })
                     .on_success(async |_, _| ()),
             )
-            .field("lax", IvoField::LAX.default(20))
+            .field(lax_field("lax").default(20))
         },
         |o| o,
     );

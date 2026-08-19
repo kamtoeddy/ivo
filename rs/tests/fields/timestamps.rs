@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use ivo::{IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -20,9 +20,9 @@ async fn should_respect_created_at_timestamp_with_default_name() {
 
     let timer = Instant::now();
 
-    let model: Model<DataInput, Data, Option<()>, Timestamp> = Model::new(
+    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234)).timestamps(|t| {
+            f.field(lax_field("lax").default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
                     .created_at(None)
             })
@@ -77,9 +77,9 @@ async fn should_respect_created_at_timestamp_with_custom_name() {
 
     let timer = Instant::now();
 
-    let model: Model<DataInput, Data, Option<()>, Timestamp> = Model::new(
+    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234)).timestamps(|t| {
+            f.field(lax_field("lax").default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
                     .created_at(Some("custom_created_at"))
             })
@@ -134,9 +134,9 @@ async fn should_respect_updated_at_timestamp_with_default_name() {
 
     let timer = Instant::now();
 
-    let model: Model<DataInput, Data, Option<()>, Timestamp> = Model::new(
+    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234)).timestamps(|t| {
+            f.field(lax_field("lax").default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
                     .updated_at(None)
             })
@@ -190,9 +190,9 @@ async fn should_respect_updated_at_timestamp_with_custom_name() {
     }
     let timer = Instant::now();
 
-    let model: Model<DataInput, Data, Option<()>, Timestamp> = Model::new(
+    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234)).timestamps(|t| {
+            f.field(lax_field("lax").default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
                     .updated_at(Some("custom_updated_at"))
             })
@@ -247,9 +247,9 @@ async fn should_respect_optional_updated_at_timestamp_with_default_name() {
 
     let timer = Instant::now();
 
-    let model: Model<DataInput, Data, Option<()>, Timestamp> = Model::new(
+    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234)).timestamps(|t| {
+            f.field(lax_field("lax").default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
                     .optional_updated_at(None)
             })
@@ -309,9 +309,9 @@ async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
 
     let timer = Instant::now();
 
-    let model: Model<DataInput, Data, Option<()>, Timestamp> = Model::new(
+    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(1234)).timestamps(|t| {
+            f.field(lax_field("lax").default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
                     .optional_updated_at(Some("custom_updated_at"))
             })

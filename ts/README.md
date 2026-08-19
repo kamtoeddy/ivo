@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kamtoeddy/ivo/main/docs/static/img/logo.png" alt="ivo logo" width="120" />
+</p>
+
 # TypeScript Implementation
 
 This is the documentation of the TypeScript implementation of ivo.
@@ -12,16 +16,16 @@ $ npm i ivo
 
 ```js
 // CJS
-const { Schema } = require('ivo');
+const { Schema } = require("ivo");
 
 // ESM
-import { Schema } from 'ivo';
+import { Schema } from "ivo";
 ```
 
 # Defining a schema
 
 ```ts
-import { Schema, type IvoSummary } from 'ivo';
+import { Schema } from "ivo";
 
 type UserInput = {
   email: string | null;
@@ -40,57 +44,63 @@ type User = {
 };
 
 const userSchema = new Schema<UserInput, User>(
+  (b) =>
+    b
+      .field(b.constant("id", generateUserID))
+      .field(
+        b
+          .lax("email", null)
+          .validate(validateEmail)
+          .reValidate(makeSureEmailIsUnique),
+      )
+      .field(b.lax("phoneNumber", null).validate(validatePhoneNumber))
+      .field(
+        b
+          .required("username")
+          .validate(validateUsername)
+          .reValidate(makeSureUsernameIsUnique)
+          .ignoreUpdate(({ previousValues }) => {
+            const usernameLastUpdatedAt = previousValues.usernameLastUpdatedAt;
+
+            if (!usernameLastUpdatedAt) return false;
+
+            const timeDifferenceInMillisecs =
+              new Date().getTime() - usernameLastUpdatedAt.getTime();
+            const thirtyDaysInMillisecs = 2_592_000_000;
+
+            return timeDifferenceInMillisecs < thirtyDaysInMillisecs;
+          }),
+      )
+      .field(
+        b
+          .dependent("usernameLastUpdatedAt", "username")
+          .default(null)
+          .resolve(({ isUpdate }) => (isUpdate ? new Date() : null)),
+      ),
   {
-    id: { constant: true, value: generateUserID },
-    email: {
-      default: null,
-      required: isEmailOrPhoneRequired,
-      validator: [validateEmail, makeSureEmailIsUnique],
-    },
-    phoneNumber: {
-      default: null,
-      required: isEmailOrPhoneRequired,
-      validator: validatePhoneNumber,
-    },
-    username: {
-      required: true,
-      validator: [validateUsername, makeSureUsernameIsUnique],
-      shouldUpdate({ usernameLastUpdatedAt }) {
-        if (!usernameLastUpdatedAt) return true;
-
-        const timeDifferenceInMillisecs =
-          new Date().getTime() - usernameLastUpdatedAt.getTime();
-        const thirtyDaysInMillisecs = 2_592_000_000;
-
-        return timeDifferenceInMillisecs >= thirtyDaysInMillisecs;
+    timestamps: true,
+    required: {
+      fields: ["email", "phoneNumber"],
+      handler({ values: { email, phoneNumber } }) {
+        return !email && !phoneNumber
+          ? 'Provide "email" or "phone" number'
+          : false;
       },
     },
-    usernameLastUpdatedAt: {
-      default: null,
-      dependsOn: 'username',
-      resolver: ({ isUpdate }) => (isUpdate ? new Date() : null),
-    },
   },
-  { timestamps: true },
 );
-
-function isEmailOrPhoneRequired({
-  ctx: { email, phoneNumber },
-}: IvoSummary<UserInput, User>) {
-  return [!email && !phoneNumber, 'Provide "email" or "phone" number'] as const;
-}
 
 async function makeSureEmailIsUnique(email: string) {
   const userWithEmail = await usersDb.findByEmail(email);
 
-  return userWithEmail ? { valid: false, reason: 'Email already taken' } : true;
+  return userWithEmail ? { valid: false, reason: "Email already taken" } : true;
 }
 
 async function makeSureUsernameIsUnique(username: string) {
   const userWithUsername = await usersDb.findByUsername(username);
 
   return userWithUsername
-    ? { valid: false, reason: 'Username already taken' }
+    ? { valid: false, reason: "Username already taken" }
     : true;
 }
 
@@ -102,10 +112,10 @@ const UserModel = userSchema.getModel();
 
 ```ts
 const { data, error } = await UserModel.create({
-  email: 'john.doe@mail.com',
+  email: "john.doe@mail.com",
   id: 5, // will be ignored because it is a constant property
-  name: 'John Doe', // will be ignored because it is not on schema
-  username: 'john_doe',
+  name: "John Doe", // will be ignored because it is not on schema
+  username: "john_doe",
   updatedAt: new Date(), // will be ignored because it is a timestamp
   usernameLastUpdatedAt: new Date(), // will be ignored because it is a dependent property
 });
@@ -132,13 +142,13 @@ await usersDb.insertOne(data);
 ```ts
 const user = await usersDb.findByID(101);
 
-if (!user) return handleError({ message: 'User not found' });
+if (!user) return handleError({ message: "User not found" });
 
 const { data, error } = await UserModel.update(user, {
   usernameLastUpdatedAt: add(new Date(), { days: 31 }), // dependent property -> will be ignored
   id: 75, // constant property -> will be ignored
   age: 34, // not on schema -> will be ignored
-  username: 'johndoe',
+  username: "johndoe",
 });
 
 if (error) return handleError(error);
@@ -157,7 +167,7 @@ await usersDb.updateByID(user.id, data);
 // any further attempt to update 'username' will be ignored until
 // the 'shouldUpdate' rule returns true
 
-const { error } = await UserModel.update(user, { username: 'john-doe' });
+const { error } = await UserModel.update(user, { username: "john-doe" });
 
 console.log(error);
 // {
@@ -168,26 +178,4 @@ console.log(error);
 
 ## Docs
 
-- [Defining a schema](./docs/v1.9.0/index.md#defining-a-schema)
-  - [allowed values](./docs/v1.9.0/definitions/allowed-values.md#allowed-values)
-  - [constant properties](./docs/v1.9.0/definitions/constants.md#constant-properties)
-  - [default values](./docs/v1.9.0/definitions/defaults.md#default-values)
-  - [dependent properties](./docs/v1.9.0/definitions/dependents.md#dependent-properties)
-  - [readonly properties](./docs/v1.9.0/definitions/readonly.md#readonly-properties)
-  - [required properties](./docs/v1.9.0/definitions/required.md#required-properties)
-  - [virtual properties](./docs/v1.9.0/definitions/virtuals.md#virtual-properties)
-  - [validators](./docs/v1.9.0/validators.md#validators)
-  - [Extending Schemas](./docs/v1.9.0/definitions/extend-schemas.md#extending-schemas)
-  - [The Operation ctx](./docs/v1.9.0/life-cycles.md#the-operation-ctxt)
-  - [The Operation Summary](./docs/v1.9.0/life-cycles.md#the-operation-summary)
-  - [Life Cycles & Handlers](./docs/v1.9.0/life-cycles.md#life-cycle-listeners)
-
-  - [onDelete](./docs/v1.9.0/life-cycles.md#ondelete)
-  - [onFailure](./docs/v1.9.0/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v1.9.0/life-cycles.md#onsuccess)
-
-  - [Options](./docs/v1.9.0/index.md#options)
-  - [Custom validation errors](./docs/v1.9.0/index.md#errortool)
-  - [Extra features](./docs/v1.9.0/life-cycles.md#ctx-options)
-
-- [Changelog](./docs/CHANGELOG.md#changelog)
+[Read the docs](https://ivo.kamtoeddy.com/docs/ts)

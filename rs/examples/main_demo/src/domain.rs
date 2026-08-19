@@ -7,8 +7,8 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use ivo::{
-    validate_email, FutureExt, IvoContext, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoShared,
-    IvoStruct, Model,
+    constant_field, dependent_field, lax_field, required_field, validate_email, virtual_field,
+    FutureExt, IvoContext, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoShared, IvoStruct,
 };
 
 use crate::slugify::{slugify, SlugifiedString};
@@ -67,14 +67,13 @@ impl UserCtxOptions {
 type Ctx = IvoContext<UserInput, User>;
 type RwCtxOptions = IvoRwCtxOptions<UserCtxOptions>;
 
-pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp>> = LazyLock::new(
-    || {
-        Model::new(
+pub static USER_MODEL: LazyLock<IvoModel<UserInput, User, UserCtxOptions, Timestamp>> =
+    LazyLock::new(|| {
+        IvoModel::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
+                f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                     .field(
-                        "email",
-                        IvoField::LAX
+                        lax_field("email")
                             .default(None)
                             .validate(|v: Option<String>, _, _| {
                                 if let Some(email) = v {
@@ -89,15 +88,16 @@ pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp
                             }),
                     )
                     .field(
-                        "phone_number",
-                        IvoField::LAX
+                        lax_field("phone_number")
                             .default(None::<String>)
                             .validate(|_, _, _| ready(Ok(None))),
                     )
                     .field(
-                        "username",
-                        IvoField::REQUIRED
-                            .required_error("\"username\" was not provided!")
+                        required_field("username")
+                            // .required_error("\"username\" was not provided!")
+                            .required_error_fn(|_, _| {
+                                ready("\"username\" was not provided!".into())
+                            })
                             .validate(|v: String, _, _| {
                                 const MIN_LEN: usize = 4;
 
@@ -134,8 +134,7 @@ pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp
                             }),
                     )
                     .field(
-                        "username_last_updated_at",
-                        IvoField::DEPENDENT
+                        dependent_field("username_last_updated_at")
                             .default(None)
                             .depends_on(["username"])
                             .resolve(|ctx: Ctx, _| {
@@ -149,8 +148,7 @@ pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp
                             }),
                     )
                     .field(
-                        "slug_id",
-                        IvoField::DEPENDENT
+                        dependent_field("slug_id")
                             .default(SlugifiedString::from(""))
                             .depends_on(["username", "v_slug"])
                             .resolve(|_, o: RwCtxOptions| {
@@ -163,8 +161,7 @@ pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp
                             }),
                     )
                     .field(
-                        "v_slug",
-                        IvoField::VIRTUAL
+                        virtual_field("v_slug")
                             .alias("slug_id")
                             .validate(|value: String, _, _| {
                                 let validated = value.trim();
@@ -273,8 +270,7 @@ pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp
                     })
             },
         )
-    },
-);
+    });
 
 pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
     array::from_fn(|i| {

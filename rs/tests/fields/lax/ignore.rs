@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -21,17 +21,15 @@ async fn should_respect_the_ignore_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "other",
-                IvoField::LAX
+                lax_field("other")
                     .default(String::from("default_other_value"))
                     .validate(|_, _, _| ready(Ok(None))),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(default_lax_value.to_string())
                     .validate(|_, _, _| ready(Ok(None)))
                     .ignore(|ctx: IvoContext<DataInput, Data>, _| {
@@ -143,17 +141,15 @@ async fn should_respect_the_ignore_init_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "other",
-                IvoField::LAX
+                lax_field("other")
                     .default(String::from("default_other_value"))
                     .validate(|_, _, _| ready(Ok(None))),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(default_lax_value.to_string())
                     .validate(|_, _, _| ready(Ok(None)))
                     .ignore_init(),
@@ -226,17 +222,15 @@ async fn should_respect_the_ignore_update_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "other",
-                IvoField::LAX
+                lax_field("other")
                     .default(String::from("default_other_value"))
                     .validate(|_, _, _| ready(Ok(None))),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default(default_lax_value.to_string())
                     .validate(|_, _, _| ready(Ok(None)))
                     .ignore_update(),
@@ -318,17 +312,11 @@ async fn should_properly_handle_grouped_ignore_rule() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
-                .field(
-                    "lax_1",
-                    IvoField::LAX.default(default_lax_1_value.to_string()),
-                )
-                .field(
-                    "lax_2",
-                    IvoField::LAX.default(default_lax_2_value.to_string()),
-                )
+            f.field(lax_field("lax").default(default_lax_value.to_string()))
+                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+                .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
         },
         |o| {
             o.ignore(["lax", "lax_1"], |ctx: IvoContext<DataInput, Data>, _| {
@@ -463,17 +451,11 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
-                .field(
-                    "lax_1",
-                    IvoField::LAX.default(default_lax_1_value.to_string()),
-                )
-                .field(
-                    "lax_2",
-                    IvoField::LAX.default(default_lax_2_value.to_string()),
-                )
+            f.field(lax_field("lax").default(default_lax_value.to_string()))
+                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+                .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
         },
         |o| {
             o.ignore_update(["lax", "lax_1"], |raw_input: PartialDataInput, _, _| {
@@ -594,8 +576,8 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
 
     let default_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| f.field("lax", IvoField::LAX.default(default_value).readonly()),
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
+        |f| f.field(lax_field("lax").default(default_value).readonly()),
         |o| o,
     );
 
@@ -650,8 +632,8 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
 
     const DEFAULT_VALUE: i32 = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| f.field("lax", IvoField::LAX.default(DEFAULT_VALUE).readonly()),
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
+        |f| f.field(lax_field("lax").default(DEFAULT_VALUE).readonly()),
         |o| o,
     );
 

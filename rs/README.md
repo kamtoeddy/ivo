@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kamtoeddy/ivo/main/docs/static/img/logo.png" alt="ivo logo" width="120" />
+</p>
+
 # Rust Implementation
 
 This is the documentation of the Rust implementation of ivo.
@@ -118,7 +122,7 @@ Deriving `IvoStruct` on **User** generates a struct called **`PartialUser`** tog
 
 Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` and generates two structs: **`PartialUserInput`** and **`UserInputErrors`**.
 
-- **UserInputErrors** is used to return errors from [post-validators](../README.md#post-validator) and [grouped required resolvers](../README.md#required-conditionally) and has the signature:
+- **UserInputErrors** is used to return errors from post-validators and grouped required resolvers and has the signature:
 
   ```rs
   struct UserInputErrors {
@@ -147,109 +151,6 @@ Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` 
   }
   ```
 
-## Fields
+## Docs
 
-Below are links to examples on how to properly configure schema fields.
-
-### Constant Fields
-
-- [Static & Dynamic values](./examples/constants.rs)
-
-### Dependent Fields
-
-- [Default values](./examples/dependent_defaults.rs)
-- [Dependent on dependent](./examples/dependent_on_dependent.rs)
-- [Readonly](./examples/dependent_readonly.rs)
-
-### Lax Fields
-
-- [Default values](./examples/lax_defaults.rs)
-- [Validators & re-validators](./examples/lax_with_validators.rs)
-- [Readonly](./examples/lax_readonly.rs)
-- [Required](./examples/lax_required.rs)
-- [Ignore](./examples/lax_with_ignore.rs)
-- [Ignore init](./examples/lax_with_ignore_init.rs)
-- [Ignore update](./examples/lax_with_ignore_update.rs)
-
-### Required Fields
-
-- [Required](./examples/required.rs)
-- [Custom required error](./examples/required_error.rs)
-- [Re-validators](./examples/required_with_re_validate.rs)
-- [Readonly](./examples/required_readonly.rs)
-- [Ignore update](./examples/required_with_ignore_update.rs)
-
-### Virtual Fields
-
-- [Validators & re-validators](./examples/virtuals.rs)
-- [With alias name](./examples/virtuals_with_alias_name.rs)
-- [With alias name same as dependent](./examples/virtuals_with_alias_name_same_as_dependent.rs)
-- [Required](./examples/virtuals_with_required.rs)
-- [Ignore](./examples/virtuals_with_ignore.rs)
-- [Ignore init](./examples/virtuals_with_ignore_init.rs)
-- [Ignore update](./examples/virtuals_with_ignore_update.rs)
-
-### Timestamps
-
-- [Default names](./examples/timestamps_with_default_names.rs)
-- [Custom names](./examples/timestamps_with_custom_names.rs)
-
-## Schema options
-
-### Ignore (Grouped)
-
-- [With lax fields]: pay attention to the `should_properly_handle_grouped_ignore_rule` & `should_properly_handle_grouped_ignore_update_rule` test funtions [here](./tests/fields/lax/ignore.rs)
-- [With virtual fields]: pay attention to the `should_properly_handle_grouped_ignore_rule`, `should_properly_handle_grouped_ignore_rule_with_alias` & `should_properly_handle_grouped_ignore_rule_with_alias_same_as_dependent` test funtions [here](./tests/fields/virtuals/ignore.rs)
-
-### Ignore update (Grouped)
-
-- [For the entire domain entity]: pay attention to the `should_respect_option_to_ignore_updates_with_empty_fields_array` test funtion [here](./tests/opions/mod.rs)
-- [With lax fields]: pay attention to the `should_properly_handle_grouped_ignore_update_rule` test funtion [here](./tests/fields/lax/ignore.rs)
-- [With required fields]: pay attention to the `should_properly_handle_grouped_ignore_update_rule` test funtion [here](./tests/fields/required/ignore.rs)
-
-### Required (Grouped)
-
-- [With lax fields]: pay attention to the `should_properly_handle_grouped_required_errors` test funtion [here](./tests/fields/lax/mod.rs)
-- [With virtual fields]: pay attention to the `should_properly_handle_grouped_required_errors`, `should_properly_handle_grouped_required_errors_with_alias` & `should_properly_handle_grouped_required_errors_with_alias_same_as_dependent` test funtions [here](./tests/fields/virtuals/mod.rs)
-
-### On Success (Grouped)
-
-- [How to listen to success changes on an entire domain item or for a group of fields](./examples/option_on_success.rs)
-
-### On Delete
-
-Pay attention to the `should_properly_trigger_on_delete_handlers` & `should_properly_trigger_all_on_delete_handlers` test funtions [here](./tests/opions/mod.rs)
-
-### Post-validate
-
-- [With lax fields]: pay attention to the `should_respect_post_validation_config` & `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config` test funtions [here](./tests/fields/lax/mod.rs)
-- [With required fields]: pay attention to the `should_respect_post_validation_config` & `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config` test funtions [here](./tests/fields/required/mod.rs)
-- [With virtual fields]: pay attention to the `should_respect_post_validation_config`,
-  `should_respect_post_validation_config_with_alias`,
-  `should_respect_post_validation_config_with_alias_same_as_dependent`,
-  `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config`,
-  `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_with_alias` &
-  `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_with_alias_same_as_dependent` test funtions [here](./tests/fields/virtuals/mod.rs)
-
-## Custom Context Options
-
-- [Demo](./examples/main_demo/src/domain.rs)
-
-## Custom ErrorSanitizer
-
-The default payload returned for unsuccessful operations has the following signature:
-
-**In Rust:**
-
-```rs
-type DefaultFieldErrorMetadata = ();
-
-struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
-  pub reason: String,
-  pub metadata: Option<Metadata>,
-}
-
-type IvoErrorPayload<Metadata: Clone> = HashMap<String, FieldError<Metadata>>;
-```
-
-In order to customize this payload, you just need to provide an implementation of the `IvoErrorSanitizer` trait that suits. [Here](./tests/extras/error_sanitizer.rs) is an example of how it can be done.
+[Read the docs](https://ivo.kamtoeddy.com/docs/rs)

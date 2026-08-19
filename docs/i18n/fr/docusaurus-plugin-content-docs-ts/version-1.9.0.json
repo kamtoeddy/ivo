@@ -1,0 +1,10 @@
+{
+  "version.label": {
+    "message": "1.9.0",
+    "description": "The label for version 1.9.0"
+  },
+  "sidebar.tsSidebar.category.definitions": {
+    "message": "définitions",
+    "description": "The label for category 'definitions' in sidebar 'tsSidebar'"
+  }
+}

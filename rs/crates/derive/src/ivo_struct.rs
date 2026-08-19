@@ -153,7 +153,6 @@ pub fn generate_ivo_input_struct_impls(
 
         quote! {
             impl <FieldErrorMetadata: Send + Sync> #partial_errors_struct_name<FieldErrorMetadata> {
-
                 #[inline(always)]
                 #vis fn #set_method_name(&mut self, reason: &str, metadata: Option<FieldErrorMetadata>) -> &mut Self {
                     self.#field_name = Some((reason.to_string(), metadata));
@@ -186,16 +185,17 @@ pub fn generate_ivo_input_struct_impls(
         #( #construct_builder_methods_of_partial_errors_struct )*
 
         impl <FieldErrorMetadata: Send + Sync> #partial_errors_struct_name<FieldErrorMetadata> {
+            #[inline(always)]
             #vis fn new() -> Self {
                 Self {
                     #( #partial_errors_fields_default_values )*
                 }
             }
 
-            #[inline(always)]
             /// This is a utility method used to wrap the partial struct into an option.
             ///
             /// If every field has as value None, None is return, otherwise Some(self) is returned
+            #[inline(always)]
             #vis fn into_option(self) -> Option<Self> {
                 if self.is_empty() {
                     None

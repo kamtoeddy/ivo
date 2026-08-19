@@ -1,94 +1,102 @@
+import { Model, ModelTool } from '../model';
 import {
-  getKeysAsProps,
-  getSetValuesAsProps,
   isEqual,
-  isFunctionLike,
-  isNullOrUndefined,
   isOneOf,
-  isPropertyOf,
   isRecordLike,
-  makeResponse,
-  type ObjectType,
-  sort,
-  sortKeys,
+  SchemaErrorTool,
   toArray,
 } from '../utils';
-import { defaultOptions, SchemaCore } from './schema-core';
 import {
-  type Context,
-  type DefinitionRule,
-  type InternalValidatorResponse,
-  type InvalidValidatorResponse,
-  type IvoSummary,
+  type ArrayOfMinSizeOne,
+  type Buildable,
+  type DefaultFieldErrorMetadata,
+  FIELD_CONFIG_BUILD_METHOD_NAME,
+  type IvoErrorPayload,
   type KeyOf,
-  LIFE_CYCLES,
   type NS,
-  type PostValidator,
-  type ReadonlyIvoSummary,
+  type ObjectType,
+  type PostValidationConfig,
   type RealType,
-  type Validator,
-  type ValidatorResponseObject,
-} from './types';
-import {
-  cloneValue,
-  type DefaultErrorTool,
-  type FieldError,
-  type IErrorTool,
-  type InputFieldError,
-  isInputFieldError,
-  makeFieldError,
-  VALIDATION_ERRORS,
-} from './utils';
+  TimeStampTool,
+} from '../utils/types';
+import { ConstantBuilder } from './fields/constants';
+import { DependentBuilder, type HasDependsOn } from './fields/dependents';
+import { type BuildableLaxConfig, LaxBuilder } from './fields/lax';
+import { type BlankRequiredBuilder, RequiredBuilder } from './fields/required';
+import { type BlankVirtualBuilder, VirtualBuilder } from './fields/virtual';
 
-export { Model, ModelTool, Schema };
-
-export type IvoResultInfo<
-  T extends Model<any, any, any>,
-  Operation extends 'create' | 'update' = 'create',
-> =
-  | {
-      data: NonNullable<Awaited<ReturnType<T[Operation]>>['data']>;
-      error: null;
-    }
-  | {
-      data: null;
-      error: NonNullable<Awaited<ReturnType<T[Operation]>>['error']>;
-    };
-
-const NotAllowedError = 'value not allowed';
-const validationFailedFieldError = makeFieldError('validation failed');
+export { Schema };
 
 class Schema<
-  const Input extends RealType<Input>,
-  const Output extends RealType<Output> = Input,
-  const Aliases = {},
+  const I extends RealType<I>,
+  const O extends RealType<O> = I,
   const CtxOptions extends ObjectType = {},
-  const ErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
-    KeyOf<Input & Aliases>
-  >,
-> extends SchemaCore<Input, Output, CtxOptions, ErrorTool> {
+  const ErrorMetadata = DefaultFieldErrorMetadata,
+  const ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<I>>,
+> {
+  private _definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>;
+  private _options: NS.InternalOptions<
+    I,
+    O,
+    CtxOptions,
+    ErrorMetadata,
+    ErrorPayload
+  >;
+
   constructor(
-    definitions: NS.Definitions<Input, Output, Aliases, CtxOptions>,
-    options: NS.Options<
-      Input,
-      Output,
-      Aliases,
-      ErrorTool,
-      CtxOptions
-    > = defaultOptions as never,
+    builder: (
+      f: FieldBuilder<I, O, CtxOptions, ErrorMetadata>,
+    ) => FieldBuilder<I, O, CtxOptions, ErrorMetadata>,
+    options: NS.Options<I, O, CtxOptions, ErrorMetadata, ErrorPayload> = {},
   ) {
-    super(
-      definitions as never as NS.Definitions_<Input, Output>,
-      options as never,
-    );
+    const errorTool = new SchemaErrorTool();
+    let timestamps: TimeStampTool | null = null;
+
+    if ('timestamps' in options) {
+      const isValid = isTimestampsConfigOptionOk(options.timestamps);
+
+      if (!isValid.valid) errorTool.add('options.timestamps', isValid.reason);
+      else
+        timestamps =
+          options.timestamps instanceof TimeStampTool
+            ? options.timestamps
+            : new TimeStampTool(options.timestamps);
+    }
+
+    if (errorTool.isPayloadLoaded) errorTool.throw();
+
+    const definitionsEntries = builder(new FieldBuilder())[
+      FIELD_BUILDER_DEFINITIONS
+    ];
+
+    const { aliasToVirtualMap, definitions } = validateFields<
+      I,
+      O,
+      CtxOptions,
+      ErrorMetadata
+    >({
+      definitionsEntries,
+      errorTool,
+      timestamps,
+    });
+
+    this._definitions = definitions;
+
+    this._options = makeOptions<I, O, CtxOptions, ErrorMetadata, ErrorPayload>({
+      aliasToVirtualMap,
+      definitions,
+      errorTool,
+      options,
+      timestamps,
+    });
   }
 
   get definitions() {
     return this._definitions as never as NS.Definitions<
-      Input,
-      Output,
-      Aliases,
-      CtxOptions
+      I,
+      O,
+      CtxOptions,
+      ErrorMetadata
     >;
   }
 
@@ -96,1715 +104,1046 @@ class Schema<
     return this._options;
   }
 
-  get reservedKeys() {
-    const props = [
-      ...this.props.values(),
-      ...this.virtuals.values(),
-    ] as string[];
-
-    const { createdAt, updatedAt } = this.timestampTool.getKeys();
-
-    if (createdAt) props.push(createdAt);
-    if (updatedAt) props.push(updatedAt);
-
-    return sort(props);
-  }
-
   extend<
-    const ExtendedInput extends RealType<ExtendedInput>,
-    const ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
-    const Aliases = object,
+    const ExtendedI extends RealType<ExtendedI>,
+    const ExtendedO extends RealType<ExtendedO> = ExtendedI,
     const ExtendedCtxOptions extends ObjectType = CtxOptions,
-    const ExtendedErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
-      KeyOf<ExtendedInput & Aliases>
+    const ExtendedErrorMetadata = ErrorMetadata,
+    const ExtendedErrorPayload = IvoErrorPayload<
+      ExtendedErrorMetadata,
+      KeyOf<ExtendedI>
     >,
   >(
-    definitions: Partial<
-      NS.Definitions<ExtendedInput, ExtendedOutput, Aliases, ExtendedCtxOptions>
+    builder: (
+      b: FieldBuilder<
+        ExtendedI,
+        ExtendedO,
+        ExtendedCtxOptions,
+        ExtendedErrorMetadata
+      >,
+    ) => FieldBuilder<
+      ExtendedI,
+      ExtendedO,
+      ExtendedCtxOptions,
+      ExtendedErrorMetadata
     >,
     options: NS.ExtensionOptions<
-      Input,
-      Output,
-      ExtendedInput,
-      ExtendedOutput,
-      Aliases,
-      ExtendedErrorTool,
-      ExtendedCtxOptions
+      I,
+      O,
+      ExtendedI,
+      ExtendedO,
+      ExtendedCtxOptions,
+      ExtendedErrorMetadata,
+      ExtendedErrorPayload
     > = {},
   ) {
     const { remove = [], useParentOptions = true, ...rest } = options;
 
-    const _definitions = { ...this.definitions } as unknown as NS.Definitions<
-      ExtendedInput,
-      ExtendedOutput,
-      Aliases,
-      ExtendedCtxOptions
+    const _definitions = {
+      ...this.definitions,
+    } as unknown as NS.Definitions<
+      ExtendedI,
+      ExtendedO,
+      ExtendedCtxOptions,
+      ExtendedErrorMetadata
     >;
 
     toArray(remove ?? [])?.forEach(
-      (prop) => delete (_definitions as never)?.[prop],
+      (fieldName) => delete _definitions?.[fieldName],
     );
 
     const options_ = {} as NS.Options<
-      ExtendedInput,
-      ExtendedOutput,
-      Aliases,
-      ExtendedErrorTool,
-      ExtendedCtxOptions
+      ExtendedI,
+      ExtendedO,
+      ExtendedCtxOptions,
+      ExtendedErrorMetadata,
+      ExtendedErrorPayload
     >;
 
-    if (useParentOptions)
-      getKeysAsProps(this.options)
-        .filter(
-          (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as never),
-        )
-        .forEach((prop) => {
-          options_[prop] = this.options[prop] as never;
-        });
+    if (useParentOptions) {
+      options_.equalityDepth = this.options.equalityDepth;
+
+      // @ts-expect-error ikr
+      options_.sanitizeError = this.options.sanitizeError;
+
+      if ('timestamps' in this.options) {
+        // @ts-expect-error ikr
+        options_.timestamps = this.options.timestamps;
+      }
+    }
 
     return new Schema<
-      ExtendedInput,
-      ExtendedOutput,
-      Aliases,
+      ExtendedI,
+      ExtendedO,
       ExtendedCtxOptions,
-      ExtendedErrorTool
+      ExtendedErrorMetadata,
+      ExtendedErrorPayload
     >(
-      Object.assign({}, _definitions, definitions),
+      () => builder(new FieldBuilder(_definitions)),
       Object.assign({}, options_, rest),
     );
   }
 
   getModel() {
-    return new Model(
-      () => new ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>(this),
+    return new Model<I, O, CtxOptions, ErrorMetadata, ErrorPayload>(
+      () => new ModelTool(this.definitions, this.options),
     );
   }
 }
 
-class ModelTool<
-  Input extends RealType<Input>,
-  Output extends RealType<Output>,
-  Aliases = {},
-  CtxOptions extends ObjectType = {},
-  ErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
-    KeyOf<Input & Aliases>
-  >,
-> extends SchemaCore<Input, Output, CtxOptions, ErrorTool> {
-  private _regeneratedProps: KeyOf<Output>[] = [];
-  private inputValues: Partial<RealType<Input>> = {};
+const FIELD_BUILDER_DEFINITIONS: unique symbol = Symbol(
+  'ivo-schema-field-builder',
+);
 
-  // contexts & values
-  private context = {} as Context<Input, Output>;
-  private contextOptions: CtxOptions = {} as CtxOptions;
+function isBuildable(value: unknown): value is Buildable<unknown> {
+  return (
+    typeof value === 'object' &&
+    !!value &&
+    typeof (value as { [FIELD_CONFIG_BUILD_METHOD_NAME]?: unknown })[
+      FIELD_CONFIG_BUILD_METHOD_NAME
+    ] === 'function'
+  );
+}
 
-  private partialContext = {} as Context<Input, Output>;
-  private values: Output = {} as Output;
+class FieldBuilder<
+  const I extends RealType<I>,
+  const O extends RealType<O> = I,
+  const CtxOptions extends ObjectType = {},
+  const ErrorMetadata = DefaultFieldErrorMetadata,
+> {
+  private _definitions: NS.DefinitionsEntries<I, O, CtxOptions, ErrorMetadata> =
+    [];
+  private _seeded = new Set<string>();
 
-  constructor(schema: Schema<Input, Output, Aliases, CtxOptions, ErrorTool>) {
-    super(schema.definitions as never, schema.options as never);
+  constructor(seed: NS.Definitions<I, O, CtxOptions, ErrorMetadata> = {}) {
+    for (const tuple of Object.entries(seed)) {
+      this._definitions.push(tuple);
+      this._seeded.add(tuple[0]);
+    }
   }
 
-  protected _getContext(previousValues: Partial<Output> | null = null) {
-    return this._getFrozenCopy<Context<Input, Output>>(
-      sortKeys(cloneValue(Object.assign({}, previousValues, this.context))),
-    );
+  field<K extends keyof I | keyof O>(
+    c: NS.FieldDefinition<K, I, O, CtxOptions, ErrorMetadata>,
+  ) {
+    if (isBuildable(c)) {
+      const built = c[FIELD_CONFIG_BUILD_METHOD_NAME]();
+
+      if (typeof built.name === 'string') {
+        this._definitions.push([built.name, built]);
+
+        if (this._seeded.has(built.name))
+          this._definitions.splice(
+            this._definitions.findIndex(([cName]) => cName === built.name),
+            1,
+          );
+      }
+    }
+
+    return this;
   }
 
-  protected _getSummary({
-    data,
-    inputValues,
-    isUpdate,
-  }: {
-    data: Partial<Output>;
-    inputValues: Partial<RealType<Input>>;
-    isUpdate: boolean;
-  }) {
-    const changes = isUpdate ? cloneValue(data) : null,
-      previousValues = isUpdate ? cloneValue(this.values) : null,
-      ctx = this._getContext(isUpdate ? previousValues : null),
-      values = this._getFrozenCopy(
-        cloneValue(
-          isUpdate
-            ? Object.assign({}, previousValues, this.values, data)
-            : Object.assign({}, this.defaults, data),
-        ),
+  constant<K extends keyof O & string>(
+    name: K,
+    value: O[K] | NS.ConstantResolver<O[K], I, O, CtxOptions>,
+  ): ConstantBuilder<O[K], I, O, CtxOptions> {
+    return new ConstantBuilder<O[K], I, O, CtxOptions>(name, value);
+  }
+
+  dependent<K extends keyof O & string>(
+    name: K,
+    dependsOn:
+      | NS.Dependables<K, I, O>
+      | ArrayOfMinSizeOne<NS.Dependables<K, I, O>>,
+  ): HasDependsOn<K, I, O, CtxOptions> {
+    return new DependentBuilder<K, I, O, CtxOptions>(name, dependsOn);
+  }
+
+  lax<
+    K extends keyof O & string,
+    Default extends O[K] | NS.Resolver<O[K], I, O, CtxOptions>,
+    DefaultState extends 'value' | 'resolver' = Default extends Function
+      ? 'resolver'
+      : 'value',
+  >(
+    name: K,
+    value: Default,
+  ): BuildableLaxConfig<O[K], I, O, CtxOptions, ErrorMetadata, DefaultState> {
+    // @ts-expect-error ikr
+    return new LaxBuilder<O[K], I, O, CtxOptions, ErrorMetadata>(name, value);
+  }
+
+  required<K extends keyof O & string>(
+    name: K,
+  ): BlankRequiredBuilder<O[K], I, O, CtxOptions, ErrorMetadata> {
+    return new RequiredBuilder<O[K], I, O, CtxOptions, ErrorMetadata>(name);
+  }
+
+  virtual<K extends string>(
+    name: K,
+  ): BlankVirtualBuilder<any, I, O, CtxOptions, ErrorMetadata> {
+    return new VirtualBuilder<any, I, O, CtxOptions, ErrorMetadata>(name);
+  }
+
+  get [FIELD_BUILDER_DEFINITIONS](): NS.DefinitionsEntries<
+    I,
+    O,
+    CtxOptions,
+    ErrorMetadata
+  > {
+    return this._definitions;
+  }
+}
+
+function validateFields<
+  I extends RealType<I>,
+  O extends RealType<O>,
+  CtxOptions extends ObjectType,
+  ErrorMetadata,
+>({
+  definitionsEntries,
+  errorTool,
+  timestamps,
+}: {
+  definitionsEntries: NS.DefinitionsEntries<I, O, CtxOptions, ErrorMetadata>;
+  errorTool: SchemaErrorTool;
+  timestamps: TimeStampTool | null;
+}): {
+  aliasToVirtualMap: Map<string, string>;
+  definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>;
+} {
+  const constantFieldNames = new Set<string>();
+  const dependentFieldToParentFields = new Map<
+    string,
+    ArrayOfMinSizeOne<NS.Dependables<any, I, O>>
+  >();
+  const fieldNames = new Set<string>();
+  const aliasToVirtualMap = new Map<string, string>();
+  const definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata> = {};
+  const dependentConfigs: Array<
+    [string, NS.DependentField<any, I, O, CtxOptions>]
+  > = [];
+
+  const timestampKeys = timestamps?.keys;
+
+  for (const [fieldName, config] of definitionsEntries) {
+    if (fieldNames.has(fieldName))
+      errorTool.add(
+        fieldName,
+        `"${fieldName}" occurs more than once, please remove duplicates`,
       );
 
-    return this._getFrozenCopy({
-      changes,
-      ctx,
-      inputValues: cloneValue(inputValues),
-      isUpdate,
-      previousValues,
-      values,
-      options: this._getCtxOptions(),
-    }) as ReadonlyIvoSummary<Input, Output, CtxOptions>;
-  }
+    fieldNames.add(fieldName);
+    definitions[fieldName] = config;
 
-  protected _getMutableSummary(props: {
-    data: Partial<Output>;
-    inputValues: Partial<RealType<Input>>;
-    isUpdate: boolean;
-  }) {
-    return this._getFrozenCopy(
-      Object.assign({}, this._getSummary(props), {
-        updateOptions: this._updateCtxOptions,
-      }),
-    ) as IvoSummary<Input, Output, CtxOptions>;
-  }
-
-  protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
-
-  protected _updateContext = (updates: Partial<Input>) => {
-    Object.assign(this.context, updates);
-  };
-
-  protected _updatePartialContext = (updates: Partial<Input>) => {
-    Object.assign(this.partialContext, updates);
-  };
-
-  protected _getCtxOptions = () => this._getFrozenCopy(this.contextOptions);
-
-  protected _updateCtxOptions = (options: Partial<CtxOptions>) => {
-    if (isRecordLike(options)) Object.assign(this.contextOptions, options);
-
-    return this._getCtxOptions();
-  };
-
-  protected _getDefaultValue = async (prop: string) => {
-    const _default = this._getDefinition(prop)?.default;
-
-    let value: any;
-
-    try {
-      value = isFunctionLike(_default)
-        ? await Promise.try(() => _default(this._getContext()))
-        : this.defaults[prop as KeyOf<Output>];
-    } catch {
-      value = null;
+    if (timestampKeys) {
+      if (timestampKeys.createdAt === fieldName)
+        errorTool.add(
+          fieldName,
+          `"${fieldName}" is not a valid field name. It is the creation timestamp`,
+        );
+      else if (timestampKeys.updatedAt === fieldName)
+        errorTool.add(
+          fieldName,
+          `"${fieldName}" is not a valid field name. It is the update timestamp`,
+        );
     }
 
-    return isEqual(value, undefined)
-      ? this.values[prop as KeyOf<Output>]
-      : value;
-  };
+    if (config.type === 'constant') {
+      if (isEqual(config.value, undefined))
+        errorTool.add(
+          fieldName,
+          "Constant fields cannot have 'undefined' as value",
+        );
 
-  protected _getRequiredState = async (
-    prop: string,
-    summary: IvoSummary<Input, Output>,
-  ): Promise<[boolean, string | FieldError]> => {
-    const { required } = this._getDefinition(prop);
+      constantFieldNames.add(fieldName);
 
-    if (!required) return [false, ''];
-
-    const fallbackMessage = `'${prop}' is required`;
-
-    if (!isFunctionLike(required)) return [required, fallbackMessage];
-
-    const results = await required(summary);
-    const isBoolean = typeof results === 'boolean';
-
-    if (!isBoolean && !Array.isArray(results)) return [false, ''];
-
-    if (isBoolean) return [results as boolean, results ? fallbackMessage : ''];
-
-    const [isRequired, message] = results as [
-        boolean,
-        string | InputFieldError,
-      ],
-      isString = typeof message === 'string';
-
-    if (!isRequired || (!isString && !isInputFieldError(message)))
-      return [isRequired, fallbackMessage];
-
-    if (isString) return [true, message || fallbackMessage];
-
-    const fieldError = makeFieldError(message, fallbackMessage);
-
-    return [
-      true,
-      isPropertyOf('metadata', message)
-        ? fieldError
-        : ({ reason: fieldError.reason } as never),
-    ];
-  };
-
-  protected _getConstantValue = (prop: string) =>
-    this._getValueBy(prop, 'value');
-
-  protected _getValueBy = (
-    prop: string,
-    rule: DefinitionRule,
-    extraCtx: ObjectType = {},
-  ) => {
-    const value = this._getDefinition(prop)?.[rule];
-
-    return isFunctionLike(value)
-      ? value(Object.assign({}, this._getContext(), extraCtx))
-      : value;
-  };
-
-  private _cleanInput(input: Partial<Input | Aliases>) {
-    const props = getKeysAsProps(input).filter(this._isInputOrAlias);
-
-    const values = {} as never;
-
-    for (const prop of props) {
-      values[prop] = input[prop] as never;
-
-      if (this._isVirtual(prop)) {
-        const alias = this._getAliasByVirtual(prop);
-
-        if (alias && values[alias]) delete values[alias];
-      } else if (this._isVirtualAlias(prop)) {
-        const virtual = this._getVirtualByAlias(prop);
-
-        if (virtual && values[virtual]) delete values[virtual];
-      }
+      continue;
     }
 
-    this.inputValues = values;
+    if (config.type === 'dependent') {
+      const { dependsOn } = config;
 
-    return values;
-  }
+      if (typeof config.default === 'undefined')
+        errorTool.add(
+          fieldName,
+          'Dependent fields must have a default value or default resolver',
+        );
 
-  private async _generateConstants() {
-    const data = {} as Partial<Output>;
+      if (typeof config.default === 'function' && config.readonly)
+        errorTool.add(
+          fieldName,
+          'The readonly rule is only valid for fields with static default values',
+        );
 
-    await Promise.allSettled(
-      getSetValuesAsProps(this.constants).map(async (prop) => {
-        try {
-          data[prop] = await Promise.try(this._getConstantValue, prop);
-        } catch {
-          data[prop] = null as never;
-        }
+      if (typeof config.resolver !== 'function')
+        errorTool.add(fieldName, 'Dependent fields must have a value resolver');
 
-        const validCtxUpdate = { [prop]: data[prop] as never } as never;
+      if (!dependsOn?.length)
+        errorTool.add(
+          fieldName,
+          'Dependent fields must depend on at least one lax, required, virtual or other dependent field on your schema',
+        );
 
-        this._updatePartialContext(validCtxUpdate);
+      // @ts-expect-error
+      if (dependsOn.includes(fieldName))
+        errorTool.add(fieldName, `"${fieldName}" cannot depend on itself`);
 
-        return this._updateContext(validCtxUpdate);
-      }),
-    );
+      dependentConfigs.push([fieldName, config]);
+      dependentFieldToParentFields.set(fieldName, dependsOn);
 
-    return data;
-  }
+      continue;
+    }
 
-  private _isIngnorable = (prop: string) => {
-    return !!this._getDefinition(prop).ignore;
-  };
+    if ('allow' in config) {
+      const { allow } = config;
 
-  private _shouldIgnore = ({
-    prop,
-    isUpdate = false,
-  }: {
-    prop: string;
-    isUpdate?: boolean;
-  }) => {
-    const { ignore } = this._getDefinition(prop);
-
-    return ignore
-      ? ignore(
-          this._getMutableSummary({
-            data: {},
-            inputValues: this.inputValues,
-            isUpdate,
-          }),
-        )
-      : undefined;
-  };
-
-  private _isInitAllowed = (prop: string, extraCtx: ObjectType = {}) => {
-    if (isOneOf(this._getDefinition(prop).shouldInit, [true, undefined]))
-      return true;
-
-    return this._getValueBy(prop, 'shouldInit', extraCtx) === true;
-  };
-
-  private _canInit = (prop: string) => {
-    if (this._isDependentProp(prop)) return false;
-    if (this._isRequired(prop)) return true;
-
-    if (this._isIngnorable(prop)) return !this._shouldIgnore({ prop });
-
-    const isInitAllowed = this._isInitAllowed(prop);
-
-    if (this._isLaxProp(prop)) return isInitAllowed;
-
-    const { readonly } = this._getDefinition(prop);
-
-    return readonly === true && isInitAllowed && !this._isRequiredBy(prop);
-  };
-
-  private _isUpdateAllowed = (prop: string, extraCtx: ObjectType = {}) => {
-    if (isOneOf(this._getDefinition(prop).shouldUpdate, [true, undefined]))
-      return true;
-
-    return this._getValueBy(prop, 'shouldUpdate', extraCtx) === true;
-  };
-
-  private _isVirtualInit = (prop: string, value: unknown = undefined) => {
-    const isAlias = this._isVirtualAlias(prop);
-
-    if (!this._isVirtual(prop) && !isAlias) return false;
-
-    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
-
-    const { shouldInit } = this._getDefinition(definitionName);
-
-    const extraCtx = isAlias ? { [definitionName]: value } : {};
-
-    return (
-      isEqual(shouldInit, undefined) ||
-      this._isInitAllowed(definitionName, extraCtx)
-    );
-  };
-
-  private _getValidationSummary = (isUpdate: boolean) =>
-    this._getMutableSummary({
-      data: this.values,
-      isUpdate,
-      inputValues: this.inputValues,
-    });
-
-  private _getPrimaryValidator = <K extends keyof (Output | Input)>(
-    prop: string,
-  ) => {
-    const { validator } = this._getDefinition(prop as never);
-
-    return (Array.isArray(validator) ? validator[0] : validator) as
-      | Validator<K, Input, Output>
-      | undefined;
-  };
-
-  private _getSecondaryValidator = <K extends keyof (Output | Input)>(
-    prop: string,
-  ) => {
-    const { validator } = this._getDefinition(prop as never);
-
-    return (Array.isArray(validator) ? validator[1] : undefined) as
-      | Validator<K, Input, Output>
-      | undefined;
-  };
-
-  private _getNotAllowedError(prop: string, value: unknown) {
-    const allow = this._getDefinition(prop as never)?.allow;
-
-    if (Array.isArray(allow)) return NotAllowedError;
-
-    // @ts-expect-error: lol
-    const error = allow?.error;
-
-    if (isInputFieldError(error)) return error;
-
-    if (isFunctionLike(error)) {
-      let message: any;
-
-      try {
-        message = error(value, allow?.values);
-      } catch {
-        return NotAllowedError;
+      if (!Array.isArray(allow)) {
+        errorTool.add(fieldName, 'Allowed values must be an array');
+        continue;
       }
 
-      if (typeof message === 'string') return message || NotAllowedError;
-
-      return isInputFieldError(message) ? message : NotAllowedError;
+      if (allow.length < 2)
+        errorTool.add(fieldName, 'Allowed values must have at least 2 values');
     }
 
-    return error || NotAllowedError;
-  }
+    if (config.type === 'lax') {
+      if (typeof config.default === 'undefined')
+        errorTool.add(
+          fieldName,
+          'Lax fields must have a default value or default resolver',
+        );
 
-  private _handleError(
-    data: Partial<Output>,
-    errorTool: ErrorTool,
-    virtuals: KeyOf<Output>[],
-  ) {
-    return {
-      data: null,
-      error: errorTool.data as ErrorTool['data'],
-      handleFailure: this._makeHandleFailure(data, errorTool, virtuals),
-      handleSuccess: null,
-    };
-  }
+      if (typeof config.default === 'function' && config.readonly)
+        errorTool.add(
+          fieldName,
+          'The readonly rule is only valid for fields with static default values',
+        );
 
-  private _handleInvalidValue(
-    errorTool: ErrorTool,
-    prop: KeyOf<Input & Output & Aliases>,
-    validationResponse: InvalidValidatorResponse,
-  ) {
-    const { reason, metadata, value } = validationResponse;
-
-    if (isRecordLike(reason)) {
-      if (metadata) errorTool.set(prop, { metadata, reason: '' }, value);
-
-      return Object.entries(reason).forEach(([key, message]) => {
-        errorTool.set(key, makeFieldError(message as never));
-      });
+      continue;
     }
 
-    const fieldError = makeFieldError(reason || 'validation failed');
+    if (config.type === 'required') {
+      if (!config.allow && !config.validator)
+        errorTool.add(fieldName, 'Required fields must have a validator');
 
-    if (metadata) fieldError.metadata = metadata;
+      continue;
+    }
 
-    errorTool.set(prop, fieldError, value);
-  }
+    const { alias } = config;
 
-  private async _handleCreationPrimaryValidations(
-    data: Partial<Output>,
-    input: never,
-  ) {
-    const error = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR,
-      this.contextOptions,
-    );
+    if (alias) {
+      if (fieldName === alias)
+        errorTool.add(
+          fieldName,
+          'virtual alias name must be different from field name',
+        );
 
-    const virtuals = getKeysAsProps<Partial<Output>>(input).filter((prop) =>
-      this._isVirtualInit(prop, input[prop as unknown as KeyOf<Input>]),
-    );
-
-    const props = Array.from(
-      new Set([
-        ...getSetValuesAsProps(this.props).filter(
-          (prop) => !this._isConstant(prop),
-        ),
-        ...virtuals,
-      ]),
-    );
-
-    await Promise.allSettled(
-      props.map(async (prop) => {
-        const isVirtualInit = virtuals.includes(prop);
-
-        if (this._isVirtual(prop) && !isVirtualInit) return;
-
-        const isDependent = this._isDependentProp(prop),
-          isVirtualAlias = virtuals.includes(prop);
-
-        if (isDependent) {
-          data[prop] = await this._getDefaultValue(prop);
-
-          const validCtxUpdate = { [prop]: data[prop] as never } as never;
-
-          this._updatePartialContext(validCtxUpdate);
-          this._updateContext(validCtxUpdate);
-
-          if (!isVirtualAlias) return;
-        }
-
-        if (isVirtualAlias) {
-          const propName = (this._getVirtualByAlias(prop) || prop)!;
-
-          if (
-            this._isIngnorable(propName) &&
-            this._shouldIgnore({ prop: propName })
-          )
-            return;
-
-          return this._validateAndSet(
-            data,
-            error,
-            prop,
-            input[prop as unknown as KeyOf<Input>],
+      if (timestampKeys) {
+        if (timestampKeys.createdAt === alias)
+          errorTool.add(
+            fieldName,
+            `"${fieldName}" is not a valid alias. It is the creation timestamp`,
           );
-        }
-
-        const isProvided = isPropertyOf(prop, this.values),
-          isLax = this._isLaxProp(prop),
-          isLaxInit = isLax && isProvided,
-          isRequiredInit = this._isRequiredBy(prop) && isProvided,
-          canInit = this._canInit(prop);
-
-        if (
-          (isLax && (!canInit || (canInit && !isProvided))) ||
-          (!isVirtualInit && !canInit && !isLaxInit && !isRequiredInit)
-        ) {
-          data[prop] = await Promise.try(this._getDefaultValue, prop);
-
-          const validCtxUpdate = { [prop]: data[prop] as never } as never;
-          this._updatePartialContext(validCtxUpdate);
-
-          return this._updateContext(validCtxUpdate);
-        }
-
-        return this._validateAndSet(data, error, prop, this.values[prop]);
-      }),
-    );
-
-    return { data, error, virtuals };
-  }
-
-  private async _handleUpdatePrimaryValidations(
-    changes: Partial<Input & Aliases>,
-  ) {
-    const error = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR,
-      this.contextOptions,
-    );
-
-    const updates = {} as Partial<Output>;
-    const virtuals: KeyOf<Output>[] = [];
-
-    const toUpdate = Array.from(
-      new Set(getKeysAsProps<Output & Aliases>(changes as never)),
-    ).filter((prop) => this._isUpdatable(prop, (changes as never)[prop]));
-
-    await Promise.allSettled(
-      toUpdate.map(async (prop) => {
-        const value = (changes as never)[prop] as Output[KeyOf<Output>];
-
-        const isValid = (await Promise.try(() =>
-          this._validate(
-            prop as never,
-            value,
-            this._getValidationSummary(true),
-          ),
-        )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
-
-        if (!isValid.valid)
-          return this._handleInvalidValue(error, prop, isValid);
-
-        let { validated } = isValid;
-
-        if (isEqual(validated, undefined)) validated = value;
-
-        const isAlias = this._isVirtualAlias(prop);
-
-        const propName = (isAlias
-          ? this._getVirtualByAlias(prop)!
-          : prop) as unknown as KeyOf<Output>;
-
-        if (
-          isEqual(validated, this.values[propName], this._options.equalityDepth)
-        )
-          return;
-
-        if (this._isVirtual(propName)) virtuals.push(propName);
-        else updates[propName as KeyOf<Output>] = validated;
-
-        const validCtxUpdate = { [propName]: validated } as never;
-
-        this._updateContext(validCtxUpdate);
-        this._updatePartialContext(validCtxUpdate);
-      }),
-    );
-
-    return { error, updates, virtuals };
-  }
-
-  private async _handleSecondaryValidations(
-    data: Partial<Output>,
-    isUpdate = false,
-  ) {
-    const summary = this._getMutableSummary({
-      data,
-      isUpdate,
-      inputValues: this.inputValues,
-    });
-
-    const error = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR,
-      summary.options,
-    );
-
-    const props: [KeyOf<Output>, string | undefined][] = [];
-
-    for (const prop of this.propsWithSecondaryValidators.values()) {
-      if (!isUpdate && !this._isInitAllowed(prop)) continue;
-
-      const alias = this._getAliasByVirtual(prop as never);
-
-      if (!this._isSuccessfulProp(prop, summary, alias)) continue;
-
-      props.push([prop as KeyOf<Output>, alias]);
-    }
-
-    await Promise.allSettled(
-      props.map(async ([prop, alias]) => {
-        const validator = this._getSecondaryValidator(prop);
-
-        if (!validator) return;
-
-        const value = summary.ctx?.[prop] as Output[KeyOf<Output>];
-
-        let isValid: ValidatorResponseObject<unknown>;
-
-        try {
-          isValid = this._sanitizeValidationResponse<unknown>(
-            (await Promise.try(
-              validator,
-              value,
-              summary as never,
-            )) as ValidatorResponseObject<unknown>,
-            value,
+        else if (timestampKeys.updatedAt === alias)
+          errorTool.add(
+            fieldName,
+            `"${alias}" is not a valid alias. It is the update timestamp`,
           );
-        } catch {
-          isValid = makeResponse<unknown>({
-            valid: false,
-            reason: 'validation failed',
-          });
-        }
-
-        if (!isValid.valid) {
-          const _prop =
-            alias && isPropertyOf(alias, summary.inputValues) ? alias : prop;
-
-          return this._handleInvalidValue(error, _prop as never, isValid);
-        }
-
-        let { validated } = isValid;
-
-        if (isEqual(validated, undefined)) validated = value;
-        if (isEqual(validated, summary.ctx[prop], this._options.equalityDepth))
-          return;
-
-        if (!this._isVirtual(prop)) data[prop] = validated as never;
-
-        const validCtxUpdate = { [prop]: validated } as never;
-
-        this._updateContext(validCtxUpdate);
-        this._updatePartialContext(validCtxUpdate);
-      }),
-    );
-
-    return error;
-  }
-
-  private _isSuccessfulProp(
-    prop: string,
-    summary: IvoSummary<Input, Output, CtxOptions>,
-    alias_?: string,
-  ) {
-    if (this._isVirtual(prop)) {
-      if (isPropertyOf(prop, this.partialContext)) return true;
-
-      const alias = alias_ || this._getAliasByVirtual(prop as never);
-
-      return (
-        !isNullOrUndefined(alias) && isPropertyOf(alias, summary.inputValues)
-      );
-    }
-
-    return !summary.isUpdate || isPropertyOf(prop, summary.changes);
-  }
-
-  private async _handlePostValidations(
-    data: Partial<Output>,
-    isUpdate = false,
-  ) {
-    const summary = this._getMutableSummary({
-      data,
-      isUpdate,
-      inputValues: this.inputValues,
-    });
-
-    const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR,
-      summary.options,
-    );
-
-    const handlerIds = new Set<string>(),
-      handlerIdToProps = new Map<string, Set<string>>(),
-      configIDsToAllPostValidatableProps = new Map<string, Set<string>>();
-
-    for (const [
-      prop,
-      setOfConfigIDs,
-    ] of this.propToPostValidationConfigIDsMap.entries()) {
-      const isSuccessfulProp = this._isSuccessfulProp(prop, summary);
-
-      for (const id of setOfConfigIDs.values()) {
-        {
-          const set = configIDsToAllPostValidatableProps.get(id) ?? new Set();
-          configIDsToAllPostValidatableProps.set(id, set.add(prop));
-        }
-
-        if (!isSuccessfulProp) continue;
-
-        handlerIds.add(id);
-
-        const set = handlerIdToProps.get(id) ?? new Set();
-        handlerIdToProps.set(id, set.add(prop));
       }
-    }
 
-    const handlers = Array.from(handlerIds).map((id) => ({
-      id,
-      validator: this.postValidationConfigMap.get(id)!.validators,
-      postValidatableProps: Array.from(
-        configIDsToAllPostValidatableProps.get(id)!,
-      ) as KeyOf<Input>[],
-    }));
+      const otherField = aliasToVirtualMap.get(alias);
 
-    const handleRevalidatedData = (revalidatedData: Partial<Output> | null) => {
-      if (!revalidatedData) return;
+      if (otherField)
+        errorTool.add(
+          fieldName,
+          `"${alias}" is already the alias of "${otherField}"`,
+        );
 
-      for (const prop of getKeysAsProps(revalidatedData)) {
-        const validated = revalidatedData[prop];
+      for (const [name, config] of definitionsEntries) {
+        if (name !== alias) continue;
 
-        if (!this._isVirtual(prop)) data[prop] = validated;
-
-        const validCtxUpdate = { [prop]: validated } as never;
-
-        this._updateContext(validCtxUpdate);
-        this._updatePartialContext(validCtxUpdate);
-      }
-    };
-
-    await Promise.allSettled(
-      handlers.map(async ({ id, validator, postValidatableProps }) => {
-        const propsProvided = Array.from(handlerIdToProps.get(id)!) as Extract<
-          keyof Input,
-          string
-        >[];
-
-        if (!Array.isArray(validator)) {
-          const { revalidatedData, success } = await Promise.try(() =>
-            this._handlePostValidator({
-              errorTool,
-              propsProvided,
-              summary,
-              validator: validator as any,
-              postValidatableProps,
-            }),
-          );
-
-          if (!success || !revalidatedData) return;
-
-          return handleRevalidatedData(revalidatedData);
-        }
-
-        for (const v1 of validator) {
-          if (Array.isArray(v1)) {
-            const summary = this._getMutableSummary({
-              data: this.values,
-              isUpdate,
-              inputValues: this.inputValues,
-            });
-
-            const results = await Promise.all(
-              v1.map(async (v2) => {
-                const res = await Promise.try(() =>
-                  this._handlePostValidator({
-                    errorTool,
-                    propsProvided,
-                    summary,
-                    validator: v2 as any,
-                    postValidatableProps,
-                  }),
-                );
-
-                handleRevalidatedData(res.revalidatedData);
-
-                return res;
-              }),
+        if (config.type === 'dependent') {
+          // @ts-expect-error ikr
+          if (!config.dependsOn.includes(fieldName))
+            errorTool.add(
+              fieldName,
+              `"${alias}" is not a valid alias for field because "${alias}" does not depend on "${fieldName}"`,
             );
 
-            if (results.some((r) => r.success === false)) break;
+          continue;
+        }
+
+        errorTool.add(
+          fieldName,
+          `"${alias}" is not a valid alias for field because it is not a dependent field`,
+        );
+      }
+
+      aliasToVirtualMap.set(alias, fieldName);
+
+      continue;
+    }
+
+    let hasSufficientDependencies = false;
+
+    for (const [, config] of definitionsEntries) {
+      // @ts-expect-error ikr
+      if (config.type === 'dependent' && config.dependsOn.includes(fieldName)) {
+        hasSufficientDependencies = true;
+        break;
+      }
+    }
+
+    if ('sanitizer' in config && typeof config.sanitizer !== 'function')
+      errorTool.add(fieldName, "'sanitizer' must be a function");
+
+    if (!hasSufficientDependencies)
+      errorTool.add(
+        fieldName,
+        'Virtual fields are expected to have at least one dependency, but found none',
+      );
+  }
+
+  for (const [fieldName, config] of dependentConfigs) {
+    const parentFields = config.dependsOn!;
+
+    const parentFieldsProvided = new Set<string>();
+
+    for (const parentField of parentFields) {
+      if (timestampKeys) {
+        if (timestampKeys.createdAt === parentField)
+          errorTool.add(
+            fieldName,
+            `"${fieldName}" cannot depend on "${parentField}" because it is the creation timestamp`,
+          );
+        else if (timestampKeys.updatedAt === parentField)
+          errorTool.add(
+            fieldName,
+            `"${fieldName}" cannot depend on "${parentField}" because it is the update timestamp`,
+          );
+      }
+
+      if (!fieldNames.has(parentField))
+        errorTool.add(
+          fieldName,
+          `"${fieldName}" cannot depend on "${parentField}" because it is not a field on your schema`,
+        );
+
+      if (parentFieldsProvided.has(parentField))
+        errorTool.add(
+          fieldName,
+          `"${parentField}" has been provided as a parent field multiple times. remove all duplicates to proceed`,
+        );
+
+      if (constantFieldNames.has(parentField))
+        errorTool.add(
+          fieldName,
+          `"${fieldName}" cannot depend on "${parentField}" because it is a constant`,
+        );
+
+      parentFieldsProvided.add(parentField);
+    }
+
+    const redundant = getRedundantDependency(
+      parentFields,
+      dependentFieldToParentFields,
+    );
+
+    if (redundant) {
+      const [parentField, redundantField, depth] = redundant;
+
+      if (depth === 0) {
+        errorTool.add(
+          fieldName,
+          `"${fieldName}" should not depend on "${parentField}" and "${redundantField}" because "${parentField}" depends on "${redundantField}"`,
+        );
+        continue;
+      }
+
+      errorTool.add(
+        fieldName,
+        `"${fieldName}" should not depend on "${parentField}" and "${redundantField}" because "${parentField}" indirectly depends on "${redundantField}"`,
+      );
+    }
+
+    const circularChain = getCircularDependencyChain(
+      fieldName,
+      parentFields,
+      dependentFieldToParentFields,
+    );
+
+    if (circularChain)
+      errorTool.add(
+        fieldName,
+        `circular dependency identified between "${circularChain.sort().join(' <-> ')}"`,
+      );
+  }
+
+  if (errorTool.isPayloadLoaded) errorTool.throw();
+
+  if (!fieldNames.size)
+    errorTool.add('schema fields', 'Insufficient Schema fields').throw();
+
+  return { aliasToVirtualMap, definitions };
+}
+
+function makeOptions<
+  I extends RealType<I>,
+  O extends RealType<O>,
+  CtxOptions extends ObjectType,
+  const ErrorMetadata = DefaultFieldErrorMetadata,
+  const ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<I>>,
+>({
+  aliasToVirtualMap,
+  definitions,
+  errorTool,
+  options,
+  timestamps,
+}: {
+  aliasToVirtualMap: Map<string, string>;
+  definitions: NS.Definitions<I, O, CtxOptions, ErrorMetadata>;
+  errorTool: SchemaErrorTool;
+  options: NS.Options<I, O, CtxOptions, ErrorMetadata, ErrorPayload>;
+  timestamps: TimeStampTool | null;
+}): NS.InternalOptions<I, O, CtxOptions, ErrorMetadata, ErrorPayload> {
+  let sanitizeError = (p: IvoErrorPayload<ErrorMetadata, KeyOf<I>>) => p;
+
+  if ('sanitizeError' in options) {
+    if (typeof options.sanitizeError === 'function') {
+      // @ts-expect-error ikr
+      sanitizeError = options.sanitizeError;
+    } else errorTool.add('option.sanitizeError', 'expected a function');
+  }
+
+  const normalizedOptions: NS.InternalOptions<
+    I,
+    O,
+    CtxOptions,
+    ErrorMetadata,
+    ErrorPayload
+  > = {
+    equalityDepth: options.equalityDepth ?? 1,
+    // @ts-expect-error ikr
+    sanitizeError,
+    timestamps,
+  };
+
+  if ('equalityDepth' in options) {
+    const { equalityDepth } = options;
+
+    if (typeof equalityDepth === 'number' && equalityDepth >= 0)
+      normalizedOptions.equalityDepth = equalityDepth;
+    else
+      errorTool.add(
+        'option.equalityDepth',
+        'expected a number greater than or equal to 0',
+      );
+  }
+
+  if ('ignore' in options) {
+    const ignore: NS.IgnoreConfigOptionItem<I, O, CtxOptions>[] = [];
+
+    if (typeof options.ignore === 'function') ignore.push(options.ignore);
+    else {
+      const optionName = 'options.ignore';
+      const type_not_allowed_error =
+        'only lax and virtual fields can belong to grouped ignore configs;';
+
+      for (const config of toArray(options.ignore)) {
+        if (typeof config === 'function') {
+          ignore.push(config);
+
+          continue;
+        }
+
+        // @ts-expect-error ikr
+        const { fields, handler } = config;
+
+        ignore.push({ fields, handler });
+
+        if (fields.length < 2)
+          errorTool.add(optionName, 'grouped ignore expects at least 2 fields');
+
+        const fieldNames = new Set<string>();
+
+        for (const fieldName of fields) {
+          if (fieldNames.has(fieldName))
+            errorTool.add(
+              optionName,
+              `remove duplicates of "${fieldName}" in your grouped ignore config`,
+            );
+
+          fieldNames.add(fieldName);
+
+          const virtualField = aliasToVirtualMap.get(fieldName);
+
+          if (virtualField)
+            errorTool.add(
+              optionName,
+              `"${fieldName}" is an alias; use "${virtualField}" instead`,
+            );
+
+          if (!isOneOf(definitions[fieldName]?.type, ['lax', 'virtual']))
+            errorTool.add(
+              optionName,
+              `${type_not_allowed_error} remove "${fieldName}"`,
+            );
+        }
+      }
+    }
+
+    normalizedOptions.ignore = ignore;
+  }
+
+  if ('ignoreUpdate' in options) {
+    const ignoreUpdate: NS.IgnoreUpdateConfigOptionItem<I, O, CtxOptions>[] =
+      [];
+
+    if (typeof options.ignoreUpdate === 'function')
+      ignoreUpdate.push(options.ignoreUpdate);
+    else {
+      const optionName = 'options.ignoreUpdate';
+      const type_not_allowed_error =
+        'only lax, required and virtual fields can belong to grouped ignore update configs';
+
+      for (const config of toArray(options.ignoreUpdate)) {
+        if (typeof config === 'function') {
+          ignoreUpdate.push(config);
+
+          continue;
+        }
+
+        // @ts-expect-error ikr
+        const { fields, handler } = config;
+
+        ignoreUpdate.push({ fields, handler });
+
+        if (fields.length < 2)
+          errorTool.add(
+            optionName,
+            'grouped ignore update expects at least 2 fields',
+          );
+
+        const fieldNames = new Set<string>();
+
+        for (const fieldName of fields) {
+          if (fieldNames.has(fieldName))
+            errorTool.add(
+              optionName,
+              `remove duplicates of "${fieldName}" in your grouped ignore update config`,
+            );
+
+          fieldNames.add(fieldName);
+
+          const virtualField = aliasToVirtualMap.get(fieldName);
+
+          if (virtualField)
+            errorTool.add(
+              optionName,
+              `"${fieldName}" is an alias; use "${virtualField}" instead`,
+            );
+
+          if (
+            !isOneOf(definitions[fieldName]?.type, [
+              'lax',
+              'required',
+              'virtual',
+            ])
+          )
+            errorTool.add(
+              optionName,
+              `${type_not_allowed_error} remove "${fieldName}"`,
+            );
+        }
+      }
+    }
+
+    normalizedOptions.ignoreUpdate = ignoreUpdate;
+  }
+
+  if ('onDelete' in options) {
+    if (
+      typeof options.onDelete === 'function' ||
+      (Array.isArray(options.onDelete) &&
+        options.onDelete.every((h) => typeof h === 'function'))
+    ) {
+      const onDelete: NS.DeleteHandler<O, CtxOptions>[] = toArray(
+        options.onDelete,
+      );
+
+      if (onDelete.length) normalizedOptions.onDelete = onDelete;
+    } else
+      errorTool.add(
+        'options.onDelete',
+        'expected a function or an array of functions',
+      );
+  }
+
+  if ('onSuccess' in options) {
+    const onSuccess: NS.OnSuccessConfigOptionItem<I, O, CtxOptions>[] = [];
+
+    if (typeof options.onSuccess === 'function')
+      onSuccess.push(options.onSuccess);
+    else {
+      const optionName = 'options.onSuccess';
+
+      for (const config of toArray(options.onSuccess)) {
+        if (typeof config === 'function') {
+          onSuccess.push(config);
+
+          continue;
+        }
+
+        // @ts-expect-error ikr
+        const { fields, handler } = config;
+
+        onSuccess.push({ fields, handler });
+
+        const fieldNames = new Set<string>();
+
+        for (const fieldName of fields) {
+          if (fieldNames.has(fieldName))
+            errorTool.add(
+              optionName,
+              `remove duplicates of "${fieldName}" in your grouped on success config`,
+            );
+
+          fieldNames.add(fieldName);
+
+          const virtualField = aliasToVirtualMap.get(fieldName);
+
+          if (virtualField) {
+            errorTool.add(
+              optionName,
+              `"${fieldName}" is an alias; use "${virtualField}" instead`,
+            );
 
             continue;
           }
 
-          const { revalidatedData, success } = await this._handlePostValidator({
-            errorTool,
-            propsProvided,
-            summary: this._getMutableSummary({
-              data: this.values,
-              isUpdate,
-              inputValues: this.inputValues,
-            }),
-            validator: v1 as any,
-            postValidatableProps,
-          });
-
-          if (!success) break;
-
-          if (revalidatedData) handleRevalidatedData(revalidatedData);
+          if (!definitions[fieldName])
+            errorTool.add(
+              optionName,
+              `"${fieldName}" is not a valid field on your schema`,
+            );
         }
-      }),
-    );
-
-    return errorTool;
-  }
-
-  private async _handlePostValidator({
-    errorTool,
-    propsProvided,
-    postValidatableProps,
-    summary,
-    validator,
-  }: {
-    errorTool: ErrorTool;
-    propsProvided: Extract<keyof Input, string>[];
-    postValidatableProps: Extract<keyof Input, string>[];
-    summary: IvoSummary<Input, Output, CtxOptions>;
-    validator: PostValidator<KeyOf<Input>, Input, Output, Aliases, CtxOptions>;
-  }) {
-    const revalidatedData: Partial<Output> = {};
-
-    try {
-      const res = await Promise.try(validator, summary, propsProvided);
-
-      if (!isRecordLike(res)) return { revalidatedData: null, success: true };
-
-      const { errors, validatedData } =
-        this._handleObjectValidationResponse(res);
-
-      for (const [prop, validated] of Object.entries(validatedData) as [
-        KeyOf<Input>,
-        any,
-      ][]) {
-        const propName = (this._getAliasByVirtual(prop as never) ??
-          prop) as keyof Output;
-
-        if (
-          postValidatableProps.includes(prop) ||
-          postValidatableProps.includes(propName as any)
-        )
-          revalidatedData[propName] = validated;
-      }
-
-      for (const [prop, error] of Object.entries(errors))
-        errorTool.set(prop, makeFieldError(error));
-    } catch {
-      for (const prop of propsProvided) {
-        const alias = this._getAliasByVirtual(prop as never);
-
-        let errorField: string | undefined;
-
-        if (alias && isPropertyOf(alias, summary.inputValues))
-          errorField = alias;
-        else if (isPropertyOf(prop, summary.inputValues)) errorField = prop;
-
-        if (errorField) errorTool.set(errorField, validationFailedFieldError);
       }
     }
 
-    const success = !errorTool.isLoaded;
-
-    return {
-      revalidatedData:
-        !success || !Object.keys(revalidatedData).length
-          ? null
-          : revalidatedData,
-      success,
-    };
+    normalizedOptions.onSuccess = onSuccess;
   }
 
-  private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
-    const summary = this._getMutableSummary({
-      data: this.values,
-      isUpdate,
-      inputValues: this.inputValues,
-    });
+  if ('postValidate' in options) {
+    const optionName = 'options.postValidate';
+    const type_not_allowed_error =
+      'only lax, required and virtual fields can be post-validated';
 
-    const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR,
-      summary.options,
-    );
+    const postValidate: PostValidationConfig<
+      any,
+      I,
+      O,
+      CtxOptions,
+      ErrorMetadata
+    >[] = [];
 
-    await Promise.allSettled(
-      Array.from(this.propsRequiredBy.keys()).map(async (prop) => {
-        let isUpdatable = false;
+    // @ts-expect-error ikr
+    for (const { fields, validator } of toArray(options.postValidate)) {
+      postValidate.push({ fields, validator });
 
-        if (isUpdate && this._isReadonly(prop)) {
-          isUpdatable = this._isUpdatable(
-            prop,
-            (summary.inputValues as never)?.[prop],
+      if (fields.length < 2)
+        errorTool.add(
+          optionName,
+          'post-validation config expects at least 2 fields',
+        );
+
+      if (
+        typeof validator !== 'function' &&
+        !(
+          Array.isArray(validator) &&
+          validator.length > 0 &&
+          validator.every(
+            (v) =>
+              typeof v === 'function' ||
+              (Array.isArray(v) &&
+                v.length > 0 &&
+                v.every((v1) => typeof v1 === 'function')),
+          )
+        )
+      )
+        errorTool.add(
+          optionName,
+          'validator must be a function or array of functions',
+        );
+
+      const fieldNames = new Set<string>();
+
+      for (const fieldName of fields) {
+        if (fieldNames.has(fieldName))
+          errorTool.add(
+            optionName,
+            `remove duplicates of "${fieldName}" in your grouped post-validation config`,
           );
 
-          if (!isUpdatable) return;
-        }
+        fieldNames.add(fieldName);
 
-        const [isRequired, message] = await Promise.try(
-          this._getRequiredState,
-          prop,
-          summary as never,
-        );
+        const virtualField = aliasToVirtualMap.get(fieldName);
+
+        if (virtualField)
+          errorTool.add(
+            optionName,
+            `"${fieldName}" is an alias; use "${virtualField}" instead`,
+          );
 
         if (
-          !isRequired ||
-          (isUpdate &&
-            !isUpdatable &&
-            !this._isUpdatable(prop, (summary.inputValues as never)?.[prop]))
+          !isOneOf(definitions[fieldName]?.type, ['lax', 'required', 'virtual'])
         )
-          return;
+          errorTool.add(
+            optionName,
+            `${type_not_allowed_error} remove "${fieldName}"`,
+          );
+      }
+    }
 
-        const value = (data as never)[prop];
+    normalizedOptions.postValidate = postValidate;
+  }
 
-        const alias = this._getAliasByVirtual(prop);
+  if ('required' in options) {
+    const optionName = 'options.required';
+    const type_not_allowed_error =
+      'only lax and virtual fields can belong to grouped required configs;';
+    const required: NS.RequiredConfigObject<I, O, CtxOptions, ErrorMetadata>[] =
+      [];
 
-        if (!alias) {
-          errorTool.set(prop, makeFieldError(message), value);
+    // @ts-expect-error ikr
+    for (const { fields, handler } of toArray(options.required)) {
+      required.push({ fields, handler });
+      let hasErrors = false;
 
-          return;
-        }
-
-        errorTool.set(
-          alias as never,
-          makeFieldError(
-            message === `'${prop}' is required`
-              ? `'${alias}' is required`
-              : message,
-          ),
-          value,
+      if (!Array.isArray(fields) || fields.length < 2) {
+        errorTool.add(
+          optionName,
+          'grouped required config expects at least 2 fields',
         );
-      }),
-    );
+        hasErrors = true;
+      }
 
-    return errorTool;
-  }
+      if (typeof handler !== 'function') {
+        errorTool.add(
+          optionName,
+          'the hander of grouped required config must a function',
+        );
+        hasErrors = true;
+      }
 
-  private async _handleSanitizationOfVirtuals(
-    data: Partial<Output>,
-    isUpdate = false,
-  ) {
-    const sanitizers: [KeyOf<Input>, Function][] = [];
+      if (hasErrors) continue;
 
-    const partialCtx = this._getPartialContext();
+      const fieldNames = new Set<string>();
 
-    const successFulVirtuals = getKeysAsProps(partialCtx).filter(
-      this._isVirtual,
-    );
+      for (const fieldName of fields) {
+        if (fieldNames.has(fieldName))
+          errorTool.add(
+            optionName,
+            `remove duplicates of "${fieldName}" in your grouped required config`,
+          );
 
-    for (const prop of successFulVirtuals) {
-      const [isSanitizable, sanitizer] = this._isSanitizable(prop, !isUpdate);
+        fieldNames.add(fieldName);
 
-      if (isSanitizable) sanitizers.push([prop as KeyOf<Input>, sanitizer]);
+        const virtualField = aliasToVirtualMap.get(fieldName);
+
+        if (virtualField)
+          errorTool.add(
+            optionName,
+            `"${fieldName}" is an alias; use "${virtualField}" instead`,
+          );
+
+        if (!isOneOf(definitions[fieldName]?.type, ['lax', 'virtual']))
+          errorTool.add(
+            optionName,
+            `${type_not_allowed_error} remove "${fieldName}"`,
+          );
+      }
     }
 
-    const summary = this._getMutableSummary({
-      data,
-      isUpdate,
-      inputValues: this.inputValues,
-    });
-
-    await Promise.allSettled(
-      sanitizers.map(async ([prop, sanitizer]) => {
-        // @ts-expect-error
-        const resolvedValue = await Promise.try(sanitizer, summary);
-
-        this._updateContext({ [prop]: resolvedValue } as never);
-      }),
-    );
+    normalizedOptions.required = required;
   }
 
-  private _handleObjectValidationResponse(data: Record<string, unknown>) {
-    const validProperties = getKeysAsProps(data).filter((prop) =>
-      this._isInputOrAlias(prop),
+  if (errorTool.isPayloadLoaded) errorTool.throw();
+
+  return normalizedOptions as any;
+}
+
+function isTimestampsConfigOptionOk<I, O>(
+  timestamps: NS.Options<I, O>['timestamps'],
+) {
+  const valid = false;
+
+  const typeProveded = typeof timestamps;
+
+  if (typeProveded === 'boolean') return { valid: true };
+
+  if (!isRecordLike(timestamps))
+    return { valid, reason: 'expected "boolean" or "non null object"' };
+
+  if (!Object.keys(timestamps!).length)
+    return { valid, reason: 'cannot be an empty object' };
+
+  const createdAt =
+    typeof timestamps.createdAt === 'string'
+      ? timestamps.createdAt
+      : 'createdAt';
+
+  let updatedAt =
+    typeof timestamps.updatedAt === 'string'
+      ? timestamps.updatedAt
+      : 'updatedAt';
+
+  if (typeof createdAt === 'string' && !createdAt.trim().length)
+    return { valid, reason: "'createdAt' cannot be an empty string" };
+
+  if (typeof updatedAt === 'string' && !updatedAt.trim().length)
+    return { valid, reason: "'updatedAt' cannot be an empty string" };
+
+  if (typeof timestamps.updatedAt === 'object') {
+    const updatedAtConfig = timestamps.updatedAt;
+
+    const keys = Object.keys(updatedAtConfig).filter((prop) =>
+      isOneOf(prop, ['key', 'nullable']),
     );
 
-    const errors = {} as Record<string, string | InputFieldError>;
-    const validatedData = {} as Record<string, unknown>;
+    if (!keys.length)
+      return {
+        valid,
+        reason: "'updatedAt' can only accept fields 'key' and 'nullable'",
+      };
 
-    for (const prop of validProperties) {
-      const res = data[prop];
+    if (keys.includes('key')) {
+      updatedAt = updatedAtConfig.key!;
 
-      if (typeof res === 'object' && 'validated' in (res as any)) {
-        validatedData[prop] = (res as any).validated;
-
-        continue;
-      }
-
-      if (isInputFieldError(res)) {
-        errors[prop] = res as InputFieldError;
-
-        continue;
-      }
-
-      if (typeof res === 'string') {
-        const message = res.trim();
-
-        errors[prop] = message.length ? message : 'validation failed';
-
-        continue;
-      }
-
-      errors[prop] = 'validation failed';
+      if (typeof updatedAt !== 'string' || !updatedAt.trim().length)
+        return { valid, reason: "'updatedAt.key' must be a valid string" };
     }
-
-    return { errors, validatedData };
-  }
-
-  private _isSanitizable(
-    prop: string,
-    isCreation: boolean,
-  ): [false, undefined] | [true, Function] {
-    const { sanitizer, shouldInit } = this._getDefinition(prop);
-
-    if (!sanitizer) return [false, undefined];
-
-    if (isCreation && isEqual(shouldInit, false)) return [false, undefined];
-
-    return [true, sanitizer];
-  }
-
-  private _isGloballyUpdatable(changes: unknown) {
-    const { shouldUpdate = defaultOptions.shouldUpdate! } = this._options;
-
-    if (typeof shouldUpdate === 'boolean') return shouldUpdate;
-
-    return shouldUpdate(
-      this._getMutableSummary({
-        data: changes as never,
-        isUpdate: true,
-        inputValues: this.inputValues,
-      }) as never,
-    );
-  }
-
-  private _isUpdatable(prop: string, value: unknown = undefined) {
-    if (!this._isInputOrAlias(prop)) return false;
-
-    const isAlias = this._isVirtualAlias(prop);
-
-    const propName = (
-      isAlias ? this._getVirtualByAlias(prop)! : prop
-    ) as KeyOf<Output>;
 
     if (
-      this._isIngnorable(propName) &&
-      this._shouldIgnore({ prop: propName, isUpdate: true })
+      keys.includes('nullable') &&
+      typeof updatedAtConfig.nullable !== 'boolean'
     )
-      return false;
-
-    const hasShouldUpdateRule = this._isRuleInDefinition(
-      propName,
-      'shouldUpdate',
-    );
-
-    const extraCtx = isAlias ? { [propName]: value } : {};
-
-    const isUpdatable = this._isUpdateAllowed(propName, extraCtx);
-
-    if (this._isVirtual(prop)) return hasShouldUpdateRule ? isUpdatable : true;
-
-    if (hasShouldUpdateRule && !isUpdatable) return false;
-
-    if (this._isReadonly(propName))
-      return isEqual(
-        this.defaults[propName],
-        this.values[propName],
-        this._options.equalityDepth,
-      );
-
-    return !isEqual(this.values[propName], value, this._options.equalityDepth);
+      return { valid, reason: "'updatedAt.nullable' must be a boolean" };
   }
 
-  private _isInputOrAlias = (prop: string) =>
-    this._isVirtualAlias(prop) || this._isInputProp(prop);
+  if (createdAt === updatedAt)
+    return { valid, reason: 'createdAt & updatedAt cannot be same' };
 
-  private _makeHandleFailure(
-    data: Partial<Output>,
-    errorTool: ErrorTool,
-    virtuals: KeyOf<Output>[] = [],
-  ) {
-    const ctx = this._getContext(),
-      options = this._getCtxOptions(),
-      props = Array.from(
-        new Set([...getKeysAsProps(data), ...errorTool.fields, ...virtuals]),
-      );
-
-    let cleanups: NS.FailureHandler<Input, Output, CtxOptions>[] = [];
-
-    for (const prop of props)
-      cleanups = cleanups.concat(
-        this._getHandlers<NS.FailureHandler<Input, Output, CtxOptions>>(
-          prop,
-          'onFailure',
-        ),
-      );
-
-    return async () => {
-      await Promise.allSettled(
-        cleanups.map(
-          async (h) =>
-            await Promise.try(
-              h,
-              this._getFrozenCopy(ctx),
-              this._getFrozenCopy(options),
-            ),
-        ),
-      );
-    };
-  }
-
-  private _makeHandleSuccess(data: Partial<Output>, isUpdate = false) {
-    const partialCtx = this._getPartialContext(),
-      successProps = getKeysAsProps(partialCtx),
-      summary = this._getSummary({
-        data,
-        isUpdate,
-        inputValues: this.inputValues,
-      }),
-      setOfSuccessHandlerIDs = new Set<string>();
-
-    let successListeners = [] as NS.SuccessHandler<Input, Output, CtxOptions>[];
-
-    for (const prop of successProps) {
-      const handlers = this._getHandlers<NS.SuccessHandler<Input, Output>>(
-        prop,
-        'onSuccess',
-      );
-
-      const setOfHandlerIDs = this.propToOnSuccessConfigIDMap.get(prop);
-
-      if (setOfHandlerIDs)
-        setOfHandlerIDs.forEach((id) => setOfSuccessHandlerIDs.add(id));
-
-      successListeners = successListeners.concat(handlers as never);
-    }
-
-    successListeners = successListeners.concat(this.globalSuccessHandlers);
-
-    for (const id of setOfSuccessHandlerIDs.values())
-      successListeners = successListeners.concat(
-        this.onSuccessConfigMap.get(id)!.handlers,
-      );
-
-    return async () => {
-      await Promise.allSettled(
-        successListeners.map(async (h) => await Promise.try(h, summary)),
-      );
-    };
-  }
-
-  private async _resolveDependentChanges(
-    data: Partial<Output>,
-    ctx: Context<Input, Output>,
-    isUpdate = false,
-  ) {
-    const isCreation = !isUpdate;
-    const successFulChanges = getKeysAsProps<Output>(ctx as never);
-    let _updates = Object.assign({}, data);
-    let toResolve = [] as KeyOf<Output>[];
-
-    for (const prop of successFulChanges) {
-      if (this._regeneratedProps.includes(prop) && !isPropertyOf(prop, data))
-        continue;
-
-      const dependencies = this._getDependencies(prop);
-
-      if (!dependencies.length) continue;
-
-      if (isCreation && this._isVirtual(prop) && !this._isVirtualInit(prop))
-        continue;
-
-      if (
-        isCreation &&
-        (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
-        isEqual(this.defaults[prop], data[prop], this._options.equalityDepth)
-      )
-        continue;
-
-      toResolve = toResolve.concat(dependencies as never);
-    }
-
-    toResolve = Array.from(new Set(toResolve));
-
-    const values = isUpdate ? data : Object.assign({}, this.values, data),
-      _ctx = this._getContext(),
-      summary = this._getMutableSummary({
-        data: values,
-        isUpdate,
-        inputValues: this.inputValues,
-      });
-
-    await Promise.allSettled(
-      toResolve.map(async (prop) => {
-        if (
-          this._isReadonly(prop) &&
-          !isCreation &&
-          !isEqual(
-            this.values[prop],
-            this.defaults[prop],
-            this._options.equalityDepth,
-          )
-        )
-          return;
-
-        const resolver = this._getDefinition(prop).resolver!;
-        let value: any;
-
-        try {
-          value = await Promise.try(resolver as any, summary);
-        } catch {
-          value = isCreation ? null : summary.previousValues?.[prop];
-        }
-
-        if (
-          !isCreation &&
-          isEqual(
-            value,
-            _ctx[prop as KeyOf<Context<Input, Output>>],
-            this._options.equalityDepth,
-          )
-        )
-          return;
-
-        data[prop] = value;
-        const updates = { [prop]: value } as never;
-
-        this._updateContext(updates);
-        this._updatePartialContext(updates);
-
-        const _data = await this._resolveDependentChanges(
-          data,
-          updates,
-          isUpdate,
-        );
-
-        _updates = Object.assign(_updates, _data);
-      }),
-    );
-
-    return _updates;
-  }
-
-  private _setValues(
-    values: Partial<Input | Output | Aliases>,
-    {
-      allowVirtuals = true,
-      allowTimestamps = false,
-    }: {
-      allowVirtuals?: boolean;
-      allowTimestamps?: boolean;
-    } = {
-      allowVirtuals: true,
-      allowTimestamps: false,
-    },
-  ) {
-    const keys = getKeysAsProps(values).filter((key) => {
-      if (
-        allowTimestamps &&
-        this.timestampTool.withTimestamps &&
-        this.timestampTool.isTimestampKey(key)
-      )
-        return true;
-
-      if (allowVirtuals && this._isVirtual(key)) return true;
-
-      return this._isProp(key);
-    });
-
-    const _values = {} as never;
-
-    sort(keys).forEach((key) => {
-      _values[key] = values[key] as never;
-    });
-
-    this.values = _values as Output;
-    this.context = Object.assign({}, this.defaults, this.values) as never;
-  }
-
-  private async _setMissingDefaults() {
-    this._regeneratedProps = getSetValuesAsProps(this.props).filter((prop) => {
-      return this._isDefaultable(prop) && isEqual(this.values[prop], undefined);
-    });
-
-    await Promise.allSettled(
-      this._regeneratedProps.map(async (prop) => {
-        const value = await Promise.try(this._getDefaultValue, prop);
-
-        this._updateContext({ [prop]: value } as never);
-        this._updatePartialContext({ [prop]: value } as never);
-      }),
-    );
-  }
-
-  private _setValidValue(
-    prop: KeyOf<Output>,
-    value: Output[KeyOf<Output>],
-    operationData: Partial<Output> = {},
-  ) {
-    const isAlias = this._isVirtualAlias(prop),
-      propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
-
-    if (!this._isVirtual(propName))
-      operationData[propName as KeyOf<Output>] = value;
-
-    const validCtxUpdate = { [propName]: value } as never;
-
-    this._updateContext(validCtxUpdate);
-    this._updatePartialContext(validCtxUpdate);
-  }
-
-  private _sanitizeValidationResponse<T>(
-    response: ValidatorResponseObject<T>,
-    value: unknown,
-  ): ValidatorResponseObject<T> {
-    const responseType = typeof response;
-
-    if (responseType === 'boolean')
-      return (
-        response
-          ? { valid: true, validated: value }
-          : getValidationFailedResponse(value)
-      ) as never;
-
-    if (!response && responseType !== 'object')
-      return getValidationFailedResponse(value) as never;
-
-    if (response?.valid) {
-      const validated = isEqual(response?.validated, undefined)
-        ? value
-        : response.validated;
-
-      return { valid: true, validated } as never;
-    }
-
-    const _response: InvalidValidatorResponse = {
-      valid: false,
-      value,
-    } as never;
-
-    if (response?.reason && typeof response?.reason === 'string')
-      _response.reason = response.reason;
-
-    if (response?.metadata && isRecordLike(response.metadata))
-      _response.metadata = sortKeys(response.metadata);
-    else _response.metadata = null;
-
-    if (!_response.reason) {
-      if (_response.metadata)
-        return {
-          ...getValidationFailedResponse(value),
-          metadata: _response.metadata,
-        } as never;
-
-      return getValidationFailedResponse(value) as never;
-    }
-
-    return makeResponse(_response);
-  }
-
-  private _useConfigProps(obj: Partial<Output>, isUpdate = false) {
-    if (!this.timestampTool.withTimestamps) return sortKeys(obj);
-
-    const { createdAt, updatedAt } = this.timestampTool.getKeys();
-    let results = Object.assign({}, obj);
-
-    const now = new Date();
-
-    if (updatedAt)
-      results = Object.assign(results, {
-        [updatedAt]: isUpdate
-          ? now
-          : this.timestampTool.isNullable
-            ? null
-            : now,
-      });
-
-    if (!isUpdate && createdAt)
-      results = Object.assign(results, { [createdAt]: now });
-
-    return sortKeys(results);
-  }
-
-  private async _validateAndSet(
-    operationData: Partial<Output>,
-    errorTool: ErrorTool,
-    prop: KeyOf<Output>,
-    value: unknown,
-  ) {
-    const isValid = (await Promise.try(() =>
-      this._validate(prop as never, value, this._getValidationSummary(false)),
-    )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
-
-    if (isValid.valid)
-      return this._setValidValue(prop, isValid.validated, operationData);
-
-    this._handleInvalidValue(errorTool, prop, isValid);
-  }
-
-  private async _validate<K extends KeyOf<Input & Aliases>>(
-    prop: K,
-    value: unknown,
-    summary: IvoSummary<Input, Output, CtxOptions>,
-  ) {
-    if (!this._isInputOrAlias(prop))
-      return makeResponse<(Input & Aliases)[K]>({
-        valid: false,
-        value,
-        reason: 'Invalid property',
-      });
-
-    const isAlias = this._isVirtualAlias(prop),
-      propName = (isAlias ? this._getVirtualByAlias(prop) : prop)!,
-      allowedValues = this.propsToAllowedValuesMap.get(propName);
-
-    if (allowedValues && !allowedValues.has(value)) {
-      const fieldError = makeFieldError(
-        this._getNotAllowedError(propName, value),
-      );
-
-      return makeResponse<(Input & Aliases)[K]>({
-        valid: false,
-        value,
-        reason: fieldError.reason,
-        metadata: fieldError.metadata || { allowed: Array.from(allowedValues) },
-      });
-    }
-
-    const validator = this._getPrimaryValidator(propName as never);
-
-    if (validator) {
-      let res: ValidatorResponseObject<(Input & Aliases)[K]>;
-
-      try {
-        res = this._sanitizeValidationResponse<(Input & Aliases)[K]>(
-          (await Promise.try(
-            validator,
-            value,
-            summary as never,
-          )) as ValidatorResponseObject<(Input & Aliases)[K]>,
-          value,
-        );
-      } catch {
-        return makeResponse<(Input & Aliases)[K]>({
-          valid: false,
-          reason: 'validation failed',
-        });
-      }
-
-      if (allowedValues && res.valid && !allowedValues.has(res.validated))
-        return makeResponse<(Input & Aliases)[K]>({
-          valid: true,
-          validated: value as never,
-        });
-
-      return res;
-    }
-
-    return makeResponse<(Input & Aliases)[K]>({
-      valid: true,
-      validated: value as never,
-    });
-  }
-
-  async create(
-    input: Partial<Input & Aliases> = {},
-    contextOptions: Partial<CtxOptions> = {},
-  ) {
-    this._updateCtxOptions(contextOptions);
-
-    if (!areValuesOk(input)) input = {};
-
-    const _input = this._cleanInput(input);
-
-    this._setValues(_input);
-
-    let data = await Promise.try(() => this._generateConstants());
-
-    const {
-      data: dt,
-      error,
-      virtuals,
-    } = await Promise.try(() =>
-      this._handleCreationPrimaryValidations(data, _input),
-    );
-
-    if (error.isLoaded) return this._handleError(data, error, virtuals);
-
-    data = dt;
-
-    const requiredError = await Promise.try(() => this._handleRequiredBy(data));
-    if (requiredError.isLoaded)
-      return this._handleError(data, requiredError, virtuals);
-
-    const error2 = await Promise.try(() =>
-      this._handleSecondaryValidations(data),
-    );
-    if (error2.isLoaded) return this._handleError(data, error2, virtuals);
-
-    const postValidationError = await Promise.try(() =>
-      this._handlePostValidations(data),
-    );
-    if (postValidationError.isLoaded)
-      return this._handleError(data, postValidationError, virtuals);
-
-    await this._handleSanitizationOfVirtuals(data);
-    data = await Promise.try(() =>
-      this._resolveDependentChanges(data, this._getPartialContext()),
-    );
-
-    const finalData = this._useConfigProps(data);
-
-    this._updateContext(finalData as never);
-    this._updatePartialContext(finalData as never);
-
-    return {
-      data: finalData as Output,
-      error: null,
-      handleFailure: null,
-      handleSuccess: this._makeHandleSuccess(finalData),
-    };
-  }
-
-  async delete(values: Output, contextOptions: Partial<CtxOptions> = {}) {
-    const options = this._updateCtxOptions(contextOptions); // TODO: remove
-
-    if (!areValuesOk(values)) return;
-
-    this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
-
-    let handlers: NS.DeleteHandler<Output, CtxOptions>[] = [
-      ...this.globalDeleteHandlers,
-    ];
-
-    const data = this._getFrozenCopy(this.values);
-
-    for (const prop of getSetValuesAsProps(this.props)) {
-      const handlers_ = this._getHandlers<NS.DeleteHandler<Output, CtxOptions>>(
-        prop,
-        'onDelete',
-      );
-
-      if (handlers_.length) handlers = handlers.concat(handlers_);
-    }
-
-    await Promise.allSettled(
-      handlers.map(
-        async (h) =>
-          await Promise.try(
-            h,
-            this._getFrozenCopy(data),
-            this._getFrozenCopy(options),
-          ),
-      ),
-    );
-  }
-
-  async update(
-    values: Output,
-    changes: Partial<Input & Aliases>,
-    ctxOptions: Partial<CtxOptions> = {},
-  ) {
-    const ctxOpts = this._updateCtxOptions(ctxOptions);
-
-    const errorNothingToUpdate = new this._options.ErrorTool(
-      VALIDATION_ERRORS.NOTHING_TO_UPDATE,
-      ctxOpts,
-    );
-
-    if (!areValuesOk(values) || !areValuesOk(changes))
-      return this._handleError({}, errorNothingToUpdate, []);
-
-    this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
-
-    if (this._options?.setMissingDefaultsOnUpdate)
-      await this._setMissingDefaults();
-
-    const _changes = this._cleanInput(changes);
-
-    if (!(await this._isGloballyUpdatable(_changes)))
-      return this._handleError({}, errorNothingToUpdate, []);
-
-    const {
-      error,
-      updates: dt,
-      virtuals,
-    } = await this._handleUpdatePrimaryValidations(_changes);
-
-    if (error.isLoaded) return this._handleError(dt, error, virtuals);
-
-    let updates = dt;
-
-    const requiredErrorTool = await this._handleRequiredBy(updates, true);
-    if (requiredErrorTool.isLoaded)
-      return this._handleError(updates, requiredErrorTool, virtuals);
-
-    const error2 = await this._handleSecondaryValidations(updates, true);
-    if (error2.isLoaded) return this._handleError(updates, error2, virtuals);
-
-    const postValidationError = await this._handlePostValidations(
-      updates,
-      true,
-    );
-    if (postValidationError.isLoaded)
-      return this._handleError(updates, postValidationError, virtuals);
-
-    await this._handleSanitizationOfVirtuals(updates, true);
-
-    updates = await this._resolveDependentChanges(
-      updates,
-      this._getPartialContext(),
-      true,
-    );
-
-    for (const prop of getKeysAsProps(updates))
-      if (
-        isEqual(updates[prop], this.values[prop], this._options.equalityDepth)
-      )
-        delete updates[prop];
-
-    if (!Object.keys(updates).length) {
-      errorNothingToUpdate.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE);
-
-      return this._handleError(updates, errorNothingToUpdate, virtuals);
-    }
-
-    if (this._options?.setMissingDefaultsOnUpdate)
-      this._regeneratedProps.forEach((prop) => {
-        if (isEqual(updates[prop], undefined))
-          updates[prop] = this.context[prop] as never;
-      });
-
-    const finalData = this._useConfigProps(updates, true);
-
-    this._updateContext(finalData as never);
-
-    return {
-      data: finalData as Partial<Output>,
-      error: null,
-      handleFailure: null,
-      handleSuccess: this._makeHandleSuccess(finalData, true),
-    };
-  }
+  return { valid: true };
 }
 
-class Model<
-  Input extends RealType<Input>,
-  Output extends RealType<Output>,
-  Aliases = never,
-  CtxOptions extends ObjectType = never,
-  ErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
-    KeyOf<Input & Aliases>
+function getRedundantDependency(
+  parentFields: ArrayOfMinSizeOne<NS.Dependables<any, any, any>>,
+  dependentFieldToParentFields: Map<
+    string,
+    ArrayOfMinSizeOne<NS.Dependables<any, any, any>>
   >,
-> {
-  constructor(
-    private modelFactory: () => ModelTool<
-      Input,
-      Output,
-      Aliases,
-      CtxOptions,
-      ErrorTool
-    >,
-  ) {}
+): [string, string, number] | null {
+  for (const parentName of parentFields) {
+    for (const fieldName of parentFields) {
+      if (fieldName === parentName) continue;
 
-  create = (
-    values: Partial<Input & Aliases> = {},
-    contextOptions: Partial<CtxOptions> = {},
-  ) => this.modelFactory().create(values, contextOptions);
+      const res = isFieldRedundantlyDependentOnParent(
+        fieldName,
+        parentName,
+        dependentFieldToParentFields,
+        0,
+      );
 
-  delete = (values: Output, contextOptions: Partial<CtxOptions> = {}) =>
-    this.modelFactory().delete(values, contextOptions);
+      if (res) return [fieldName, ...res];
+    }
+  }
 
-  update = (
-    values: Output,
-    changes: Partial<Input & Aliases>,
-    contextOptions: Partial<CtxOptions> = {},
-  ) => this.modelFactory().update(values, changes, contextOptions);
+  return null;
 }
 
-function areValuesOk(values: unknown) {
-  return values && typeof values === 'object';
+function isFieldRedundantlyDependentOnParent(
+  fieldName: string,
+  parentName: string,
+  dependentFieldToParentFields: Map<
+    string,
+    ArrayOfMinSizeOne<NS.Dependables<any, any, any>>
+  >,
+  depth: number,
+): [string, number] | null {
+  const parentDeps = dependentFieldToParentFields.get(fieldName);
+
+  if (parentDeps) {
+    // @ts-expect-error ikr
+    if (parentDeps.includes(parentName)) return [parentName, depth];
+
+    for (const next_fieldName of parentDeps) {
+      const r = isFieldRedundantlyDependentOnParent(
+        next_fieldName,
+        parentName,
+        dependentFieldToParentFields,
+        depth + 1,
+      );
+
+      if (r) return r;
+    }
+
+    return null;
+  }
+
+  return null;
 }
 
-function getValidationFailedResponse(value: unknown) {
-  return {
-    metadata: null,
-    reason: 'validation failed',
-    valid: false,
-    value,
-  } as ValidatorResponseObject<unknown>;
+function getCircularDependencyChain(
+  dependentFieldName: string,
+  parentFields: ArrayOfMinSizeOne<NS.Dependables<any, any, any>>,
+  dependentFieldToParentFields: Map<
+    string,
+    ArrayOfMinSizeOne<NS.Dependables<any, any, any>>
+  >,
+): string[] | null {
+  for (const parentName of parentFields) {
+    const chain = isFieldCircularlyDependentOnParent(
+      dependentFieldName,
+      parentName,
+      dependentFieldToParentFields,
+      [dependentFieldName],
+    );
+
+    if (chain) return chain;
+  }
+
+  return null;
+}
+
+function isFieldCircularlyDependentOnParent(
+  dependentFieldName: string,
+  parentName: string,
+  dependentFieldToParentFields: Map<
+    string,
+    ArrayOfMinSizeOne<NS.Dependables<any, any, any>>
+  >,
+  visited_nodes: string[],
+): string[] | null {
+  const parentDeps = dependentFieldToParentFields.get(parentName);
+  if (parentDeps) {
+    const next_visited = [...visited_nodes, parentName];
+
+    // @ts-expect-error ikr
+    if (parentDeps.includes(dependentFieldName)) return next_visited;
+
+    for (const fieldName of parentDeps) {
+      const r = isFieldCircularlyDependentOnParent(
+        dependentFieldName,
+        fieldName,
+        dependentFieldToParentFields,
+        next_visited,
+      );
+
+      if (r) return r;
+    }
+
+    return null;
+  }
+
+  return null;
 }

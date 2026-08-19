@@ -2,17 +2,19 @@
   "name": "ivo",
   "author": "kamtoeddy",
   "description": "The schema valitator that brings user stories to life",
-  "version": "1.9.0",
+  "version": "2.0.0-beta.2",
   "scripts": {
     "build": "tsdown",
+    "build:dev": "tsdown",
     "build:watch": "tsdown --watch",
     "clean": "rm -rf coverage dist",
-    "cleanup": "bun run typecheck && bun run lint",
+    "cleanup": "bun run typecheck && bun run typecheck:test && bun run lint",
     "lint": "clear; bunx @biomejs/biome check --write .",
     "test": "bun run build && bun test",
     "test:cov": "bun run build && bun test --coverage",
     "test:watch": "bun run build && bun test --watch",
-    "typecheck": "clear; tsc --noEmit -p ./tsconfig.json"
+    "typecheck": "clear; tsc --noEmit -p ./tsconfig.json",
+    "typecheck:test": "clear; tsc --noEmit -p tests/tsconfig.json"
   },
   "license": "../LICENSE",
   "homepage": "https://github.com/kamtoeddy/ivo/ts/#readme",
@@ -48,9 +50,9 @@
     "validation"
   ],
   "devDependencies": {
-    "@biomejs/biome": "^2.4.14",
-    "@types/bun": "^1.3.13",
-    "tsdown": "^0.22.0",
-    "typescript": "^6.0.3"
+    "@biomejs/biome": "^2.5.6",
+    "@types/bun": "^1.3.14",
+    "tsdown": "^0.22.14",
+    "typescript": "^7.0.2"
   }
 }

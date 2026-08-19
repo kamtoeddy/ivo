@@ -1,12 +1,13 @@
 use std::marker::PhantomData;
 
 use crate::__private_types::types::{BooleanResolver, Resolver};
+use crate::schema::fields::types::{ConstantValue, DefaultValue, VirtualSanitizer};
 use crate::types::internal::{types::ErasedValue, IvoErrorSanitizer};
 use crate::{
     schema::{
         fields::types::{
             ComputableRequiredError, IsFieldProvisionEnabled, RequiredResolver, TimestampResolver,
-            UniformValidator, ValueResolverWithSharedInput, VirtualSanitizer,
+            UniformValidator,
         },
         types::{DeleteHandler, FailureHandler, FieldValue, No, SuccessHandler, Yes},
     },
@@ -41,13 +42,14 @@ pub struct FieldConfig<
     CtxOptions,
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > {
+    pub name: &'static str,
     pub field_type: FieldType,
     pub alias: Option<&'static str>,
-    pub default: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,
+    pub default: Option<DefaultValue<T, I, CtxOptions>>,
     pub depends_on: Option<Vec<&'static str>>,
-    pub value: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,
+    pub value: Option<ConstantValue<T, I, O, CtxOptions>>,
     pub required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
-    pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
+    pub required_error: Option<ComputableRequiredError<I, CtxOptions>>,
     pub resolver: Option<Resolver<T, I, O, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitizer<T, I, O, CtxOptions>>,
     pub validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
@@ -67,6 +69,7 @@ impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitize
 {
     fn default() -> Self {
         Self {
+            name: "",
             field_type: FieldType::Lax,
             alias: None,
             value: None,

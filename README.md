@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kamtoeddy/ivo/main/docs/static/img/logo.png" alt="ivo logo" width="120" />
+</p>
+
 # ivo
 
 ivo is a user-story-focused, event-driven data validation framework. It provides a structured rule engine to coordinate and enforce creation, update, and deletion operations on domain entities.
@@ -10,10 +14,10 @@ While typical struct validators only check isolated field constraints, ivo allow
 
 # Quick links
 
-| Language   | Docs                                             | Main demo                                   | Examples                          |
-| ---------- | ------------------------------------------------ | ------------------------------------------- | --------------------------------- |
-| Rust       | [link](./rs/README.md#rust-implementation)       | [link](./rs/examples/main_demo/src/main.rs) | [link](./rs/examples/)            |
-| TypeScript | [link](./ts/README.md#typescript-implementation) | [link](./ts/examples/main_demo/index.ts)    | [link](./ts/docs/v1.9.0/index.md) |
+| Language   | Docs                                      | Code                                                  |
+| ---------- | ----------------------------------------- | ----------------------------------------------------- |
+| Rust       | [link](https://ivo.kamtoeddy.com/docs/rs) | [link](https://github.com/kamtoeddy/ivo/tree/main/rs) |
+| TypeScript | [link](https://ivo.kamtoeddy.com/docs/ts) | [link](https://github.com/kamtoeddy/ivo/tree/main/ts) |
 
 # Definition of terms
 

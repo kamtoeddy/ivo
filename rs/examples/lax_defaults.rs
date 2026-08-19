@@ -1,8 +1,8 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
+use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
-type DataModel = Model<DataInput, Data>;
+type DataModel = IvoModel<DataInput, Data>;
 const DEFAULT_USERNAME: &str = "default-username";
 
 #[async_std::main]
@@ -81,11 +81,10 @@ pub struct Data {
 }
 
 pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|| {
-    Model::new(
+    IvoModel::new(
         |f| {
             f.field(
-                "username",
-                IvoField::LAX
+                lax_field("username")
                     .default(DEFAULT_USERNAME.to_string())
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         println!(
@@ -107,11 +106,10 @@ pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|
 });
 
 pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|| {
-    Model::new(
+    IvoModel::new(
         |f| {
             f.field(
-                "username",
-                IvoField::LAX
+                lax_field("username")
                     .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         println!(

@@ -46,7 +46,7 @@ const userSchema = new Schema<UserInput, User>({
 const UserModel = userSchema.getModel();
 ```
 
-# Properties of a model
+## Properties of a model
 
 These methods are async because custom validators could be async as well.
 
@@ -56,28 +56,28 @@ These methods are async because custom validators could be async as well.
 | delete   | function | Async method to trigger all onDelete listeners |
 | update   | function | Async method to update an instance             |
 
-# Accepted rules
+## Accepted rules
 
 | Property     | Type                         | Description                                                                                                                                                     |
 | ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | allow        | any[ ] \| object             | used to specify the values that should be accepted for a property. [See more](./definitions/allowed-values.md#allowed-values)                                   |
 | constant     | boolean                      | use with **`value`** rule to specify a property with a forever constant value. [more](./definitions/constants.md#constant-properties)                           |
 | default      | any \| function              | the default value of a propterty. [more](./definitions/defaults.md#default-values)                                                                              |
-| dependsOn    | string \| string[ ]          | a property or list of property the said property depends on. [more](./definitions/dependents.md#dependent-properties)                                           |
+| dependsOn    | string \| string[ ]          | a property or list of property the said property depends on. [more](./definitions/dependents.md)                                           |
 | ignore       | function                     | a function used to determine whether the input value of a property should be ignored. This acts as `shouldInit` + `shouldUpdate`                                |
 | onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                                         |
 | onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                      |
 | onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                         |
-| readonly     | boolean \| 'lax'             | a propterty whose value should not change [more](./definitions/readonly.md#readonly-properties)                                                                 |
-| required     | boolean \| function          | a property that must be set during an operation [more](./definitions/required.md#required-properties)                                                           |
+| readonly     | boolean \| 'lax'             | a propterty whose value should not change [more](./definitions/readonly.md)                                                                 |
+| required     | boolean \| function          | a property that must be set during an operation [more](./definitions/required.md)                                                           |
 | sanitizer    | function                     | This could be used to transform a virtual property before their dependent properties get resolved. [more](./definitions/virtuals.md#sanitizer)                  |
 | shouldInit   | false \| function(): boolean | A boolean or setter that tells ivo whether or not a property should be initialized.                                                                             |
 | shouldUpdate | false \| function(): boolean | A boolean or setter that tells ivo whether or not a property should be initialized.                                                                             |
-| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../v3.4.0/validate/index.md#validators)                                             |
-| value        | any \| function              | value or setter of constant property. [more](./definitions/constants.md#constant-properties`)                                                                   |
+| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](./validators.md)                                             |
+| value        | any \| function              | value or setter of constant property. [more](./definitions/constants.md#constant-properties)                                                                   |
 | virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./definitions/virtuals.md#virtual-properties) |
 
-# Options
+## Options
 
 ```ts
 import type { Context, IvoSummary, ReadonlyIvoSummary } from 'ivo';
@@ -120,7 +120,7 @@ const schema = new Schema<Input, Output, CtxOptions, ErrorToolClass>(definitions
 
 More details on the `Context` & `Summary` utiliies can be found [here](./life-cycles.md#the-operation-context)
 
-## equalityDepth (default: 1)
+### equalityDepth (default: 1)
 
 This is the number used to determine if the value of a property has changed during updates.
 
@@ -201,9 +201,9 @@ Model.update(user, {
 });
 ```
 
-## errorTool
+### errorTool
 
-This is a class which will be used to manage your validation errors, hence giving you the power to have custom validation errors. See example [here](../../tests/schema/samples/custom-error-tool/index.ts)
+This is a class which will be used to manage your validation errors, hence giving you the power to have custom validation errors. See example [here](https://github.com/kamtoeddy/ivo/blob/main/ts/tests/extras/error-sanitizer.ts)
 
 ```ts
 import type { ValidationErrorMessage, IErrorTool } from "ivo";
@@ -236,25 +236,25 @@ type IValidationError<ExtraData extends ObjectType = {}> = ({
 } & ExtraData) & {};
 ```
 
-## onDelete
+### onDelete
 
 This could be a function or an array of functions with the `DeleteListener` signature above. These functions would be triggered together with the onDelete listeners of individual properties when the `Model.delete` method is invoked. See more [here](./life-cycles.md#ondelete)
 
-## onSuccess
+### onSuccess
 
 This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
 
-## postValidate
+### postValidate
 
 To validate integrity of more than one field after initial validation. More on this [here](./validators.md#post-validation)
 
-## setMissingDefaultsOnUpdate
+### setMissingDefaultsOnUpdate
 
 A boolean. If set to `true`, it'll check all defaultable properties of the existing data passed to the model's update method `Model.update(existingData, updates)`, for all the properties with value `undefined` it'll generate their default values, add these them to the operation's context before validating the updates provided.
 
 If the update operation is successful, the newly generated default values will also be added to the updated values returned if not already present on the updated values. Default **false**
 
-## shouldUpdate (default: true)
+### shouldUpdate (default: true)
 
 A boolean or a function that expects the operation's summary and returns a boolean value. This value is read/computed before the values provided during updates have been validated.
 
@@ -267,7 +267,7 @@ new Schema(
 );
 ```
 
-## timestamps (default: false)
+### timestamps (default: false)
 
 If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation & during update. But you can overwrite the options and use your own properties like in the example below. Default **false**
 
@@ -314,6 +314,6 @@ let transactionSchema = new Schema(definitions, {
 });
 ```
 
-## useParentOptions (default: true)
+### useParentOptions (default: true)
 
 When extending schemas, extended schemas automatically inherit all options(except life cycle methods) of base schema. Setting `useParentOptions: false` in extended schema option will prevent this behaviour. Default is `true`

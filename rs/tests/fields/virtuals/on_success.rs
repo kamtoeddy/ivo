@@ -1,6 +1,8 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{
+    dependent_field, lax_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct,
+};
 
 use crate::async_test_matrix;
 
@@ -20,21 +22,19 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation()
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -101,21 +101,19 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -185,21 +183,19 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -267,21 +263,19 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -354,21 +348,19 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -443,21 +435,19 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -531,21 +521,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -658,21 +646,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -787,21 +773,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -917,21 +901,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -1048,21 +1030,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1180,21 +1160,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1312,21 +1290,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -1418,21 +1394,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1525,21 +1499,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1632,21 +1604,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -1720,21 +1690,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1809,21 +1777,19 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -1899,28 +1865,24 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(lax_field("lax").default(default_lax_value))
+            .field(virtual_field("virtual_field").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| {
             o.on_success(["virtual_field"], |s| {
@@ -1980,21 +1942,19 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -2063,43 +2023,40 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "dependent",
-                IvoField::DEPENDENT
-                    .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(
+            |f| {
+                f.field(
+                    dependent_field("dependent")
+                        .default(default_dependent_value)
+                        .depends_on(["virtual_field"])
+                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                            ready(ctx.values().dependent.unwrap() + 1)
+                        }),
+                )
+                .field(lax_field("lax").default(default_lax_value))
+                .field(virtual_field("virtual_field").alias("dependent").validate(
+                    |v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
                         ready(Ok(None))
-                    }),
-            )
-        },
-        |o| {
-            o.on_success(["virtual_field"], |s| {
-                s.handle(|_, _| {
-                    if true {
-                        panic!("[options.on_success]: on_success triggered")
-                    }
+                    },
+                ))
+            },
+            |o| {
+                o.on_success(["virtual_field"], |s| {
+                    s.handle(|_, _| {
+                        if true {
+                            panic!("[options.on_success]: on_success triggered")
+                        }
 
-                    ready(())
+                        ready(())
+                    })
                 })
-            })
-        },
-    );
+            },
+        );
 
     let (data, handle_success, _) = model
         .create(
@@ -2145,28 +2102,24 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(lax_field("lax").default(default_lax_value))
+            .field(virtual_field("virtual_field").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| {
             o.on_success(["virtual_field"], |s| {
@@ -2249,21 +2202,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -2355,43 +2306,40 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "dependent",
-                IvoField::DEPENDENT
-                    .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(
+            |f| {
+                f.field(
+                    dependent_field("dependent")
+                        .default(default_dependent_value)
+                        .depends_on(["virtual_field"])
+                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                            ready(ctx.values().dependent.unwrap() + 1)
+                        }),
+                )
+                .field(lax_field("lax").default(default_lax_value))
+                .field(virtual_field("virtual_field").alias("dependent").validate(
+                    |v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
                         ready(Ok(None))
-                    }),
-            )
-        },
-        |o| {
-            o.on_success(["virtual_field"], |s| {
-                s.handle(|_, _| {
-                    if true {
-                        panic!("[options.on_success]: on_success triggered")
-                    }
+                    },
+                ))
+            },
+            |o| {
+                o.on_success(["virtual_field"], |s| {
+                    s.handle(|_, _| {
+                        if true {
+                            panic!("[options.on_success]: on_success triggered")
+                        }
 
-                    ready(())
+                        ready(())
+                    })
                 })
-            })
-        },
-    );
+            },
+        );
 
     let (data, handle_success, _) = model
         .create(
@@ -2461,21 +2409,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -2568,21 +2514,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -2676,21 +2620,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -2784,21 +2726,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -2866,21 +2806,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -2949,21 +2887,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -3031,28 +2967,24 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(lax_field("lax").default(default_lax_value))
+            .field(virtual_field("virtual_field").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| {
             o.on_success(["virtual_field"], |s| {
@@ -3116,21 +3048,19 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -3203,43 +3133,40 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "dependent",
-                IvoField::DEPENDENT
-                    .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(
+            |f| {
+                f.field(
+                    dependent_field("dependent")
+                        .default(default_dependent_value)
+                        .depends_on(["virtual_field"])
+                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                            ready(ctx.values().dependent.unwrap() + 1)
+                        }),
+                )
+                .field(lax_field("lax").default(default_lax_value))
+                .field(virtual_field("virtual_field").alias("dependent").validate(
+                    |v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
                         ready(Ok(None))
-                    }),
-            )
-        },
-        |o| {
-            o.on_success(["virtual_field"], |s| {
-                s.handle(|_, _| {
-                    if true {
-                        panic!("[options.on_success]: on_success triggered")
-                    }
+                    },
+                ))
+            },
+            |o| {
+                o.on_success(["virtual_field"], |s| {
+                    s.handle(|_, _| {
+                        if true {
+                            panic!("[options.on_success]: on_success triggered")
+                        }
 
-                    ready(())
+                        ready(())
+                    })
                 })
-            })
-        },
-    );
+            },
+        );
 
     let (updates, handle_success, _) = model
         .update(
@@ -3290,28 +3217,24 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    if v == "fail_validation" {
-                        return ready(Err(("validation failed".into(), None)));
-                    }
+            .field(lax_field("lax").default(default_lax_value))
+            .field(virtual_field("virtual_field").validate(|v: String, _, _| {
+                if v == "fail_validation" {
+                    return ready(Err(("validation failed".into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| {
             o.on_success(["virtual_field"], |s| {
@@ -3376,21 +3299,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -3464,43 +3385,40 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "dependent",
-                IvoField::DEPENDENT
-                    .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field("lax", IvoField::LAX.default(default_lax_value))
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(
+            |f| {
+                f.field(
+                    dependent_field("dependent")
+                        .default(default_dependent_value)
+                        .depends_on(["virtual_field"])
+                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                            ready(ctx.values().dependent.unwrap() + 1)
+                        }),
+                )
+                .field(lax_field("lax").default(default_lax_value))
+                .field(virtual_field("virtual_field").alias("dependent").validate(
+                    |v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
                         ready(Ok(None))
-                    }),
-            )
-        },
-        |o| {
-            o.on_success(["virtual_field"], |s| {
-                s.handle(|_, _| {
-                    if true {
-                        panic!("[options.on_success]: on_success triggered")
-                    }
+                    },
+                ))
+            },
+            |o| {
+                o.on_success(["virtual_field"], |s| {
+                    s.handle(|_, _| {
+                        if true {
+                            panic!("[options.on_success]: on_success triggered")
+                        }
 
-                    ready(())
+                        ready(())
+                    })
                 })
-            })
-        },
-    );
+            },
+        );
 
     let lax = default_lax_value + 10;
 
@@ -3552,21 +3470,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -3640,21 +3556,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -3729,21 +3643,19 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(lax_field("lax").default(default_lax_value))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {

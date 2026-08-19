@@ -1,20 +1,20 @@
-use std::marker::PhantomData;
+use std::{future::Future, marker::PhantomData};
 
 use crate::{
-    __private_types::types::IntoIgnoreUpdateResolver,
+    __private_types::types::BooleanResolver,
     schema::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 ComputableRequiredError, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-                IntoRequiredErrorResolver, IntoSuccessHandler, IsFieldProvisionEnabled,
+                IntoInitRequiredErrorResolver, IntoSuccessHandler, IsFieldProvisionEnabled,
                 UniformValidator,
             },
         },
         types::{DeleteHandler, FailureHandler, FieldValue, No, SuccessHandler, Yes},
     },
     types::internal::IvoErrorSanitizer,
-    IvoStruct,
+    IvoRwCtxOptions, IvoStruct,
 };
 
 pub struct RequiredFieldBuilder<
@@ -31,7 +31,8 @@ pub struct RequiredFieldBuilder<
     HasFailure = No,
     HasSuccess = No,
 > {
-    required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
+    name: &'static str,
+    required_error: Option<ComputableRequiredError<I, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
@@ -78,8 +79,9 @@ impl<
         HasSuccess,
     >
 {
-    pub const fn new() -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Self {
+            name,
             required_error: None,
             validator: None,
             re_validator: None,
@@ -129,7 +131,7 @@ impl<
     >
 {
     fn default() -> Self {
-        Self::new()
+        Self::new("")
     }
 }
 
@@ -163,6 +165,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
+            name: self.name,
             field_type: FieldType::Required,
             required_error: self.required_error,
             validator: self.validator,
@@ -192,6 +195,7 @@ impl<
     ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasValidator, HasRevalidator, Yes>
     {
         RequiredFieldBuilder {
+            name: self.name,
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: Some(ComputableRequiredError::Static(error)),
@@ -204,9 +208,10 @@ impl<
         resolver: R,
     ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasValidator, HasRevalidator, Yes>
     where
-        R: IntoRequiredErrorResolver<I, O, CtxOptions>,
+        R: IntoInitRequiredErrorResolver<I, O, CtxOptions>,
     {
         RequiredFieldBuilder {
+            name: self.name,
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: Some(ComputableRequiredError::Func(resolver.into_resolver())),
@@ -232,6 +237,7 @@ impl<
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         RequiredFieldBuilder {
+            name: self.name,
             validator: Some(validator.into_uniform()),
             required_error: self.required_error,
             ..Default::default()
@@ -256,6 +262,7 @@ impl<
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         RequiredFieldBuilder {
+            name: self.name,
             validator: self.validator,
             re_validator: Some(re_validator.into_uniform()),
             required_error: self.required_error,
@@ -289,6 +296,7 @@ impl<
         Yes,
     > {
         RequiredFieldBuilder {
+            name: self.name,
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
@@ -315,6 +323,7 @@ impl<
         R: IntoIgnoreUpdateResolver<I, O, CtxOptions>,
     {
         RequiredFieldBuilder {
+            name: self.name,
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
@@ -376,6 +385,7 @@ impl<
         let h = handler.into_handler();
 
         RequiredFieldBuilder {
+            name: self.name,
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
@@ -449,6 +459,7 @@ impl<
         let h = handler.into_handler();
 
         RequiredFieldBuilder {
+            name: self.name,
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
@@ -522,6 +533,7 @@ impl<
         let h = handler.into_handler();
 
         RequiredFieldBuilder {
+            name: self.name,
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
@@ -540,5 +552,20 @@ impl<
             }),
             ..Default::default()
         }
+    }
+}
+
+pub trait IntoIgnoreUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions>;
+}
+
+impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoIgnoreUpdateResolver<I, O, CtxOptions>
+    for F
+where
+    F: Fn(I::Partial, O, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = bool> + Send + 'static,
+{
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
+        Box::new(move |ctx, o| Box::pin(self(ctx.input(), ctx.full_values().unwrap(), o)))
     }
 }

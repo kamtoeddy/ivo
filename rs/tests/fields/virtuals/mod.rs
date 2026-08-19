@@ -1,4 +1,6 @@
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{
+    dependent_field, lax_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct,
+};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -35,21 +37,17 @@ async fn should_reject_updates_if_no_value_has_changed() {
         virtual_field: i32,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(1)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|_, _, _| ready(Ok(None::<i32>))),
-            )
+            .field(virtual_field("virtual_field").validate(|_, _, _| ready(Ok(None::<i32>))))
         },
         |o| o,
     );
@@ -84,11 +82,10 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias() {
         virtual_alias: i32,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(1)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -96,8 +93,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|_, _, _| ready(Ok(None::<i32>))),
             )
@@ -135,11 +131,10 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_depend
         dependent: i32,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(1)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -147,8 +142,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_depend
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|_, _, _| ready(Ok(None::<i32>))),
             )
@@ -193,21 +187,19 @@ async fn should_respect_the_required_rule() {
     let default_dependent_value = 1;
     let default_lax_value = "default_lax_value".to_string();
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value.clone()))
+            .field(lax_field("lax").default(default_lax_value.clone()))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -319,21 +311,19 @@ async fn should_respect_the_required_rule_with_alias() {
     let default_dependent_value = 1;
     let default_lax_value = "default_lax_value".to_string();
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value.clone()))
+            .field(lax_field("lax").default(default_lax_value.clone()))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -446,21 +436,19 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
     let default_dependent_value = 1;
     let default_lax_value = "default_lax_value".to_string();
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field("lax", IvoField::LAX.default(default_lax_value.clone()))
+            .field(lax_field("lax").default(default_lax_value.clone()))
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
@@ -584,29 +572,19 @@ async fn should_properly_handle_grouped_required_errors() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.to_string())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "lax_1",
-                IvoField::LAX.default(default_lax_1_value.to_string()),
-            )
-            .field(
-                "lax_2",
-                IvoField::LAX.default(default_lax_2_value.to_string()),
-            )
+            .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
+            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+            .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
         },
         |o| {
             o.required(
@@ -776,11 +754,10 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.to_string())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -788,19 +765,12 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|_: String, _, _| ready(Ok(None))),
             )
-            .field(
-                "lax_1",
-                IvoField::LAX.default(default_lax_1_value.to_string()),
-            )
-            .field(
-                "lax_2",
-                IvoField::LAX.default(default_lax_2_value.to_string()),
-            )
+            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+            .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
         },
         |o| {
             o.required(
@@ -970,11 +940,10 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.to_string())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -982,19 +951,12 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|_: String, _, _| ready(Ok(None))),
             )
-            .field(
-                "lax_1",
-                IvoField::LAX.default(default_lax_1_value.to_string()),
-            )
-            .field(
-                "lax_2",
-                IvoField::LAX.default(default_lax_2_value.to_string()),
-            )
+            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
+            .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
         },
         |o| {
             o.required(
@@ -1150,29 +1112,25 @@ async fn should_not_create_if_primary_validation_fails() {
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|v: String, _, _| {
-                    let validated = v.trim();
+            .field(virtual_field("virtual_field").validate(|v: String, _, _| {
+                let validated = v.trim();
 
-                    if validated.len() < 2 {
-                        return ready(Err((MIN_LENGTH_ERROR.into(), None)));
-                    }
+                if validated.len() < 2 {
+                    return ready(Err((MIN_LENGTH_ERROR.into(), None)));
+                }
 
-                    ready(Ok(Some(validated.into())))
-                }),
-            )
+                ready(Ok(Some(validated.into())))
+            }))
         },
         |o| o,
     );
@@ -1240,11 +1198,10 @@ async fn should_not_create_if_primary_validation_fails_with_alias() {
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1252,8 +1209,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         let validated = v.trim();
 
@@ -1332,11 +1288,10 @@ async fn should_not_create_if_primary_validation_fails_with_alias_same_as_depend
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1344,8 +1299,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias_same_as_depend
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         let validated = v.trim();
 
@@ -1425,27 +1379,23 @@ async fn should_not_update_if_primary_validation_fails() {
     const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
     const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|v: i32, _, _| {
-                    if !REQUIRED_VALUE_RANGE.contains(&v) {
-                        return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
-                    }
+            .field(virtual_field("virtual_field").validate(|v: i32, _, _| {
+                if !REQUIRED_VALUE_RANGE.contains(&v) {
+                    return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
+                }
 
-                    ready(Ok(None))
-                }),
-            )
+                ready(Ok(None))
+            }))
         },
         |o| o,
     );
@@ -1525,11 +1475,10 @@ async fn should_not_update_if_primary_validation_fails_with_alias() {
     const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
     const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1537,8 +1486,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: i32, _, _| {
                         if !REQUIRED_VALUE_RANGE.contains(&v) {
@@ -1627,32 +1575,29 @@ async fn should_not_update_if_primary_validation_fails_with_alias_same_as_depend
     const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
     const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "dependent",
-                IvoField::DEPENDENT
-                    .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
-                    .alias("dependent")
-                    .validate(|v: i32, _, _| {
+    let model: IvoModel<DataInput, Data> =
+        IvoModel::new(
+            |f| {
+                f.field(
+                    dependent_field("dependent")
+                        .default(default_dependent_value)
+                        .depends_on(["virtual_field"])
+                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                            ready(ctx.input().dependent.unwrap())
+                        }),
+                )
+                .field(virtual_field("virtual_field").alias("dependent").validate(
+                    |v: i32, _, _| {
                         if !REQUIRED_VALUE_RANGE.contains(&v) {
                             return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
                         }
 
                         ready(Ok(None))
-                    }),
-            )
-        },
-        |o| o,
-    );
+                    },
+                ))
+            },
+            |o| o,
+        );
 
     let data = Data {
         dependent: default_dependent_value,
@@ -1724,21 +1669,17 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|_: i32, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field").validate(|_: i32, _, _| ready(Ok(None))))
         },
         |o| o,
     );
@@ -1804,11 +1745,10 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1816,8 +1756,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -1886,11 +1825,10 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1898,8 +1836,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -1973,11 +1910,10 @@ async fn should_not_create_if_re_validation_fails() {
     const MIN_REVALIDATION_LENGTH_ERROR: &str =
         "expected required to be at least 4 characters long";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -1985,8 +1921,7 @@ async fn should_not_create_if_re_validation_fails() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: String, _, _| {
                         let validated = v.trim();
 
@@ -2076,11 +2011,10 @@ async fn should_not_create_if_re_validation_fails_with_alias() {
     const MIN_REVALIDATION_LENGTH_ERROR: &str =
         "expected required to be at least 4 characters long";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2088,8 +2022,7 @@ async fn should_not_create_if_re_validation_fails_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: String, _, _| {
                         let validated = v.trim();
@@ -2180,11 +2113,10 @@ async fn should_not_create_if_re_validation_fails_with_alias_same_as_dependent()
     const MIN_REVALIDATION_LENGTH_ERROR: &str =
         "expected required to be at least 4 characters long";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2192,8 +2124,7 @@ async fn should_not_create_if_re_validation_fails_with_alias_same_as_dependent()
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: String, _, _| {
                         let validated = v.trim();
@@ -2287,11 +2218,10 @@ async fn should_not_update_if_re_validation_fails() {
         "revalidated required must be between 10 & 5 inclussive";
     const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2299,8 +2229,7 @@ async fn should_not_update_if_re_validation_fails() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: i32, _, _| {
                         if REQUIRED_VALUE_RANGE.contains(&v) {
                             return ready(Ok(None));
@@ -2402,11 +2331,10 @@ async fn should_not_update_if_re_validation_fails_with_alias() {
         "revalidated required must be between 10 & 5 inclussive";
     const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2414,8 +2342,7 @@ async fn should_not_update_if_re_validation_fails_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: i32, _, _| {
                         if REQUIRED_VALUE_RANGE.contains(&v) {
@@ -2518,11 +2445,10 @@ async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent()
         "revalidated required must be between 10 & 5 inclussive";
     const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2530,8 +2456,7 @@ async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent()
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: i32, _, _| {
                         if REQUIRED_VALUE_RANGE.contains(&v) {
@@ -2627,11 +2552,10 @@ async fn should_properly_use_re_validated_values() {
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2639,8 +2563,7 @@ async fn should_properly_use_re_validated_values() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .re_validate(|v: i32, _, _| ready(Ok(Some(v + 1)))),
             )
@@ -2713,11 +2636,10 @@ async fn should_properly_use_re_validated_values_with_alias() {
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2725,8 +2647,7 @@ async fn should_properly_use_re_validated_values_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .re_validate(|v: i32, _, _| ready(Ok(Some(v + 1)))),
@@ -2800,11 +2721,10 @@ async fn should_properly_use_re_validated_values_with_alias_same_as_dependent() 
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2812,8 +2732,7 @@ async fn should_properly_use_re_validated_values_with_alias_same_as_dependent() 
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .re_validate(|v: i32, _, _| ready(Ok(Some(v + 1)))),
@@ -2888,11 +2807,10 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2900,8 +2818,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
                     .re_validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -2975,11 +2892,10 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -2987,8 +2903,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
                     .re_validate(|_: i32, _, _| ready(Ok(None))),
@@ -3063,11 +2978,10 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -3075,8 +2989,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
                     .re_validate(|_: i32, _, _| ready(Ok(None))),
@@ -3165,29 +3078,19 @@ async fn should_respect_post_validation_config() {
     const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field_1", "virtual_field_2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "virtual_field_2",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
+            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
+            .field(virtual_field("virtual_field_2").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
@@ -3586,11 +3489,10 @@ async fn should_respect_post_validation_config_with_alias() {
     const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field_1", "virtual_field_2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -3598,19 +3500,12 @@ async fn should_respect_post_validation_config_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|_: String, _, _| ready(Ok(None))),
             )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "virtual_field_2",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
+            .field(virtual_field("virtual_field_2").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
@@ -4009,11 +3904,10 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
     const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value)
                     .depends_on(["virtual_field", "virtual_field_1", "virtual_field_2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -4021,19 +3915,12 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|_: String, _, _| ready(Ok(None))),
             )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "virtual_field_2",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
+            .field(virtual_field("virtual_field_2").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
@@ -4426,25 +4313,18 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
     const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.into())
                     .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
+            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
@@ -4606,11 +4486,10 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
     const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.into())
                     .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -4618,15 +4497,11 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .alias("virtual_alias"),
             )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
@@ -4788,11 +4663,10 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
     const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.into())
                     .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -4800,15 +4674,11 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .alias("dependent"),
             )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
@@ -4966,11 +4836,10 @@ async fn should_respect_sanitizers_if_provided() {
         format!("sanitized-{value}")
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -4978,8 +4847,7 @@ async fn should_respect_sanitizers_if_provided() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .sanitize(|value: String, _, _| ready(sanitize(&value))),
             )
@@ -5068,11 +4936,10 @@ async fn should_respect_sanitizers_if_provided_with_alias() {
         format!("sanitized-{value}")
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -5080,8 +4947,7 @@ async fn should_respect_sanitizers_if_provided_with_alias() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("virtual_alias")
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .sanitize(|value: String, _, _| ready(sanitize(&value))),
@@ -5171,11 +5037,10 @@ async fn should_respect_sanitizers_if_provided_with_alias_same_as_dependent() {
         format!("sanitized-{value}")
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -5183,8 +5048,7 @@ async fn should_respect_sanitizers_if_provided_with_alias_same_as_dependent() {
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .alias("dependent")
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .sanitize(|value: String, _, _| ready(sanitize(&value))),

@@ -8,7 +8,7 @@ use crate::__private_types::types::{
 };
 use crate::__private_types::{FieldError, IvoInputStruct};
 
-use crate::schema::fields::types::RequiredResolver;
+use crate::schema::fields::types::{InitRequiredResolver, RequiredResolver};
 use crate::{
     schema::types::SuccessHandler, types::internal::PostValidatorResponse, IvoContext,
     IvoErrorSanitizer, IvoRwCtxOptions, IvoStruct,
@@ -184,6 +184,32 @@ where
                     },
                 )]
             })
+        })
+    }
+}
+
+impl<I, O, CtxOptions: Send + Sync, ErrorSanitizer>
+    UniformRequiredResolver<I, O, CtxOptions, ErrorSanitizer>
+    for InitRequiredResolver<I, CtxOptions>
+where
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
+    O: IvoStruct,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
+{
+    fn resolve<'a>(
+        &'a self,
+        field_names: HashSet<&'a str>,
+        ctx: IvoContext<I, O>,
+        o: IvoRwCtxOptions<CtxOptions>,
+    ) -> UniformRequiredResponse<'a, CtxOptions, ErrorSanitizer> {
+        Box::pin(async move {
+            Some(vec![(
+                field_names.iter().next().unwrap().to_string(),
+                FieldError {
+                    metadata: None,
+                    reason: self(ctx.raw_input(), o).await,
+                },
+            )])
         })
     }
 }

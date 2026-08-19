@@ -5,6 +5,7 @@ pub mod internal;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use crate::{
+    model::fields_collection::InputFieldInfo,
     schema::{
         fields::{base::InternalFieldConfig, TimestampConfig},
         options::base::SchemaOptions,
@@ -17,7 +18,8 @@ pub type IvoShared<T> = Arc<T>;
 pub type IvoCtxOptions<CtxOptions> = IvoShared<CtxOptions>;
 pub type IvoRwCtxOptions<CtxOptions> = IvoShared<IvoRwLock<CtxOptions>>;
 pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoContext<I, O>>;
-pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>;
+pub type IvoConstantCtx<I: IvoStruct, O: IvoStruct = I> = IvoShared<IvoConstantContext<I, O>>;
+pub type IvoDefaultCtx<I: IvoStruct> = IvoShared<IvoDefaultContext<I>>;
 
 pub(crate) type InternalFieldConfigs<
     I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
@@ -26,7 +28,7 @@ pub(crate) type InternalFieldConfigs<
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > = HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>>;
 
-pub struct Model<
+pub struct IvoModel<
     I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct = I,
     CtxOptions: Clone + Sync + Send = Option<()>,
@@ -34,6 +36,8 @@ pub struct Model<
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions> = DefaultErrorSanitizer,
 > {
     pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
+    pub(crate) field_infos: HashMap<&'static str, InputFieldInfo<'static>>,
+    pub(crate) dependent_children: HashMap<&'static str, Vec<&'static str>>,
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorSanitizer>,
     pub(crate) timestamp_configs: Option<TimestampConfig<Timestamp>>,
 }
@@ -193,5 +197,34 @@ impl<I: IvoStruct, O: IvoStruct> InternalIvoContext<I, O> {
             } => Some(previous_values.clone()),
             _ => None,
         }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct IvoConstantContext<I: IvoStruct, O: IvoStruct> {
+    pub input: I::Partial,
+    pub raw_input: I::Partial,
+    pub values: O::Partial,
+}
+
+impl<I: IvoStruct, O: IvoStruct> IvoConstantContext<I, O> {
+    pub(crate) fn new(input: I::Partial, raw_input: I::Partial, values: O::Partial) -> Self {
+        Self {
+            input,
+            raw_input,
+            values,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct IvoDefaultContext<I: IvoStruct> {
+    pub input: I::Partial,
+    pub raw_input: I::Partial,
+}
+
+impl<I: IvoStruct> IvoDefaultContext<I> {
+    pub(crate) fn new(input: I::Partial, raw_input: I::Partial) -> Self {
+        Self { input, raw_input }
     }
 }

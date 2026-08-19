@@ -31,11 +31,10 @@ pub struct VirtualFieldBuilder<
     HasSanitizer = No,
     HasRequired = No,
     HasIgnore = No,
-    HasIgnoreInit = No,
-    HasIgnoreUpdate = No,
     HasFailure = No,
     HasSuccess = No,
 > {
+    name: &'static str,
     alias: Option<&'static str>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
@@ -54,8 +53,6 @@ pub struct VirtualFieldBuilder<
     _required_fn: PhantomData<HasRequired>,
     _sanitizer_fn: PhantomData<HasSanitizer>,
     _ignore: PhantomData<HasIgnore>,
-    _ignore_init: PhantomData<HasIgnoreInit>,
-    _ignore_update: PhantomData<HasIgnoreUpdate>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
 }
@@ -67,8 +64,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -89,14 +84,13 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
 {
-    pub const fn new() -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Self {
+            name,
             alias: None,
             validator: None,
             re_validator: None,
@@ -114,8 +108,6 @@ impl<
             _required_fn: PhantomData,
             _sanitizer_fn: PhantomData,
             _ignore: PhantomData,
-            _ignore_init: PhantomData,
-            _ignore_update: PhantomData,
             _on_failure_fns: PhantomData,
             _on_success_fns: PhantomData,
         }
@@ -129,8 +121,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -151,14 +141,12 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
 {
     fn default() -> Self {
-        Self::new()
+        Self::new("")
     }
 }
 
@@ -168,8 +156,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -190,14 +176,13 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
+            name: self.name,
             field_type: FieldType::Virtual,
             alias: self.alias,
             validator: self.validator,
@@ -232,6 +217,7 @@ impl<
         name: &'static str,
     ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasValidator, Yes> {
         VirtualFieldBuilder {
+            name: self.name,
             alias: Some(name),
             validator: self.validator,
             re_validator: self.re_validator,
@@ -264,6 +250,7 @@ impl<
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: Some(validator.into_uniform()),
             ..Default::default()
@@ -288,6 +275,7 @@ impl<
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: Some(re_validator.into_uniform()),
@@ -325,6 +313,7 @@ impl<
         R: IntoRequiredResolver<I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -376,6 +365,7 @@ impl<
         F: IntoVirtualSanitizer<T, I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -430,6 +420,7 @@ impl<
         R: IntoBooleanResolver<I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -453,10 +444,10 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        No,
         Yes,
     > {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -480,11 +471,10 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        No,
-        No,
         Yes,
     > {
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -503,8 +493,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -525,8 +513,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -546,8 +532,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         Yes,
         HasSuccess,
     >
@@ -557,6 +541,7 @@ impl<
         let h = handler.into_handler();
 
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -588,8 +573,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: FieldValue,
@@ -610,8 +593,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -631,8 +612,6 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasIgnoreInit,
-        HasIgnoreUpdate,
         HasFailure,
         Yes,
     >
@@ -642,6 +621,7 @@ impl<
         let h = handler.into_handler();
 
         VirtualFieldBuilder {
+            name: self.name,
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,

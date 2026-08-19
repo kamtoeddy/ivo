@@ -1,4 +1,6 @@
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{
+    constant_field, lax_field, required_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct,
+};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -34,13 +36,8 @@ async fn should_reject_updates_if_no_value_has_changed() {
         required: i32,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|_, _, _| ready(Ok(None::<i32>))),
-            )
-        },
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
+        |f| f.field(required_field("required").validate(|_, _, _| ready(Ok(None::<i32>)))),
         |o| o,
     );
 
@@ -76,11 +73,10 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation() {
 
     const DEFAULT_VALUE: i32 = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::LAX
+                lax_field("required")
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE)))),
             )
@@ -118,11 +114,10 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
 
     const DEFAULT_VALUE: i32 = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::LAX
+                lax_field("required")
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE)))),
@@ -165,15 +160,14 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
     const RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR";
     const RESET_TO_PREV_VALUE_IN_POST_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_POST_VALIDATOR";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .re_validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE.into())))),
             )
-            .field("lax_1", IvoField::LAX.default(DEFAULT_VALUE.to_string()))
+            .field(lax_field("lax_1").default(DEFAULT_VALUE.to_string()))
         },
         |o| {
             o.post_validate(["required", "lax_1"], |v| {
@@ -267,13 +261,8 @@ async fn should_respect_the_default_required_error_if_field_is_missing() {
         required: i32,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
+        |f| f.field(required_field("required").validate(|_: i32, _, _| ready(Ok(None)))),
         |o| o,
     );
 
@@ -328,11 +317,10 @@ async fn should_respect_custom_static_required_error_if_field_is_missing() {
 
     let required_error = "Yooo! you did not provide: \"required\"";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .required_error(required_error)
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -389,12 +377,11 @@ async fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
 
     const REQUIRED_ERROR: &str = "Yooo! you did not provide: \"required\"";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
-                    .required_error_fn(|_, _| REQUIRED_ERROR.to_string())
+                required_field("required")
+                    .required_error_fn(|_, _| ready(REQUIRED_ERROR.to_string()))
                     .validate(|_: i32, _, _| ready(Ok(None))),
             )
         },
@@ -452,20 +439,17 @@ async fn should_not_create_if_primary_validation_fails() {
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|v: String, _, _| {
-                    let validated = v.trim();
+            f.field(required_field("required").validate(|v: String, _, _| {
+                let validated = v.trim();
 
-                    if validated.len() < 2 {
-                        return ready(Err((MIN_LENGTH_ERROR.into(), None)));
-                    }
+                if validated.len() < 2 {
+                    return ready(Err((MIN_LENGTH_ERROR.into(), None)));
+                }
 
-                    ready(Ok(Some(validated.into())))
-                }),
-            )
+                ready(Ok(Some(validated.into())))
+            }))
         },
         |o| o,
     );
@@ -533,19 +517,16 @@ async fn should_not_update_if_primary_validation_fails() {
     const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 5 inclussive";
     const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1)))
-                .field(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: i32, _, _| {
-                        if !REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
-                        }
+            f.field(constant_field("id").value_fn(|_, _| ready(1)))
+                .field(required_field("required").validate(|v: i32, _, _| {
+                    if !REQUIRED_VALUE_RANGE.contains(&v) {
+                        return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
+                    }
 
-                        ready(Ok(None))
-                    }),
-                )
+                    ready(Ok(None))
+                }))
         },
         |o| o,
     );
@@ -617,13 +598,8 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         required: i32,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
+        |f| f.field(required_field("required").validate(|_: i32, _, _| ready(Ok(None)))),
         |o| o,
     );
 
@@ -691,11 +667,10 @@ async fn should_not_create_if_re_validation_fails() {
     const MIN_REVALIDATION_LENGTH_ERROR: &str =
         "expected required to be at least 4 characters long";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|v: String, _, _| {
                         let validated = v.trim();
 
@@ -787,12 +762,11 @@ async fn should_not_update_if_re_validation_fails() {
         "revalidated required must be between 10 & 5 inclussive";
     const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1)))
+            f.field(constant_field("id").value_fn(|_, _| ready(1)))
                 .field(
-                    "required",
-                    IvoField::REQUIRED
+                    required_field("required")
                         .validate(|v: i32, _, _| {
                             if !REQUIRED_VALUE_RANGE.contains(&v) {
                                 return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
@@ -887,11 +861,10 @@ async fn should_properly_use_re_validated_values() {
         required: i32,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .re_validate(|v: i32, _, _| ready(Ok(Some(v + 1)))),
             )
@@ -963,11 +936,10 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         required: i32,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                "required",
-                IvoField::REQUIRED
+                required_field("required")
                     .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
                     .re_validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -1055,20 +1027,11 @@ async fn should_respect_post_validation_config() {
     const REQUIRED_VALIDATION_FAIL: &str = "required failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "required_1",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "required_2",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
-            )
+            f.field(required_field("required").validate(|_: String, _, _| ready(Ok(None))))
+                .field(required_field("required_1").validate(|_: String, _, _| ready(Ok(None))))
+                .field(required_field("required_2").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["required", "required_1"], |v| {
@@ -1470,20 +1433,11 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
     const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
-            f.field(
-                "required",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "required_1",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "required_2",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
-            )
+            f.field(required_field("required").validate(|_: String, _, _| ready(Ok(None))))
+                .field(required_field("required_1").validate(|_: String, _, _| ready(Ok(None))))
+                .field(required_field("required_2").validate(|_: String, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["required", "required_1"], |v| {

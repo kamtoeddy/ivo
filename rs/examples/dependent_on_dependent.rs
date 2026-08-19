@@ -1,6 +1,6 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
+use ivo::{dependent_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
 
 const DEFAULT_DEPENDENT: i32 = 1;
 const DEFAULT_LAX: &str = "default-lax";
@@ -229,12 +229,11 @@ pub struct Data {
 
 type Ctx = IvoContext<DataInput, Data>;
 
-pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
-    Model::new(
+pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
+    IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_DEPENDENT)
                     .depends_on(["lax"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
@@ -253,8 +252,7 @@ pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
                     }),
             )
             .field(
-                "dependent_1",
-                IvoField::DEPENDENT
+                dependent_field("dependent_1")
                     .default(DEFAULT_DEPENDENT)
                     .depends_on(["dependent"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 10))
@@ -273,8 +271,7 @@ pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
                     }),
             )
             .field(
-                "lax",
-                IvoField::LAX
+                lax_field("lax")
                     .default_fn(|_, _| ready(DEFAULT_LAX.to_string()))
                     .on_success(|ctx: Ctx, _| {
                         println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
@@ -288,8 +285,7 @@ pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
                     }),
             )
             .field(
-                "lax_1",
-                IvoField::LAX
+                lax_field("lax_1")
                     .default_fn(|_, _| ready(DEFAULT_LAX.to_string()))
                     .on_success(|ctx: Ctx, _| {
                         println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1.unwrap());

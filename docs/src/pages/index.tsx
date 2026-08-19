@@ -1,0 +1,54 @@
+import type { ReactNode } from 'react';
+import clsx from 'clsx';
+import Link from '@docusaurus/Link';
+import Translate, { translate } from '@docusaurus/Translate';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import Layout from '@theme/Layout';
+import HomepageFeatures from '@site/src/components/HomepageFeatures';
+import QuickLinks from '@site/src/components/QuickLinks';
+import Heading from '@theme/Heading';
+
+import styles from './index.module.css';
+
+function HomepageHeader() {
+  const { siteConfig } = useDocusaurusContext();
+  return (
+    <header className={clsx('hero hero--primary', styles.heroBanner)}>
+      <div className="container">
+        <Heading as="h1" className="hero__title">
+          {siteConfig.title}
+        </Heading>
+        <p className="hero__subtitle">
+          <Translate id="homepage.tagline">
+            A user-story-focused, event-driven data validation framework for TypeScript and Rust.
+          </Translate>
+        </p>
+        <div className={styles.buttons}>
+          <Link className="button button--secondary button--lg" to="/docs/ts">
+            <Translate id="homepage.getStarted">Get started</Translate>
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export default function Home(): ReactNode {
+  const { siteConfig } = useDocusaurusContext();
+  return (
+    <Layout
+      title={siteConfig.title}
+      description={translate({
+        id: 'homepage.description',
+        message:
+          'ivo is a user-story-focused, event-driven data validation framework for TypeScript and Rust.',
+      })}
+    >
+      <HomepageHeader />
+      <main>
+        <HomepageFeatures />
+        <QuickLinks />
+      </main>
+    </Layout>
+  );
+}

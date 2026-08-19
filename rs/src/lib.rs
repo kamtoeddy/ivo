@@ -13,8 +13,13 @@ pub use types::internal as __private_types;
 
 pub use ivo_derive::{IvoInputStruct, IvoStruct};
 
-pub use schema::fields::IvoField;
+pub use schema::fields::{
+    constant_field, dependent_field, lax_field, required_field, virtual_field,
+};
 pub use types::internal::{
     DefaultErrorSanitizer, IvoErrorPayload, IvoErrorSanitizer, IvoInputStruct, IvoStruct,
 };
-pub use types::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, IvoShared, IvoSharedInput, Model};
+pub use types::{
+    IvoConstantCtx, IvoContext, IvoCtxOptions, IvoDefaultContext, IvoModel, IvoRwCtxOptions,
+    IvoShared,
+};

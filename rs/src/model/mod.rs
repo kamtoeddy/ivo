@@ -1,5 +1,7 @@
+#![allow(type_alias_bounds)]
+
 mod error_tool;
-mod fields_collection;
+pub(crate) mod fields_collection;
 
 use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
@@ -14,16 +16,14 @@ use fields_collection::FieldInfoCollection;
 use crate::__private_types::types::{BooleanResolver, IgnoreUpdateOptionResolver};
 use crate::__private_types::IvoErrorPayload;
 use crate::__private_types::{types::PartialErrorsMethods, IvoInputStruct};
+use crate::schema::fields::types::{ConstantValue, InitRequiredResolver};
 use crate::schema::options::types::{
     IgnoreOptionConfig, IgnoreUpdateOptionConfig, UniformIgnoreResolver,
 };
 use crate::schema::{
     fields::{
         base::{FieldType, InternalFieldConfig},
-        types::{
-            ComputableRequiredError, IsFieldProvisionEnabled, RequiredResolver,
-            ValueResolverWithSharedInput,
-        },
+        types::{ComputableRequiredError, DefaultValue, IsFieldProvisionEnabled, RequiredResolver},
         TimestampConfig,
     },
     options::types::{
@@ -37,9 +37,23 @@ use crate::types::{
     },
     InternalIvoContext,
 };
-use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, Model};
+use crate::types::{IvoConstantContext, IvoDefaultContext};
+use crate::{IvoContext, IvoCtxOptions, IvoModel, IvoRwCtxOptions};
 
 type AsyncHandlerTrigger<'a> = Box<dyn FnOnce() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
+type UpdateResult<
+    'a,
+    O: IvoStruct,
+    CtxOptions: Clone + Sync + Send,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
+> = Result<
+    (O::Partial, AsyncHandlerTrigger<'a>, CtxOptions),
+    (
+        Option<ErrorSanitizer::Payload>,
+        AsyncHandlerTrigger<'a>,
+        CtxOptions,
+    ),
+>;
 
 impl<
         I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
@@ -47,7 +61,7 @@ impl<
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
-    > Model<I, O, CtxOptions, Timestamp, ErrorSanitizer>
+    > IvoModel<I, O, CtxOptions, Timestamp, ErrorSanitizer>
 {
     pub async fn create(
         &self,
@@ -64,25 +78,23 @@ impl<
             O::Partial::default(),
         ));
 
-        // filter out ignored fields
         let (input, output, fields_collection) = self
             .filter_input_fields_allowed(
                 None,
                 input,
-                FieldInfoCollection::new(&self.field_configs),
+                FieldInfoCollection::new(&self.field_infos),
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
             .await;
 
-        // Resolve constants & defaults
+        Arc::make_mut(&mut ctx).set_input(input).set_changes(output);
+
         let output = self
-            .attach_constants_and_defaults(output, &input, Arc::clone(&shared_rw_options))
+            .attach_default_values(Arc::clone(&ctx), Arc::clone(&shared_rw_options))
             .await;
 
-        Arc::make_mut(&mut ctx)
-            .set_input(input.clone())
-            .set_changes(output);
+        Arc::make_mut(&mut ctx).set_changes(output);
 
         match self
             .evaluate_missing_required_fields(
@@ -108,7 +120,6 @@ impl<
             }
         };
 
-        // Run validators
         match self
             .validate(
                 &fields_collection,
@@ -138,7 +149,6 @@ impl<
             _ => (),
         };
 
-        // Run re_validators
         match self
             .re_validate(
                 &fields_collection,
@@ -168,7 +178,6 @@ impl<
             _ => (),
         };
 
-        // Run post-validators
         match self
             .post_validate(
                 &fields_collection,
@@ -198,7 +207,6 @@ impl<
             _ => (),
         };
 
-        // Sanitize virtuals
         if let Some(sanitized_inputs) = self
             .sanitize_virtuals(
                 &fields_collection,
@@ -210,7 +218,6 @@ impl<
             Arc::make_mut(&mut ctx).set_input(sanitized_inputs);
         }
 
-        // Resolve values of dependent fields
         let mut dependent_fields_col = fields_collection.cloned_from_relevant_dependent_fields();
 
         while let Some((validated_outputs, fields_changed)) = self
@@ -227,7 +234,12 @@ impl<
             Arc::make_mut(&mut ctx).set_changes(validated_outputs);
         }
 
-        // Generate and set timestamps
+        let output = self
+            .attach_constant_values(Arc::clone(&ctx), Arc::clone(&shared_rw_options))
+            .await;
+
+        Arc::make_mut(&mut ctx).set_changes(output);
+
         let (values, should_update_ctx) = self.attach_timestamps(ctx.values(), false);
 
         if should_update_ctx {
@@ -252,14 +264,7 @@ impl<
         data: &O,
         updates: &I::Partial,
         options: CtxOptions,
-    ) -> Result<
-        (O::Partial, AsyncHandlerTrigger<'_>, CtxOptions),
-        (
-            Option<ErrorSanitizer::Payload>,
-            AsyncHandlerTrigger<'_>,
-            CtxOptions,
-        ),
-    > {
+    ) -> UpdateResult<'_, O, CtxOptions, ErrorSanitizer> {
         let old_partial_values: O::Partial = data.clone().into();
 
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_update_ctx(
@@ -276,7 +281,7 @@ impl<
             .filter_input_fields_allowed(
                 Some(&old_partial_values),
                 updates,
-                FieldInfoCollection::new(&self.field_configs),
+                FieldInfoCollection::new(&self.field_infos),
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -284,22 +289,15 @@ impl<
 
         Arc::make_mut(&mut ctx).set_input(input).set_changes(output);
 
-        // if the updates provided are all none, the nothing to update
         if fields_collection.relevant_fields_provided().is_empty() {
-            let final_ctx_options = unwrap_async_lock(shared_rw_options);
-
-            return Err((
-                None,
-                self.prepare_failure_handlers(
-                    fields_collection,
-                    ctx,
-                    Arc::new(final_ctx_options.clone()),
-                ),
-                final_ctx_options,
-            ));
+            return self.handle_nothing_to_update_error(
+                ctx,
+                data.clone(),
+                fields_collection,
+                shared_rw_options,
+            );
         }
 
-        // Evaluate missing required fields
         match self
             .evaluate_missing_required_fields(
                 &fields_collection,
@@ -324,7 +322,6 @@ impl<
             }
         };
 
-        // Run validators
         match self
             .validate(
                 &fields_collection,
@@ -355,7 +352,6 @@ impl<
             _ => (),
         };
 
-        // Run re_validators
         match self
             .re_validate(
                 &fields_collection,
@@ -386,7 +382,6 @@ impl<
             _ => (),
         };
 
-        // Run post-validators
         match self
             .post_validate(
                 &fields_collection,
@@ -417,7 +412,21 @@ impl<
             _ => (),
         };
 
-        // Sanitize virtuals
+        let relevant_fields_provided =
+            self.evaluate_update_validity(&mut ctx, data, &old_partial_values, &fields_collection);
+
+        if relevant_fields_provided.is_empty() {
+            return self.handle_nothing_to_update_error(
+                ctx,
+                data.clone(),
+                fields_collection,
+                shared_rw_options,
+            );
+        }
+
+        let fields_collection =
+            fields_collection.new_with_relevant_fields_provided(relevant_fields_provided);
+
         if let Some(sanitized_inputs) = self
             .sanitize_virtuals(
                 &fields_collection,
@@ -428,43 +437,6 @@ impl<
         {
             Arc::make_mut(&mut ctx).set_input(sanitized_inputs);
         }
-
-        // Resolve values of dependent fields
-        let mut input = ctx.input();
-        let mut changes = ctx.changes();
-        let updated_values = ctx.values();
-
-        let mut relevant_fields_provided = HashSet::new();
-
-        for field_name in fields_collection.relevant_fields_provided() {
-            let field_info = fields_collection.get(field_name);
-
-            if !field_info.is_output {
-                relevant_fields_provided.insert(field_name.clone());
-
-                continue;
-            }
-
-            if !old_partial_values.ivo_internal_is_value_equal(
-                field_info.name,
-                &updated_values.ivo_internal_get_erased_value(field_info.name),
-            ) {
-                relevant_fields_provided.insert(field_name.clone());
-
-                continue;
-            }
-
-            input.ivo_internal_unset(field_name);
-            changes.ivo_internal_unset(field_name);
-        }
-
-        Arc::make_mut(&mut ctx)
-            .set_input(input)
-            .set_changes(changes.clone())
-            .set_full_values(data.ivo_internal_clone_with(changes));
-
-        let fields_collection =
-            fields_collection.new_with_relevant_fields_provided(relevant_fields_provided);
 
         let mut dependent_fields_col = fields_collection.cloned_from_relevant_dependent_fields();
 
@@ -486,20 +458,14 @@ impl<
 
         let Some(updated_values) = data.ivo_internal_get_updates_from_partial(&ctx.changes())
         else {
-            let final_ctx_options = unwrap_async_lock(shared_rw_options);
-
-            return Err((
-                None,
-                self.prepare_failure_handlers(
-                    fields_collection,
-                    ctx,
-                    Arc::new(final_ctx_options.clone()),
-                ),
-                final_ctx_options,
-            ));
+            return self.handle_nothing_to_update_error(
+                ctx,
+                data.clone(),
+                fields_collection,
+                shared_rw_options,
+            );
         };
 
-        // Generate and set timestamps
         let (updated_values, should_update_ctx) = self.attach_timestamps(updated_values, true);
 
         if should_update_ctx {
@@ -547,9 +513,193 @@ impl<
         }
     }
 
+    fn handle_nothing_to_update_error<'a, 'b>(
+        &'b self,
+        mut ctx: IvoContext<I, O>,
+        previous_values: O,
+        fields_collection: FieldInfoCollection<'a>,
+        options: IvoRwCtxOptions<CtxOptions>,
+    ) -> UpdateResult<'b, O, CtxOptions, ErrorSanitizer> {
+        Arc::make_mut(&mut ctx)
+            .set_input(I::Partial::default())
+            .set_changes(O::Partial::default())
+            .set_full_values(previous_values);
+
+        let final_ctx_options = unwrap_async_lock(options);
+
+        Err((
+            None,
+            self.prepare_failure_handlers(
+                fields_collection,
+                ctx,
+                Arc::new(final_ctx_options.clone()),
+            ),
+            final_ctx_options,
+        ))
+    }
+
+    async fn attach_constant_values(
+        &self,
+        ctx: IvoContext<I, O>,
+        options: IvoRwCtxOptions<CtxOptions>,
+    ) -> O::Partial {
+        let mut resolvers = vec![];
+        let mut output = ctx.values();
+
+        for (field_name, config) in self.field_configs.iter() {
+            if let InternalFieldConfig {
+                field_type: FieldType::Constant,
+                value,
+                ..
+            } = config
+            {
+                match value {
+                    Some(ConstantValue::Static(value)) => {
+                        output.ivo_internal_set(field_name, value);
+
+                        continue;
+                    }
+                    Some(ConstantValue::Func(resolver)) => {
+                        resolvers.push((field_name.to_string(), resolver));
+                        continue;
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        if resolvers.is_empty() {
+            return output;
+        }
+
+        let ctx = Arc::new(IvoConstantContext::new(
+            ctx.input(),
+            ctx.raw_input(),
+            ctx.values(),
+        ));
+
+        let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
+            (
+                field_name.clone(),
+                resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
+            )
+        });
+
+        for (field_name, value) in join_all(tasks).await {
+            output.ivo_internal_set(&field_name, &value);
+        }
+
+        output
+    }
+
+    async fn attach_default_values(
+        &self,
+        ctx: IvoContext<I, O>,
+        options: IvoRwCtxOptions<CtxOptions>,
+    ) -> O::Partial {
+        let mut resolvers = vec![];
+        let mut output = ctx.values();
+        let input = ctx.input();
+        let fields_provided = input.ivo_internal_fields_available();
+
+        for (field_name, config) in self.field_configs.iter() {
+            if let InternalFieldConfig {
+                field_type: FieldType::Dependent | FieldType::Lax,
+                default: Some(default),
+                ..
+            } = config
+            {
+                if matches!(config.field_type, FieldType::Lax)
+                    && fields_provided.contains(&field_name.to_string())
+                {
+                    continue;
+                }
+
+                match default {
+                    DefaultValue::Static(value) => {
+                        output.ivo_internal_set(field_name, value);
+                    }
+                    DefaultValue::Func(resolver) => {
+                        resolvers.push((field_name.to_string(), resolver));
+                    }
+                }
+            }
+        }
+
+        if resolvers.is_empty() {
+            return output;
+        }
+
+        let ctx = Arc::new(IvoDefaultContext::new(ctx.input(), ctx.raw_input()));
+
+        let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
+            (
+                field_name.clone(),
+                resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
+            )
+        });
+
+        for (field_name, value) in join_all(tasks).await {
+            output.ivo_internal_set(&field_name, &value);
+        }
+
+        output
+    }
+
+    fn attach_timestamps(&self, mut data: O::Partial, is_update: bool) -> (O::Partial, bool) {
+        let mut was_updated = false;
+
+        if let Some(TimestampConfig {
+            created_at,
+            resolver,
+            updated_at,
+            with_optional_updated_at,
+        }) = self.timestamp_configs.as_ref()
+        {
+            let mut now = None;
+
+            if !is_update {
+                if let Some(created_at) = created_at {
+                    let value = if let Some(value) = now.clone() {
+                        value
+                    } else {
+                        let value = resolver();
+
+                        now = Some(value.clone());
+
+                        value
+                    };
+
+                    data.ivo_internal_set(created_at, &erase_value(value));
+                    was_updated = true;
+                }
+            }
+
+            if let Some(updated_at) = updated_at {
+                let is_optional = *with_optional_updated_at;
+
+                if is_optional && !is_update {
+                    data.ivo_internal_set(updated_at, &erase_value::<Option<Timestamp>>(None));
+                } else {
+                    let value = now.unwrap_or_else(resolver);
+
+                    if is_optional {
+                        data.ivo_internal_set(updated_at, &erase_value(Some(value)));
+                    } else {
+                        data.ivo_internal_set(updated_at, &erase_value(value));
+                    }
+                }
+
+                was_updated = true;
+            }
+        }
+
+        (data, was_updated)
+    }
+
     async fn validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::Metadata>> {
@@ -617,17 +767,14 @@ impl<
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
+                    validated_inputs.ivo_internal_set(field_name, &value);
 
-                    if field_info.is_input {
-                        validated_inputs.ivo_internal_set(field_name, &value);
-                    }
-
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         validated_outputs.ivo_internal_set(field_name, &value);
                     }
                 }
                 Ok(None) => {
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         has_updates = true;
 
                         validated_outputs.ivo_internal_set(
@@ -652,7 +799,7 @@ impl<
 
     async fn re_validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::Metadata>> {
@@ -706,12 +853,9 @@ impl<
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
+                    validated_inputs.ivo_internal_set(field_name, &value);
 
-                    if field_info.is_input {
-                        validated_inputs.ivo_internal_set(field_name, &value);
-                    }
-
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         validated_outputs.ivo_internal_set(field_name, &value);
                     }
                 }
@@ -732,7 +876,7 @@ impl<
 
     async fn post_validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::Metadata>> {
@@ -804,12 +948,9 @@ impl<
                             }
 
                             has_updates = true;
+                            validated_inputs.ivo_internal_set(field_info.name, &value);
 
-                            if field_info.is_input {
-                                validated_inputs.ivo_internal_set(field_info.name, &value);
-                            }
-
-                            if field_info.is_output {
+                            if !field_info.is_virtual {
                                 validated_outputs.ivo_internal_set(field_info.name, &value);
                             }
                         }
@@ -866,12 +1007,9 @@ impl<
                         }
 
                         has_updates = true;
+                        validated_inputs.ivo_internal_set(field_info.name, &value);
 
-                        if field_info.is_input {
-                            validated_inputs.ivo_internal_set(field_info.name, &value);
-                        }
-
-                        if field_info.is_output {
+                        if !field_info.is_virtual {
                             validated_outputs.ivo_internal_set(field_info.name, &value);
                         }
                     }
@@ -893,7 +1031,7 @@ impl<
 
     async fn sanitize_virtuals<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<I::Partial> {
@@ -942,53 +1080,52 @@ impl<
 
     async fn resolve_dependent_values<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<(O::Partial, HashSet<String>)> {
+        let mut dependents_to_resolve = HashSet::new();
+
+        for parent in fields_collection.relevant_dependent_config_names() {
+            if let Some(children) = self.dependent_children.get(parent.as_str()) {
+                for child in children {
+                    dependents_to_resolve.insert(*child);
+                }
+            }
+        }
+
+        if dependents_to_resolve.is_empty() {
+            return None;
+        }
+
         let mut resolvers = vec![];
         let previous_values: Option<O::Partial> = ctx.previous_values().map(|v| v.into());
         let is_update = previous_values.as_ref().is_some();
         let previous_values = previous_values.unwrap_or_default();
 
-        for (field_name, config) in self.field_configs.iter() {
-            match config {
-                InternalFieldConfig {
-                    field_type: FieldType::Dependent,
-                    depends_on: Some(ref depends_on),
-                    resolver: Some(ref resolver),
+        for field_name in dependents_to_resolve {
+            let config = &self.field_configs[field_name];
+
+            let Some(resolver) = config.resolver.as_ref() else {
+                continue;
+            };
+
+            if is_update {
+                if let InternalFieldConfig {
+                    default: Some(DefaultValue::Static(default_value)),
+                    ignore_update: Some(IsFieldProvisionEnabled::Readonly),
                     ..
-                } if depends_on
-                    .iter()
-                    .any(|parent| fields_collection.is_relevant_dependent_config_name(parent)) =>
+                } = config
                 {
-                    if !is_update {
-                        resolvers.push((field_name, resolver));
-
+                    // readonly means: don't update if value has changed
+                    // i.e: only update if prev_value == default_value
+                    if !previous_values.ivo_internal_is_value_equal(field_name, default_value) {
                         continue;
                     }
-
-                    // handle readonly during updates
-                    if let InternalFieldConfig {
-                        field_type: FieldType::Dependent,
-                        default: Some(ValueResolverWithSharedInput::Static(default_value)),
-                        ignore_update: Some(IsFieldProvisionEnabled::Readonly),
-                        ..
-                    } = config
-                    {
-                        // readonly means: don't update if value has changed
-                        // i.e: only update if prev_value == default_value
-                        if previous_values.ivo_internal_is_value_equal(field_name, default_value) {
-                            resolvers.push((field_name, resolver));
-                        }
-
-                        continue;
-                    }
-
-                    resolvers.push((field_name, resolver));
                 }
-                _ => {}
             }
+
+            resolvers.push((field_name, resolver));
         }
 
         if resolvers.is_empty() {
@@ -1022,91 +1159,17 @@ impl<
         Some((updated_values, fields_changed))
     }
 
-    async fn attach_constants_and_defaults(
-        &self,
-        mut output: O::Partial,
-        input: &I::Partial,
-        options: IvoRwCtxOptions<CtxOptions>,
-    ) -> O::Partial {
-        let mut resolvers = vec![];
-        let fields_provided = input.ivo_internal_fields_available();
-
-        for (field_name, config) in self.field_configs.iter() {
-            if matches!(config.field_type, FieldType::Lax)
-                && fields_provided.contains(&field_name.to_string())
-            {
-                continue;
-            }
-
-            match config {
-                InternalFieldConfig {
-                    field_type: FieldType::Constant,
-                    value,
-                    ..
-                } => match value {
-                    Some(ValueResolverWithSharedInput::Static(value)) => {
-                        output.ivo_internal_set(field_name, value);
-
-                        continue;
-                    }
-                    Some(ValueResolverWithSharedInput::Func(resolver)) => {
-                        resolvers.push((field_name.to_string(), resolver));
-                        continue;
-                    }
-                    _ => {}
-                },
-                InternalFieldConfig {
-                    field_type: FieldType::Dependent | FieldType::Lax,
-                    default: Some(default),
-                    ..
-                } => match default {
-                    ValueResolverWithSharedInput::Static(value) => {
-                        output.ivo_internal_set(field_name, value);
-                    }
-                    ValueResolverWithSharedInput::Func(resolver) => {
-                        resolvers.push((field_name.to_string(), resolver));
-                    }
-                },
-                _ => {}
-            }
-        }
-
-        if resolvers.is_empty() {
-            return output;
-        }
-
-        let shared_input = Arc::new(input.clone());
-
-        let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
-            (
-                field_name.clone(),
-                resolver(Arc::clone(&shared_input), Arc::clone(&options)).await,
-            )
-        });
-
-        for (field_name, value) in join_all(tasks).await {
-            output.ivo_internal_set(&field_name, &value);
-        }
-
-        output
-    }
-
     async fn filter_input_fields_allowed<'a>(
         &'a self,
         previous_values: Option<&O::Partial>,
         input_values: &I::Partial,
-        mut fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        mut fields_collection: FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> (
-        I::Partial,
-        O::Partial,
-        FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
-    ) {
+    ) -> (I::Partial, O::Partial, FieldInfoCollection<'a>) {
         let is_update = previous_values.is_some();
         let previous_values = previous_values.cloned().unwrap_or_default();
 
-        let mut tasks = vec![];
         let mut entity_resolvers = vec![];
         let mut input = input_values.clone();
         let mut output = O::Partial::default();
@@ -1125,12 +1188,12 @@ impl<
             for (field_name, value) in input_values.ivo_internal_enumerate_fields_available() {
                 let field_info = fields_collection.get(&field_name);
 
-                if (field_info.is_input && !field_info.is_output)
+                if (field_info.is_virtual)
                     || !previous_values.ivo_internal_is_value_equal(&field_name, &value)
                 {
                     relevant_fields_provided.insert(field_name.clone());
 
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         output.ivo_internal_set(
                             &field_name,
                             &input.ivo_internal_get_erased_value(&field_name),
@@ -1146,7 +1209,7 @@ impl<
             for field_name in input_values.ivo_internal_fields_available() {
                 let field_info = fields_collection.get(&field_name);
 
-                if field_info.is_output {
+                if !field_info.is_virtual {
                     output.ivo_internal_set(
                         &field_name,
                         &input.ivo_internal_get_erased_value(&field_name),
@@ -1180,6 +1243,8 @@ impl<
         fields_collection = fields_collection
             .new_with_fields_provided(fields_provided)
             .new_with_relevant_fields_provided(relevant_fields_provided.clone());
+
+        let mut tasks = vec![];
 
         for field_name in fields_collection.relevant_fields_provided() {
             let field_info = fields_collection.get(field_name);
@@ -1220,7 +1285,7 @@ impl<
                         input.ivo_internal_unset(field_name);
                         relevant_fields_provided.remove(field_name);
 
-                        if field_info.is_output {
+                        if !field_info.is_virtual {
                             output.ivo_internal_unset(field_name);
                         }
                     }
@@ -1238,7 +1303,7 @@ impl<
                         ));
                     }
                     Some(IsFieldProvisionEnabled::Readonly) if is_update => {
-                        if let Some(ValueResolverWithSharedInput::Static(default_value)) = default {
+                        if let Some(DefaultValue::Static(default_value)) = default {
                             // readonly means: only allow update if value prev_value == default_value
 
                             if !previous_values
@@ -1247,7 +1312,7 @@ impl<
                                 input.ivo_internal_unset(field_name);
                                 relevant_fields_provided.remove(field_name);
 
-                                if field_info.is_output {
+                                if !field_info.is_virtual {
                                     output.ivo_internal_unset(field_name);
                                 }
                             }
@@ -1259,7 +1324,7 @@ impl<
                         input.ivo_internal_unset(field_name);
                         relevant_fields_provided.remove(field_name);
 
-                        if field_info.is_output {
+                        if !field_info.is_virtual {
                             output.ivo_internal_unset(field_name);
                         }
                     }
@@ -1340,7 +1405,7 @@ impl<
                     input.ivo_internal_unset(field_name);
                     relevant_fields_provided.remove(field_name);
 
-                    if field_info.is_output {
+                    if !field_info.is_virtual {
                         output.ivo_internal_unset(field_name);
                     }
 
@@ -1360,16 +1425,16 @@ impl<
 
     async fn evaluate_missing_required_fields<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: &FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<(), IvoErrorPayload<ErrorSanitizer::Metadata>> {
         let mut error_tool = ErrorTool::new();
-        let mut resolvers = vec![];
+        let mut tasks = vec![];
         let is_update = ctx.is_update();
 
-        for (field_name, config) in self.field_configs.iter() {
-            if fields_collection.is_relevant_config_name(field_name) {
+        for (config_name, config) in self.field_configs.iter() {
+            if fields_collection.is_relevant_config_name(config_name) {
                 continue;
             }
 
@@ -1382,7 +1447,7 @@ impl<
                     match required_error {
                         Some(ComputableRequiredError::Static(msg)) => {
                             error_tool.set(
-                                field_name,
+                                config_name,
                                 FieldError {
                                     reason: msg.to_string(),
                                     metadata: None,
@@ -1390,13 +1455,25 @@ impl<
                             );
                         }
                         Some(ComputableRequiredError::Func(resolver)) => {
-                            resolvers.push((field_name, resolver));
+                            tasks.push(
+                                <InitRequiredResolver<I, CtxOptions> as UniformRequiredResolver<
+                                    I,
+                                    O,
+                                    CtxOptions,
+                                    ErrorSanitizer,
+                                >>::resolve(
+                                    resolver,
+                                    HashSet::from([*config_name]),
+                                    Arc::clone(&ctx),
+                                    Arc::clone(&options),
+                                ),
+                            );
                         }
                         _ => {
                             error_tool.set(
-                                field_name,
+                                config_name,
                                 FieldError {
-                                    reason: format!("\"{field_name}\" is required!"),
+                                    reason: format!("\"{config_name}\" is required!"),
                                     metadata: None,
                                 },
                             );
@@ -1409,37 +1486,40 @@ impl<
                     field_type: FieldType::Lax,
                     required_fn: Some(resolver),
                     ..
-                } => resolvers.push((field_name, resolver)),
+                } => tasks.push(
+                    <RequiredResolver<I, O, CtxOptions> as UniformRequiredResolver<
+                        I,
+                        O,
+                        CtxOptions,
+                        ErrorSanitizer,
+                    >>::resolve(
+                        resolver,
+                        HashSet::from([*config_name]),
+                        Arc::clone(&ctx),
+                        Arc::clone(&options),
+                    ),
+                ),
                 InternalFieldConfig {
                     alias,
                     field_type: FieldType::Virtual,
                     required_fn: Some(resolver),
                     ..
-                } => resolvers.push((alias.as_ref().unwrap_or(field_name), resolver)),
+                } => tasks.push(
+                    <RequiredResolver<I, O, CtxOptions> as UniformRequiredResolver<
+                        I,
+                        O,
+                        CtxOptions,
+                        ErrorSanitizer,
+                    >>::resolve(
+                        resolver,
+                        HashSet::from([*alias.as_ref().unwrap_or(config_name)]),
+                        Arc::clone(&ctx),
+                        Arc::clone(&options),
+                    ),
+                ),
                 _ => (),
             }
         }
-
-        let mut tasks = resolvers
-            .iter()
-            .map(|(field_name, resolver)| {
-                let field_info = fields_collection.get(field_name);
-
-                let r = <RequiredResolver<I, O, CtxOptions> as UniformRequiredResolver<
-                    I,
-                    O,
-                    CtxOptions,
-                    ErrorSanitizer,
-                >>::resolve(
-                    resolver,
-                    HashSet::from([field_info.name]),
-                    Arc::clone(&ctx),
-                    Arc::clone(&options),
-                );
-
-                r
-            })
-            .collect::<Vec<_>>();
 
         if let Some(ref configs) = self.options.required {
             for config in configs {
@@ -1494,9 +1574,52 @@ impl<
         Ok(())
     }
 
+    fn evaluate_update_validity<'a>(
+        &self,
+        ctx: &mut IvoContext<I, O>,
+        previous_values: &O,
+        old_partial_values: &O::Partial,
+        fields_collection: &FieldInfoCollection<'a>,
+    ) -> HashSet<String> {
+        let mut input = ctx.input();
+        let mut changes = ctx.changes();
+        let updated_values = ctx.values();
+
+        let mut relevant_fields_provided = HashSet::new();
+
+        for field_name in fields_collection.relevant_fields_provided() {
+            let field_info = fields_collection.get(field_name);
+
+            if field_info.is_virtual {
+                relevant_fields_provided.insert(field_name.clone());
+
+                continue;
+            }
+
+            if old_partial_values.ivo_internal_is_value_equal(
+                field_info.name,
+                &updated_values.ivo_internal_get_erased_value(field_info.name),
+            ) {
+                input.ivo_internal_unset(field_name);
+                changes.ivo_internal_unset(field_name);
+
+                continue;
+            }
+
+            relevant_fields_provided.insert(field_name.clone());
+        }
+
+        Arc::make_mut(ctx)
+            .set_input(input)
+            .set_changes(changes.clone())
+            .set_full_values(previous_values.ivo_internal_clone_with(changes));
+
+        relevant_fields_provided
+    }
+
     fn prepare_failure_handlers<'a>(
         &self,
-        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'_> {
@@ -1536,7 +1659,7 @@ impl<
 
     fn prepare_success_handlers<'a>(
         &self,
-        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
+        fields_collection: FieldInfoCollection<'a>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'_> {
@@ -1594,57 +1717,6 @@ impl<
 
             Box::pin(async { for _ in join_all(tasks).await {} })
         })
-    }
-
-    fn attach_timestamps(&self, mut data: O::Partial, is_update: bool) -> (O::Partial, bool) {
-        let mut was_updated = false;
-
-        if let Some(TimestampConfig {
-            created_at,
-            resolver,
-            updated_at,
-            with_optional_updated_at,
-        }) = self.timestamp_configs.as_ref()
-        {
-            let mut now = None;
-
-            if !is_update {
-                if let Some(created_at) = created_at {
-                    let value = if let Some(value) = now.clone() {
-                        value
-                    } else {
-                        let value = resolver();
-
-                        now = Some(value.clone());
-
-                        value
-                    };
-
-                    data.ivo_internal_set(created_at, &erase_value(value));
-                    was_updated = true;
-                }
-            }
-
-            if let Some(updated_at) = updated_at {
-                let is_optional = *with_optional_updated_at;
-
-                if is_optional && !is_update {
-                    data.ivo_internal_set(updated_at, &erase_value::<Option<Timestamp>>(None));
-                } else {
-                    let value = now.unwrap_or_else(resolver);
-
-                    if is_optional {
-                        data.ivo_internal_set(updated_at, &erase_value(Some(value)));
-                    } else {
-                        data.ivo_internal_set(updated_at, &erase_value(value));
-                    }
-                }
-
-                was_updated = true;
-            }
-        }
-
-        (data, was_updated)
     }
 }
 

@@ -260,9 +260,9 @@ Data validation can occur in multiple stages depending on your schema's configur
 
    > N.B: Any attempt to update the value of a property (using the method above) not registered in a specific post-validation config will be ignored
 
-1. Sanitization of virtual properties more on this [here](../definitions/virtuals.md#sanitizer)
+1. Sanitization of virtual properties more on this [here](./definitions/virtuals.md#sanitizer)
 
-1. Resolvement of dependent properties more on this [here](../definitions/dependents.md#dependent-properties)
+1. Resolvement of dependent properties more on this [here](./definitions/dependents.md)
 
 ## Built-in validation helpers
 

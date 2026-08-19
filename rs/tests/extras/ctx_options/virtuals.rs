@@ -1,6 +1,9 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
+use ivo::{
+    dependent_field, virtual_field, IvoContext, IvoCtxOptions, IvoInputStruct, IvoModel,
+    IvoRwCtxOptions, IvoStruct,
+};
 
 use crate::async_test_matrix;
 
@@ -50,11 +53,10 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
     const REQUIRED_ERROR: &str = "virtual_field is missing!";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_VALUE)
                     .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -62,8 +64,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .required(async |_, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -73,10 +74,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
                         Some(REQUIRED_ERROR.into())
                     }),
             )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: i32, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field_1").validate(|_: i32, _, _| ready(Ok(None))))
         },
         |o| o,
     );
@@ -118,11 +116,10 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
     const REQUIRED_ERROR: &str = "virtual_field is missing!";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_VALUE)
                     .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -130,8 +127,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .required(async |_, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -141,10 +137,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
                         Some(REQUIRED_ERROR.into())
                     }),
             )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: i32, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field_1").validate(|_: i32, _, _| ready(Ok(None))))
         },
         |o| o,
     );
@@ -195,11 +188,10 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore_update resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_VALUE)
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -207,8 +199,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .ignore(async |_, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -283,11 +274,10 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_VALUE.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -295,8 +285,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
@@ -362,11 +351,10 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_VALUE.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -374,8 +362,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
@@ -455,11 +442,10 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_VALUE.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -467,8 +453,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -535,11 +520,10 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_VALUE.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -547,8 +531,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -630,11 +613,10 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         format!("sanitized-{value}")
     }
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -642,8 +624,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .sanitize(async |value: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -720,11 +701,10 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         format!("sanitized-{value}")
     }
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(default_dependent_value.into())
                     .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
@@ -732,8 +712,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
                     }),
             )
             .field(
-                "virtual_field",
-                IvoField::VIRTUAL
+                virtual_field("virtual_field")
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .sanitize(async |value: String, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
@@ -817,25 +796,18 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_VALUE)
                     .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|_: i32, _, _| ready(Ok(None))),
-            )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: i32, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field").validate(|_: i32, _, _| ready(Ok(None))))
+            .field(virtual_field("virtual_field_1").validate(|_: i32, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
@@ -903,25 +875,18 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                "dependent",
-                IvoField::DEPENDENT
+                dependent_field("dependent")
                     .default(DEFAULT_VALUE)
                     .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|_: i32, _, _| ready(Ok(None))),
-            )
-            .field(
-                "virtual_field_1",
-                IvoField::VIRTUAL.validate(|_: i32, _, _| ready(Ok(None))),
-            )
+            .field(virtual_field("virtual_field").validate(|_: i32, _, _| ready(Ok(None))))
+            .field(virtual_field("virtual_field_1").validate(|_: i32, _, _| ready(Ok(None))))
         },
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {

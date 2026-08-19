@@ -145,7 +145,7 @@ const { data: item2 } = await StoreItem.create({ qty: 100 });
 console.log(item1, item2); // { quantity: 100 } { quantity: 100 }
 ```
 
-> N.B: Do not try to access virtuals on the [`operation ctx`](../life-cycles.md#the-operation-ctx) with their aliases because they are not recognised there. Aliases only work when passed to the `create` & `update` methods of your models
+> N.B: Do not try to access virtuals on the [`operation ctx`](../life-cycles.md#the-operation-context) with their aliases because they are not recognised there. Aliases only work when passed to the `create` & `update` methods of your models
 
 ## Sanitizer
 

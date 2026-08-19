@@ -1,10 +1,11 @@
-import type {
-  ArrayOfMinSizeTwo,
-  ValidationResponse,
-  XOR,
-} from './schema/types';
-import { cloneValue } from './schema/utils';
-import { getUniqueBy, isNullOrUndefined, isOneOf, makeResponse } from './utils';
+import {
+  deepCloneValue,
+  getUniqueBy,
+  isNullOrUndefined,
+  isOneOf,
+  makeResponse,
+} from './utils';
+import type { ArrayOfMinSizeTwo, ValidationResponse, XOR } from './utils/types';
 
 export type {
   ArrayValidatorOptions,
@@ -111,7 +112,7 @@ function makeArrayValidator<
         // @ts-expect-error lol
         typeof sort === 'boolean' ? (a, b) => (a < b ? order : -order) : sort;
 
-      _array = cloneValue(_array).sort(sorter);
+      _array = deepCloneValue(_array).sort(sorter);
     }
 
     return makeResponse({ valid: true, validated: _array });
@@ -336,7 +337,6 @@ function makeStringValidator<const T extends string | unknown = string>({
     if (exclusion.hasExclusion && exclusion.excluded.includes(value as never))
       return makeResponse({
         valid: false,
-        value,
         reason: exclusion.exclusionError,
         metadata: exclusion.metadata,
       });
@@ -348,7 +348,6 @@ function makeStringValidator<const T extends string | unknown = string>({
         ? makeResponse({ valid: true, validated: value })
         : makeResponse({
             valid: false,
-            value,
             reason: notAllowedError,
             metadata: { allowed },
           });
@@ -358,10 +357,10 @@ function makeStringValidator<const T extends string | unknown = string>({
       return makeResponse({ valid: true, validated: null as never as T });
 
     if (typeof value !== 'string')
-      return makeResponse({ reason: 'Expected a string', valid: false, value });
+      return makeResponse({ reason: 'Expected a string', valid: false });
 
     if (regExp && !regExp.value.test(value))
-      return makeResponse({ valid: false, value, reason: regExp.error });
+      return makeResponse({ valid: false, reason: regExp.error });
 
     let _value = String(value);
 
@@ -370,10 +369,10 @@ function makeStringValidator<const T extends string | unknown = string>({
     if (trim) _value = _value.trim();
 
     if (hasMinLength && _value.length < minLength!)
-      return makeResponse({ valid: false, value, reason: minError, metadata });
+      return makeResponse({ valid: false, reason: minError, metadata });
 
     if (hasMaxLength && _value.length > maxLength!)
-      return makeResponse({ valid: false, value, reason: maxError, metadata });
+      return makeResponse({ valid: false, reason: maxError, metadata });
 
     return makeResponse({ valid: true, validated: _value as T });
   };

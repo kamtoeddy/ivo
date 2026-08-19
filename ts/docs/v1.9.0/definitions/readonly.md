@@ -8,7 +8,7 @@ Such a property's value will be changed at most twice depending on your usecase.
 
 They **`cannot be strictly required`** but can be [conditionally required](./required.md#conditionally-required-properties)
 
-They should have a default value if they are [dependent](./dependents.md#dependent-properties), [conditionally required](./required.md#conditionally-required-properties) or have their initialization blocked (i.e. `shouldInit: false`)
+They should have a default value if they are [dependent](./dependents.md), [conditionally required](./required.md#conditionally-required-properties) or have their initialization blocked (i.e. `shouldInit: false`)
 
 Example:
 
