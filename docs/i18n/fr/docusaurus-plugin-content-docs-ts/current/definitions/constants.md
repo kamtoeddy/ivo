@@ -13,15 +13,19 @@ et ne change jamais.
   ivoVersion="local"
   code={`import { Schema } from "ivo";
 
-const OrderModel = new Schema<any, { id: string; total: number }>((b) =>
-  b
-    .field(b.constant("id", () => "order-123"))
-    .field(b.lax("total", 0)),
-).getModel();
+async function main() {
+  const OrderModel = new Schema<any, { id: string; total: number }>((b) =>
+    b
+      .field(b.constant("id", () => "order-123"))
+      .field(b.lax("total", 0)),
+  ).getModel();
 
-const { data } = await OrderModel.create({ id: "ignored", total: 99 });
-console.log(data);
-`}
+  const { data } = await OrderModel.create({ id: "ignored", total: 99 });
+  console.log(data);
+
+}
+
+main();`}
 />
 
 ## Règles

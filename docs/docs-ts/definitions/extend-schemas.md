@@ -12,28 +12,32 @@ Use `.extend()` to create a new schema that inherits fields from an existing one
 ivoVersion="local"
 code={`import { Schema } from "ivo";
 
-type UserInput = { email?: string };
-type User = { id: string; email: string };
+async function main() {
+  type UserInput = { email?: string };
+  type User = { id: string; email: string };
 
-type AdminInput = UserInput & { role?: string };
-type Admin = User & { role: string };
+  type AdminInput = UserInput & { role?: string };
+  type Admin = User & { role: string };
 
-const UserSchema = new Schema<UserInput, User>(
-(b) =>
-b
-.field(b.constant("id", () => "user-1"))
-.field(b.lax("email", "")),
-{ timestamps: true },
-);
+  const UserSchema = new Schema<UserInput, User>(
+  (b) =>
+  b
+  .field(b.constant("id", () => "user-1"))
+  .field(b.lax("email", "")),
+  { timestamps: true },
+  );
 
-const AdminModel = UserSchema.extend<AdminInput, Admin>(
-(b) => b.field(b.required("role").allow(["admin", "super-admin"])),
-{ useParentOptions: true },
-).getModel();
+  const AdminModel = UserSchema.extend<AdminInput, Admin>(
+  (b) => b.field(b.required("role").allow(["admin", "super-admin"])),
+  { useParentOptions: true },
+  ).getModel();
 
-const { data } = await AdminModel.create({ email: "admin@example.com", role: "admin" });
-console.log(data);
-`}
+  const { data } = await AdminModel.create({ email: "admin@example.com", role: "admin" });
+  console.log(data);
+
+}
+
+main();`}
 />
 
 ## Options

@@ -13,23 +13,27 @@ resolver function.
 ivoVersion="local"
 code={`import { Schema } from "ivo";
 
-const ItemModel = new Schema(
-(b) =>
-b
-.field(b.constant("id", () => "item-1"))
-.field(b.lax("name", "Anonymous"))
-.field(b.lax("createdBy", ({ options }) => options.userId))
-.field(
-b
-.dependent("slug", "name")
-.default("")
-.resolve(({ input }) => input.name!.toLowerCase().replace(/\\s+/g, "-")),
-),
-).getModel();
+async function main() {
+  const ItemModel = new Schema(
+  (b) =>
+  b
+  .field(b.constant("id", () => "item-1"))
+  .field(b.lax("name", "Anonymous"))
+  .field(b.lax("createdBy", ({ options }) => options.userId))
+  .field(
+  b
+  .dependent("slug", "name")
+  .default("")
+  .resolve(({ input }) => input.name!.toLowerCase().replace(/\\s+/g, "-")),
+  ),
+  ).getModel();
 
-const { data } = await ItemModel.create({}, { userId: "u-123" });
-console.log(data);
-`}
+  const { data } = await ItemModel.create({}, { userId: "u-123" });
+  console.log(data);
+
+}
+
+main();`}
 />
 
 ## Default value behavior

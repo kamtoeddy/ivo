@@ -21,20 +21,24 @@ Un validateur peut renvoyer :
   ivoVersion="local"
   code={`import { Schema } from "ivo";
 
-function validateUsername(username: string) {
-  if (username.length < 3) {
-    return { valid: false, reason: "Le nom d'utilisateur doit faire au moins 3 caractères" };
+async function main() {
+  function validateUsername(username: string) {
+    if (username.length < 3) {
+      return { valid: false, reason: "Le nom d'utilisateur doit faire au moins 3 caractères" };
+    }
+    return true;
   }
-  return true;
+
+  const UserModel = new Schema<any, { username: string }>((b) =>
+    b.field(b.required("username").validate(validateUsername)),
+  ).getModel();
+
+  const { data, error } = await UserModel.create({ username: "ab" });
+  console.log({ data, error: error?.payload });
+
 }
 
-const UserModel = new Schema<any, { username: string }>((b) =>
-  b.field(b.required("username").validate(validateUsername)),
-).getModel();
-
-const { data, error } = await UserModel.create({ username: "ab" });
-console.log({ data, error: error?.payload });
-`}
+main();`}
 />
 
 ## Validateurs asynchrones

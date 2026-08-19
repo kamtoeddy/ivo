@@ -13,21 +13,25 @@ création.
   ivoVersion="local"
   code={`import { Schema } from "ivo";
 
-const UserModel = new Schema<any, { username: string }>((b) =>
-  b.field(
-    b
-      .required("username")
-      .validate((value) =>
-        value.length >= 3
-          ? true
-          : { valid: false, reason: "Le nom d'utilisateur doit faire au moins 3 caractères" }
-      ),
-  ),
-).getModel();
+async function main() {
+  const UserModel = new Schema<any, { username: string }>((b) =>
+    b.field(
+      b
+        .required("username")
+        .validate((value) =>
+          value.length >= 3
+            ? true
+            : { valid: false, reason: "Le nom d'utilisateur doit faire au moins 3 caractères" }
+        ),
+    ),
+  ).getModel();
 
-const { data, error } = await UserModel.create({ username: "ab" });
-console.log({ data, error: error?.payload });
-`}
+  const { data, error } = await UserModel.create({ username: "ab" });
+  console.log({ data, error: error?.payload });
+
+}
+
+main();`}
 />
 
 ## Règles

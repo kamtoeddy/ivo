@@ -13,29 +13,33 @@ change in one or more fields that depend on it.
 ivoVersion="local"
 code={`import { Schema } from "ivo";
 
-type Input = { rawEmail?: string };
-type Output = { email: string };
+async function main() {
+  type Input = { rawEmail?: string };
+  type Output = { email: string };
 
-const UserModel = new Schema<Input, Output>((b) =>
-b
-.field(
-b
-.virtual("rawEmail")
-.sanitize((value) => value.trim().toLowerCase())
-.validate((value) => ({ valid: value.includes("@") }))
-.alias("email"),
-)
-.field(
-b
-.dependent("email", "rawEmail")
-.default("")
-.resolve(({ input }) => input.rawEmail ?? ""),
-),
-).getModel();
+  const UserModel = new Schema<Input, Output>((b) =>
+  b
+  .field(
+  b
+  .virtual("rawEmail")
+  .sanitize((value) => value.trim().toLowerCase())
+  .validate((value) => ({ valid: value.includes("@") }))
+  .alias("email"),
+  )
+  .field(
+  b
+  .dependent("email", "rawEmail")
+  .default("")
+  .resolve(({ input }) => input.rawEmail ?? ""),
+  ),
+  ).getModel();
 
-const { data } = await UserModel.create({ email: "Ada@Example.COM" });
-console.log(data);
-`}
+  const { data } = await UserModel.create({ email: "Ada@Example.COM" });
+  console.log(data);
+
+}
+
+main();`}
 />
 
 ## Rules

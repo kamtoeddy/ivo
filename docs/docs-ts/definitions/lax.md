@@ -12,13 +12,17 @@ A lax field is both an input and output field whose value may or may not be prov
 ivoVersion="local"
 code={`import { Schema } from "ivo";
 
-const UserModel = new Schema<any, { role: string }>((b) =>
-b.field(b.lax("role", "user")),
-).getModel();
+async function main() {
+  const UserModel = new Schema<any, { role: string }>((b) =>
+  b.field(b.lax("role", "user")),
+  ).getModel();
 
-const { data } = await UserModel.create({});
-console.log(data);
-`}
+  const { data } = await UserModel.create({});
+  console.log(data);
+
+}
+
+main();`}
 />
 
 ## Rules

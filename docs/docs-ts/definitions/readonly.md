@@ -12,23 +12,27 @@ Mark a field as `readonly()` to lock it once it has diverged from its default va
 ivoVersion="local"
 code={`import { Schema } from "ivo";
 
-const CodeModel = new Schema<{ code: string }, { code: string }>(
-(b) => b.field(b.lax("code", "PENDING").readonly()),
-).getModel();
+async function main() {
+  const CodeModel = new Schema<{ code: string }, { code: string }>(
+  (b) => b.field(b.lax("code", "PENDING").readonly()),
+  ).getModel();
 
-const { data: created } = await CodeModel.create({ code: "ABC" });
-console.log("created:", created);
+  const { data: created } = await CodeModel.create({ code: "ABC" });
+  console.log("created:", created);
 
-const { data: updated } = await CodeModel.update(created, { code: "DEF" });
-console.log("updated:", updated);
+  const { data: updated } = await CodeModel.update(created, { code: "DEF" });
+  console.log("updated:", updated);
 
-// Now the value has diverged from the default, further updates are ignored.
-const { data, error } = await CodeModel.update(
-{ ...created, ...updated },
-{ code: "GHI" },
-);
-console.log("second:", { data, error });
-`}
+  // Now the value has diverged from the default, further updates are ignored.
+  const { data, error } = await CodeModel.update(
+  { ...created, ...updated },
+  { code: "GHI" },
+  );
+  console.log("second:", { data, error });
+
+}
+
+main();`}
 />
 
 ## Availability

@@ -13,24 +13,28 @@ depends on is provided and accepted.
 ivoVersion="local"
 code={`import { Schema } from "ivo";
 
-type Input = { firstName?: string; lastName?: string };
-type Output = { firstName: string; lastName: string; fullName: string };
+async function main() {
+  type Input = { firstName?: string; lastName?: string };
+  type Output = { firstName: string; lastName: string; fullName: string };
 
-const UserModel = new Schema<Input, Output>((b) =>
-b
-.field(b.lax("firstName", ""))
-.field(b.lax("lastName", ""))
-.field(
-b
-.dependent("fullName", ["firstName", "lastName"])
-.default("")
-.resolve(({ ctx }) => \`\${ctx.firstName} \${ctx.lastName}\`.trim()),
-),
-).getModel();
+  const UserModel = new Schema<Input, Output>((b) =>
+  b
+  .field(b.lax("firstName", ""))
+  .field(b.lax("lastName", ""))
+  .field(
+  b
+  .dependent("fullName", ["firstName", "lastName"])
+  .default("")
+  .resolve(({ ctx }) => \`\${ctx.firstName} \${ctx.lastName}\`.trim()),
+  ),
+  ).getModel();
 
-const { data } = await UserModel.create({ firstName: "Ada", lastName: "Lovelace" });
-console.log(data);
-`}
+  const { data } = await UserModel.create({ firstName: "Ada", lastName: "Lovelace" });
+  console.log(data);
+
+}
+
+main();`}
 />
 
 ## Rules

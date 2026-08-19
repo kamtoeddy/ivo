@@ -13,13 +13,17 @@ Un champ lax est à la fois un champ d'entrée et de sortie dont la valeur peut 
   ivoVersion="local"
   code={`import { Schema } from "ivo";
 
-const UserModel = new Schema<any, { role: string }>((b) =>
-  b.field(b.lax("role", "user")),
-).getModel();
+async function main() {
+  const UserModel = new Schema<any, { role: string }>((b) =>
+    b.field(b.lax("role", "user")),
+  ).getModel();
 
-const { data } = await UserModel.create({});
-console.log(data);
-`}
+  const { data } = await UserModel.create({});
+  console.log(data);
+
+}
+
+main();`}
 />
 
 ## Règles

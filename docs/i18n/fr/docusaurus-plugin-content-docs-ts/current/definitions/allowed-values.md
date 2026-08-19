@@ -13,20 +13,24 @@ personnalisé.
   ivoVersion="local"
   code={`import { Schema } from "ivo";
 
-const UserModel = new Schema(
-  (b) =>
-    b
-      .field(b.required("role").allow(["admin", "editor", "viewer"]))
-      .field(b.lax("status", "draft").allow(["draft", "published", "archived"])),
-).getModel();
+async function main() {
+  const UserModel = new Schema(
+    (b) =>
+      b
+        .field(b.required("role").allow(["admin", "editor", "viewer"]))
+        .field(b.lax("status", "draft").allow(["draft", "published", "archived"])),
+  ).getModel();
 
-const { data, error } = await UserModel.create({ role: "admin" });
-console.log("created:", data);
+  const { data, error } = await UserModel.create({ role: "admin" });
+  console.log("created:", data);
 
-const { error: invalid } = await UserModel.create({ role: "superuser" });
-console.log("invalid reason:", invalid?.payload?.role?.reason);
-console.log("invalid metadata:", invalid?.payload?.role?.metadata);
-`}
+  const { error: invalid } = await UserModel.create({ role: "superuser" });
+  console.log("invalid reason:", invalid?.payload?.role?.reason);
+  console.log("invalid metadata:", invalid?.payload?.role?.metadata);
+
+}
+
+main();`}
 />
 
 ## Disponibilité

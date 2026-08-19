@@ -26,91 +26,95 @@ déclarés avec `b.required(...)`, `b.lax(...)`, `b.constant(...)`, `b.dependent
   ivoVersion="local"
   code={`import { Schema } from "ivo";
 
-type UserInput = {
-  email: string | null;
-  phoneNumber: string | null;
-  username: string;
-};
+async function main() {
+  type UserInput = {
+    email: string | null;
+    phoneNumber: string | null;
+    username: string;
+  };
 
-type User = {
-  id: string;
-  createdAt: Date;
-  email: string | null;
-  phoneNumber: string | null;
-  updatedAt: Date | null;
-  username: string;
-  usernameLastUpdatedAt: Date | null;
-};
+  type User = {
+    id: string;
+    createdAt: Date;
+    email: string | null;
+    phoneNumber: string | null;
+    updatedAt: Date | null;
+    username: string;
+    usernameLastUpdatedAt: Date | null;
+  };
 
-const isEmailOrPhoneRequired = ({ input }: any) => [
-  !input.email && !input.phoneNumber,
-  "Fournissez un email ou un numéro de téléphone",
-];
+  const isEmailOrPhoneRequired = ({ input }: any) => [
+    !input.email && !input.phoneNumber,
+    "Fournissez un email ou un numéro de téléphone",
+  ];
 
-const validateEmail = (value: string | null) =>
-  value && value.includes("@")
-    ? true
-    : { valid: false, reason: "Email invalide" };
+  const validateEmail = (value: string | null) =>
+    value && value.includes("@")
+      ? true
+      : { valid: false, reason: "Email invalide" };
 
-const validatePhoneNumber = (value: string | null) =>
-  value && value.length >= 5
-    ? true
-    : { valid: false, reason: "Numéro de téléphone invalide" };
+  const validatePhoneNumber = (value: string | null) =>
+    value && value.length >= 5
+      ? true
+      : { valid: false, reason: "Numéro de téléphone invalide" };
 
-const validateUsername = (value: string) =>
-  value.length >= 3
-    ? true
-    : { valid: false, reason: "Le nom d'utilisateur doit faire au moins 3 caractères" };
+  const validateUsername = (value: string) =>
+    value.length >= 3
+      ? true
+      : { valid: false, reason: "Le nom d'utilisateur doit faire au moins 3 caractères" };
 
-const userSchema = new Schema<UserInput, User>(
-  (b) =>
-    b
-      .field(b.constant("id", () => "user-123"))
-      .field(
-        b
-          .lax("email", null)
-          .required(isEmailOrPhoneRequired)
-          .validate(validateEmail),
-      )
-      .field(
-        b
-          .lax("phoneNumber", null)
-          .required(isEmailOrPhoneRequired)
-          .validate(validatePhoneNumber),
-      )
-      .field(
-        b
-          .required("username")
-          .validate(validateUsername)
-          .ignoreUpdate(({ previousValues }) => {
-            const last = previousValues.usernameLastUpdatedAt;
-            if (!last) return false;
+  const userSchema = new Schema<UserInput, User>(
+    (b) =>
+      b
+        .field(b.constant("id", () => "user-123"))
+        .field(
+          b
+            .lax("email", null)
+            .required(isEmailOrPhoneRequired)
+            .validate(validateEmail),
+        )
+        .field(
+          b
+            .lax("phoneNumber", null)
+            .required(isEmailOrPhoneRequired)
+            .validate(validatePhoneNumber),
+        )
+        .field(
+          b
+            .required("username")
+            .validate(validateUsername)
+            .ignoreUpdate(({ previousValues }) => {
+              const last = previousValues.usernameLastUpdatedAt;
+              if (!last) return false;
 
-            const thirtyDays = 2_592_000_000;
-            return new Date().getTime() - last.getTime() < thirtyDays;
-          }),
-      )
-      .field(
-        b
-          .dependent("usernameLastUpdatedAt", "username")
-          .default(null)
-          .resolve(({ isUpdate }) => (isUpdate ? new Date() : null)),
-      ),
-  { timestamps: true },
-);
+              const thirtyDays = 2_592_000_000;
+              return new Date().getTime() - last.getTime() < thirtyDays;
+            }),
+        )
+        .field(
+          b
+            .dependent("usernameLastUpdatedAt", "username")
+            .default(null)
+            .resolve(({ isUpdate }) => (isUpdate ? new Date() : null)),
+        ),
+    { timestamps: true },
+  );
 
-const UserModel = userSchema.getModel();
+  const UserModel = userSchema.getModel();
 
-const { data, error } = await UserModel.create({
-  email: "john.doe@mail.com",
-  username: "john_doe",
-});
-console.log("created:", data);
+  const { data, error } = await UserModel.create({
+    email: "john.doe@mail.com",
+    username: "john_doe",
+  });
+  console.log("created:", data);
 
-const user = { ...data!, updatedAt: new Date() };
-const { data: updated } = await UserModel.update(user, { username: "johndoe" });
-console.log("updated:", updated);
-`}
+  const user = { ...data!, updatedAt: new Date() };
+  const { data: updated } = await UserModel.update(user, { username: "johndoe" });
+  console.log("updated:", updated);
+
+}
+
+main();`}
 />
 
 ## Méthodes du modèle

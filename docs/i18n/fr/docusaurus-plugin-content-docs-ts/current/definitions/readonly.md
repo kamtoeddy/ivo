@@ -13,23 +13,27 @@ défaut.
   ivoVersion="local"
   code={`import { Schema } from "ivo";
 
-const CodeModel = new Schema<{ code: string }, { code: string }>(
-  (b) => b.field(b.lax("code", "PENDING").readonly()),
-).getModel();
+async function main() {
+  const CodeModel = new Schema<{ code: string }, { code: string }>(
+    (b) => b.field(b.lax("code", "PENDING").readonly()),
+  ).getModel();
 
-const { data: created } = await CodeModel.create({ code: "ABC" });
-console.log("created:", created);
+  const { data: created } = await CodeModel.create({ code: "ABC" });
+  console.log("created:", created);
 
-const { data: updated } = await CodeModel.update(created, { code: "DEF" });
-console.log("updated:", updated);
+  const { data: updated } = await CodeModel.update(created, { code: "DEF" });
+  console.log("updated:", updated);
 
-// Maintenant la valeur a divergé de la valeur par défaut, les mises à jour suivantes sont ignorées.
-const { data, error } = await CodeModel.update(
-  { ...created, ...updated },
-  { code: "GHI" },
-);
-console.log("second:", { data, error });
-`}
+  // Maintenant la valeur a divergé de la valeur par défaut, les mises à jour suivantes sont ignorées.
+  const { data, error } = await CodeModel.update(
+    { ...created, ...updated },
+    { code: "GHI" },
+  );
+  console.log("second:", { data, error });
+
+}
+
+main();`}
 />
 
 ## Disponibilité

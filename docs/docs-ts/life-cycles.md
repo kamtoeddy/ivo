@@ -30,17 +30,21 @@ Set them on schema options:
 ivoVersion="local"
 code={`import { Schema } from "ivo";
 
-const UserModel = new Schema(
-(b) => b.field(b.lax("name", "Anonymous")),
-{
-onSuccess: (summary) => console.log("success:", summary.values),
-onDelete: (data) => console.log("deleted:", data),
-},
-).getModel();
+async function main() {
+  const UserModel = new Schema(
+  (b) => b.field(b.lax("name", "Anonymous")),
+  {
+  onSuccess: (summary) => console.log("success:", summary.values),
+  onDelete: (data) => console.log("deleted:", data),
+  },
+  ).getModel();
 
-const { data } = await UserModel.create({ name: "Ada" });
-await UserModel.delete(data!);
-`}
+  const { data } = await UserModel.create({ name: "Ada" });
+  await UserModel.delete(data!);
+
+}
+
+main();`}
 />
 
 ## Field listeners

@@ -12,21 +12,25 @@ A required field is both an input and output field whose value must be provided 
 ivoVersion="local"
 code={`import { Schema } from "ivo";
 
-const UserModel = new Schema<any, { username: string }>((b) =>
-b.field(
-b
-.required("username")
-.validate((value) =>
-value.length >= 3
-? true
-: { valid: false, reason: "Username must be at least 3 characters" }
-),
-),
-).getModel();
+async function main() {
+  const UserModel = new Schema<any, { username: string }>((b) =>
+  b.field(
+  b
+  .required("username")
+  .validate((value) =>
+  value.length >= 3
+  ? true
+  : { valid: false, reason: "Username must be at least 3 characters" }
+  ),
+  ),
+  ).getModel();
 
-const { data, error } = await UserModel.create({ username: "ab" });
-console.log({ data, error: error?.payload });
-`}
+  const { data, error } = await UserModel.create({ username: "ab" });
+  console.log({ data, error: error?.payload });
+
+}
+
+main();`}
 />
 
 ## Rules
