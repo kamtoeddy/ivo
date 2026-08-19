@@ -66,11 +66,15 @@ const config: Config = {
         // latest *released* version as the default landing point, and expose the
         // in-progress v2.0.0 docs under /docs/ts/next/ until it ships (see
         // Phase 6 in TODO.md).
-        lastVersion: "1.9.0",
+        lastVersion: "current",
         versions: {
           current: {
-            label: "2.0.0 (unreleased)",
-            path: "next",
+            label: "2.0.0",
+            path: "",
+          },
+          "1.9.0": {
+            label: "1.9.0",
+            path: "1.9.0",
           },
         },
       } satisfies DocsPluginOptions,
