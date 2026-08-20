@@ -1511,6 +1511,130 @@ fn generate_model(
     let hook_opts_ty = quote!(&::ivo::IvoCtxOptions<#ctx_options_ty>);
     let raw_input_ty = quote!(&#partial_input_name);
 
+    // Helpers to emit either a sync call or an awaited async runtime helper.
+    let make_boolean_call = |handler: &proc_macro2::TokenStream,
+                             annotation_ctx_ty: &proc_macro2::TokenStream,
+                             ctx_expr: &proc_macro2::TokenStream,
+                             opts_expr: &proc_macro2::TokenStream|
+     -> (bool, proc_macro2::TokenStream) {
+        let annotated = type_annotate_handler(
+            handler.clone(),
+            &[annotation_ctx_ty.clone(), opts_ty.clone()],
+        );
+        if is_async_handler(handler) {
+            (
+                true,
+                quote! {
+                    ::ivo::run_boolean_resolver(#ctx_expr, #opts_expr, |ctx, opts| {
+                        ::std::boxed::Box::pin((#annotated)(ctx, opts))
+                    }).await
+                },
+            )
+        } else {
+            (false, quote! { (#annotated)(#ctx_expr, #opts_expr) })
+        }
+    };
+
+    let make_required_call = |handler: &proc_macro2::TokenStream,
+                              annotation_ctx_ty: &proc_macro2::TokenStream,
+                              ctx_expr: &proc_macro2::TokenStream,
+                              opts_expr: &proc_macro2::TokenStream|
+     -> (bool, proc_macro2::TokenStream) {
+        let annotated = type_annotate_handler(
+            handler.clone(),
+            &[annotation_ctx_ty.clone(), opts_ty.clone()],
+        );
+        if is_async_handler(handler) {
+            (
+                true,
+                quote! {
+                    ::ivo::run_required_resolver(#ctx_expr, #opts_expr, |ctx, opts| {
+                        ::std::boxed::Box::pin((#annotated)(ctx, opts))
+                    }).await
+                },
+            )
+        } else {
+            (false, quote! { (#annotated)(#ctx_expr, #opts_expr) })
+        }
+    };
+
+    let make_resolver_call = |handler: &proc_macro2::TokenStream,
+                              ctx_expr: &proc_macro2::TokenStream,
+                              opts_expr: &proc_macro2::TokenStream|
+     -> (bool, proc_macro2::TokenStream) {
+        let annotated =
+            type_annotate_handler(handler.clone(), &[resolver_ctx_ty.clone(), opts_ty.clone()]);
+        if is_async_handler(handler) {
+            (
+                true,
+                quote! {
+                    ::ivo::run_resolver(#ctx_expr, #opts_expr, |ctx, opts| {
+                        ::std::boxed::Box::pin((#annotated)(ctx, opts))
+                    }).await
+                },
+            )
+        } else {
+            (false, quote! { (#annotated)(#ctx_expr, #opts_expr) })
+        }
+    };
+
+    let make_sanitizer_call = |handler: &proc_macro2::TokenStream,
+                               value_ty: &proc_macro2::TokenStream,
+                               value_expr: &proc_macro2::TokenStream,
+                               ctx_expr: &proc_macro2::TokenStream,
+                               opts_expr: &proc_macro2::TokenStream|
+     -> (bool, proc_macro2::TokenStream) {
+        let annotated = type_annotate_handler(
+            handler.clone(),
+            &[value_ty.clone(), ctx_ty.clone(), opts_ty.clone()],
+        );
+        if is_async_handler(handler) {
+            (
+                true,
+                quote! {
+                    ::ivo::run_sanitizer(#value_expr, #ctx_expr, #opts_expr, |value, ctx, opts| {
+                        ::std::boxed::Box::pin((#annotated)(value, ctx, opts))
+                    }).await
+                },
+            )
+        } else {
+            (
+                false,
+                quote! { (#annotated)(#value_expr, #ctx_expr, #opts_expr) },
+            )
+        }
+    };
+
+    let make_validator_call = |handler: &proc_macro2::TokenStream,
+                               value_ty: &proc_macro2::TokenStream,
+                               value_expr: &proc_macro2::TokenStream,
+                               ctx_expr: &proc_macro2::TokenStream,
+                               opts_expr: &proc_macro2::TokenStream|
+     -> (bool, proc_macro2::TokenStream) {
+        let annotated = type_annotate_handler(
+            handler.clone(),
+            &[value_ty.clone(), ctx_ty.clone(), opts_ty.clone()],
+        );
+        if is_async_handler(handler) {
+            (
+                true,
+                quote! {
+                    ::ivo::run_validator(#value_expr, #ctx_expr, #opts_expr, |value, ctx, opts| {
+                        ::std::boxed::Box::pin((#annotated)(value, ctx, opts))
+                    }).await
+                },
+            )
+        } else {
+            (
+                false,
+                quote! { (#annotated)(#value_expr, #ctx_expr, #opts_expr) },
+            )
+        }
+    };
+
+    let mut create_has_async = false;
+    let mut update_has_async = false;
+
     // Collect lax/virtual fields that may be ignored during create.
     let mut ignore_field_names: std::collections::HashSet<String> = options
         .iter()
@@ -1535,13 +1659,14 @@ fn generate_model(
         quote! { let mut #flag = false; }
     });
 
-    let ignore_evaluations = options
+    let grouped_ignore_pairs: Vec<_> = options
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::Ignore))
         .enumerate()
         .map(|(i, o)| {
-            let handler =
-                type_annotate_handler(o.handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) = make_boolean_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
             let opt_flag = format_ident!("__ignore_opt_{}", i);
             let field_flags = o
                 .fields
@@ -1553,38 +1678,49 @@ fn generate_model(
                     })
                 })
                 .map(|f| format_ident!("ignore_{}", f));
-            quote! {
-                let #opt_flag: bool = ::ivo::run_boolean_resolver(&ctx, &_rw_ctx_options, |ctx, opts| {
-                    ::std::boxed::Box::pin((#handler)(ctx, opts))
-                }).await;
+            let stmt = quote! {
+                let #opt_flag: bool = #call;
                 if #opt_flag {
                     #(#field_flags = true;)*
                 }
-            }
-        });
+            };
+            (is_async, stmt)
+        })
+        .collect();
+    create_has_async |= grouped_ignore_pairs.iter().any(|(a, _)| *a);
+    let ignore_evaluations = grouped_ignore_pairs.into_iter().map(|(_, stmt)| stmt);
 
-    let field_ignore_evaluations = field_ignore_handlers.iter().map(|(f, handler)| {
-        let handler = type_annotate_handler(handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
-        let flag = format_ident!("ignore_{}", f.name);
-        quote! {
-            if (#handler)(&ctx, &_rw_ctx_options) {
-                #flag = true;
-            }
-        }
-    });
+    let field_ignore_pairs: Vec<_> = field_ignore_handlers
+        .iter()
+        .map(|(f, handler)| {
+            let flag = format_ident!("ignore_{}", f.name);
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) = make_boolean_call(handler, &ctx_ty, &ctx_expr, &opts_expr);
+            let stmt = quote! {
+                if (#call) {
+                    #flag = true;
+                }
+            };
+            (is_async, stmt)
+        })
+        .collect();
+    create_has_async |= field_ignore_pairs.iter().any(|(a, _)| *a);
+    let field_ignore_evaluations = field_ignore_pairs.into_iter().map(|(_, stmt)| stmt);
 
     let ignore_init_assignments = field_ignore_init.iter().map(|name| {
         let flag = format_ident!("ignore_{}", name);
         quote! { #flag = true; }
     });
 
-    let grouped_required_evaluations = options
+    let grouped_required_pairs: Vec<_> = options
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::Required))
         .enumerate()
         .map(|(i, o)| {
-            let handler =
-                type_annotate_handler(o.handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) = make_boolean_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
             let opt_flag = format_ident!("__required_opt_{}", i);
             let checks = o.fields.iter().map(|fname| {
                 let f = fields.iter().find(|f| f.name == fname).unwrap();
@@ -1602,36 +1738,45 @@ fn generate_model(
                     }
                 }
             });
-            quote! {
-                let #opt_flag: bool = ::ivo::run_boolean_resolver(&ctx, &_rw_ctx_options, |ctx, opts| {
-                    ::std::boxed::Box::pin((#handler)(ctx, opts))
-                }).await;
+            let stmt = quote! {
+                let #opt_flag: bool = #call;
                 if #opt_flag {
                     #(#checks)*
                 }
-            }
-        });
+            };
+            (is_async, stmt)
+        })
+        .collect();
+    create_has_async |= grouped_required_pairs.iter().any(|(a, _)| *a);
+    let grouped_required_evaluations = grouped_required_pairs.into_iter().map(|(_, stmt)| stmt);
 
-    let field_required_evaluations = field_required_handlers.iter().map(|(f, handler)| {
-        let handler = type_annotate_handler(handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
-        let input_tokens = input_field_name(f);
-        let name_str = f.name.to_string();
-        quote! {
-            let __required_msg: ::core::option::Option<::std::string::String> =
-                (#handler)(&ctx, &_rw_ctx_options);
-            if let Some(__msg) = __required_msg {
-                if input.#input_tokens.is_none() {
-                    errors.insert(
-                        ::std::string::String::from(#name_str),
-                        ::ivo::FieldError {
-                            reason: __msg,
-                            metadata: ::core::option::Option::None,
-                        },
-                    );
+    let field_required_pairs: Vec<_> = field_required_handlers
+        .iter()
+        .map(|(f, handler)| {
+            let input_tokens = input_field_name(f);
+            let name_str = f.name.to_string();
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) = make_required_call(handler, &ctx_ty, &ctx_expr, &opts_expr);
+            let stmt = quote! {
+                let __required_msg: ::core::option::Option<::std::string::String> = #call;
+                if let Some(__msg) = __required_msg {
+                    if input.#input_tokens.is_none() {
+                        errors.insert(
+                            ::std::string::String::from(#name_str),
+                            ::ivo::FieldError {
+                                reason: __msg,
+                                metadata: ::core::option::Option::None,
+                            },
+                        );
+                    }
                 }
-            }
-        }
-    });
+            };
+            (is_async, stmt)
+        })
+        .collect();
+    create_has_async |= field_required_pairs.iter().any(|(a, _)| *a);
+    let field_required_evaluations = field_required_pairs.into_iter().map(|(_, stmt)| stmt);
 
     let required_evaluations = grouped_required_evaluations.chain(field_required_evaluations);
 
@@ -1664,186 +1809,17 @@ fn generate_model(
             }
         });
 
-    let create_steps = fields.iter().filter(|f| !matches!(f.field_type, FieldType::Virtual { .. })).map(|f| {
-        let name = &f.name;
-        let name_str = name.to_string();
-        let ty = &f.ty;
-        let ty_tokens = quote!(#ty);
-        let sanitizer = attr_value_tokens(&f.attrs, "sanitize")
-            .map(|t| type_annotate_handler(t, &[ty_tokens.clone(), ctx_ty.clone(), opts_ty.clone()]));
-        let validator = attr_value_tokens(&f.attrs, "validate")
-            .map(|t| type_annotate_handler(t, &[ty_tokens.clone(), ctx_ty.clone(), opts_ty.clone()]));
-        let resolver = attr_value_tokens(&f.attrs, "resolve")
-            .map(|t| type_annotate_handler(t, &[resolver_ctx_ty.clone(), opts_ty.clone()]));
-
-        let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
-            let flag = format_ident!("ignore_{}", name);
-            quote! { #flag }
-        } else {
-            quote! { false }
-        };
-
-        let lax_default_expr = match &f.field_type {
-            FieldType::Lax => attr_value_tokens(&f.attrs, "lax").map(|t| {
-                if is_closure(&t) {
-                    quote! { (#t)() }
-                } else {
-                    t
-                }
-            }),
-            _ => None,
-        };
-        let default_expr = lax_default_expr
-            .unwrap_or_else(|| quote! { ::core::default::Default::default() });
-
-        let base_value = match &f.field_type {
-            FieldType::Required | FieldType::Lax => {
-                let input_name_tokens = input_field_name(f);
-                quote! {
-                    {
-                        let __maybe: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
-                            ::core::option::Option::None
-                        } else {
-                            input.#input_name_tokens.clone()
-                        };
-                        __maybe.unwrap_or_else(|| {
-                            let __default: #ty_tokens = #default_expr;
-                            __default
-                        })
-                    }
-                }
-            }
-            FieldType::CreatedAt | FieldType::UpdatedAt => {
-                if let Some(resolver) = &timestamps_resolver {
-                    quote! { (#resolver)() }
-                } else {
-                    quote! { ::core::default::Default::default() }
-                }
-            }
-            FieldType::Constant => {
-                let tokens = attr_value_tokens(&f.attrs, "constant")
-                    .unwrap_or_else(|| quote!(::core::default::Default::default()));
-                match closure_input_count(&tokens) {
-                    Some(0) => quote! { (#tokens)() },
-                    Some(_) => {
-                        let resolver = type_annotate_handler(
-                            tokens,
-                            &[resolver_ctx_ty.clone(), opts_ty.clone()],
-                        );
-                        quote! {
-                            ::ivo::run_resolver(ctx.clone(), &_rw_ctx_options, |ctx, opts| {
-                                ::std::boxed::Box::pin((#resolver)(ctx, opts))
-                            }).await
-                        }
-                    }
-                    None => quote! { #tokens },
-                }
-            }
-            FieldType::Dependent => {
-                if let Some(resolver) = resolver {
-                    quote! {
-                        ::ivo::run_resolver(ctx.clone(), &_rw_ctx_options, |ctx, opts| {
-                            ::std::boxed::Box::pin((#resolver)(ctx, opts))
-                        }).await
-                    }
-                } else {
-                    let default_expr =
-                        attr_value_tokens(&f.attrs, "default").map(|t| {
-                            if is_closure(&t) {
-                                quote! { (#t)() }
-                            } else {
-                                t
-                            }
-                        });
-                    let default_expr = default_expr
-                        .unwrap_or_else(|| quote! { ::core::default::Default::default() });
-                    quote! {
-                        {
-                            let __default: #ty = #default_expr;
-                            __default
-                        }
-                    }
-                }
-            }
-            FieldType::Virtual { .. } => unreachable!(),
-        };
-
-        let sanitizer_expr = if let Some(sanitizer) = sanitizer {
-            quote! {
-                value = ::ivo::run_sanitizer(value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
-                    ::std::boxed::Box::pin((#sanitizer)(value, ctx, opts))
-                }).await;
-            }
-        } else {
-            quote! {}
-        };
-
-        let validator_expr = if let Some(validator) = validator {
-            quote! {
-                match ::ivo::run_validator(value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
-                    ::std::boxed::Box::pin((#validator)(value, ctx, opts))
-                }).await {
-                    ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
-                    ::core::result::Result::Ok(::core::option::Option::None) => {
-                        errors.insert(
-                            ::std::string::String::from(#name_str),
-                            ::ivo::FieldError {
-                                reason: ::std::string::String::from("validation failed"),
-                                metadata: ::core::option::Option::None,
-                            },
-                        );
-                        ::core::default::Default::default()
-                    }
-                    ::core::result::Result::Err(e) => {
-                        errors.insert(::std::string::String::from(#name_str), e);
-                        ::core::default::Default::default()
-                    }
-                }
-            }
-        } else {
-            quote! { value }
-        };
-
-        let value_computation = quote! {
-            {
-                let mut value: #ty = #base_value;
-                if !#ignore_flag_tokens {
-                    #sanitizer_expr
-                    value = #validator_expr;
-                }
-                value
-            }
-        };
-
-        quote! {
-            let #name: #ty = #value_computation;
-            output.#name = #name.clone();
-            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                input.clone(),
-                output.clone(),
-                output.clone().into(),
-                false,
-            );
-        }
-    });
-
-    // Virtual-field processing pass: sanitize/validate virtual input values and
-    // update the partial input so that dependent resolvers see the final values.
-    let virtual_steps = fields
+    let create_step_pairs: Vec<_> = fields
         .iter()
-        .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
+        .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
         .map(|f| {
             let name = &f.name;
             let name_str = name.to_string();
             let ty = &f.ty;
             let ty_tokens = quote!(#ty);
-            let input_name_tokens = input_field_name(f);
-            let sanitizer = attr_value_tokens(&f.attrs, "sanitize").map(|t| {
-                type_annotate_handler(t, &[ty_tokens.clone(), ctx_ty.clone(), opts_ty.clone()])
-            });
-            let validator = attr_value_tokens(&f.attrs, "validate").map(|t| {
-                type_annotate_handler(t, &[ty_tokens.clone(), ctx_ty.clone(), opts_ty.clone()])
-            });
+            let sanitizer = attr_value_tokens(&f.attrs, "sanitize");
+            let validator = attr_value_tokens(&f.attrs, "validate");
+            let resolver = attr_value_tokens(&f.attrs, "resolve");
 
             let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
                 let flag = format_ident!("ignore_{}", name);
@@ -1852,32 +1828,109 @@ fn generate_model(
                 quote! { false }
             };
 
-            let base_value = quote! {
-                {
-                    let __maybe: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
-                        ::core::option::Option::None
+            let lax_default_expr = match &f.field_type {
+                FieldType::Lax => attr_value_tokens(&f.attrs, "lax").map(|t| {
+                    if is_closure(&t) {
+                        quote! { (#t)() }
                     } else {
-                        input.#input_name_tokens.clone()
-                    };
-                    __maybe.unwrap_or_default()
+                        t
+                    }
+                }),
+                _ => None,
+            };
+            let default_expr = lax_default_expr
+                .unwrap_or_else(|| quote! { ::core::default::Default::default() });
+
+            let mut field_is_async = false;
+
+            let base_value = match &f.field_type {
+                FieldType::Required | FieldType::Lax => {
+                    let input_name_tokens = input_field_name(f);
+                    quote! {
+                        {
+                            let __maybe: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
+                                ::core::option::Option::None
+                            } else {
+                                input.#input_name_tokens.clone()
+                            };
+                            __maybe.unwrap_or_else(|| {
+                                let __default: #ty_tokens = #default_expr;
+                                __default
+                            })
+                        }
+                    }
                 }
+                FieldType::CreatedAt | FieldType::UpdatedAt => {
+                    if let Some(resolver) = &timestamps_resolver {
+                        quote! { (#resolver)() }
+                    } else {
+                        quote! { ::core::default::Default::default() }
+                    }
+                }
+                FieldType::Constant => {
+                    let tokens = attr_value_tokens(&f.attrs, "constant")
+                        .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                    match closure_input_count(&tokens) {
+                        Some(0) => quote! { (#tokens)() },
+                        Some(_) => {
+                            let ctx_expr = quote!(ctx.clone());
+                            let opts_expr = quote!(&_rw_ctx_options);
+                            let (is_async, call) = make_resolver_call(&tokens, &ctx_expr, &opts_expr);
+                            field_is_async |= is_async;
+                            call
+                        }
+                        None => quote! { #tokens },
+                    }
+                }
+                FieldType::Dependent => {
+                    if let Some(resolver) = resolver {
+                        let ctx_expr = quote!(ctx.clone());
+                        let opts_expr = quote!(&_rw_ctx_options);
+                        let (is_async, call) = make_resolver_call(&resolver, &ctx_expr, &opts_expr);
+                        field_is_async |= is_async;
+                        call
+                    } else {
+                        let default_expr = attr_value_tokens(&f.attrs, "default").map(|t| {
+                            if is_closure(&t) {
+                                quote! { (#t)() }
+                            } else {
+                                t
+                            }
+                        });
+                        let default_expr = default_expr
+                            .unwrap_or_else(|| quote! { ::core::default::Default::default() });
+                        quote! {
+                            {
+                                let __default: #ty = #default_expr;
+                                __default
+                            }
+                        }
+                    }
+                }
+                FieldType::Virtual { .. } => unreachable!(),
             };
 
             let sanitizer_expr = if let Some(sanitizer) = sanitizer {
-                quote! {
-                    value = ::ivo::run_sanitizer(value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
-                        ::std::boxed::Box::pin((#sanitizer)(value, ctx, opts))
-                    }).await;
-                }
+                let value_expr = quote!(value);
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) =
+                    make_sanitizer_call(&sanitizer, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
+                field_is_async |= is_async;
+                quote! { value = #call; }
             } else {
                 quote! {}
             };
 
             let validator_expr = if let Some(validator) = validator {
+                let value_expr = quote!(value);
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) =
+                    make_validator_call(&validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
+                field_is_async |= is_async;
                 quote! {
-                    match ::ivo::run_validator(value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
-                        ::std::boxed::Box::pin((#validator)(value, ctx, opts))
-                    }).await {
+                    match #call {
                         ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
                         ::core::result::Result::Ok(::core::option::Option::None) => {
                             errors.insert(
@@ -1910,7 +1963,110 @@ fn generate_model(
                 }
             };
 
-            quote! {
+            let stmt = quote! {
+                let #name: #ty = #value_computation;
+                output.#name = #name.clone();
+                let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    output.clone(),
+                    output.clone().into(),
+                    false,
+                );
+            };
+            (field_is_async, stmt)
+        })
+        .collect();
+    create_has_async |= create_step_pairs.iter().any(|(a, _)| *a);
+    let create_steps = create_step_pairs.into_iter().map(|(_, stmt)| stmt);
+
+    // Virtual-field processing pass: sanitize/validate virtual input values and
+    // update the partial input so that dependent resolvers see the final values.
+    let virtual_step_pairs: Vec<_> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
+        .map(|f| {
+            let name = &f.name;
+            let name_str = name.to_string();
+            let ty = &f.ty;
+            let ty_tokens = quote!(#ty);
+            let input_name_tokens = input_field_name(f);
+            let sanitizer = attr_value_tokens(&f.attrs, "sanitize");
+            let validator = attr_value_tokens(&f.attrs, "validate");
+
+            let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
+                let flag = format_ident!("ignore_{}", name);
+                quote! { #flag }
+            } else {
+                quote! { false }
+            };
+
+            let base_value = quote! {
+                {
+                    let __maybe: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
+                        ::core::option::Option::None
+                    } else {
+                        input.#input_name_tokens.clone()
+                    };
+                    __maybe.unwrap_or_default()
+                }
+            };
+
+            let mut field_is_async = false;
+
+            let sanitizer_expr = if let Some(sanitizer) = sanitizer {
+                let value_expr = quote!(value);
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) =
+                    make_sanitizer_call(&sanitizer, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
+                field_is_async |= is_async;
+                quote! { value = #call; }
+            } else {
+                quote! {}
+            };
+
+            let validator_expr = if let Some(validator) = validator {
+                let value_expr = quote!(value);
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) =
+                    make_validator_call(&validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
+                field_is_async |= is_async;
+                quote! {
+                    match #call {
+                        ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
+                        ::core::result::Result::Ok(::core::option::Option::None) => {
+                            errors.insert(
+                                ::std::string::String::from(#name_str),
+                                ::ivo::FieldError {
+                                    reason: ::std::string::String::from("validation failed"),
+                                    metadata: ::core::option::Option::None,
+                                },
+                            );
+                            ::core::default::Default::default()
+                        }
+                        ::core::result::Result::Err(e) => {
+                            errors.insert(::std::string::String::from(#name_str), e);
+                            ::core::default::Default::default()
+                        }
+                    }
+                }
+            } else {
+                quote! { value }
+            };
+
+            let value_computation = quote! {
+                {
+                    let mut value: #ty = #base_value;
+                    if !#ignore_flag_tokens {
+                        #sanitizer_expr
+                        value = #validator_expr;
+                    }
+                    value
+                }
+            };
+
+            let stmt = quote! {
                 let #name: #ty = #value_computation;
                 if #ignore_flag_tokens {
                     input.#input_name_tokens = ::core::option::Option::None;
@@ -1923,11 +2079,15 @@ fn generate_model(
                     output.clone().into(),
                     false,
                 );
-            }
-        });
+            };
+            (field_is_async, stmt)
+        })
+        .collect();
+    create_has_async |= virtual_step_pairs.iter().any(|(a, _)| *a);
+    let virtual_steps = virtual_step_pairs.into_iter().map(|(_, stmt)| stmt);
 
     // Re-validation pass: run secondary validators over the built output.
-    let re_validate_steps = fields
+    let re_validate_pairs: Vec<_> = fields
         .iter()
         .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
         .filter_map(|f| {
@@ -1935,17 +2095,23 @@ fn generate_model(
             let name_str = name.to_string();
             let ty = &f.ty;
             let ty_tokens = quote!(#ty);
-            let re_validator = attr_value_tokens(&f.attrs, "re_validate").map(|t| {
-                type_annotate_handler(t, &[ty_tokens.clone(), ctx_ty.clone(), opts_ty.clone()])
-            })?;
-            Some(quote! {
+            let re_validator = attr_value_tokens(&f.attrs, "re_validate")?;
+            let value_expr = quote!(output.#name.clone());
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) = make_validator_call(
+                &re_validator,
+                &ty_tokens,
+                &value_expr,
+                &ctx_expr,
+                &opts_expr,
+            );
+            let stmt = quote! {
                 let __value: #ty = output.#name.clone();
                 let __result: ::core::result::Result<
                     ::core::option::Option<#ty>,
                     ::ivo::FieldError<#metadata_ty>,
-                > = ::ivo::run_validator(__value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
-                    ::std::boxed::Box::pin((#re_validator)(value, ctx, opts))
-                }).await;
+                > = #call;
                 match __result {
                     ::core::result::Result::Ok(::core::option::Option::Some(__new_value)) => {
                         output.#name = __new_value.clone();
@@ -1963,8 +2129,12 @@ fn generate_model(
                         errors.insert(::std::string::String::from(#name_str), e);
                     }
                 }
-            })
-        });
+            };
+            Some((is_async, stmt))
+        })
+        .collect();
+    create_has_async |= re_validate_pairs.iter().any(|(a, _)| *a);
+    let re_validate_steps = re_validate_pairs.into_iter().map(|(_, stmt)| stmt);
 
     // Update method: apply partial updates.
     let update_ctx_ty = quote!(&::ivo::IvoContext<#partial_output_name, #output_name>);
@@ -2010,43 +2180,56 @@ fn generate_model(
         quote! { let mut #flag = false; }
     });
 
-    let field_ignore_update_evaluations =
-        field_ignore_update_handlers.iter().map(|(f, handler)| {
-            let handler =
-                type_annotate_handler(handler.clone(), &[update_ctx_ty.clone(), opts_ty.clone()]);
+    let field_ignore_update_pairs: Vec<_> = field_ignore_update_handlers
+        .iter()
+        .map(|(f, handler)| {
             let flag = format_ident!("ignore_update_{}", f.name);
-            quote! {
-                if (#handler)(&ctx, &_rw_ctx_options) {
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) =
+                make_boolean_call(handler, &update_ctx_ty, &ctx_expr, &opts_expr);
+            let stmt = quote! {
+                if (#call) {
                     #flag = true;
                 }
-            }
-        });
+            };
+            (is_async, stmt)
+        })
+        .collect();
+    update_has_async |= field_ignore_update_pairs.iter().any(|(a, _)| *a);
 
-    let grouped_ignore_update_evaluations = grouped_ignore_update_options.iter().map(|opt| {
-        let handler = type_annotate_handler(
-            opt.handler.clone(),
-            &[update_ctx_ty.clone(), opts_ty.clone()],
-        );
-        let flag_idents: Vec<_> = if opt.fields.is_empty() {
-            updateable_fields
-                .iter()
-                .map(|f| format_ident!("ignore_update_{}", f.name))
-                .collect()
-        } else {
-            opt.fields
-                .iter()
-                .map(|f| format_ident!("ignore_update_{}", f))
-                .collect()
-        };
-        quote! {
-            if (#handler)(&ctx, &_rw_ctx_options) {
-                #(#flag_idents = true;)*
-            }
-        }
-    });
+    let grouped_ignore_update_pairs: Vec<_> = grouped_ignore_update_options
+        .iter()
+        .map(|opt| {
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) =
+                make_boolean_call(&opt.handler, &update_ctx_ty, &ctx_expr, &opts_expr);
+            let flag_idents: Vec<_> = if opt.fields.is_empty() {
+                updateable_fields
+                    .iter()
+                    .map(|f| format_ident!("ignore_update_{}", f.name))
+                    .collect()
+            } else {
+                opt.fields
+                    .iter()
+                    .map(|f| format_ident!("ignore_update_{}", f))
+                    .collect()
+            };
+            let stmt = quote! {
+                if (#call) {
+                    #(#flag_idents = true;)*
+                }
+            };
+            (is_async, stmt)
+        })
+        .collect();
+    update_has_async |= grouped_ignore_update_pairs.iter().any(|(a, _)| *a);
 
-    let update_ignore_evaluations =
-        field_ignore_update_evaluations.chain(grouped_ignore_update_evaluations);
+    let update_ignore_evaluations = field_ignore_update_pairs
+        .into_iter()
+        .chain(grouped_ignore_update_pairs)
+        .map(|(_, stmt)| stmt);
 
     let update_assignments = fields
         .iter()
@@ -2101,7 +2284,22 @@ fn generate_model(
     // Delete method: lifecycle hooks.
     let data_ref_ty = quote!(&#output_name);
 
-    let field_on_delete_hooks = fields
+    let make_on_delete_call =
+        |handler: proc_macro2::TokenStream| -> (bool, proc_macro2::TokenStream) {
+            let annotated = type_annotate_handler(
+                handler.clone(),
+                &[data_ref_ty.clone(), hook_opts_ty.clone()],
+            );
+            let is_async = is_async_handler(&handler);
+            let call = if is_async {
+                quote! { ::ivo::run_hook(data, &_ctx_options, #annotated).await; }
+            } else {
+                quote! { (#annotated)(data, &_ctx_options); }
+            };
+            (is_async, call)
+        };
+
+    let field_on_delete_hook_pairs: Vec<_> = fields
         .iter()
         .filter(|f| {
             matches!(
@@ -2112,27 +2310,25 @@ fn generate_model(
         .flat_map(|f| {
             attr_values_tokens(&f.attrs, "on_delete")
                 .into_iter()
-                .map(|handler| {
-                    let handler = type_annotate_handler(
-                        handler,
-                        &[data_ref_ty.clone(), hook_opts_ty.clone()],
-                    );
-                    quote! { ::ivo::run_hook(data, &_ctx_options, #handler).await; }
-                })
-        });
+                .map(&make_on_delete_call)
+        })
+        .collect();
 
-    let grouped_on_delete_hooks = options
+    let grouped_on_delete_hook_pairs: Vec<_> = options
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::OnDelete))
-        .map(|o| {
-            let handler = type_annotate_handler(
-                o.handler.clone(),
-                &[data_ref_ty.clone(), hook_opts_ty.clone()],
-            );
-            quote! { ::ivo::run_hook(data, &_ctx_options, #handler).await; }
-        });
+        .map(|o| make_on_delete_call(o.handler.clone()))
+        .collect();
 
-    let on_delete_hooks = field_on_delete_hooks.chain(grouped_on_delete_hooks);
+    let delete_is_async = field_on_delete_hook_pairs
+        .iter()
+        .chain(&grouped_on_delete_hook_pairs)
+        .any(|(is_async, _)| *is_async);
+
+    let on_delete_hooks = field_on_delete_hook_pairs
+        .into_iter()
+        .chain(grouped_on_delete_hook_pairs)
+        .map(|(_, call)| call);
 
     // Success / failure triggers.
     let hook_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
@@ -2273,6 +2469,24 @@ fn generate_model(
     let trigger_ty = quote!(::ivo::IvoTrigger);
     let ctx_options_return_ty = quote!(::ivo::IvoCtxOptions<#ctx_options_ty>);
 
+    let create_sig = if create_has_async {
+        quote! { pub async fn create }
+    } else {
+        quote! { pub fn create }
+    };
+
+    let update_sig = if update_has_async {
+        quote! { pub async fn update }
+    } else {
+        quote! { pub fn update }
+    };
+
+    let delete_sig = if delete_is_async {
+        quote! { pub async fn delete }
+    } else {
+        quote! { pub fn delete }
+    };
+
     quote! {
         pub struct #model_type_name;
 
@@ -2280,7 +2494,7 @@ fn generate_model(
         pub const #model_name: #model_type_name = #model_type_name;
 
         impl #model_type_name {
-            pub async fn create<I>(
+            #create_sig<I>(
                 &self,
                 input: I,
                 _ctx_options: #ctx_options_ty,
@@ -2330,7 +2544,7 @@ fn generate_model(
                 }
             }
 
-            pub async fn update(
+            #update_sig(
                 &self,
                 existing: #output_name,
                 updates: #partial_output_name,
@@ -2359,7 +2573,7 @@ fn generate_model(
                 ::core::result::Result::Ok((output, #update_success_trigger, __return_opts))
             }
 
-            pub async fn delete(
+            #delete_sig(
                 &self,
                 data: &#output_name,
                 _ctx_options: #ctx_options_ty,

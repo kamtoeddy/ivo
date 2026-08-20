@@ -92,6 +92,53 @@ where
     handler(ctx, opts).await
 }
 
+// Synchronous counterparts used when a generated method has no async handlers.
+
+pub fn run_resolver_sync<T, Ctx, Opts, F>(ctx: Ctx, opts: &Opts, resolver: F) -> T
+where
+    F: FnOnce(Ctx, &Opts) -> T,
+{
+    resolver(ctx, opts)
+}
+
+pub fn run_sanitizer_sync<T, Ctx, Opts, F>(value: T, ctx: &Ctx, opts: &Opts, sanitizer: F) -> T
+where
+    F: FnOnce(T, &Ctx, &Opts) -> T,
+{
+    sanitizer(value, ctx, opts)
+}
+
+pub fn run_validator_sync<T, Ctx, Opts, F, Metadata>(
+    value: T,
+    ctx: &Ctx,
+    opts: &Opts,
+    validator: F,
+) -> Result<Option<T>, FieldError<Metadata>>
+where
+    Metadata: Clone,
+    F: FnOnce(T, &Ctx, &Opts) -> Result<Option<T>, FieldError<Metadata>>,
+{
+    validator(value, ctx, opts)
+}
+
+pub fn run_boolean_resolver_sync<Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, resolver: F) -> bool
+where
+    F: FnOnce(&Ctx, &Opts) -> bool,
+{
+    resolver(ctx, opts)
+}
+
+pub fn run_required_resolver_sync<Ctx, Opts, F>(
+    ctx: &Ctx,
+    opts: &Opts,
+    resolver: F,
+) -> Option<String>
+where
+    F: FnOnce(&Ctx, &Opts) -> Option<String>,
+{
+    resolver(ctx, opts)
+}
+
 pub trait IvoErrorSanitizer<CtxOptions> {
     type Metadata: Clone + Send + Sync;
     type Payload;

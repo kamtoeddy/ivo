@@ -1,8 +1,8 @@
 # Ivo Rust v2 API Design Preferences
 
-> **Implementation progress: ~85%**
+> **Implementation progress: ~90%**
 >
-> Core schema parsing, struct generation, field-type handling, grouped options, attribute whitelist validation, dependency-graph validation, context/options wrapper integration, and `on_success`/`on_failure` trigger futures returned from `create`/`update` as `(result, trigger, ctx_options)` tuples are in place. `delete` returns plain `()`. Remaining work includes sync/async method inference for `create`/`update`/`delete`, `post_validate` grouped options, and semantic-parity ports/tests.
+> Core schema parsing, struct generation, field-type handling, grouped options, attribute whitelist validation, dependency-graph validation, context/options wrapper integration, returned trigger futures, and sync/async method inference for `create`/`update`/`delete` are in place. `delete` returns plain `()`. Remaining work includes `post_validate` grouped options and semantic-parity ports/tests.
 
 This document captures the user preferences for the next-generation Ivo Rust API (`rs-v2`). It is the source of truth for syntax and architectural decisions.
 

@@ -79,7 +79,7 @@ async fn smoke_model_create_single_struct() {
         name: "test".to_string(),
         role: "user".to_string(),
     };
-    let (created, _trigger, _opts) = user_schema::UserModel.create(input, ()).await.unwrap();
+    let (created, _trigger, _opts) = user_schema::UserModel.create(input, ()).unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.role, "user");
 }
@@ -94,7 +94,6 @@ async fn smoke_model_update_single_struct() {
     updates.set_name("new".to_string());
     let (updated, _trigger, _opts) = user_schema::UserModel
         .update(existing, updates, ())
-        .await
         .unwrap();
     assert_eq!(updated.name, "new");
     assert_eq!(updated.role, "user");
@@ -105,7 +104,7 @@ async fn smoke_model_create_dual_struct() {
     let input = user_schema_dual::UserInput {
         name: "test".to_string(),
     };
-    let (created, _trigger, _opts) = user_schema_dual::UserModel.create(input, ()).await.unwrap();
+    let (created, _trigger, _opts) = user_schema_dual::UserModel.create(input, ()).unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.id, "default-id");
 }
@@ -116,7 +115,7 @@ async fn smoke_model_delete_dual_struct() {
         name: "test".to_string(),
         id: String::from("default-id"),
     };
-    user_schema_dual::UserModel.delete(&output, ()).await;
+    user_schema_dual::UserModel.delete(&output, ());
 }
 
 #[tokio::test]
@@ -270,10 +269,7 @@ async fn smoke_timestamps() {
     let input = user_timestamps_schema::UserInput {
         name: "test".to_string(),
     };
-    let (created, _trigger, _opts) = user_timestamps_schema::UserModel
-        .create(input, ())
-        .await
-        .unwrap();
+    let (created, _trigger, _opts) = user_timestamps_schema::UserModel.create(input, ()).unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.created_at, "timestamp");
     assert_eq!(created.updated_at, "timestamp");
@@ -324,7 +320,6 @@ async fn smoke_model_lax_default() {
     input.set_name("test".to_string());
     let (created, _trigger, _opts) = user_lax_default_schema::UserModel
         .create(input, ())
-        .await
         .unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.role, "user");
@@ -410,7 +405,6 @@ async fn smoke_model_field_ignore() {
     input.set_b("provided_b".to_string());
     let (created, _trigger, _opts) = user_field_ignore_schema::UserModel
         .create(input, ())
-        .await
         .unwrap();
     assert_eq!(created.a, "default_a");
     assert_eq!(created.b, "provided_b");
@@ -423,7 +417,6 @@ async fn smoke_model_field_ignore_init() {
     input.set_b("provided_b".to_string());
     let (created, _trigger, _opts) = user_field_ignore_init_schema::UserModel
         .create(input, ())
-        .await
         .unwrap();
     assert_eq!(created.a, "default_a");
     assert_eq!(created.b, "provided_b");
@@ -433,9 +426,7 @@ async fn smoke_model_field_ignore_init() {
 async fn smoke_model_field_required() {
     let mut input = user_field_required_schema::PartialUser::new();
     input.set_b("b".to_string());
-    let result = user_field_required_schema::UserModel
-        .create(input, ())
-        .await;
+    let result = user_field_required_schema::UserModel.create(input, ());
     assert!(result.is_err());
     let (errors, _trigger, _opts) = result.unwrap_err();
     assert!(errors.contains_key("a"));
@@ -451,7 +442,6 @@ async fn smoke_model_field_ignore_update() {
     updates.set_role("user".to_string());
     let (updated, _trigger, _opts) = user_field_ignore_update_schema::UserModel
         .update(existing, updates, ())
-        .await
         .unwrap();
     assert_eq!(updated.role, "admin");
 }
@@ -537,7 +527,6 @@ async fn smoke_model_readonly_update() {
     updates.set_id("2".to_string());
     let (updated, _trigger, _opts) = user_readonly_schema::UserModel
         .update(existing, updates, ())
-        .await
         .unwrap();
     assert_eq!(updated.name, "new");
     assert_eq!(updated.id, "1");
@@ -550,7 +539,6 @@ async fn smoke_model_dependent_default() {
     };
     let (created, _trigger, _opts) = user_dependent_default_schema::UserModel
         .create(input, ())
-        .await
         .unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.status, "default-status");
@@ -610,9 +598,7 @@ mod user_grouped_ignore_update_schema {
 #[tokio::test]
 async fn smoke_model_required_error_static() {
     let input = user_required_error_schema::PartialUser::new();
-    let result = user_required_error_schema::UserModel
-        .create(input, ())
-        .await;
+    let result = user_required_error_schema::UserModel.create(input, ());
     assert!(result.is_err());
     let (errors, _trigger, _opts) = result.unwrap_err();
     let err = errors.get("name").unwrap();
@@ -626,7 +612,6 @@ async fn smoke_model_constant_static() {
     };
     let (created, _trigger, _opts) = user_constant_static_schema::UserModel
         .create(input, ())
-        .await
         .unwrap();
     assert_eq!(created.id, 1234);
 }
@@ -653,7 +638,6 @@ async fn smoke_model_grouped_ignore_update() {
     updates.set_role("user".to_string());
     let (updated, _trigger, _opts) = user_grouped_ignore_update_schema::UserModel
         .update(existing, updates, ())
-        .await
         .unwrap();
     assert_eq!(updated.role, "admin");
 }
@@ -748,7 +732,6 @@ async fn smoke_model_readonly_lax_default() {
     updates.set_role("admin".to_string());
     let (updated, _trigger, _opts) = user_readonly_lax_schema::UserModel
         .update(existing, updates, ())
-        .await
         .unwrap();
     assert_eq!(updated.role, "admin");
 
@@ -756,7 +739,6 @@ async fn smoke_model_readonly_lax_default() {
     updates.set_role("super".to_string());
     let (updated, _trigger, _opts) = user_readonly_lax_schema::UserModel
         .update(updated, updates, ())
-        .await
         .unwrap();
     assert_eq!(updated.role, "admin");
 }
