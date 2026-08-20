@@ -145,9 +145,18 @@ const config: Config = {
         routeBasePath: "docs/rs",
         sidebarPath: "./sidebars-rs.ts",
         editUrl: `${repoUrl}/tree/main/docs/docs-rs/`,
-        // Rust only ever documents the latest API - no version history to
-        // preserve, so no ts_versioned_docs-style folder exists here and this
-        // plugin instance is unversioned by default.
+        includeCurrentVersion: true,
+        lastVersion: "current",
+        versions: {
+          current: {
+            label: "0.4.0",
+            path: "",
+          },
+          "0.3.0": {
+            label: "0.3.0",
+            path: "0.3.0",
+          },
+        },
       } satisfies DocsPluginOptions,
     ],
     rawRsSourcePlugin,
@@ -184,6 +193,11 @@ const config: Config = {
         {
           type: "docsVersionDropdown",
           docsPluginId: "ts",
+          position: "right",
+        },
+        {
+          type: "docsVersionDropdown",
+          docsPluginId: "rs",
           position: "right",
         },
         {

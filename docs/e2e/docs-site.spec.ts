@@ -75,6 +75,18 @@ test.describe("ivo docs site", () => {
       await expect(page.locator("text=Rust").first()).toBeVisible();
     });
 
+    test("default landing version is v0.4.0", async ({ page }) => {
+      await page.goto("/docs/rs");
+      await expect(page.locator("text=Getting Started").first()).toBeVisible();
+      await expect(page.locator("text=0.4.0").first()).toBeVisible();
+    });
+
+    test("v0.3.0 archive is accessible", async ({ page }) => {
+      await page.goto("/docs/rs/0.3.0");
+      await expect(page.locator("text=Getting Started").first()).toBeVisible();
+      await expect(page.locator("text=0.3.0").first()).toBeVisible();
+    });
+
     test("TS version dropdown is not shown on Rust docs", async ({ page }) => {
       await page.goto("/docs/rs");
       await expect(

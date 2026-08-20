@@ -11,8 +11,8 @@ export default function DocsVersionDropdownNavbarItemWrapper(
 ): ReactNode {
   const activePlugin = useActivePlugin();
 
-  // Only show the TS version dropdown when viewing the TS docs plugin.
-  if (activePlugin?.pluginId !== "ts") {
+  // Only show a docs version dropdown when viewing the docs plugin it belongs to.
+  if (activePlugin?.pluginId !== props.docsPluginId) {
     return null;
   }
 
