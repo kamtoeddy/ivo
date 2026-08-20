@@ -2,8 +2,7 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::{Parse, Parser},
-    parse_macro_input, Attribute, ExprClosure, Ident, ItemMod, Pat, PatType, Path, Token, Type,
-    Visibility,
+    Attribute, ExprClosure, Ident, ItemMod, Pat, PatType, Path, Token, Type, Visibility,
 };
 
 // ---------------------------------------------------------------------------
@@ -173,7 +172,9 @@ struct FieldDef {
 
 fn parse_field_type(attrs: &[Attribute]) -> syn::Result<Option<FieldType>> {
     for attr in attrs {
-        if attr.path().is_ident("required") {
+        // `#[required]` without arguments is the field-type attribute;
+        // `#[required(...)]` is a conditional-required behavior attribute.
+        if attr.path().is_ident("required") && matches!(attr.meta, syn::Meta::Path(_)) {
             return Ok(Some(FieldType::Required));
         }
         if attr.path().is_ident("lax") {
@@ -182,7 +183,10 @@ fn parse_field_type(attrs: &[Attribute]) -> syn::Result<Option<FieldType>> {
         if attr.path().is_ident("constant") {
             return Ok(Some(FieldType::Constant));
         }
-        if attr.path().is_ident("dependent") || attr.path().is_ident("depends_on") {
+        // `#[dependent]` without arguments is a marker; `#[depends_on(...)]` declares parents.
+        if (attr.path().is_ident("dependent") && matches!(attr.meta, syn::Meta::Path(_)))
+            || attr.path().is_ident("depends_on")
+        {
             return Ok(Some(FieldType::Dependent));
         }
         if attr.path().is_ident("ivo_virtual") {
@@ -302,6 +306,23 @@ fn passthrough_attrs(attrs: &[Attribute], name: &str) -> Vec<proc_macro2::TokenS
     attrs
         .iter()
         .filter(|a| a.path().is_ident(name))
+        .filter_map(|attr| match &attr.meta {
+            syn::Meta::List(list) => Some(list.tokens.clone()),
+            _ => None,
+        })
+        .map(|tokens| quote! { #[#tokens] })
+        .collect()
+}
+
+fn partial_passthrough_attrs(attrs: &[Attribute], target: &str) -> Vec<proc_macro2::TokenStream> {
+    let names: &[&str] = match target {
+        "input" => &["partial", "input_partial"],
+        "output" => &["partial", "output_partial"],
+        _ => &[],
+    };
+    attrs
+        .iter()
+        .filter(|a| names.iter().any(|name| a.path().is_ident(name)))
         .filter_map(|attr| match &attr.meta {
             syn::Meta::List(list) => Some(list.tokens.clone()),
             _ => None,
@@ -546,6 +567,334 @@ fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> s
     Ok(())
 }
 
+fn is_non_static_default(tokens: &proc_macro2::TokenStream) -> bool {
+    if syn::parse2::<syn::ExprClosure>(tokens.clone()).is_ok() {
+        return true;
+    }
+    if syn::parse2::<syn::ExprAsync>(tokens.clone()).is_ok() {
+        return true;
+    }
+    if syn::parse2::<syn::ExprPath>(tokens.clone()).is_ok() {
+        return true;
+    }
+    false
+}
+
+fn validate_schema(
+    args: &SchemaArgs,
+    fields: &[FieldDef],
+    options: &[GroupedOption],
+) -> syn::Result<()> {
+    validate_field_attributes(fields)?;
+    validate_field_names(fields)?;
+    validate_single_dual_mode(args, fields)?;
+    validate_grouped_options(fields, options)?;
+    Ok(())
+}
+
+fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
+    for f in fields {
+        let field_type_attrs: Vec<String> = f
+            .attrs
+            .iter()
+            .filter(|a| {
+                let path = a.path().get_ident().map(|i| i.to_string());
+                match path.as_deref() {
+                    Some("required") => matches!(a.meta, syn::Meta::Path(_)),
+                    Some("lax" | "constant" | "ivo_virtual" | "created_at" | "updated_at") => true,
+                    Some("dependent") => matches!(a.meta, syn::Meta::Path(_)),
+                    Some("depends_on") => true,
+                    _ => false,
+                }
+            })
+            .map(|a| a.path().get_ident().unwrap().to_string())
+            .collect();
+
+        if field_type_attrs.is_empty() {
+            return Err(syn::Error::new_spanned(
+                &f.name,
+                "field must have a field-type attribute such as `#[required]` or `#[lax]`",
+            ));
+        }
+        if field_type_attrs.len() > 1 {
+            return Err(syn::Error::new_spanned(
+                &f.name,
+                format!(
+                    "field `{}` has multiple field-type attributes: {}",
+                    f.name,
+                    field_type_attrs.join(", ")
+                ),
+            ));
+        }
+
+        let behavior_names: Vec<(String, &Attribute)> = f
+            .attrs
+            .iter()
+            .filter(|a| {
+                let p = a.path().get_ident().map(|i| i.to_string());
+                matches!(
+                    p.as_deref(),
+                    Some(
+                        "validate"
+                            | "re_validate"
+                            | "sanitize"
+                            | "resolve"
+                            | "default"
+                            | "value"
+                            | "depends_on"
+                            | "readonly"
+                            | "ignore"
+                            | "ignore_init"
+                            | "ignore_update"
+                            | "required_error"
+                            | "on_delete"
+                            | "on_success"
+                            | "on_failure"
+                    )
+                )
+            })
+            .map(|a| (a.path().get_ident().unwrap().to_string(), a))
+            .collect();
+
+        let allowed: &[&str] = match &f.field_type {
+            FieldType::Constant => &["on_delete", "on_success"],
+            FieldType::Required => &[
+                "validate",
+                "re_validate",
+                "required_error",
+                "ignore_update",
+                "readonly",
+                "on_delete",
+                "on_success",
+                "on_failure",
+            ],
+            FieldType::Dependent => &[
+                "depends_on",
+                "resolve",
+                "default",
+                "readonly",
+                "on_delete",
+                "on_success",
+            ],
+            FieldType::Virtual { .. } => &[
+                "sanitize",
+                "validate",
+                "re_validate",
+                "required",
+                "ignore",
+                "ignore_init",
+                "ignore_update",
+                "on_success",
+                "on_failure",
+            ],
+            FieldType::Lax => &[
+                "validate",
+                "re_validate",
+                "required",
+                "ignore",
+                "ignore_init",
+                "ignore_update",
+                "readonly",
+                "on_delete",
+                "on_success",
+                "on_failure",
+            ],
+            FieldType::CreatedAt | FieldType::UpdatedAt => &[],
+        };
+
+        for (name, attr) in &behavior_names {
+            if !allowed.contains(&name.as_str()) {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    format!(
+                        "`#[{}]` is not allowed on `{}` fields",
+                        name,
+                        field_type_name(&f.field_type)
+                    ),
+                ));
+            }
+        }
+
+        let mut counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+        for (name, _) in &behavior_names {
+            *counts.entry(name.as_str()).or_insert(0) += 1;
+        }
+        for (name, count) in counts.iter() {
+            const LIFECYCLE: &[&str] = &["on_delete", "on_success", "on_failure"];
+            if !LIFECYCLE.contains(name) && *count > 1 {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "`#[{}]` may only be specified once on field `{}`",
+                        name, f.name
+                    ),
+                ));
+            }
+        }
+
+        if behavior_names.iter().any(|(n, _)| n == "re_validate")
+            && !behavior_names.iter().any(|(n, _)| n == "validate")
+        {
+            return Err(syn::Error::new_spanned(
+                &f.name,
+                format!(
+                    "field `{}`: `#[re_validate]` requires `#[validate]`",
+                    f.name
+                ),
+            ));
+        }
+
+        if behavior_names.iter().any(|(n, _)| n == "readonly") {
+            match &f.field_type {
+                FieldType::Required => {
+                    if !behavior_names.iter().any(|(n, _)| n == "validate") {
+                        return Err(syn::Error::new_spanned(
+                            &f.name,
+                            format!(
+                                "field `{}`: `#[readonly]` on a required field requires `#[validate]`",
+                                f.name
+                            ),
+                        ));
+                    }
+                }
+                FieldType::Lax => {
+                    let lax_attr = f.attrs.iter().find(|a| a.path().is_ident("lax"));
+                    let has_static_default = lax_attr.is_some_and(|a| match &a.meta {
+                        syn::Meta::Path(_) => false,
+                        syn::Meta::List(list) => !is_non_static_default(&list.tokens),
+                        _ => false,
+                    });
+                    if !has_static_default {
+                        return Err(syn::Error::new_spanned(
+                            &f.name,
+                            format!(
+                                "field `{}`: `#[readonly]` on a lax field requires a static `#[lax(...)]` default",
+                                f.name
+                            ),
+                        ));
+                    }
+                }
+                FieldType::Dependent => {
+                    let default_attr = f.attrs.iter().find(|a| a.path().is_ident("default"));
+                    let has_static_default = match default_attr {
+                        Some(a) => match &a.meta {
+                            syn::Meta::List(list) => !is_non_static_default(&list.tokens),
+                            _ => false,
+                        },
+                        None => false,
+                    };
+                    if !has_static_default {
+                        return Err(syn::Error::new_spanned(
+                            &f.name,
+                            format!(
+                                "field `{}`: `#[readonly]` on a dependent field requires a static `#[default(...)]`",
+                                f.name
+                            ),
+                        ));
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn field_type_name(ft: &FieldType) -> &'static str {
+    match ft {
+        FieldType::Required => "required",
+        FieldType::Lax => "lax",
+        FieldType::Constant => "constant",
+        FieldType::Dependent => "dependent",
+        FieldType::Virtual { .. } => "virtual",
+        FieldType::CreatedAt => "created_at",
+        FieldType::UpdatedAt => "updated_at",
+    }
+}
+
+fn validate_field_names(fields: &[FieldDef]) -> syn::Result<()> {
+    let mut names = std::collections::HashSet::new();
+    let mut aliases = std::collections::HashSet::new();
+    let mut timestamp_names = Vec::new();
+    let mut deps: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+
+    for f in fields {
+        if !names.insert(f.name.to_string()) {
+            return Err(syn::Error::new_spanned(
+                &f.name,
+                format!("duplicate field name `{}`", f.name),
+            ));
+        }
+        if matches!(f.field_type, FieldType::CreatedAt | FieldType::UpdatedAt) {
+            timestamp_names.push(f.name.to_string());
+        }
+        if let Some(parent_tokens) = attr_value_tokens(&f.attrs, "depends_on") {
+            let parents = syn::punctuated::Punctuated::<Ident, Token![,]>::parse_terminated
+                .parse2(parent_tokens)
+                .map(|p| p.into_iter().map(|i| i.to_string()).collect())
+                .unwrap_or_default();
+            deps.insert(f.name.to_string(), parents);
+        }
+    }
+
+    for f in fields {
+        if let FieldType::Virtual { alias: Some(alias) } = &f.field_type {
+            if !aliases.insert(alias.clone()) {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!("duplicate virtual alias `{}`", alias),
+                ));
+            }
+
+            let names_match = deps
+                .get(alias)
+                .is_some_and(|parents| parents.contains(&f.name.to_string()));
+
+            if names.contains(alias) && !names_match {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "virtual alias `{}` collides with an existing field or timestamp name",
+                        alias
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_single_dual_mode(args: &SchemaArgs, fields: &[FieldDef]) -> syn::Result<()> {
+    let requires_dual = fields.iter().any(|f| {
+        matches!(
+            f.field_type,
+            FieldType::Constant
+                | FieldType::Dependent
+                | FieldType::Virtual { .. }
+                | FieldType::CreatedAt
+                | FieldType::UpdatedAt
+        )
+    });
+
+    if requires_dual && args.output.is_none() {
+        return Err(syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "schemas with constant, dependent, virtual, or timestamp fields require `output(...)`",
+        ));
+    }
+
+    if !requires_dual && args.output.is_some() {
+        return Err(syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "`output(...)` is not allowed when the schema only contains required and/or lax fields without timestamps",
+        ));
+    }
+
+    Ok(())
+}
+
 fn parse_fields_struct(item_mod: &ItemMod) -> syn::Result<Vec<FieldDef>> {
     let content = item_mod
         .content
@@ -591,6 +940,165 @@ fn is_clone_derive(path: &Path) -> bool {
     path.get_ident().map(|i| i == "Clone").unwrap_or(false)
 }
 
+struct PartialFieldInfo {
+    name: Ident,
+    ty: Type,
+    attrs: Vec<proc_macro2::TokenStream>,
+}
+
+fn generate_partial_and_impls(
+    name: &Ident,
+    vis: &Visibility,
+    fields: &[PartialFieldInfo],
+    partial_derives: &[Path],
+    is_input: bool,
+) -> proc_macro2::TokenStream {
+    let partial_name = format_ident!("Partial{}", name);
+    let partial_derives: Vec<_> = partial_derives
+        .iter()
+        .filter(|p| !is_clone_derive(p))
+        .collect();
+
+    let partial_fields = fields.iter().map(|f| {
+        let name = &f.name;
+        let ty = &f.ty;
+        let attrs = &f.attrs;
+        quote! { #(#attrs)* pub #name: ::core::option::Option<#ty> }
+    });
+
+    let partial_defaults = fields.iter().map(|f| {
+        let name = &f.name;
+        quote! { #name: ::core::option::Option::None }
+    });
+
+    let struct_defaults = fields.iter().map(|f| {
+        let name = &f.name;
+        quote! { #name: ::core::default::Default::default() }
+    });
+
+    let update_fields = fields.iter().map(|f| {
+        let name = &f.name;
+        quote! {
+            if let ::core::option::Option::Some(v) = &updates.#name {
+                self.#name = v.clone();
+            }
+        }
+    });
+
+    let from_fields = fields.iter().map(|f| {
+        let name = &f.name;
+        quote! { #name: ::core::option::Option::Some(value.#name) }
+    });
+
+    let available_fields = fields.iter().map(|f| {
+        let name = &f.name;
+        let name_str = name.to_string();
+        quote! {
+            if self.#name.is_some() {
+                names.push(::std::string::String::from(#name_str));
+            }
+        }
+    });
+
+    let setters = fields.iter().map(|f| {
+        let name = &f.name;
+        let ty = &f.ty;
+        let setter = format_ident!("set_{}", name);
+        let wither = format_ident!("with_{}", name);
+        let unsetter = format_ident!("unset_{}", name);
+        quote! {
+            pub fn #setter(&mut self, value: #ty) {
+                self.#name = ::core::option::Option::Some(value);
+            }
+            pub fn #wither(mut self, value: #ty) -> Self {
+                self.#name = ::core::option::Option::Some(value);
+                self
+            }
+            pub fn #unsetter(&mut self) {
+                self.#name = ::core::option::Option::None;
+            }
+        }
+    });
+
+    let field_idents: Vec<_> = fields.iter().map(|f| &f.name).collect();
+
+    let input_impls = if is_input {
+        quote! {
+            impl<Metadata: Send + Sync + Clone> ::ivo::WithPartialErrors<Metadata> for #name {
+                type PartialErrors = ::ivo::IvoErrorPayload<Metadata>;
+            }
+
+            impl<CtxOptions, ErrorSanitizer: ::ivo::IvoErrorSanitizer<CtxOptions>>
+                ::ivo::IvoInputStruct<CtxOptions, ErrorSanitizer> for #name
+            where
+                ErrorSanitizer::Metadata: Clone,
+            {
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    quote! {
+        #[derive(::core::clone::Clone, #(#partial_derives),*)]
+        #vis struct #partial_name {
+            #(#partial_fields,)*
+        }
+
+        impl #partial_name {
+            pub fn new() -> Self {
+                Self { #(#partial_defaults,)* }
+            }
+
+            pub fn is_empty(&self) -> bool {
+                #(self.#field_idents.is_none())&&*
+            }
+
+            #(#setters)*
+        }
+
+        impl ::core::default::Default for #partial_name {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
+
+        impl ::ivo::PartialStructMethods for #partial_name {
+            fn ivo_internal_fields_available(&self) -> ::std::vec::Vec<::std::string::String> {
+                let mut names = ::std::vec::Vec::new();
+                #(#available_fields)*
+                names
+            }
+        }
+
+        impl ::core::default::Default for #name {
+            fn default() -> Self {
+                Self { #(#struct_defaults,)* }
+            }
+        }
+
+        impl ::ivo::WithPartialStruct for #name {
+            type Partial = #partial_name;
+        }
+
+        impl ::ivo::IvoStructMethods for #name {
+            fn ivo_internal_update_with(&mut self, updates: &Self::Partial) {
+                #(#update_fields)*
+            }
+        }
+
+        impl ::ivo::IvoStruct for #name {}
+
+        impl ::core::convert::From<#name> for #partial_name {
+            fn from(value: #name) -> Self {
+                Self { #(#from_fields,)* }
+            }
+        }
+
+        #input_impls
+    }
+}
+
 fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenStream {
     let input_name = &args.input.name;
     let input_derives: Vec<_> = args
@@ -600,6 +1108,7 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
         .filter(|p| !is_clone_derive(p))
         .collect();
 
+    let mut input_partial_fields = Vec::new();
     let input_fields = fields
         .iter()
         .filter(|f| {
@@ -614,37 +1123,45 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
             let original_name = &f.name;
             let name = match &f.field_type {
                 FieldType::Virtual { alias: Some(alias) } => {
-                    let alias_ident = Ident::new(alias, original_name.span());
-                    quote! { #alias_ident }
+                    Ident::new(alias, original_name.span())
                 }
-                _ => quote! { #original_name },
+                _ => original_name.clone(),
             };
             let input_attrs = passthrough_attrs(&f.attrs, "input");
+            let partial_attrs = partial_passthrough_attrs(&f.attrs, "input");
+            input_partial_fields.push(PartialFieldInfo {
+                name: name.clone(),
+                ty: ty.clone(),
+                attrs: partial_attrs,
+            });
             quote! { #(#input_attrs)* #vis #name: #ty }
         });
 
-    let input_partial_derives = if args.input.partial_derives.is_empty() {
-        quote! {}
-    } else {
-        let paths = &args.input.partial_derives;
-        quote! { #[ivo(partial_derive(#(#paths),*))] }
-    };
-
     let input_struct = quote! {
-        #[derive(::core::clone::Clone, ::ivo::IvoInputStruct, ::ivo::IvoStruct, #(#input_derives),*)]
-        #input_partial_derives
+        #[derive(::core::clone::Clone, #(#input_derives),*)]
         pub struct #input_name {
             #(#input_fields,)*
         }
     };
 
-    let output_struct = if let Some(output_args) = &args.output {
+    let pub_vis = Visibility::Public(Default::default());
+    let input_partial_impls = generate_partial_and_impls(
+        input_name,
+        &pub_vis,
+        &input_partial_fields,
+        &args.input.partial_derives,
+        true,
+    );
+
+    let (output_struct, output_partial_impls) = if let Some(output_args) = &args.output {
         let output_name = &output_args.name;
         let output_derives: Vec<_> = output_args
             .derives
             .iter()
             .filter(|p| !is_clone_derive(p))
             .collect();
+
+        let mut output_partial_fields = Vec::new();
         let output_fields = fields
             .iter()
             .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
@@ -653,30 +1170,40 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
                 let name = &f.name;
                 let ty = &f.ty;
                 let output_attrs = passthrough_attrs(&f.attrs, "output");
+                let partial_attrs = partial_passthrough_attrs(&f.attrs, "output");
+                output_partial_fields.push(PartialFieldInfo {
+                    name: name.clone(),
+                    ty: ty.clone(),
+                    attrs: partial_attrs,
+                });
                 quote! { #(#output_attrs)* #vis #name: #ty }
             });
 
-        let output_partial_derives = if output_args.partial_derives.is_empty() {
-            quote! {}
-        } else {
-            let paths = &output_args.partial_derives;
-            quote! { #[ivo(partial_derive(#(#paths),*))] }
-        };
-
-        quote! {
-            #[derive(::core::clone::Clone, ::ivo::IvoStruct, #(#output_derives),*)]
-            #output_partial_derives
+        let output_struct = quote! {
+            #[derive(::core::clone::Clone, #(#output_derives),*)]
             pub struct #output_name {
                 #(#output_fields,)*
             }
-        }
+        };
+
+        let output_partial_impls = generate_partial_and_impls(
+            output_name,
+            &pub_vis,
+            &output_partial_fields,
+            &output_args.partial_derives,
+            false,
+        );
+
+        (output_struct, output_partial_impls)
     } else {
-        quote! {}
+        (quote! {}, quote! {})
     };
 
     quote! {
         #input_struct
+        #input_partial_impls
         #output_struct
+        #output_partial_impls
     }
 }
 
@@ -1484,201 +2011,33 @@ fn generate_model(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Derive macros
-// ---------------------------------------------------------------------------
-
-#[proc_macro_derive(IvoStruct, attributes(ivo))]
-pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
-    let ast = parse_macro_input!(input as syn::DeriveInput);
-    let name = &ast.ident;
-    let vis = &ast.vis;
-    let fields = match &ast.data {
-        syn::Data::Struct(data) => &data.fields,
-        _ => panic!("IvoStruct can only be derived for structs"),
+fn ivo_schema_impl(
+    args: proc_macro2::TokenStream,
+    input: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let args: SchemaArgs = match syn::parse2(args) {
+        Ok(a) => a,
+        Err(e) => return e.to_compile_error(),
     };
-
-    let field_idents: Vec<_> = fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
-    let field_tys: Vec<_> = fields.iter().map(|f| &f.ty).collect();
-    let partial_name = format_ident!("Partial{}", name);
-
-    let partial_derives: Vec<Path> = ast
-        .attrs
-        .iter()
-        .find_map(|attr| {
-            if !attr.path().is_ident("ivo") {
-                return None;
-            }
-            let syn::Meta::List(list) = &attr.meta else {
-                return None;
-            };
-            let inner: syn::Meta = syn::parse2(list.tokens.clone()).ok()?;
-            let syn::Meta::List(pd) = inner else {
-                return None;
-            };
-            if !pd.path.is_ident("partial_derive") {
-                return None;
-            }
-            syn::punctuated::Punctuated::<Path, Token![,]>::parse_terminated
-                .parse2(pd.tokens.clone())
-                .ok()
-                .map(|p| {
-                    p.into_iter()
-                        .filter(|path| !is_clone_derive(path))
-                        .collect()
-                })
-        })
-        .unwrap_or_default();
-
-    let partial_fields = field_idents.iter().zip(&field_tys).map(|(name, ty)| {
-        quote! { pub #name: ::core::option::Option<#ty> }
-    });
-
-    let partial_defaults = field_idents.iter().map(|name| {
-        quote! { #name: ::core::option::Option::None }
-    });
-
-    let default_fields = field_idents.iter().map(|name| {
-        quote! { #name: ::core::default::Default::default() }
-    });
-
-    let update_fields = field_idents.iter().map(|name| {
-        quote! {
-            if let ::core::option::Option::Some(v) = &updates.#name {
-                self.#name = v.clone();
-            }
-        }
-    });
-
-    let from_fields = field_idents.iter().map(|name| {
-        quote! { #name: ::core::option::Option::Some(value.#name) }
-    });
-
-    let available_fields = field_idents.iter().map(|name| {
-        let name_str = name.to_string();
-        quote! {
-            if self.#name.is_some() {
-                names.push(::std::string::String::from(#name_str));
-            }
-        }
-    });
-
-    let setters = field_idents.iter().zip(&field_tys).map(|(name, ty)| {
-        let setter = format_ident!("set_{}", name);
-        let wither = format_ident!("with_{}", name);
-        let unsetter = format_ident!("unset_{}", name);
-        quote! {
-            pub fn #setter(&mut self, value: #ty) {
-                self.#name = ::core::option::Option::Some(value);
-            }
-            pub fn #wither(mut self, value: #ty) -> Self {
-                self.#name = ::core::option::Option::Some(value);
-                self
-            }
-            pub fn #unsetter(&mut self) {
-                self.#name = ::core::option::Option::None;
-            }
-        }
-    });
-
-    quote! {
-        #[derive(::core::clone::Clone, #(#partial_derives),*)]
-        #vis struct #partial_name {
-            #(#partial_fields,)*
-        }
-
-        impl #partial_name {
-            pub fn new() -> Self {
-                Self { #(#partial_defaults,)* }
-            }
-
-            pub fn is_empty(&self) -> bool {
-                #(self.#field_idents.is_none())&&*
-            }
-
-            #(#setters)*
-        }
-
-        impl ::core::default::Default for #partial_name {
-            fn default() -> Self {
-                Self::new()
-            }
-        }
-
-        impl ::ivo::PartialStructMethods for #partial_name {
-            fn ivo_internal_fields_available(&self) -> ::std::vec::Vec<::std::string::String> {
-                let mut names = ::std::vec::Vec::new();
-                #(#available_fields)*
-                names
-            }
-        }
-
-        impl ::core::default::Default for #name {
-            fn default() -> Self {
-                Self { #(#default_fields,)* }
-            }
-        }
-
-        impl ::ivo::WithPartialStruct for #name {
-            type Partial = #partial_name;
-        }
-
-        impl ::ivo::IvoStructMethods for #name {
-            fn ivo_internal_update_with(&mut self, updates: &Self::Partial) {
-                #(#update_fields)*
-            }
-        }
-
-        impl ::ivo::IvoStruct for #name {}
-
-        impl ::core::convert::From<#name> for #partial_name {
-            fn from(value: #name) -> Self {
-                Self { #(#from_fields,)* }
-            }
-        }
-    }
-    .into()
-}
-
-#[proc_macro_derive(IvoInputStruct)]
-pub fn derive_ivo_input_struct(input: TokenStream) -> TokenStream {
-    let ast = parse_macro_input!(input as syn::DeriveInput);
-    let name = &ast.ident;
-
-    quote! {
-        impl<Metadata: Send + Sync + Clone> ::ivo::WithPartialErrors<Metadata> for #name {
-            type PartialErrors = ::ivo::IvoErrorPayload<Metadata>;
-        }
-
-        impl<CtxOptions, ErrorSanitizer: ::ivo::IvoErrorSanitizer<CtxOptions>>
-            ::ivo::IvoInputStruct<CtxOptions, ErrorSanitizer> for #name
-        where
-            ErrorSanitizer::Metadata: Clone,
-        {
-        }
-    }
-    .into()
-}
-
-#[proc_macro_attribute]
-pub fn ivo_schema(args: TokenStream, input: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(args as SchemaArgs);
-    let input_mod = parse_macro_input!(input as ItemMod);
+    let input_mod: ItemMod = match syn::parse2(input) {
+        Ok(m) => m,
+        Err(e) => return e.to_compile_error(),
+    };
 
     let mod_vis = &input_mod.vis;
     let mod_name = &input_mod.ident;
 
     let fields = match parse_fields_struct(&input_mod) {
         Ok(f) => f,
-        Err(e) => return e.to_compile_error().into(),
+        Err(e) => return e.to_compile_error(),
     };
     let options = match parse_grouped_options(&input_mod) {
         Ok(o) => o,
-        Err(e) => return e.to_compile_error().into(),
+        Err(e) => return e.to_compile_error(),
     };
 
-    if let Err(e) = validate_grouped_options(&fields, &options) {
-        return e.to_compile_error().into();
+    if let Err(e) = validate_schema(&args, &fields, &options) {
+        return e.to_compile_error();
     }
 
     let struct_defs = generate_structs(&args, &fields);
@@ -1690,5 +2049,182 @@ pub fn ivo_schema(args: TokenStream, input: TokenStream) -> TokenStream {
             #model_defs
         }
     }
-    .into()
+}
+
+#[proc_macro_attribute]
+pub fn ivo_schema(args: TokenStream, input: TokenStream) -> TokenStream {
+    ivo_schema_impl(args.into(), input.into()).into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn expand(args: &str, input: &str) -> String {
+        let args: proc_macro2::TokenStream = args.parse().unwrap();
+        let input: proc_macro2::TokenStream = input.parse().unwrap();
+        ivo_schema_impl(args, input).to_string()
+    }
+
+    fn assert_compile_error(output: &str, msg: &str) {
+        assert!(
+            output.contains("compile_error"),
+            "{}: expected compile_error, got: {}",
+            msg,
+            output
+        );
+    }
+
+    #[test]
+    fn rejects_sanitize_on_required_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    #[sanitize(|v, _ctx, _opts| async move { v })]
+                    pub name: String,
+                }
+            }
+            "#,
+        );
+        assert_compile_error(&out, "sanitize on required");
+    }
+
+    #[test]
+    fn rejects_validate_on_constant_field() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[constant(|| String::from("id"))]
+                    #[validate(|v, _ctx, _opts| async move { Ok(Some(v)) })]
+                    pub id: String,
+                }
+            }
+            "#,
+        );
+        assert_compile_error(&out, "validate on constant");
+    }
+
+    #[test]
+    fn rejects_default_on_required_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    #[default(|| String::from("x"))]
+                    pub name: String,
+                }
+            }
+            "#,
+        );
+        assert_compile_error(&out, "default on required");
+    }
+
+    #[test]
+    fn rejects_missing_field_type_attribute() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    pub name: String,
+                }
+            }
+            "#,
+        );
+        assert_compile_error(&out, "missing field type");
+    }
+
+    #[test]
+    fn rejects_duplicate_field_names() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub name: String,
+                    #[lax]
+                    pub name: String,
+                }
+            }
+            "#,
+        );
+        assert_compile_error(&out, "duplicate field names");
+    }
+
+    #[test]
+    fn rejects_output_missing_for_dual_struct_schema() {
+        let out = expand(
+            "input(UserInput)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub name: String,
+
+                    #[constant(|| String::from("id"))]
+                    pub id: String,
+                }
+            }
+            "#,
+        );
+        assert_compile_error(&out, "missing output for dual schema");
+    }
+
+    #[test]
+    fn rejects_output_for_single_struct_schema() {
+        let out = expand(
+            "input(User), output(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub name: String,
+                }
+            }
+            "#,
+        );
+        assert_compile_error(&out, "output in single-struct schema");
+    }
+
+    #[test]
+    fn rejects_re_validate_without_validate() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    #[re_validate(|v, _ctx, _opts| async move { Ok(Some(v)) })]
+                    pub name: String,
+                }
+            }
+            "#,
+        );
+        assert_compile_error(&out, "re_validate without validate");
+    }
+
+    #[test]
+    fn rejects_readonly_on_required_without_validate() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    #[readonly]
+                    pub id: String,
+                }
+            }
+            "#,
+        );
+        assert_compile_error(&out, "readonly on required without validate");
+    }
 }

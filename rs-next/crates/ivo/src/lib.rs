@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-pub use ivo_derive::{ivo_schema, IvoInputStruct, IvoStruct};
+pub use ivo_derive::ivo_schema;
 
 use std::collections::HashMap;
 

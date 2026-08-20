@@ -150,25 +150,37 @@ async fn smoke_model_validator_fail() {
     assert!(errors.contains_key("name"));
 }
 
-#[ivo_schema(input(UserWithSanitization, derive(Debug, Clone)))]
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
 mod user_sanitization_schema {
     struct Fields {
         #[required]
+        pub name: String,
+
+        #[ivo_virtual(alias = "raw_email")]
         #[sanitize(|email, _ctx, _opts| async move { email.to_lowercase() })]
         pub email: String,
+
+        #[depends_on(email)]
+        #[resolve(|ctx, _opts| async move { ctx.input().raw_email.clone().unwrap() })]
+        pub raw_email: String,
     }
 }
 
 #[tokio::test]
 async fn smoke_model_sanitizer() {
-    let input = user_sanitization_schema::UserWithSanitization {
-        email: "Test@Example.COM".to_string(),
+    let input = user_sanitization_schema::UserInput {
+        name: "test".to_string(),
+        raw_email: "Test@Example.COM".to_string(),
     };
-    let created = user_sanitization_schema::UserWithSanitizationModel
+    let created = user_sanitization_schema::UserModel
         .create(input, &())
         .await
         .unwrap();
-    assert_eq!(created.email, "test@example.com");
+    assert_eq!(created.name, "test");
+    assert_eq!(created.raw_email, "test@example.com");
 }
 
 #[ivo_schema(
@@ -686,10 +698,7 @@ mod user_on_delete_field_schema {
     }
 }
 
-#[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
-)]
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
 mod user_on_delete_grouped_schema {
     struct Fields {
         #[required]
@@ -787,4 +796,32 @@ fn smoke_passthrough_attrs() {
         id: "id".to_string(),
     };
     assert_eq!(input.name, output.name);
+}
+
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
+mod user_partial_passthrough_schema {
+    struct Fields {
+        #[required]
+        #[partial(doc = "partial name")]
+        #[input_partial(allow(dead_code))]
+        #[output_partial(allow(unused_mut))]
+        pub name: String,
+
+        #[constant(|| String::from("id"))]
+        pub id: String,
+    }
+}
+
+#[test]
+fn smoke_partial_passthrough_attrs() {
+    let mut input_partial = user_partial_passthrough_schema::PartialUserInput::new();
+    input_partial.set_name("test".to_string());
+    assert!(!input_partial.is_empty());
+
+    let mut output_partial = user_partial_passthrough_schema::PartialUser::new();
+    output_partial.set_name("test".to_string());
+    assert!(!output_partial.is_empty());
 }
