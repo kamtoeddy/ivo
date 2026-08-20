@@ -241,7 +241,17 @@ impl<I, O> IvoConstantCtx<I, O> {
 
 // Options wrappers
 
-pub struct IvoCtxOptions<CtxOptions>(pub std::sync::Arc<CtxOptions>);
+pub struct IvoCtxOptions<CtxOptions>(pub std::sync::Arc<std::sync::RwLock<CtxOptions>>);
+
+impl<CtxOptions> IvoCtxOptions<CtxOptions> {
+    pub fn new(rw: &IvoRwCtxOptions<CtxOptions>) -> Self {
+        Self(rw.0.clone())
+    }
+
+    pub fn read(&self) -> std::sync::RwLockReadGuard<'_, CtxOptions> {
+        self.0.read().unwrap()
+    }
+}
 
 impl<CtxOptions> Clone for IvoCtxOptions<CtxOptions> {
     fn clone(&self) -> Self {
@@ -250,6 +260,24 @@ impl<CtxOptions> Clone for IvoCtxOptions<CtxOptions> {
 }
 
 pub struct IvoRwCtxOptions<CtxOptions>(pub std::sync::Arc<std::sync::RwLock<CtxOptions>>);
+
+impl<CtxOptions> IvoRwCtxOptions<CtxOptions> {
+    pub fn new(opts: CtxOptions) -> Self {
+        Self(std::sync::Arc::new(std::sync::RwLock::new(opts)))
+    }
+
+    pub fn read(&self) -> std::sync::RwLockReadGuard<'_, CtxOptions> {
+        self.0.read().unwrap()
+    }
+
+    pub fn write(&self) -> std::sync::RwLockWriteGuard<'_, CtxOptions> {
+        self.0.write().unwrap()
+    }
+
+    pub fn read_only(&self) -> IvoCtxOptions<CtxOptions> {
+        IvoCtxOptions(self.0.clone())
+    }
+}
 
 impl<CtxOptions> Clone for IvoRwCtxOptions<CtxOptions> {
     fn clone(&self) -> Self {

@@ -797,6 +797,23 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
                 _ => {}
             }
         }
+
+        if matches!(f.field_type, FieldType::Lax) {
+            let lax_attr = f
+                .attrs
+                .iter()
+                .find(|a| a.path().is_ident("lax"))
+                .expect("lax field has a lax attribute");
+            if matches!(lax_attr.meta, syn::Meta::Path(_)) {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: lax fields must have a default value or resolver; use `#[lax(...)]`",
+                        f.name
+                    ),
+                ));
+            }
+        }
     }
 
     Ok(())
@@ -1480,7 +1497,8 @@ fn generate_model(
     // may pass either the full input struct or a partial.
     let ctx_ty = quote!(&::ivo::IvoContext<#partial_input_name, #output_name>);
     let resolver_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
-    let opts_ty = quote!(&#ctx_options_ty);
+    let opts_ty = quote!(&::ivo::IvoRwCtxOptions<#ctx_options_ty>);
+    let hook_opts_ty = quote!(&::ivo::IvoCtxOptions<#ctx_options_ty>);
     let raw_input_ty = quote!(&#partial_input_name);
 
     // Collect lax/virtual fields that may be ignored during create.
@@ -1526,7 +1544,7 @@ fn generate_model(
                 })
                 .map(|f| format_ident!("ignore_{}", f));
             quote! {
-                let #opt_flag: bool = ::ivo::run_boolean_resolver(&ctx, _ctx_options, |ctx, opts| {
+                let #opt_flag: bool = ::ivo::run_boolean_resolver(&ctx, &_rw_ctx_options, |ctx, opts| {
                     ::std::boxed::Box::pin((#handler)(ctx, opts))
                 }).await;
                 if #opt_flag {
@@ -1539,7 +1557,7 @@ fn generate_model(
         let handler = type_annotate_handler(handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
         let flag = format_ident!("ignore_{}", f.name);
         quote! {
-            if (#handler)(&ctx, &_ctx_options) {
+            if (#handler)(&ctx, &_rw_ctx_options) {
                 #flag = true;
             }
         }
@@ -1575,7 +1593,7 @@ fn generate_model(
                 }
             });
             quote! {
-                let #opt_flag: bool = ::ivo::run_boolean_resolver(&ctx, _ctx_options, |ctx, opts| {
+                let #opt_flag: bool = ::ivo::run_boolean_resolver(&ctx, &_rw_ctx_options, |ctx, opts| {
                     ::std::boxed::Box::pin((#handler)(ctx, opts))
                 }).await;
                 if #opt_flag {
@@ -1590,7 +1608,7 @@ fn generate_model(
         let name_str = f.name.to_string();
         quote! {
             let __required_msg: ::core::option::Option<::std::string::String> =
-                (#handler)(&ctx, &_ctx_options);
+                (#handler)(&ctx, &_rw_ctx_options);
             if let Some(__msg) = __required_msg {
                 if input.#input_tokens.is_none() {
                     errors.insert(
@@ -1618,7 +1636,7 @@ fn generate_model(
                 Some(tokens) if is_closure(&tokens) => {
                     let handler =
                         type_annotate_handler(tokens, &[raw_input_ty.clone(), opts_ty.clone()]);
-                    quote! { (#handler)(&input, &_ctx_options) }
+                    quote! { (#handler)(&input, &_rw_ctx_options) }
                 }
                 Some(tokens) => quote! { ::std::string::String::from(#tokens) },
                 None => quote! { ::std::string::String::from("field is required") },
@@ -1703,7 +1721,7 @@ fn generate_model(
                             &[resolver_ctx_ty.clone(), opts_ty.clone()],
                         );
                         quote! {
-                            ::ivo::run_resolver(ctx.clone(), &_ctx_options, |ctx, opts| {
+                            ::ivo::run_resolver(ctx.clone(), &_rw_ctx_options, |ctx, opts| {
                                 ::std::boxed::Box::pin((#resolver)(ctx, opts))
                             }).await
                         }
@@ -1714,7 +1732,7 @@ fn generate_model(
             FieldType::Dependent => {
                 if let Some(resolver) = resolver {
                     quote! {
-                        ::ivo::run_resolver(ctx.clone(), &_ctx_options, |ctx, opts| {
+                        ::ivo::run_resolver(ctx.clone(), &_rw_ctx_options, |ctx, opts| {
                             ::std::boxed::Box::pin((#resolver)(ctx, opts))
                         }).await
                     }
@@ -1742,7 +1760,7 @@ fn generate_model(
 
         let sanitizer_expr = if let Some(sanitizer) = sanitizer {
             quote! {
-                value = ::ivo::run_sanitizer(value, &ctx, &_ctx_options, |value, ctx, opts| {
+                value = ::ivo::run_sanitizer(value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
                     ::std::boxed::Box::pin((#sanitizer)(value, ctx, opts))
                 }).await;
             }
@@ -1752,7 +1770,7 @@ fn generate_model(
 
         let validator_expr = if let Some(validator) = validator {
             quote! {
-                match ::ivo::run_validator(value, &ctx, &_ctx_options, |value, ctx, opts| {
+                match ::ivo::run_validator(value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
                     ::std::boxed::Box::pin((#validator)(value, ctx, opts))
                 }).await {
                     ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
@@ -1837,7 +1855,7 @@ fn generate_model(
 
             let sanitizer_expr = if let Some(sanitizer) = sanitizer {
                 quote! {
-                    value = ::ivo::run_sanitizer(value, &ctx, &_ctx_options, |value, ctx, opts| {
+                    value = ::ivo::run_sanitizer(value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
                         ::std::boxed::Box::pin((#sanitizer)(value, ctx, opts))
                     }).await;
                 }
@@ -1847,7 +1865,7 @@ fn generate_model(
 
             let validator_expr = if let Some(validator) = validator {
                 quote! {
-                    match ::ivo::run_validator(value, &ctx, &_ctx_options, |value, ctx, opts| {
+                    match ::ivo::run_validator(value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
                         ::std::boxed::Box::pin((#validator)(value, ctx, opts))
                     }).await {
                         ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
@@ -1915,7 +1933,7 @@ fn generate_model(
                 let __result: ::core::result::Result<
                     ::core::option::Option<#ty>,
                     ::ivo::FieldError<#metadata_ty>,
-                > = ::ivo::run_validator(__value, &ctx, &_ctx_options, |value, ctx, opts| {
+                > = ::ivo::run_validator(__value, &ctx, &_rw_ctx_options, |value, ctx, opts| {
                     ::std::boxed::Box::pin((#re_validator)(value, ctx, opts))
                 }).await;
                 match __result {
@@ -1988,7 +2006,7 @@ fn generate_model(
                 type_annotate_handler(handler.clone(), &[update_ctx_ty.clone(), opts_ty.clone()]);
             let flag = format_ident!("ignore_update_{}", f.name);
             quote! {
-                if (#handler)(&ctx, &_ctx_options) {
+                if (#handler)(&ctx, &_rw_ctx_options) {
                     #flag = true;
                 }
             }
@@ -2011,7 +2029,7 @@ fn generate_model(
                 .collect()
         };
         quote! {
-            if (#handler)(&ctx, &_ctx_options) {
+            if (#handler)(&ctx, &_rw_ctx_options) {
                 #(#flag_idents = true;)*
             }
         }
@@ -2085,9 +2103,11 @@ fn generate_model(
             attr_values_tokens(&f.attrs, "on_delete")
                 .into_iter()
                 .map(|handler| {
-                    let handler =
-                        type_annotate_handler(handler, &[data_ref_ty.clone(), opts_ty.clone()]);
-                    quote! { ::ivo::run_hook(data, _ctx_options, #handler).await; }
+                    let handler = type_annotate_handler(
+                        handler,
+                        &[data_ref_ty.clone(), hook_opts_ty.clone()],
+                    );
+                    quote! { ::ivo::run_hook(data, &_ctx_options, #handler).await; }
                 })
         });
 
@@ -2095,9 +2115,11 @@ fn generate_model(
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::OnDelete))
         .map(|o| {
-            let handler =
-                type_annotate_handler(o.handler.clone(), &[data_ref_ty.clone(), opts_ty.clone()]);
-            quote! { ::ivo::run_hook(data, _ctx_options, #handler).await; }
+            let handler = type_annotate_handler(
+                o.handler.clone(),
+                &[data_ref_ty.clone(), hook_opts_ty.clone()],
+            );
+            quote! { ::ivo::run_hook(data, &_ctx_options, #handler).await; }
         });
 
     let on_delete_hooks = field_on_delete_hooks.chain(grouped_on_delete_hooks);
@@ -2112,11 +2134,14 @@ fn generate_model(
             pub async fn create<I>(
                 &self,
                 input: I,
-                _ctx_options: &#ctx_options_ty,
+                _ctx_options: #ctx_options_ty,
             ) -> Result<#output_name, #payload_ty>
             where
                 I: ::core::convert::Into<#partial_input_name>,
             {
+                let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
+                let _ctx_options = _rw_ctx_options.read_only();
+
                 let mut input: #partial_input_name = input.into();
                 let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> = ::std::collections::HashMap::new();
                 let mut output: #output_name = ::core::default::Default::default();
@@ -2143,7 +2168,7 @@ fn generate_model(
                 } else {
                     ::core::result::Result::Err(
                         <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                            errors, _ctx_options,
+                            errors, &*_rw_ctx_options.read(),
                         ),
                     )
                 }
@@ -2153,8 +2178,11 @@ fn generate_model(
                 &self,
                 existing: #output_name,
                 updates: #partial_output_name,
-                _ctx_options: &#ctx_options_ty,
+                _ctx_options: #ctx_options_ty,
             ) -> Result<#output_name, #payload_ty> {
+                let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
+                let _ctx_options = _rw_ctx_options.read_only();
+
                 let mut output = existing;
                 let mut ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
                     updates.clone(),
@@ -2173,8 +2201,11 @@ fn generate_model(
             pub async fn delete(
                 &self,
                 data: &#output_name,
-                _ctx_options: &#ctx_options_ty,
+                _ctx_options: #ctx_options_ty,
             ) -> Result<(), #payload_ty> {
+                let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
+                let _ctx_options = _rw_ctx_options.read_only();
+
                 #(#on_delete_hooks)*
                 ::core::result::Result::Ok(())
             }
@@ -2522,6 +2553,25 @@ mod tests {
     }
 
     #[test]
+    fn rejects_bare_lax_without_default() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        pub name: String,
+
+                        #[lax]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "bare lax without default");
+    }
+
+    #[test]
     fn accepts_valid_dependency_chain() {
         let out = expand(
             "input(UserInput), output(User)",
@@ -2544,5 +2594,5 @@ mod tests {
                 "#,
         );
         assert_no_compile_error(&out, "valid dependency chain");
-}
+    }
 }
