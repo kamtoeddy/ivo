@@ -20,9 +20,8 @@ async fn should_trigger_on_failure_handlers_at_creation() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -93,9 +92,8 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -168,9 +166,8 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -242,9 +239,8 @@ async fn should_trigger_on_failure_handlers_during_updates() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -319,9 +315,8 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -397,9 +392,8 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -477,9 +471,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -564,9 +557,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -652,9 +644,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -740,9 +731,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -830,9 +820,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -921,9 +910,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1012,9 +1000,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1099,9 +1086,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1187,9 +1173,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1275,9 +1260,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1367,9 +1351,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1460,9 +1443,8 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field2"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field", "virtual_field2"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),

@@ -28,8 +28,8 @@ pub struct DependentFieldBuilder<
     O: IvoStruct,
     CtxOptions,
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions> = DefaultErrorSanitizer,
-    HasDefault = No,
     HasParents = No,
+    HasDefault = No,
     HasResolver = No,
     HasReadonly = No,
     HasDelete = No,
@@ -54,8 +54,8 @@ pub struct DependentFieldBuilder<
 }
 
 impl<
-        HasDefault,
         HasParents,
+        HasDefault,
         HasResolver,
         HasReadonly,
         HasDelete,
@@ -72,19 +72,19 @@ impl<
         O,
         CtxOptions,
         ErrorSanitizer,
-        HasDefault,
         HasParents,
+        HasDefault,
         HasResolver,
         HasReadonly,
         HasDelete,
         HasSuccess,
     >
 {
-    pub const fn new(name: &'static str) -> Self {
+    pub fn new<const N: usize>(name: &'static str, fields: [&'static str; N]) -> Self {
         Self {
             name,
             default: None,
-            depends_on: None,
+            depends_on: Some(Vec::from(fields)),
             resolver: None,
             ignore_update: None,
             on_delete_fns: None,
@@ -102,8 +102,8 @@ impl<
 }
 
 impl<
-        HasDefault,
         HasParents,
+        HasDefault,
         HasResolver,
         HasReadonly,
         HasDelete,
@@ -120,8 +120,8 @@ impl<
         O,
         CtxOptions,
         ErrorSanitizer,
-        HasDefault,
         HasParents,
+        HasDefault,
         HasResolver,
         HasReadonly,
         HasDelete,
@@ -129,7 +129,7 @@ impl<
     >
 {
     fn default() -> Self {
-        Self::new("")
+        Self::new("", [])
     }
 }
 
@@ -150,8 +150,8 @@ impl<
         O,
         CtxOptions,
         ErrorSanitizer,
-        HasDefault,
         Yes,
+        HasDefault,
         Yes,
         HasReadonly,
         HasDelete,
@@ -179,15 +179,16 @@ impl<
         O: IvoStruct,
         CtxOptions,
         ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes>
 {
     pub fn default(
         self,
         value: T,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, Yes> {
         DependentFieldBuilder {
             name: self.name,
             default: Some(DefaultValue::Static(erase_value(value))),
+            depends_on: self.depends_on,
             ..Default::default()
         }
     }
@@ -195,13 +196,14 @@ impl<
     pub fn default_fn<F>(
         self,
         default_fn: F,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, YesComputed>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, YesComputed>
     where
         F: IntoDefaultValueResolver<T, I, CtxOptions>,
     {
         DependentFieldBuilder {
             name: self.name,
             default: Some(DefaultValue::Func(default_fn.into_uniform())),
+            depends_on: self.depends_on,
             ..Default::default()
         }
     }
@@ -214,34 +216,12 @@ impl<
         O: IvoStruct,
         CtxOptions,
         ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault>
-{
-    pub fn depends_on<const N: usize>(
-        self,
-        fields: [&'static str; N],
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes> {
-        DependentFieldBuilder {
-            name: self.name,
-            default: self.default,
-            depends_on: Some(Vec::from(fields)),
-            ..Default::default()
-        }
-    }
-}
-
-impl<
-        HasDefault: IsProvided,
-        T: FieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes>
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasDefault>
 {
     pub fn resolve<R>(
         self,
         resolver: R,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes, Yes>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasDefault, Yes>
     where
         R: IntoUniformResolver<T, I, O, CtxOptions>,
     {
@@ -271,8 +251,8 @@ impl<
         O,
         CtxOptions,
         ErrorSanitizer,
-        HasDefault,
         Yes,
+        HasDefault,
         Yes,
         No,
         HasDelete,
@@ -291,8 +271,8 @@ impl<
         O,
         CtxOptions,
         ErrorSanitizer,
-        HasDefault,
         Yes,
+        HasDefault,
         Yes,
         Yes,
         HasDelete,
@@ -327,8 +307,8 @@ impl<
         O,
         CtxOptions,
         ErrorSanitizer,
-        HasDefault,
         Yes,
+        HasDefault,
         Yes,
         HasReadonly,
         HasDelete,
@@ -344,8 +324,8 @@ impl<
         O,
         CtxOptions,
         ErrorSanitizer,
-        HasDefault,
         Yes,
+        HasDefault,
         Yes,
         HasReadonly,
         Yes,
@@ -396,8 +376,8 @@ impl<
         O,
         CtxOptions,
         ErrorSanitizer,
-        HasDefault,
         Yes,
+        HasDefault,
         Yes,
         HasReadonly,
         HasDelete,
@@ -413,8 +393,8 @@ impl<
         O,
         CtxOptions,
         ErrorSanitizer,
-        HasDefault,
         Yes,
+        HasDefault,
         Yes,
         HasReadonly,
         HasDelete,

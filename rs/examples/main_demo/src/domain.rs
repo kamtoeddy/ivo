@@ -134,9 +134,8 @@ pub static USER_MODEL: LazyLock<IvoModel<UserInput, User, UserCtxOptions, Timest
                             }),
                     )
                     .field(
-                        dependent_field("username_last_updated_at")
+                        dependent_field("username_last_updated_at", ["username"])
                             .default(None)
-                            .depends_on(["username"])
                             .resolve(|ctx: Ctx, _| {
                                 let value = if ctx.is_update() {
                                     Some(Utc::now())
@@ -148,9 +147,8 @@ pub static USER_MODEL: LazyLock<IvoModel<UserInput, User, UserCtxOptions, Timest
                             }),
                     )
                     .field(
-                        dependent_field("slug_id")
+                        dependent_field("slug_id", ["username", "v_slug"])
                             .default(SlugifiedString::from(""))
-                            .depends_on(["username", "v_slug"])
                             .resolve(|_, o: RwCtxOptions| {
                                 o.read().map(|g| g.slug_id.clone().unwrap())
                             })

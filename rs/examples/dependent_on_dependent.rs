@@ -233,9 +233,8 @@ pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
     IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax"])
                     .default(DEFAULT_DEPENDENT)
-                    .depends_on(["lax"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
                     .on_success(|ctx: Ctx, _| {
                         println!(
@@ -252,9 +251,8 @@ pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
                     }),
             )
             .field(
-                dependent_field("dependent_1")
+                dependent_field("dependent_1", ["dependent"])
                     .default(DEFAULT_DEPENDENT)
-                    .depends_on(["dependent"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 10))
                     .on_success(|ctx: Ctx, _| {
                         println!(

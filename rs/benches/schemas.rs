@@ -158,78 +158,51 @@ pub static CHAIN_MODEL: LazyLock<IvoModel<ChainInput, ChainData>> = LazyLock::ne
     IvoModel::new(
         |f| {
             f.field(required_field("field_0").validate(|_, _, _| ready(Ok(None::<i32>))))
-                .field(
-                    dependent_field("field_1")
-                        .default(0)
-                        .depends_on(["field_0"])
-                        .resolve(|ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
-                            ready(ctx.values().field_0.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    dependent_field("field_2")
-                        .default(0)
-                        .depends_on(["field_1"])
-                        .resolve(|ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
-                            ready(ctx.values().field_1.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    dependent_field("field_3")
-                        .default(0)
-                        .depends_on(["field_2"])
-                        .resolve(|ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
-                            ready(ctx.values().field_2.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    dependent_field("field_4")
-                        .default(0)
-                        .depends_on(["field_3"])
-                        .resolve(|ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
-                            ready(ctx.values().field_3.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    dependent_field("field_5")
-                        .default(0)
-                        .depends_on(["field_4"])
-                        .resolve(|ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
-                            ready(ctx.values().field_4.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    dependent_field("field_6")
-                        .default(0)
-                        .depends_on(["field_5"])
-                        .resolve(|ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
-                            ready(ctx.values().field_5.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    dependent_field("field_7")
-                        .default(0)
-                        .depends_on(["field_6"])
-                        .resolve(|ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
-                            ready(ctx.values().field_6.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    dependent_field("field_8")
-                        .default(0)
-                        .depends_on(["field_7"])
-                        .resolve(|ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
-                            ready(ctx.values().field_7.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    dependent_field("field_9")
-                        .default(0)
-                        .depends_on(["field_8"])
-                        .resolve(|ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
-                            ready(ctx.values().field_8.unwrap() + 1)
-                        }),
-                )
+                .field(dependent_field("field_1", ["field_0"]).default(0).resolve(
+                    |ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
+                        ready(ctx.values().field_0.unwrap() + 1)
+                    },
+                ))
+                .field(dependent_field("field_2", ["field_1"]).default(0).resolve(
+                    |ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
+                        ready(ctx.values().field_1.unwrap() + 1)
+                    },
+                ))
+                .field(dependent_field("field_3", ["field_2"]).default(0).resolve(
+                    |ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
+                        ready(ctx.values().field_2.unwrap() + 1)
+                    },
+                ))
+                .field(dependent_field("field_4", ["field_3"]).default(0).resolve(
+                    |ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
+                        ready(ctx.values().field_3.unwrap() + 1)
+                    },
+                ))
+                .field(dependent_field("field_5", ["field_4"]).default(0).resolve(
+                    |ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
+                        ready(ctx.values().field_4.unwrap() + 1)
+                    },
+                ))
+                .field(dependent_field("field_6", ["field_5"]).default(0).resolve(
+                    |ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
+                        ready(ctx.values().field_5.unwrap() + 1)
+                    },
+                ))
+                .field(dependent_field("field_7", ["field_6"]).default(0).resolve(
+                    |ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
+                        ready(ctx.values().field_6.unwrap() + 1)
+                    },
+                ))
+                .field(dependent_field("field_8", ["field_7"]).default(0).resolve(
+                    |ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
+                        ready(ctx.values().field_7.unwrap() + 1)
+                    },
+                ))
+                .field(dependent_field("field_9", ["field_8"]).default(0).resolve(
+                    |ctx: ivo::IvoContext<ChainInput, ChainData>, _| {
+                        ready(ctx.values().field_8.unwrap() + 1)
+                    },
+                ))
         },
         |o| o,
     )

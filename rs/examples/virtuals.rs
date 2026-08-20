@@ -191,9 +191,8 @@ pub static DATA_MODEL_WITH_VALIDATOR: LazyLock<IvoModel<DataInput, Data>> = Lazy
     IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_DEPENDENT_VALUE.into())
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(
                             ctx.input()
@@ -253,9 +252,8 @@ pub static DATA_MODEL_WITH_RE_VALIDATOR: LazyLock<IvoModel<DataInput, Data>> =
         IvoModel::new(
             |f| {
                 f.field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(DEFAULT_DEPENDENT_VALUE.into())
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(
                                 ctx.input()

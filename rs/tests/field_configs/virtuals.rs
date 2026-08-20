@@ -24,9 +24,8 @@ fn should_reject_if_field_name_is_already_set() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(1)
-                        .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
@@ -159,9 +158,8 @@ fn should_reject_if_virtual_field_does_not_have_any_dependency() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax"])
                         .default(1)
-                        .depends_on(["lax"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
@@ -188,9 +186,8 @@ fn should_reject_with_same_alias_name() {
         |f| {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(1)
-                        .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
@@ -226,9 +223,8 @@ fn should_reject_with_alias_as_non_dependent_field() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(1)
-                        .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
@@ -265,15 +261,13 @@ fn should_reject_with_alias_as_unrelated_dependent_field() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent1")
+                    dependent_field("dependent1", ["lax"])
                         .default(1)
-                        .depends_on(["lax"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(1)
-                        .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
@@ -433,9 +427,8 @@ fn should_reject_if_alias_already_used() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "virtual_field", "virtual_field1"])
                         .default(1)
-                        .depends_on(["lax", "virtual_field", "virtual_field1"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
@@ -475,9 +468,8 @@ fn should_reject_if_alias_does_not_exist_on_input_struct() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "virtual_field"])
                         .default(1)
-                        .depends_on(["lax", "virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
@@ -514,9 +506,8 @@ fn should_reject_if_both_alias_and_field_name_exist_on_input_struct() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "virtual_field"])
                         .default(1)
-                        .depends_on(["lax", "virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(
@@ -551,9 +542,8 @@ fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
                 f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                     .field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["lax", "virtual_field", "virtual_field1"])
                             .default(1)
-                            .depends_on(["lax", "virtual_field", "virtual_field1"])
                             .resolve(|_, _| ready(2)),
                     )
                     .field(
@@ -595,9 +585,8 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
                 f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                     .field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["lax", "virtual_field"])
                             .default(1)
-                            .depends_on(["lax", "virtual_field"])
                             .resolve(|_, _| ready(2)),
                     )
                     .field(
@@ -640,9 +629,8 @@ fn should_reject_if_no_alias_is_provided_and_field_name_does_not_exist_on_input_
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "virtual_field"])
                         .default(1)
-                        .depends_on(["lax", "virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
                 .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
@@ -672,9 +660,8 @@ fn should_allow_if_no_alias_is_provided_but_field_name_exists_on_input_struct() 
                 f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                     .field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["lax", "virtual_field"])
                             .default(1)
-                            .depends_on(["lax", "virtual_field"])
                             .resolve(|_, _| ready(2)),
                     )
                     .field(

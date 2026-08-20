@@ -14,6 +14,7 @@ use crate::{
             constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
             lax::LaxFieldBuilder, required::RequiredFieldBuilder, virtuals::VirtualFieldBuilder,
         },
+        types::Yes,
         FieldValue,
     },
     IvoErrorSanitizer, IvoStruct,
@@ -49,10 +50,12 @@ pub fn dependent_field<
     O: IvoStruct,
     CtxOptions,
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
+    const N: usize,
 >(
     name: &'static str,
-) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer> {
-    DependentFieldBuilder::new(name)
+    fields: [&'static str; N],
+) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
+    DependentFieldBuilder::new(name, fields)
 }
 
 /// Lax field

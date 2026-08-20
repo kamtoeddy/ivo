@@ -56,9 +56,8 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
                     .default(DEFAULT_VALUE)
-                    .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap() + 1)
                     }),
@@ -119,9 +118,8 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
                     .default(DEFAULT_VALUE)
-                    .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap() + 1)
                     }),
@@ -191,9 +189,8 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_VALUE)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap() + 1)
                     }),
@@ -277,9 +274,8 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_VALUE.into())
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
@@ -354,9 +350,8 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_VALUE.into())
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
@@ -445,9 +440,8 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_VALUE.into())
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
@@ -523,9 +517,8 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_VALUE.into())
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
@@ -616,9 +609,8 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value.into())
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
@@ -704,9 +696,8 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value.into())
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
@@ -799,9 +790,8 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
                     .default(DEFAULT_VALUE)
-                    .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
@@ -878,9 +868,8 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
     let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
                     .default(DEFAULT_VALUE)
-                    .depends_on(["virtual_field", "virtual_field_1"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.input().virtual_field.unwrap())
                     }),

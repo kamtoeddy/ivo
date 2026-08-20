@@ -173,9 +173,8 @@ pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
                     }),
             )
             .field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_DEPENDENT_VALUE.into())
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(
                             ctx.input()

@@ -254,9 +254,8 @@ pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(
     IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax", "username"])
                     .default_fn(|_, _| ready(DEFAULT_DEPENDENT))
-                    .depends_on(["lax", "username"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
                     .on_success(|ctx: Ctx, _| {
                         println!(
@@ -319,9 +318,8 @@ pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|
     IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax", "username"])
                     .default(DEFAULT_DEPENDENT)
-                    .depends_on(["lax", "username"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
                     .on_success(|ctx: Ctx, _| {
                         println!(

@@ -22,15 +22,13 @@ fn should_reject_if_field_name_is_already_set() {
         |f| {
             f.field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax"])
                         .default(2)
-                        .depends_on(["lax"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax"])
                         .default(2)
-                        .depends_on(["lax"])
                         .resolve(|_, _| ready(4)),
                 )
         },
@@ -61,9 +59,8 @@ fn should_reject_if_parent_array_is_empty() {
         |f| {
             f.field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", [])
                         .default(2)
-                        .depends_on([])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -99,9 +96,8 @@ fn should_reject_dependency_of_created_at_field_with_default_name() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "required", "created_at"])
                         .default(2)
-                        .depends_on(["lax", "required", "created_at"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -141,9 +137,8 @@ fn should_reject_dependency_of_created_at_field_with_custom_name() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "required", "custom_created_at"])
                         .default(2)
-                        .depends_on(["lax", "required", "custom_created_at"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -183,9 +178,8 @@ fn should_reject_dependency_of_updated_at_field_with_default_name() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "required", "updated_at"])
                         .default(2)
-                        .depends_on(["lax", "required", "updated_at"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -221,9 +215,8 @@ fn should_reject_dependency_of_updated_at_field_with_custom_name() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "required", "custom_updated_at"])
                         .default(2)
-                        .depends_on(["lax", "required", "custom_updated_at"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -260,9 +253,8 @@ fn should_reject_if_any_parent_field_provided_does_not_belong_on_schema() {
         |f| {
             f.field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "required", "lol"])
                         .default(2)
-                        .depends_on(["lax", "required", "lol"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -293,9 +285,8 @@ fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
         |f| {
             f.field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "required", "dependent"])
                         .default(2)
-                        .depends_on(["lax", "required", "dependent"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -322,9 +313,8 @@ fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax"])
                     .default(1)
-                    .depends_on(["lax"])
                     .resolve(|_, _| ready(12)),
             )
             .field(
@@ -361,9 +351,8 @@ fn should_reject_if_duplicate_parent_fields_are_provided() {
         |f| {
             f.field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "required", "lax"])
                         .default(2)
-                        .depends_on(["lax", "required", "lax"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -396,9 +385,8 @@ fn should_reject_dependency_of_constant_fields() {
             f.field(constant_field("id").value_fn(|_, _| ready(1234)))
                 .field(lax_field("lax").default(1))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["lax", "required", "id"])
                         .default(2)
-                        .depends_on(["lax", "required", "id"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -431,15 +419,13 @@ fn should_reject_any_redundant_dependencies() {
         |f| {
             f.field(lax_field("c").default(1))
                 .field(
-                    dependent_field("b")
+                    dependent_field("b", ["c"])
                         .default(2)
-                        .depends_on(["c"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(
-                    dependent_field("a")
+                    dependent_field("a", ["c", "d", "b"])
                         .default(2)
-                        .depends_on(["c", "d", "b"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(required_field("d").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -469,21 +455,18 @@ fn should_reject_any_deeply_redundant_dependencies() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("c")
+                dependent_field("c", ["d"])
                     .default(2)
-                    .depends_on(["d"])
                     .resolve(|_, _| ready(4)),
             )
             .field(
-                dependent_field("b")
+                dependent_field("b", ["c"])
                     .default(2)
-                    .depends_on(["c"])
                     .resolve(|_, _| ready(4)),
             )
             .field(
-                dependent_field("a")
+                dependent_field("a", ["b", "d"])
                     .default(2)
-                    .depends_on(["b", "d"])
                     .resolve(|_, _| ready(4)),
             )
             .field(required_field("d").validate(|v: String, _, _| ready(Ok(Some(v)))))
@@ -511,15 +494,13 @@ fn should_reject_any_circular_dependencies() {
         |f| {
             f.field(lax_field("c").default(1))
                 .field(
-                    dependent_field("a")
+                    dependent_field("a", ["b"])
                         .default(2)
-                        .depends_on(["b"])
                         .resolve(|_, _| ready(4)),
                 )
                 .field(
-                    dependent_field("b")
+                    dependent_field("b", ["a", "c"])
                         .default(2)
-                        .depends_on(["a", "c"])
                         .resolve(|_, _| ready(4)),
                 )
         },
@@ -546,21 +527,18 @@ fn should_reject_any_deeply_circular_dependencies() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("a")
+                dependent_field("a", ["b"])
                     .default(2)
-                    .depends_on(["b"])
                     .resolve(|_, _| ready(4)),
             )
             .field(
-                dependent_field("c")
+                dependent_field("c", ["a", "d"])
                     .default(2)
-                    .depends_on(["a", "d"])
                     .resolve(|_, _| ready(4)),
             )
             .field(
-                dependent_field("b")
+                dependent_field("b", ["c"])
                     .default(2)
-                    .depends_on(["c"])
                     .resolve(|_, _| ready(4)),
             )
             .field(lax_field("d").default(1))
@@ -590,9 +568,8 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["lax"])
                             .default(2)
-                            .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
@@ -611,9 +588,8 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["required"])
                             .default(2)
-                            .depends_on(["required"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
@@ -632,9 +608,8 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["lax", "required"])
                             .default(2)
-                            .depends_on(["lax", "required"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
@@ -671,15 +646,13 @@ fn should_allow_dependency_on_other_dependent_fields() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["dependent1"])
                             .default(2)
-                            .depends_on(["dependent1"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        dependent_field("dependent1")
+                        dependent_field("dependent1", ["lax"])
                             .default(2)
-                            .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
@@ -698,15 +671,13 @@ fn should_allow_dependency_on_other_dependent_fields() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["dependent1", "required"])
                             .default(2)
-                            .depends_on(["dependent1", "required"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        dependent_field("dependent1")
+                        dependent_field("dependent1", ["lax"])
                             .default(2)
-                            .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
@@ -744,46 +715,13 @@ fn should_allow_dependency_on_virtual_fields() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["virtual_field"])
                             .default(2)
-                            .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        dependent_field("dependent1")
+                        dependent_field("dependent1", ["lax"])
                             .default(2)
-                            .depends_on(["lax"])
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .field(
-                        virtual_field("virtual_field")
-                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent")
-                            .default(2)
-                            .depends_on(["required", "virtual_field"])
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        dependent_field("dependent1")
-                            .default(2)
-                            .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
@@ -806,15 +744,13 @@ fn should_allow_dependency_on_virtual_fields() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["required", "virtual_field"])
                             .default(2)
-                            .depends_on(["dependent1", "virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        dependent_field("dependent1")
+                        dependent_field("dependent1", ["lax"])
                             .default(2)
-                            .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
@@ -837,15 +773,42 @@ fn should_allow_dependency_on_virtual_fields() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["dependent1", "virtual_field"])
                             .default(2)
-                            .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
-                        dependent_field("dependent1")
+                        dependent_field("dependent1", ["lax"])
                             .default(2)
-                            .depends_on(["lax", "virtual_field"])
+                            .resolve(|_, _| ready(4)),
+                    )
+                    .field(
+                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
+                    )
+                    .field(
+                        virtual_field("virtual_field")
+                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
+                    )
+                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
+            },
+            |o| o,
+        );
+    });
+
+    assert!(result.is_ok());
+
+    let result = panic::catch_unwind(|| {
+        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
+            |f| {
+                f.field(lax_field("lax").default(1))
+                    .field(
+                        dependent_field("dependent", ["virtual_field"])
+                            .default(2)
+                            .resolve(|_, _| ready(4)),
+                    )
+                    .field(
+                        dependent_field("dependent1", ["lax", "virtual_field"])
+                            .default(2)
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
@@ -886,9 +849,8 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["virtual_field"])
                             .default(2)
-                            .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(
@@ -927,9 +889,8 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
             |f| {
                 f.field(lax_field("lax").default(1))
                     .field(
-                        dependent_field("dependent")
+                        dependent_field("dependent", ["virtual_field"])
                             .default(2)
-                            .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
                     .field(

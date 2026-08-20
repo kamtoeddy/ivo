@@ -48,7 +48,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax"])
                     .default_fn(async |_, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
@@ -56,7 +56,6 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
 
                         DEFAULT_DEPENDENT_VALUE
                     })
-                    .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     })
@@ -123,9 +122,8 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax"])
                     .default_fn(async |_, _| DEFAULT_DEPENDENT_VALUE)
-                    .depends_on(["lax"])
                     .resolve(
                         async |ctx: IvoContext<DataInput, Data>, o: IvoRwCtxOptions<CtxOptions>| {
                             let mut ctx_options = o.write().await;
@@ -198,9 +196,8 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
     let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax"])
                     .default_fn(async |_, _| DEFAULT_DEPENDENT_VALUE)
-                    .depends_on(["lax"])
                     .resolve(
                         async |ctx: IvoContext<DataInput, Data>, o: IvoRwCtxOptions<CtxOptions>| {
                             let mut ctx_options = o.write().await;

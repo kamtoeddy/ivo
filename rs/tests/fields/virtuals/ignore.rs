@@ -27,9 +27,8 @@ async fn should_respect_the_ignore_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -153,9 +152,8 @@ async fn should_respect_the_ignore_rule_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -280,9 +278,8 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -407,9 +404,8 @@ async fn should_respect_the_ignore_init_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -538,9 +534,8 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -670,9 +665,8 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -802,9 +796,8 @@ async fn should_respect_the_ignore_update_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -950,9 +943,8 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1099,9 +1091,8 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1257,9 +1248,8 @@ async fn should_properly_handle_grouped_ignore_rule() {
             f.field(lax_field("lax").default(default_lax_value.to_string()))
                 .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(default_dependent_value)
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(ctx.values().dependent.unwrap() + 1)
                         }),
@@ -1416,9 +1406,8 @@ async fn should_properly_handle_grouped_ignore_rule_with_alias() {
             f.field(lax_field("lax").default(default_lax_value.to_string()))
                 .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(default_dependent_value)
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(ctx.values().dependent.unwrap() + 1)
                         }),
@@ -1579,9 +1568,8 @@ async fn should_properly_handle_grouped_ignore_rule_with_alias_same_as_dependent
             f.field(lax_field("lax").default(default_lax_value.to_string()))
                 .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(default_dependent_value)
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(ctx.values().dependent.unwrap() + 1)
                         }),
@@ -1742,9 +1730,8 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_DEPENDENT_VALUE)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1902,9 +1889,8 @@ async fn should_properly_handle_grouped_ignore_update_rule_with_alias() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_DEPENDENT_VALUE)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2066,9 +2052,8 @@ async fn should_properly_handle_grouped_ignore_update_rule_with_alias_same_as_de
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(DEFAULT_DEPENDENT_VALUE)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),

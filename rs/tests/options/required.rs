@@ -151,9 +151,8 @@ fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax", "lax_1"])
                     .default(1)
-                    .depends_on(["lax", "lax_1"])
                     .resolve(|_, _| ready(2)),
             )
             .field(lax_field("lax").default(1234))
@@ -214,9 +213,8 @@ fn should_reject_if_an_alias_similar_to_a_dependent_field_is_provided_to_the_fie
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax", "virtual_field"])
                     .default(1)
-                    .depends_on(["lax", "virtual_field"])
                     .resolve(|_, _| ready(2)),
             )
             .field(lax_field("lax").default(1234))
@@ -253,9 +251,8 @@ fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array()
     let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["lax", "virtual_field"])
                     .default(1)
-                    .depends_on(["lax", "virtual_field"])
                     .resolve(|_, _| ready(2)),
             )
             .field(lax_field("lax").default(1234))

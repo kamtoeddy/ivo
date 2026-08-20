@@ -25,9 +25,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation()
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -104,9 +103,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -186,9 +184,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -266,9 +263,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -351,9 +347,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -438,9 +433,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -524,9 +518,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided() {
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -649,9 +642,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -776,9 +768,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -904,9 +895,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1033,9 +1023,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1163,9 +1152,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1293,9 +1281,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1397,9 +1384,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1502,9 +1488,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1607,9 +1592,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1693,9 +1677,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1780,9 +1763,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1868,9 +1850,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -1945,9 +1926,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2027,9 +2007,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
         IvoModel::new(
             |f| {
                 f.field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(default_dependent_value)
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(ctx.values().dependent.unwrap() + 1)
                         }),
@@ -2105,9 +2084,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2205,9 +2183,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2310,9 +2287,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
         IvoModel::new(
             |f| {
                 f.field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(default_dependent_value)
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(ctx.values().dependent.unwrap() + 1)
                         }),
@@ -2412,9 +2388,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2517,9 +2492,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2623,9 +2597,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2729,9 +2702,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2809,9 +2781,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2890,9 +2861,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -2970,9 +2940,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -3051,9 +3020,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -3137,9 +3105,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
         IvoModel::new(
             |f| {
                 f.field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(default_dependent_value)
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(ctx.values().dependent.unwrap() + 1)
                         }),
@@ -3220,9 +3187,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -3302,9 +3268,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -3389,9 +3354,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
         IvoModel::new(
             |f| {
                 f.field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(default_dependent_value)
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                             ready(ctx.values().dependent.unwrap() + 1)
                         }),
@@ -3473,9 +3437,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -3559,9 +3522,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
@@ -3646,9 +3608,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
-                dependent_field("dependent")
+                dependent_field("dependent", ["virtual_field"])
                     .default(default_dependent_value)
-                    .depends_on(["virtual_field"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
