@@ -5,6 +5,8 @@ slug: /
 
 # Getting Started
 
+These docs cover `ivo` for Rust **v0.4.0**.
+
 `ivo` for Rust expects you to define your data model with structs that implement `IvoInputStruct`
 (required for input structs) and `IvoStruct`. This is done via their respective derive macros.
 

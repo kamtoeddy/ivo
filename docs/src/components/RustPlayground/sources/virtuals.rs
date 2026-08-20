@@ -23,9 +23,8 @@ static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
         |f| {
             f.field(virtual_field("virtual_field").validate(|v: String, _, _| ready(Ok(Some(v)))))
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(DEFAULT_DEPENDENT.to_string())
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: Ctx, _| {
                             ready(
                                 ctx.input()

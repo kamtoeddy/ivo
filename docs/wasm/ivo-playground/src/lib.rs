@@ -171,9 +171,8 @@ mod virtuals {
                     virtual_field("virtual_field").validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .field(
-                    dependent_field("dependent")
+                    dependent_field("dependent", ["virtual_field"])
                         .default(DEFAULT_DEPENDENT.to_string())
-                        .depends_on(["virtual_field"])
                         .resolve(|ctx: Ctx, _| {
                             ready(
                                 ctx.input()
@@ -232,9 +231,8 @@ mod dependents {
         IvoModel::new(
             |f| {
                 f.field(lax_field("value").default(0)).field(
-                    dependent_field("computed")
+                    dependent_field("computed", ["value"])
                         .default(1)
-                        .depends_on(["value"])
                         .resolve(|ctx: Ctx, _| ready(ctx.values().value.unwrap_or(0) + 1)),
                 )
             },

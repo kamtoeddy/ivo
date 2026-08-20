@@ -21,9 +21,8 @@ static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
     IvoModel::new(
         |f| {
             f.field(lax_field("value").default(0)).field(
-                dependent_field("computed")
+                dependent_field("computed", ["value"])
                     .default(1)
-                    .depends_on(["value"])
                     .resolve(|ctx: Ctx, _| ready(ctx.values().value.unwrap_or(0) + 1)),
             )
         },
