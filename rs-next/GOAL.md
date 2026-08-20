@@ -1,8 +1,8 @@
 # Ivo Rust v2 API Design Preferences
 
-> **Implementation progress: ~60%**
+> **Implementation progress: ~65%**
 >
-> Core schema parsing, struct generation, field-type handling, grouped options, and attribute whitelist validation are in place. Remaining work includes sync/async method inference, `on_success`/`on_failure` triggers, `post_validate` grouped options, full dependency-graph validation, and semantic-parity ports/tests.
+> Core schema parsing, struct generation, field-type handling, grouped options, attribute whitelist validation, and dependency-graph validation are in place. Remaining work includes sync/async method inference, `on_success`/`on_failure` triggers, `post_validate` grouped options, context/options wrapper integration, and semantic-parity ports/tests.
 
 This document captures the user preferences for the next-generation Ivo Rust API (`rs-v2`). It is the source of truth for syntax and architectural decisions.
 

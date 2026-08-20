@@ -588,6 +588,7 @@ fn validate_schema(
     validate_field_attributes(fields)?;
     validate_field_names(fields)?;
     validate_single_dual_mode(args, fields)?;
+    validate_dependencies(fields)?;
     validate_grouped_options(fields, options)?;
     Ok(())
 }
@@ -893,6 +894,176 @@ fn validate_single_dual_mode(args: &SchemaArgs, fields: &[FieldDef]) -> syn::Res
     }
 
     Ok(())
+}
+
+fn parse_depends_on(f: &FieldDef) -> syn::Result<Vec<String>> {
+    let Some(tokens) = attr_value_tokens(&f.attrs, "depends_on") else {
+        return Ok(Vec::new());
+    };
+    syn::punctuated::Punctuated::<Ident, Token![,]>::parse_terminated
+        .parse2(tokens)
+        .map(|p| p.into_iter().map(|i| i.to_string()).collect())
+        .map_err(|e| {
+            syn::Error::new_spanned(&f.name, format!("invalid `#[depends_on(...)]`: {}", e))
+        })
+}
+
+fn validate_dependencies(fields: &[FieldDef]) -> syn::Result<()> {
+    let field_names: std::collections::HashSet<String> =
+        fields.iter().map(|f| f.name.to_string()).collect();
+    let mut deps: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+
+    for f in fields {
+        let parents = parse_depends_on(f)?;
+        if matches!(f.field_type, FieldType::Dependent) && parents.is_empty() {
+            return Err(syn::Error::new_spanned(
+                &f.name,
+                format!("dependent field `{}` must declare at least one parent via `#[depends_on(...)]`", f.name),
+            ));
+        }
+
+        let mut seen = std::collections::HashSet::new();
+        for parent in &parents {
+            if parent == &f.name.to_string() {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!("field `{}` cannot depend on itself", f.name),
+                ));
+            }
+            if !seen.insert(parent.clone()) {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "duplicate parent `{}` in `#[depends_on(...)]` for field `{}`",
+                        parent, f.name
+                    ),
+                ));
+            }
+            if !field_names.contains(parent) {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!("field `{}` depends on unknown field `{}`", f.name, parent),
+                ));
+            }
+            let parent_field = fields.iter().find(|pf| pf.name == *parent).unwrap();
+            if matches!(
+                parent_field.field_type,
+                FieldType::Constant | FieldType::CreatedAt | FieldType::UpdatedAt
+            ) {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}` cannot depend on constant or timestamp field `{}`",
+                        f.name, parent
+                    ),
+                ));
+            }
+        }
+
+        if !parents.is_empty() {
+            deps.insert(f.name.to_string(), parents);
+        }
+    }
+
+    // Detect circular dependencies.
+    let mut stack = Vec::new();
+    let mut visited = std::collections::HashSet::new();
+    for name in deps.keys() {
+        if visited.contains(name) {
+            continue;
+        }
+        if let Some(cycle) = find_dependency_cycle(name, &deps, &mut stack, &mut visited) {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                format!("circular dependency detected: {}", cycle.join(" -> ")),
+            ));
+        }
+    }
+
+    // Detect redundant/transitive dependencies.
+    for (name, parents) in &deps {
+        for (i, parent) in parents.iter().enumerate() {
+            let reachable = reachable_from(parent, &deps);
+            for other in parents.iter().skip(i + 1) {
+                if reachable.contains(other) {
+                    let field_ident = fields
+                        .iter()
+                        .find(|f| f.name == *name)
+                        .map(|f| &f.name)
+                        .unwrap();
+                    return Err(syn::Error::new_spanned(
+                        field_ident,
+                        format!(
+                            "field `{}` has redundant dependency `{}`: it is already reachable via `{}`",
+                            name, other, parent
+                        ),
+                    ));
+                }
+            }
+        }
+    }
+
+    // Virtual fields must be referenced by at least one dependent.
+    for f in fields {
+        if let FieldType::Virtual { .. } = &f.field_type {
+            let name = f.name.to_string();
+            let referenced = deps.values().any(|parents| parents.contains(&name));
+            if !referenced {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "virtual field `{}` must be referenced by at least one `#[depends_on(...)]`",
+                        f.name
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn find_dependency_cycle(
+    node: &str,
+    deps: &std::collections::HashMap<String, Vec<String>>,
+    stack: &mut Vec<String>,
+    visited: &mut std::collections::HashSet<String>,
+) -> Option<Vec<String>> {
+    if let Some(pos) = stack.iter().position(|n| n == node) {
+        let cycle = stack[pos..].to_vec();
+        return Some(cycle);
+    }
+    if !visited.insert(node.to_string()) {
+        return None;
+    }
+    stack.push(node.to_string());
+    if let Some(parents) = deps.get(node) {
+        for parent in parents {
+            if let Some(cycle) = find_dependency_cycle(parent, deps, stack, visited) {
+                return Some(cycle);
+            }
+        }
+    }
+    stack.pop();
+    None
+}
+
+fn reachable_from(
+    start: &str,
+    deps: &std::collections::HashMap<String, Vec<String>>,
+) -> std::collections::HashSet<String> {
+    let mut visited = std::collections::HashSet::new();
+    let mut stack = vec![start];
+    while let Some(node) = stack.pop() {
+        if let Some(parents) = deps.get(node) {
+            for parent in parents {
+                if parent != start && visited.insert(parent.clone()) {
+                    stack.push(parent);
+                }
+            }
+        }
+    }
+    visited
 }
 
 fn parse_fields_struct(item_mod: &ItemMod) -> syn::Result<Vec<FieldDef>> {
@@ -2075,6 +2246,15 @@ mod tests {
         );
     }
 
+    fn assert_no_compile_error(output: &str, msg: &str) {
+        assert!(
+            !output.contains("compile_error"),
+            "{}: expected no compile_error, got: {}",
+            msg,
+            output
+        );
+    }
+
     #[test]
     fn rejects_sanitize_on_required_field() {
         let out = expand(
@@ -2227,4 +2407,142 @@ mod tests {
         );
         assert_compile_error(&out, "readonly on required without validate");
     }
+
+    #[test]
+    fn rejects_dependent_without_depends_on() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        pub name: String,
+
+                        #[dependent]
+                        #[default(|| String::from("x"))]
+                        pub label: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "dependent without depends_on");
+    }
+
+    #[test]
+    fn rejects_dependency_on_constant() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        pub name: String,
+
+                        #[constant(|| String::from("id"))]
+                        pub id: String,
+
+                        #[depends_on(id)]
+                        #[default(|| String::from("x"))]
+                        pub label: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "dependency on constant");
+    }
+
+    #[test]
+    fn rejects_circular_dependency() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        pub a: String,
+
+                        #[depends_on(c)]
+                        #[default(|| String::from("b"))]
+                        pub b: String,
+
+                        #[depends_on(b)]
+                        #[default(|| String::from("c"))]
+                        pub c: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "circular dependency");
+    }
+
+    #[test]
+    fn rejects_redundant_dependency() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        pub a: String,
+
+                        #[required]
+                        pub b: String,
+
+                        #[depends_on(b, c)]
+                        #[default(|| String::from("c"))]
+                        pub c: String,
+
+                        #[depends_on(a, b, c)]
+                        #[default(|| String::from("d"))]
+                        pub d: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "redundant dependency");
+    }
+
+    #[test]
+    fn rejects_unreferenced_virtual_field() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        pub name: String,
+
+                        #[ivo_virtual]
+                        pub secret: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "unreferenced virtual field");
+    }
+
+    #[test]
+    fn accepts_valid_dependency_chain() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        pub first_name: String,
+
+                        #[required]
+                        pub last_name: String,
+
+                        #[depends_on(first_name, last_name)]
+                        #[resolve(|ctx, _opts| async move {
+                            format!("{} {}", ctx.values().first_name, ctx.values().last_name)
+                        })]
+                        pub full_name: String,
+                    }
+                }
+                "#,
+        );
+        assert_no_compile_error(&out, "valid dependency chain");
+}
 }
