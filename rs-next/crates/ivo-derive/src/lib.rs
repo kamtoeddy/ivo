@@ -287,6 +287,17 @@ fn attr_value_tokens(attrs: &[Attribute], name: &str) -> Option<proc_macro2::Tok
     })
 }
 
+fn attr_values_tokens(attrs: &[Attribute], name: &str) -> Vec<proc_macro2::TokenStream> {
+    attrs
+        .iter()
+        .filter(|a| a.path().is_ident(name))
+        .filter_map(|attr| match &attr.meta {
+            syn::Meta::List(list) => Some(list.tokens.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
 // ---------------------------------------------------------------------------
 // Grouped schema options
 // ---------------------------------------------------------------------------
@@ -296,6 +307,7 @@ enum GroupedOptionKind {
     Ignore,
     Required,
     IgnoreUpdate,
+    OnDelete,
     Timestamps,
 }
 
@@ -314,6 +326,8 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         GroupedOptionKind::Required
     } else if attr.path().is_ident("ignore_update") {
         GroupedOptionKind::IgnoreUpdate
+    } else if attr.path().is_ident("on_delete") {
+        GroupedOptionKind::OnDelete
     } else if attr.path().is_ident("timestamps") {
         GroupedOptionKind::Timestamps
     } else {
@@ -325,13 +339,13 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         _ => {
             return Err(syn::Error::new_spanned(
                 attr,
-                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, or `#[timestamps(...)]`",
+                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, `#[on_delete(...)]`, or `#[timestamps(...)]`",
             ));
         }
     };
 
     match kind {
-        GroupedOptionKind::Timestamps => Ok(Some(GroupedOption {
+        GroupedOptionKind::Timestamps | GroupedOptionKind::OnDelete => Ok(Some(GroupedOption {
             kind,
             fields: Vec::new(),
             handler: list.tokens.clone(),
@@ -503,6 +517,14 @@ fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> s
                             ),
                         ));
                     }
+                }
+            }
+            GroupedOptionKind::OnDelete => {
+                if !opt.fields.is_empty() {
+                    return Err(syn::Error::new(
+                        proc_macro2::Span::call_site(),
+                        "`#[on_delete(...)]` does not accept a field list",
+                    ));
                 }
             }
             GroupedOptionKind::Timestamps => {}
@@ -1222,6 +1244,38 @@ fn generate_model(
             }
         });
 
+    // Delete method: lifecycle hooks.
+    let delete_ctx_ty = quote!(::ivo::IvoContext<#output_name, #output_name>);
+
+    let field_on_delete_hooks = fields
+        .iter()
+        .filter(|f| {
+            matches!(
+                f.field_type,
+                FieldType::Constant | FieldType::Required | FieldType::Lax | FieldType::Dependent
+            )
+        })
+        .flat_map(|f| {
+            attr_values_tokens(&f.attrs, "on_delete")
+                .into_iter()
+                .map(|handler| {
+                    let handler =
+                        type_annotate_handler(handler, &[delete_ctx_ty.clone(), opts_ty.clone()]);
+                    quote! { ::ivo::run_hook(ctx.clone(), _ctx_options, #handler).await; }
+                })
+        });
+
+    let grouped_on_delete_hooks = options
+        .iter()
+        .filter(|o| matches!(o.kind, GroupedOptionKind::OnDelete))
+        .map(|o| {
+            let handler =
+                type_annotate_handler(o.handler.clone(), &[delete_ctx_ty.clone(), opts_ty.clone()]);
+            quote! { ::ivo::run_hook(ctx.clone(), _ctx_options, #handler).await; }
+        });
+
+    let on_delete_hooks = field_on_delete_hooks.chain(grouped_on_delete_hooks);
+
     quote! {
         pub struct #model_type_name;
 
@@ -1291,9 +1345,16 @@ fn generate_model(
 
             pub async fn delete(
                 &self,
-                _input: #input_name,
+                data: &#output_name,
                 _ctx_options: &#ctx_options_ty,
             ) -> Result<(), #payload_ty> {
+                let ctx = ::ivo::IvoContext::<#output_name, #output_name>::new(
+                    data.clone(),
+                    data.clone(),
+                    data.clone().into(),
+                    false,
+                );
+                #(#on_delete_hooks)*
                 ::core::result::Result::Ok(())
             }
         }

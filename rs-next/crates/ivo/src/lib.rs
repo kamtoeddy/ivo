@@ -80,6 +80,14 @@ where
     resolver(ctx, opts).await
 }
 
+pub async fn run_hook<Ctx, Opts, F, Fut>(ctx: Ctx, opts: &Opts, handler: F)
+where
+    F: FnOnce(Ctx, &Opts) -> Fut,
+    Fut: std::future::Future<Output = ()>,
+{
+    handler(ctx, opts).await
+}
+
 pub trait IvoErrorSanitizer<CtxOptions> {
     type Metadata: Clone + Send + Sync;
     type Payload;

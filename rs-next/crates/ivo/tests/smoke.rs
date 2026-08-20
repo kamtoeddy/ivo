@@ -115,11 +115,12 @@ async fn smoke_model_create_dual_struct() {
 
 #[tokio::test]
 async fn smoke_model_delete_dual_struct() {
-    let input = user_schema_dual::UserInput {
+    let output = user_schema_dual::User {
         name: "test".to_string(),
+        id: String::from("default-id"),
     };
     user_schema_dual::UserModel
-        .delete(input, &())
+        .delete(&output, &())
         .await
         .unwrap();
 }
@@ -667,4 +668,34 @@ fn smoke_derive_partial() {
     partial.set_name("test".to_string());
     let debug = format!("{:?}", partial);
     assert!(debug.contains("test"));
+}
+
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
+mod user_on_delete_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[constant(|| String::from("id"))]
+        #[on_delete(|ctx, _opts| async move { assert_eq!(ctx.input().id, "id") })]
+        pub id: String,
+    }
+
+    #[on_delete(|ctx, _opts| async move { assert_eq!(ctx.input().name, "deleted") })]
+    const _: () = ();
+}
+
+#[tokio::test]
+async fn smoke_model_on_delete() {
+    let output = user_on_delete_schema::User {
+        name: "deleted".to_string(),
+        id: "id".to_string(),
+    };
+    user_on_delete_schema::UserModel
+        .delete(&output, &())
+        .await
+        .unwrap();
 }
