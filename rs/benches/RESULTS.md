@@ -139,6 +139,6 @@ Based on code review and these baseline numbers:
 2. ~~**Pre-compute dependency order** per schema to avoid scanning all definitions each dependent-resolution round.~~ ✅ Applied (cached `dependent_children`).
 3. ~~**Add release-profile tuning** (`lto`, `codegen-units=1`) for published builds.~~ ✅ Applied.
 4. **Avoid `Box<dyn CloneableAny>` per field** — every field value is heap-allocated and cloned repeatedly.
-5. **Specialize synchronous handlers** — even `ready(...)` validators go through `BoxFuture` and `join_all`.
+5. **Specialize synchronous handlers** — even `ready(...)` validators go through `BoxFuture` and `join_all`.~~ Skipped for now.
 6. **Reduce partial-struct cloning** — context accessors clone on every call, and update rebuilds the full output struct after each phase.
 7. **Generate const field-name tables in `ivo-derive`** to replace runtime string matching in generated methods.
