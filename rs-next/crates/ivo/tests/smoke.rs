@@ -346,3 +346,104 @@ async fn smoke_model_grouped_required() {
     let errors = result.unwrap_err();
     assert!(errors.contains_key("a"));
 }
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_field_ignore_schema {
+    struct Fields {
+        #[lax(String::from("default_a"))]
+        #[ignore(|_ctx, _opts| true)]
+        pub a: String,
+
+        #[lax]
+        pub b: String,
+    }
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_field_ignore_init_schema {
+    struct Fields {
+        #[lax(String::from("default_a"))]
+        #[ignore_init]
+        pub a: String,
+
+        #[lax]
+        pub b: String,
+    }
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_field_required_schema {
+    struct Fields {
+        #[lax]
+        #[required(|_ctx, _opts| Some(String::from("a is required")))]
+        pub a: String,
+
+        #[lax]
+        pub b: String,
+    }
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_field_ignore_update_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[lax]
+        #[ignore_update(|ctx, _opts| ctx.values().role == *"admin")]
+        pub role: String,
+    }
+}
+
+#[tokio::test]
+async fn smoke_model_field_ignore() {
+    let mut input = user_field_ignore_schema::PartialUser::new();
+    input.set_a("provided_a".to_string());
+    input.set_b("provided_b".to_string());
+    let created = user_field_ignore_schema::UserModel
+        .create(input, &())
+        .await
+        .unwrap();
+    assert_eq!(created.a, "default_a");
+    assert_eq!(created.b, "provided_b");
+}
+
+#[tokio::test]
+async fn smoke_model_field_ignore_init() {
+    let mut input = user_field_ignore_init_schema::PartialUser::new();
+    input.set_a("provided_a".to_string());
+    input.set_b("provided_b".to_string());
+    let created = user_field_ignore_init_schema::UserModel
+        .create(input, &())
+        .await
+        .unwrap();
+    assert_eq!(created.a, "default_a");
+    assert_eq!(created.b, "provided_b");
+}
+
+#[tokio::test]
+async fn smoke_model_field_required() {
+    let mut input = user_field_required_schema::PartialUser::new();
+    input.set_b("b".to_string());
+    let result = user_field_required_schema::UserModel
+        .create(input, &())
+        .await;
+    assert!(result.is_err());
+    let errors = result.unwrap_err();
+    assert!(errors.contains_key("a"));
+}
+
+#[tokio::test]
+async fn smoke_model_field_ignore_update() {
+    let existing = user_field_ignore_update_schema::User {
+        name: "test".to_string(),
+        role: "admin".to_string(),
+    };
+    let mut updates = user_field_ignore_update_schema::PartialUser::new();
+    updates.set_role("user".to_string());
+    let updated = user_field_ignore_update_schema::UserModel
+        .update(existing, updates, &())
+        .await
+        .unwrap();
+    assert_eq!(updated.role, "admin");
+}

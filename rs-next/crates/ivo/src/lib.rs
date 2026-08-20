@@ -55,6 +55,31 @@ where
     validator(value, ctx, opts).await
 }
 
+pub async fn run_boolean_resolver<Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, resolver: F) -> bool
+where
+    F: for<'a> FnOnce(
+        &'a Ctx,
+        &'a Opts,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool> + 'a>>,
+{
+    resolver(ctx, opts).await
+}
+
+pub async fn run_required_resolver<Ctx, Opts, F>(
+    ctx: &Ctx,
+    opts: &Opts,
+    resolver: F,
+) -> Option<String>
+where
+    F: for<'a> FnOnce(
+        &'a Ctx,
+        &'a Opts,
+    )
+        -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<String>> + 'a>>,
+{
+    resolver(ctx, opts).await
+}
+
 pub trait IvoErrorSanitizer<CtxOptions> {
     type Metadata: Clone + Send + Sync;
     type Payload;

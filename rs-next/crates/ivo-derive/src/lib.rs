@@ -631,6 +631,43 @@ fn generate_model(
         }
     });
 
+    // Field-level option handlers.
+    let field_is_lax = |f: &&FieldDef| matches!(f.field_type, FieldType::Lax);
+
+    let field_ignore_handlers: Vec<_> = fields
+        .iter()
+        .filter(field_is_lax)
+        .filter_map(|f| attr_value_tokens(&f.attrs, "ignore").map(|h| (f, h)))
+        .collect();
+
+    let field_ignore_init: std::collections::HashSet<String> = fields
+        .iter()
+        .filter(field_is_lax)
+        .filter(|f| find_attr(&f.attrs, "ignore_init").is_some())
+        .map(|f| f.name.to_string())
+        .collect();
+
+    let field_required_handlers: Vec<_> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. }))
+        .filter_map(|f| attr_value_tokens(&f.attrs, "required").map(|h| (f, h)))
+        .collect();
+
+    let field_ignore_update_handlers: Vec<_> = fields
+        .iter()
+        .filter(|f| {
+            matches!(
+                f.field_type,
+                FieldType::Required
+                    | FieldType::Lax
+                    | FieldType::Dependent
+                    | FieldType::CreatedAt
+                    | FieldType::UpdatedAt
+            )
+        })
+        .filter_map(|f| attr_value_tokens(&f.attrs, "ignore_update").map(|h| (f, h)))
+        .collect();
+
     // Create method: sanitize/validate input fields, resolve dependents, and build output.
     // The create method accepts any type convertible to the partial input so that callers
     // may pass either the full input struct or a partial.
@@ -638,12 +675,23 @@ fn generate_model(
     let resolver_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
     let opts_ty = quote!(&#ctx_options_ty);
 
-    // Collect fields that may be ignored by grouped #[ignore(...)] options.
-    let ignore_field_names: std::collections::HashSet<String> = options
+    // Collect lax fields that may be ignored during create.
+    let mut ignore_field_names: std::collections::HashSet<String> = options
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::Ignore))
         .flat_map(|o| o.fields.iter().cloned())
+        .filter(|name| {
+            fields
+                .iter()
+                .any(|f| f.name == *name && matches!(f.field_type, FieldType::Lax))
+        })
         .collect();
+    for (f, _) in &field_ignore_handlers {
+        ignore_field_names.insert(f.name.to_string());
+    }
+    for name in &field_ignore_init {
+        ignore_field_names.insert(name.clone());
+    }
 
     let ignore_flag_decls = ignore_field_names.iter().map(|name| {
         let flag = format_ident!("ignore_{}", name);
@@ -658,16 +706,41 @@ fn generate_model(
             let handler =
                 type_annotate_handler(o.handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
             let opt_flag = format_ident!("__ignore_opt_{}", i);
-            let field_flags = o.fields.iter().map(|f| format_ident!("ignore_{}", f));
+            let field_flags = o
+                .fields
+                .iter()
+                .filter(|name| {
+                    fields
+                        .iter()
+                        .any(|f| f.name == **name && matches!(f.field_type, FieldType::Lax))
+                })
+                .map(|f| format_ident!("ignore_{}", f));
             quote! {
-                let #opt_flag: bool = (#handler)(&ctx, &_ctx_options).await;
+                let #opt_flag: bool = ::ivo::run_boolean_resolver(&ctx, _ctx_options, |ctx, opts| {
+                    ::std::boxed::Box::pin((#handler)(ctx, opts))
+                }).await;
                 if #opt_flag {
                     #(#field_flags = true;)*
                 }
             }
         });
 
-    let required_evaluations = options
+    let field_ignore_evaluations = field_ignore_handlers.iter().map(|(f, handler)| {
+        let handler = type_annotate_handler(handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
+        let flag = format_ident!("ignore_{}", f.name);
+        quote! {
+            if (#handler)(&ctx, &_ctx_options) {
+                #flag = true;
+            }
+        }
+    });
+
+    let ignore_init_assignments = field_ignore_init.iter().map(|name| {
+        let flag = format_ident!("ignore_{}", name);
+        quote! { #flag = true; }
+    });
+
+    let grouped_required_evaluations = options
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::Required))
         .enumerate()
@@ -692,12 +765,37 @@ fn generate_model(
                 }
             });
             quote! {
-                let #opt_flag: bool = (#handler)(&ctx, &_ctx_options).await;
+                let #opt_flag: bool = ::ivo::run_boolean_resolver(&ctx, _ctx_options, |ctx, opts| {
+                    ::std::boxed::Box::pin((#handler)(ctx, opts))
+                }).await;
                 if #opt_flag {
                     #(#checks)*
                 }
             }
         });
+
+    let field_required_evaluations = field_required_handlers.iter().map(|(f, handler)| {
+        let handler = type_annotate_handler(handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
+        let input_tokens = input_field_name(f);
+        let name_str = f.name.to_string();
+        quote! {
+            let __required_msg: ::core::option::Option<::std::string::String> =
+                (#handler)(&ctx, &_ctx_options);
+            if let Some(__msg) = __required_msg {
+                if input.#input_tokens.is_none() {
+                    errors.insert(
+                        ::std::string::String::from(#name_str),
+                        ::ivo::FieldError {
+                            reason: __msg,
+                            metadata: ::core::option::Option::None,
+                        },
+                    );
+                }
+            }
+        }
+    });
+
+    let required_evaluations = grouped_required_evaluations.chain(field_required_evaluations);
 
     let create_steps = fields.iter().filter(|f| !matches!(f.field_type, FieldType::Virtual { .. })).map(|f| {
         let name = &f.name;
@@ -834,11 +932,39 @@ fn generate_model(
     });
 
     // Update method: apply partial updates.
+    let update_ctx_ty = quote!(&::ivo::IvoContext<#partial_output_name, #output_name>);
+    let update_ignore_field_names: std::collections::HashSet<String> = field_ignore_update_handlers
+        .iter()
+        .map(|(f, _)| f.name.to_string())
+        .collect();
+
+    let update_ignore_flag_decls = field_ignore_update_handlers.iter().map(|(f, _)| {
+        let flag = format_ident!("ignore_update_{}", f.name);
+        quote! { let mut #flag = false; }
+    });
+
+    let update_ignore_evaluations = field_ignore_update_handlers.iter().map(|(f, handler)| {
+        let handler =
+            type_annotate_handler(handler.clone(), &[update_ctx_ty.clone(), opts_ty.clone()]);
+        let flag = format_ident!("ignore_update_{}", f.name);
+        quote! {
+            if (#handler)(&ctx, &_ctx_options) {
+                #flag = true;
+            }
+        }
+    });
+
     let update_assignments = fields
         .iter()
         .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
         .map(|f| {
             let name = &f.name;
+            let ignore_update_flag = if update_ignore_field_names.contains(&name.to_string()) {
+                let flag = format_ident!("ignore_update_{}", name);
+                quote! { #flag }
+            } else {
+                quote! { false }
+            };
             match &f.field_type {
                 FieldType::Required
                 | FieldType::Lax
@@ -846,8 +972,10 @@ fn generate_model(
                 | FieldType::CreatedAt
                 | FieldType::UpdatedAt => {
                     quote! {
-                        if let ::core::option::Option::Some(v) = &updates.#name {
-                            output.#name = v.clone();
+                        if !#ignore_update_flag {
+                            if let ::core::option::Option::Some(v) = &updates.#name {
+                                output.#name = v.clone();
+                            }
                         }
                     }
                 }
@@ -885,6 +1013,8 @@ fn generate_model(
 
                 #(#ignore_flag_decls)*
                 #(#ignore_evaluations)*
+                #(#field_ignore_evaluations)*
+                #(#ignore_init_assignments)*
                 #(#required_evaluations)*
 
                 #(#create_steps)*
@@ -907,6 +1037,16 @@ fn generate_model(
                 _ctx_options: &#ctx_options_ty,
             ) -> Result<#output_name, #payload_ty> {
                 let mut output = existing;
+                let mut ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
+                    updates.clone(),
+                    output.clone(),
+                    updates.clone(),
+                    true,
+                );
+
+                #(#update_ignore_flag_decls)*
+                #(#update_ignore_evaluations)*
+
                 #(#update_assignments)*
                 ::core::result::Result::Ok(output)
             }
