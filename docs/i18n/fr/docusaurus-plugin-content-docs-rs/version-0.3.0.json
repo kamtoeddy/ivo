@@ -1,7 +1,7 @@
 {
   "version.label": {
-    "message": "Actuelle",
-    "description": "The label for version current"
+    "message": "v0.3.0",
+    "description": "The label for version 0.3.0"
   },
   "sidebar.rsSidebar.category.definitions": {
     "message": "définitions",
