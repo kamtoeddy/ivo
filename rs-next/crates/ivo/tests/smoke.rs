@@ -79,7 +79,7 @@ async fn smoke_model_create_single_struct() {
         name: "test".to_string(),
         role: "user".to_string(),
     };
-    let created = user_schema::UserModel.create(input, ()).await.unwrap();
+    let (created, _trigger, _opts) = user_schema::UserModel.create(input, ()).await.unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.role, "user");
 }
@@ -92,7 +92,7 @@ async fn smoke_model_update_single_struct() {
     };
     let mut updates = user_schema::PartialUser::new();
     updates.set_name("new".to_string());
-    let updated = user_schema::UserModel
+    let (updated, _trigger, _opts) = user_schema::UserModel
         .update(existing, updates, ())
         .await
         .unwrap();
@@ -105,7 +105,7 @@ async fn smoke_model_create_dual_struct() {
     let input = user_schema_dual::UserInput {
         name: "test".to_string(),
     };
-    let created = user_schema_dual::UserModel.create(input, ()).await.unwrap();
+    let (created, _trigger, _opts) = user_schema_dual::UserModel.create(input, ()).await.unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.id, "default-id");
 }
@@ -116,10 +116,7 @@ async fn smoke_model_delete_dual_struct() {
         name: "test".to_string(),
         id: String::from("default-id"),
     };
-    user_schema_dual::UserModel
-        .delete(&output, ())
-        .await
-        .unwrap();
+    user_schema_dual::UserModel.delete(&output, ()).await;
 }
 
 #[tokio::test]
@@ -127,7 +124,7 @@ async fn smoke_model_validator_pass() {
     let input = user_validation_schema::UserWithValidation {
         name: "test".to_string(),
     };
-    let created = user_validation_schema::UserWithValidationModel
+    let (created, _trigger, _opts) = user_validation_schema::UserWithValidationModel
         .create(input, ())
         .await
         .unwrap();
@@ -143,7 +140,7 @@ async fn smoke_model_validator_fail() {
         .create(input, ())
         .await;
     assert!(result.is_err());
-    let errors = result.unwrap_err();
+    let (errors, _trigger, _opts) = result.unwrap_err();
     assert!(errors.contains_key("name"));
 }
 
@@ -172,7 +169,7 @@ async fn smoke_model_sanitizer() {
         name: "test".to_string(),
         raw_email: "Test@Example.COM".to_string(),
     };
-    let created = user_sanitization_schema::UserModel
+    let (created, _trigger, _opts) = user_sanitization_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -206,7 +203,7 @@ async fn smoke_model_resolver() {
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
     };
-    let created = user_dependent_schema::UserModel
+    let (created, _trigger, _opts) = user_dependent_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -240,7 +237,7 @@ async fn smoke_virtual_alias() {
         name: "test".to_string(),
         raw_email: "Test@Example.COM".to_string(),
     };
-    let created = user_virtual_alias_schema::UserModel
+    let (created, _trigger, _opts) = user_virtual_alias_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -273,7 +270,7 @@ async fn smoke_timestamps() {
     let input = user_timestamps_schema::UserInput {
         name: "test".to_string(),
     };
-    let created = user_timestamps_schema::UserModel
+    let (created, _trigger, _opts) = user_timestamps_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -325,7 +322,7 @@ mod user_grouped_required_schema {
 async fn smoke_model_lax_default() {
     let mut input = user_lax_default_schema::PartialUser::new();
     input.set_name("test".to_string());
-    let created = user_lax_default_schema::UserModel
+    let (created, _trigger, _opts) = user_lax_default_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -338,7 +335,7 @@ async fn smoke_model_grouped_ignore() {
     let mut input = user_grouped_ignore_schema::PartialUser::new();
     input.set_a("provided_a".to_string());
     input.set_b("provided_b".to_string());
-    let created = user_grouped_ignore_schema::UserModel
+    let (created, _trigger, _opts) = user_grouped_ignore_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -354,7 +351,7 @@ async fn smoke_model_grouped_required() {
         .create(input, ())
         .await;
     assert!(result.is_err());
-    let errors = result.unwrap_err();
+    let (errors, _trigger, _opts) = result.unwrap_err();
     assert!(errors.contains_key("a"));
 }
 
@@ -411,7 +408,7 @@ async fn smoke_model_field_ignore() {
     let mut input = user_field_ignore_schema::PartialUser::new();
     input.set_a("provided_a".to_string());
     input.set_b("provided_b".to_string());
-    let created = user_field_ignore_schema::UserModel
+    let (created, _trigger, _opts) = user_field_ignore_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -424,7 +421,7 @@ async fn smoke_model_field_ignore_init() {
     let mut input = user_field_ignore_init_schema::PartialUser::new();
     input.set_a("provided_a".to_string());
     input.set_b("provided_b".to_string());
-    let created = user_field_ignore_init_schema::UserModel
+    let (created, _trigger, _opts) = user_field_ignore_init_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -440,7 +437,7 @@ async fn smoke_model_field_required() {
         .create(input, ())
         .await;
     assert!(result.is_err());
-    let errors = result.unwrap_err();
+    let (errors, _trigger, _opts) = result.unwrap_err();
     assert!(errors.contains_key("a"));
 }
 
@@ -452,7 +449,7 @@ async fn smoke_model_field_ignore_update() {
     };
     let mut updates = user_field_ignore_update_schema::PartialUser::new();
     updates.set_role("user".to_string());
-    let updated = user_field_ignore_update_schema::UserModel
+    let (updated, _trigger, _opts) = user_field_ignore_update_schema::UserModel
         .update(existing, updates, ())
         .await
         .unwrap();
@@ -513,7 +510,7 @@ async fn smoke_model_re_validate_fail() {
     };
     let result = user_re_validate_schema::UserModel.create(input, ()).await;
     assert!(result.is_err());
-    let errors = result.unwrap_err();
+    let (errors, _trigger, _opts) = result.unwrap_err();
     assert!(errors.contains_key("name"));
 }
 
@@ -522,7 +519,7 @@ async fn smoke_model_re_validate_pass() {
     let input = user_re_validate_schema::User {
         name: "good".to_string(),
     };
-    let created = user_re_validate_schema::UserModel
+    let (created, _trigger, _opts) = user_re_validate_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -538,7 +535,7 @@ async fn smoke_model_readonly_update() {
     let mut updates = user_readonly_schema::PartialUser::new();
     updates.set_name("new".to_string());
     updates.set_id("2".to_string());
-    let updated = user_readonly_schema::UserModel
+    let (updated, _trigger, _opts) = user_readonly_schema::UserModel
         .update(existing, updates, ())
         .await
         .unwrap();
@@ -551,7 +548,7 @@ async fn smoke_model_dependent_default() {
     let input = user_dependent_default_schema::UserInput {
         name: "test".to_string(),
     };
-    let created = user_dependent_default_schema::UserModel
+    let (created, _trigger, _opts) = user_dependent_default_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -617,7 +614,7 @@ async fn smoke_model_required_error_static() {
         .create(input, ())
         .await;
     assert!(result.is_err());
-    let errors = result.unwrap_err();
+    let (errors, _trigger, _opts) = result.unwrap_err();
     let err = errors.get("name").unwrap();
     assert_eq!(err.reason, "name is mandatory");
 }
@@ -627,7 +624,7 @@ async fn smoke_model_constant_static() {
     let input = user_constant_static_schema::UserInput {
         name: "test".to_string(),
     };
-    let created = user_constant_static_schema::UserModel
+    let (created, _trigger, _opts) = user_constant_static_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -639,7 +636,7 @@ async fn smoke_model_constant_resolver() {
     let input = user_constant_resolver_schema::UserInput {
         name: "test".to_string(),
     };
-    let created = user_constant_resolver_schema::UserModel
+    let (created, _trigger, _opts) = user_constant_resolver_schema::UserModel
         .create(input, ())
         .await
         .unwrap();
@@ -654,7 +651,7 @@ async fn smoke_model_grouped_ignore_update() {
     };
     let mut updates = user_grouped_ignore_update_schema::PartialUser::new();
     updates.set_role("user".to_string());
-    let updated = user_grouped_ignore_update_schema::UserModel
+    let (updated, _trigger, _opts) = user_grouped_ignore_update_schema::UserModel
         .update(existing, updates, ())
         .await
         .unwrap();
@@ -715,8 +712,7 @@ async fn smoke_model_on_delete_field() {
     };
     user_on_delete_field_schema::UserModel
         .delete(&output, ())
-        .await
-        .unwrap();
+        .await;
 }
 
 #[tokio::test]
@@ -727,8 +723,7 @@ async fn smoke_model_on_delete_grouped() {
     };
     user_on_delete_grouped_schema::UserModel
         .delete(&output, ())
-        .await
-        .unwrap();
+        .await;
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
@@ -751,7 +746,7 @@ async fn smoke_model_readonly_lax_default() {
     };
     let mut updates = user_readonly_lax_schema::PartialUser::new();
     updates.set_role("admin".to_string());
-    let updated = user_readonly_lax_schema::UserModel
+    let (updated, _trigger, _opts) = user_readonly_lax_schema::UserModel
         .update(existing, updates, ())
         .await
         .unwrap();
@@ -759,7 +754,7 @@ async fn smoke_model_readonly_lax_default() {
 
     let mut updates = user_readonly_lax_schema::PartialUser::new();
     updates.set_role("super".to_string());
-    let updated = user_readonly_lax_schema::UserModel
+    let (updated, _trigger, _opts) = user_readonly_lax_schema::UserModel
         .update(updated, updates, ())
         .await
         .unwrap();

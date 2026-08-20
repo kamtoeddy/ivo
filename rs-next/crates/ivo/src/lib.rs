@@ -3,6 +3,10 @@
 pub use ivo_derive::ivo_schema;
 
 use std::collections::HashMap;
+use std::fmt;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 // Error handling
 
@@ -283,4 +287,52 @@ impl<CtxOptions> Clone for IvoRwCtxOptions<CtxOptions> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
+}
+
+impl<CtxOptions> fmt::Debug for IvoCtxOptions<CtxOptions> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IvoCtxOptions").finish()
+    }
+}
+
+impl<CtxOptions> fmt::Debug for IvoRwCtxOptions<CtxOptions> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IvoRwCtxOptions").finish()
+    }
+}
+
+/// A `Debug`-friendly wrapper around a trigger future so the returned
+/// `(result, trigger, ctx_options)` tuple can be unwrapped in tests and user code.
+pub struct IvoTriggerFuture<F>(F);
+
+impl<F> IvoTriggerFuture<F> {
+    pub fn new(future: F) -> Self {
+        Self(future)
+    }
+}
+
+impl<F> fmt::Debug for IvoTriggerFuture<F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IvoTriggerFuture").finish()
+    }
+}
+
+impl<F: Future> Future for IvoTriggerFuture<F> {
+    type Output = F::Output;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        // SAFETY: projection to the inner field is structural for this wrapper.
+        unsafe { Pin::map_unchecked_mut(self, |s| &mut s.0) }.poll(cx)
+    }
+}
+
+/// Type-erased trigger future returned by generated `create`/`update` methods.
+pub type IvoTrigger = IvoTriggerFuture<Pin<Box<dyn Future<Output = ()> + Send>>>;
+
+/// Wrap a trigger future in the type-erased `IvoTrigger` form.
+pub fn ivo_trigger<F>(future: F) -> IvoTrigger
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    IvoTriggerFuture::new(Box::pin(future))
 }
