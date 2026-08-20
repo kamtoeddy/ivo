@@ -177,16 +177,14 @@ const config: Config = {
       },
       items: [
         {
-          type: "docSidebar",
-          docsPluginId: "ts",
-          sidebarId: "tsSidebar",
+          to: "/docs/ts/",
+          activeBasePath: "/docs/ts",
           position: "left",
           label: "TypeScript",
         },
         {
-          type: "docSidebar",
-          docsPluginId: "rs",
-          sidebarId: "rsSidebar",
+          to: "/docs/rs/",
+          activeBasePath: "/docs/rs",
           position: "left",
           label: "Rust",
         },
