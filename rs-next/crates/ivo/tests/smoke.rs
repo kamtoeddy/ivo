@@ -1016,3 +1016,85 @@ async fn smoke_model_post_validate_pre_validate() {
     assert_eq!(created.b, "pre_b");
     trigger.await;
 }
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_post_validate_update_fail_schema {
+    struct Fields {
+        #[required]
+        pub a: String,
+
+        #[required]
+        pub b: String,
+    }
+
+    #[post_validate(
+        ["a", "b"],
+        validate = |_ctx, _opts| async move {
+            if _ctx.input().a == Some("bad".to_string()) {
+                let mut errors = UserErrors::new();
+                errors.set_a("bad update value", None);
+                Err(errors)
+            } else {
+                Ok(None)
+            }
+        }
+    )]
+    const _: () = ();
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_post_validate_update_update_schema {
+    struct Fields {
+        #[required]
+        pub a: String,
+
+        #[required]
+        pub b: String,
+    }
+
+    #[post_validate(
+        ["a", "b"],
+        validate = |_ctx, _opts| async move {
+            let mut updates = PartialUser::new();
+            updates.set_a("updated".to_string());
+            updates.set_b("updated_b".to_string());
+            Ok(Some(updates))
+        }
+    )]
+    const _: () = ();
+}
+
+#[tokio::test]
+async fn smoke_model_post_validate_update_fail() {
+    let existing = user_post_validate_update_fail_schema::User {
+        a: "old".to_string(),
+        b: "old_b".to_string(),
+    };
+    let mut updates = user_post_validate_update_fail_schema::PartialUser::new();
+    updates.set_a("bad".to_string());
+    updates.set_b("old_b".to_string());
+    let (errors, trigger, _opts) = user_post_validate_update_fail_schema::UserModel
+        .update(existing, updates, ())
+        .await
+        .unwrap_err();
+    assert!(errors.contains_key("a"));
+    trigger.await;
+}
+
+#[tokio::test]
+async fn smoke_model_post_validate_update_update() {
+    let existing = user_post_validate_update_update_schema::User {
+        a: "old".to_string(),
+        b: "old_b".to_string(),
+    };
+    let mut updates = user_post_validate_update_update_schema::PartialUser::new();
+    updates.set_a("ignored".to_string());
+    updates.set_b("old_b".to_string());
+    let (updated, trigger, _opts) = user_post_validate_update_update_schema::UserModel
+        .update(existing, updates, ())
+        .await
+        .unwrap();
+    assert_eq!(updated.a, "updated");
+    assert_eq!(updated.b, "updated_b");
+    trigger.await;
+}

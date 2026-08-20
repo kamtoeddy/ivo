@@ -1863,8 +1863,8 @@ fn generate_model(
     };
 
     let make_post_validate_call = |handler: &proc_macro2::TokenStream,
-                                   _ctx_expr: &proc_macro2::TokenStream,
-                                   _opts_expr: &proc_macro2::TokenStream|
+                                   ctx_expr: &proc_macro2::TokenStream,
+                                   opts_expr: &proc_macro2::TokenStream|
      -> (bool, proc_macro2::TokenStream) {
         let annotated = type_annotate_handler(
             handler.clone(),
@@ -1874,16 +1874,25 @@ fn generate_model(
             (
                 true,
                 quote! {
-                    ::ivo::run_post_validator(ctx.clone(), _rw_ctx_options.clone(), |ctx, opts| {
-                        ::std::boxed::Box::pin((#annotated)(ctx, opts))
-                    }).await
+                    ::ivo::run_post_validator(
+                        #ctx_expr.clone(),
+                        #opts_expr.clone(),
+                        |ctx, opts| {
+                            ::std::boxed::Box::pin((#annotated)(ctx, opts))
+                        },
+                    )
+                    .await
                 },
             )
         } else {
             (
                 false,
                 quote! {
-                    ::ivo::run_post_validator_sync(ctx.clone(), _rw_ctx_options.clone(), #annotated)
+                    ::ivo::run_post_validator_sync(
+                        #ctx_expr.clone(),
+                        #opts_expr.clone(),
+                        #annotated,
+                    )
                 },
             )
         }
@@ -2393,12 +2402,16 @@ fn generate_model(
     create_has_async |= re_validate_pairs.iter().any(|(a, _)| *a);
     let re_validate_steps = re_validate_pairs.into_iter().map(|(_, stmt)| stmt);
 
-    let post_validate_pairs: Vec<_> = options
+    let post_validate_options: Vec<_> = options
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::PostValidate))
+        .collect();
+
+    let post_validate_pairs: Vec<_> = post_validate_options
+        .iter()
         .map(|o| {
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
+            let ctx_expr = quote!(ctx);
+            let opts_expr = quote!(_rw_ctx_options);
 
             let field_names: Vec<_> = o
                 .fields
@@ -2490,7 +2503,11 @@ fn generate_model(
         })
         .collect();
     create_has_async |= post_validate_pairs.iter().any(|(a, _)| *a);
-    let post_validate_steps = post_validate_pairs.into_iter().map(|(_, stmt)| stmt);
+    update_has_async |= post_validate_pairs.iter().any(|(a, _)| *a);
+    let post_validate_steps: Vec<_> = post_validate_pairs
+        .into_iter()
+        .map(|(_, stmt)| stmt)
+        .collect();
 
     // Update method: apply partial updates.
     let update_ctx_ty = quote!(&::ivo::IvoContext<#partial_output_name, #output_name>);
@@ -2637,6 +2654,31 @@ fn generate_model(
             }
         });
 
+    let post_input_inits: Vec<_> = fields
+        .iter()
+        .filter(|f| {
+            matches!(
+                f.field_type,
+                FieldType::Required | FieldType::Lax | FieldType::Virtual { .. }
+            )
+        })
+        .map(|f| {
+            let input_name = input_field_name(f);
+            if matches!(f.field_type, FieldType::Virtual { .. }) {
+                quote! { __post_input.#input_name = ::core::option::Option::None; }
+            } else {
+                quote! {
+                    if let ::core::option::Option::Some(v) = &updates.#input_name {
+                        __post_input.#input_name = ::core::option::Option::Some(v.clone());
+                    } else {
+                        __post_input.#input_name =
+                            ::core::option::Option::Some(output.#input_name.clone());
+                    }
+                }
+            }
+        })
+        .collect();
+
     // Delete method: lifecycle hooks.
     let data_ref_ty = quote!(&#output_name);
 
@@ -2760,7 +2802,7 @@ fn generate_model(
         .collect();
 
     let update_success_stmts = make_trigger_stmts(&update_success_handlers, &update_hook_ctx_ty);
-    let _update_failure_stmts = make_trigger_stmts(&update_failure_handlers, &update_hook_ctx_ty);
+    let update_failure_stmts = make_trigger_stmts(&update_failure_handlers, &update_hook_ctx_ty);
 
     let create_success_trigger = if create_success_stmts.is_empty() {
         quote! { ::ivo::ivo_trigger(async move {}) }
@@ -2817,6 +2859,26 @@ fn generate_model(
                         true,
                     );
                     #(#update_success_stmts)*
+                })
+            }
+        }
+    };
+
+    let update_failure_trigger = if update_failure_stmts.is_empty() {
+        quote! { ::ivo::ivo_trigger(async move {}) }
+    } else {
+        quote! {
+            {
+                let __trigger_updates = updates.clone();
+                let __trigger_output = output.clone();
+                ::ivo::ivo_trigger(async move {
+                    let ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
+                        __trigger_updates.clone(),
+                        __trigger_output.clone(),
+                        __trigger_updates.clone(),
+                        true,
+                    );
+                    #(#update_failure_stmts)*
                 })
             }
         }
@@ -2928,6 +2990,32 @@ fn generate_model(
                 #(#update_ignore_evaluations)*
 
                 #(#update_assignments)*
+
+                let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> =
+                    ::std::collections::HashMap::new();
+                let mut __post_input: #partial_input_name = ::core::default::Default::default();
+                #(#post_input_inits)*
+                {
+                    let mut input = __post_input;
+                    let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                        input.clone(),
+                        output.clone(),
+                        updates.clone(),
+                        true,
+                    );
+                    #(#post_validate_steps)*
+                }
+                if !errors.is_empty() {
+                    let __return_opts = _ctx_options.clone();
+                    let __failure_trigger = #update_failure_trigger;
+                    return ::core::result::Result::Err((
+                        <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                            errors, &*_rw_ctx_options.read(),
+                        ),
+                        __failure_trigger,
+                        __return_opts,
+                    ));
+                }
 
                 let __return_opts = _ctx_options.clone();
                 let __success_trigger = #update_success_trigger;
