@@ -447,3 +447,103 @@ async fn smoke_model_field_ignore_update() {
         .unwrap();
     assert_eq!(updated.role, "admin");
 }
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_re_validate_schema {
+    struct Fields {
+        #[required]
+        #[validate(|name, _ctx, _opts| async move { Ok(Some(name)) })]
+        #[re_validate(|name, _ctx, _opts| async move {
+            if name == "bad" {
+                Err(::ivo::FieldError {
+                    reason: String::from("name cannot be bad"),
+                    metadata: None,
+                })
+            } else {
+                Ok(Some(name))
+            }
+        })]
+        pub name: String,
+    }
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_readonly_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[required]
+        #[readonly]
+        #[validate(|id, _ctx, _opts| async move { Ok(Some(id)) })]
+        pub id: String,
+    }
+}
+
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
+mod user_dependent_default_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[depends_on(name)]
+        #[default(|| String::from("default-status"))]
+        pub status: String,
+    }
+}
+
+#[tokio::test]
+async fn smoke_model_re_validate_fail() {
+    let input = user_re_validate_schema::User {
+        name: "bad".to_string(),
+    };
+    let result = user_re_validate_schema::UserModel.create(input, &()).await;
+    assert!(result.is_err());
+    let errors = result.unwrap_err();
+    assert!(errors.contains_key("name"));
+}
+
+#[tokio::test]
+async fn smoke_model_re_validate_pass() {
+    let input = user_re_validate_schema::User {
+        name: "good".to_string(),
+    };
+    let created = user_re_validate_schema::UserModel
+        .create(input, &())
+        .await
+        .unwrap();
+    assert_eq!(created.name, "good");
+}
+
+#[tokio::test]
+async fn smoke_model_readonly_update() {
+    let existing = user_readonly_schema::User {
+        name: "old".to_string(),
+        id: "1".to_string(),
+    };
+    let mut updates = user_readonly_schema::PartialUser::new();
+    updates.set_name("new".to_string());
+    updates.set_id("2".to_string());
+    let updated = user_readonly_schema::UserModel
+        .update(existing, updates, &())
+        .await
+        .unwrap();
+    assert_eq!(updated.name, "new");
+    assert_eq!(updated.id, "1");
+}
+
+#[tokio::test]
+async fn smoke_model_dependent_default() {
+    let input = user_dependent_default_schema::UserInput {
+        name: "test".to_string(),
+    };
+    let created = user_dependent_default_schema::UserModel
+        .create(input, &())
+        .await
+        .unwrap();
+    assert_eq!(created.name, "test");
+    assert_eq!(created.status, "default-status");
+}

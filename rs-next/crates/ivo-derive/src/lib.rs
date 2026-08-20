@@ -866,7 +866,22 @@ fn generate_model(
                         }).await
                     }
                 } else {
-                    quote! { ::core::default::Default::default() }
+                    let default_expr =
+                        attr_value_tokens(&f.attrs, "default").map(|t| {
+                            if is_closure(&t) {
+                                quote! { (#t)() }
+                            } else {
+                                t
+                            }
+                        });
+                    let default_expr = default_expr
+                        .unwrap_or_else(|| quote! { ::core::default::Default::default() });
+                    quote! {
+                        {
+                            let __default: #ty = #default_expr;
+                            __default
+                        }
+                    }
                 }
             }
             FieldType::Virtual { .. } => unreachable!(),
@@ -931,6 +946,46 @@ fn generate_model(
         }
     });
 
+    // Re-validation pass: run secondary validators over the built output.
+    let re_validate_steps = fields
+        .iter()
+        .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
+        .filter_map(|f| {
+            let name = &f.name;
+            let name_str = name.to_string();
+            let ty = &f.ty;
+            let ty_tokens = quote!(#ty);
+            let re_validator = attr_value_tokens(&f.attrs, "re_validate").map(|t| {
+                type_annotate_handler(t, &[ty_tokens.clone(), ctx_ty.clone(), opts_ty.clone()])
+            })?;
+            Some(quote! {
+                let __value: #ty = output.#name.clone();
+                let __result: ::core::result::Result<
+                    ::core::option::Option<#ty>,
+                    ::ivo::FieldError<#metadata_ty>,
+                > = ::ivo::run_validator(__value, &ctx, &_ctx_options, |value, ctx, opts| {
+                    ::std::boxed::Box::pin((#re_validator)(value, ctx, opts))
+                }).await;
+                match __result {
+                    ::core::result::Result::Ok(::core::option::Option::Some(__new_value)) => {
+                        output.#name = __new_value.clone();
+                    }
+                    ::core::result::Result::Ok(::core::option::Option::None) => {
+                        errors.insert(
+                            ::std::string::String::from(#name_str),
+                            ::ivo::FieldError {
+                                reason: ::std::string::String::from("re-validation failed"),
+                                metadata: ::core::option::Option::None,
+                            },
+                        );
+                    }
+                    ::core::result::Result::Err(e) => {
+                        errors.insert(::std::string::String::from(#name_str), e);
+                    }
+                }
+            })
+        });
+
     // Update method: apply partial updates.
     let update_ctx_ty = quote!(&::ivo::IvoContext<#partial_output_name, #output_name>);
     let update_ignore_field_names: std::collections::HashSet<String> = field_ignore_update_handlers
@@ -965,6 +1020,12 @@ fn generate_model(
             } else {
                 quote! { false }
             };
+            let is_readonly = find_attr(&f.attrs, "readonly").is_some();
+            let readonly_guard = if is_readonly {
+                quote! { false }
+            } else {
+                quote! { true }
+            };
             match &f.field_type {
                 FieldType::Required
                 | FieldType::Lax
@@ -972,7 +1033,7 @@ fn generate_model(
                 | FieldType::CreatedAt
                 | FieldType::UpdatedAt => {
                     quote! {
-                        if !#ignore_update_flag {
+                        if !#ignore_update_flag && #readonly_guard {
                             if let ::core::option::Option::Some(v) = &updates.#name {
                                 output.#name = v.clone();
                             }
@@ -1018,6 +1079,7 @@ fn generate_model(
                 #(#required_evaluations)*
 
                 #(#create_steps)*
+                #(#re_validate_steps)*
 
                 if errors.is_empty() {
                     ::core::result::Result::Ok(output)
