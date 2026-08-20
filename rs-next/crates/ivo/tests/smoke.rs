@@ -216,6 +216,7 @@ mod user_virtual_alias_schema {
         pub name: String,
 
         #[ivo_virtual(alias = "raw_email")]
+        #[sanitize(|email, _ctx, _opts| async move { email.to_lowercase() })]
         pub email: String,
 
         #[depends_on(email)]
@@ -235,7 +236,7 @@ async fn smoke_virtual_alias() {
         .await
         .unwrap();
     assert_eq!(created.name, "test");
-    assert_eq!(created.raw_email, "Test@Example.COM");
+    assert_eq!(created.raw_email, "test@example.com");
 }
 
 #[ivo_schema(
@@ -698,4 +699,68 @@ async fn smoke_model_on_delete() {
         .delete(&output, &())
         .await
         .unwrap();
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_readonly_lax_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[lax(String::from("user"))]
+        #[readonly]
+        pub role: String,
+    }
+}
+
+#[tokio::test]
+async fn smoke_model_readonly_lax_default() {
+    let existing = user_readonly_lax_schema::User {
+        name: "test".to_string(),
+        role: "user".to_string(),
+    };
+    let mut updates = user_readonly_lax_schema::PartialUser::new();
+    updates.set_role("admin".to_string());
+    let updated = user_readonly_lax_schema::UserModel
+        .update(existing, updates, &())
+        .await
+        .unwrap();
+    assert_eq!(updated.role, "admin");
+
+    let mut updates = user_readonly_lax_schema::PartialUser::new();
+    updates.set_role("super".to_string());
+    let updated = user_readonly_lax_schema::UserModel
+        .update(updated, updates, &())
+        .await
+        .unwrap();
+    assert_eq!(updated.role, "admin");
+}
+
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
+mod user_passthrough_schema {
+    struct Fields {
+        #[required]
+        #[input(doc = "input name")]
+        #[output(doc = "output name")]
+        pub name: String,
+
+        #[constant(|| String::from("id"))]
+        #[output(doc = "output id only")]
+        pub id: String,
+    }
+}
+
+#[test]
+fn smoke_passthrough_attrs() {
+    let input = user_passthrough_schema::UserInput {
+        name: "test".to_string(),
+    };
+    let output = user_passthrough_schema::User {
+        name: "test".to_string(),
+        id: "id".to_string(),
+    };
+    assert_eq!(input.name, output.name);
 }

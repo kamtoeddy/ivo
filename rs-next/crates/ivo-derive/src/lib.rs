@@ -298,6 +298,18 @@ fn attr_values_tokens(attrs: &[Attribute], name: &str) -> Vec<proc_macro2::Token
         .collect()
 }
 
+fn passthrough_attrs(attrs: &[Attribute], name: &str) -> Vec<proc_macro2::TokenStream> {
+    attrs
+        .iter()
+        .filter(|a| a.path().is_ident(name))
+        .filter_map(|attr| match &attr.meta {
+            syn::Meta::List(list) => Some(list.tokens.clone()),
+            _ => None,
+        })
+        .map(|tokens| quote! { #[#tokens] })
+        .collect()
+}
+
 // ---------------------------------------------------------------------------
 // Grouped schema options
 // ---------------------------------------------------------------------------
@@ -607,7 +619,8 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
                 }
                 _ => quote! { #original_name },
             };
-            quote! { #vis #name: #ty }
+            let input_attrs = passthrough_attrs(&f.attrs, "input");
+            quote! { #(#input_attrs)* #vis #name: #ty }
         });
 
     let input_partial_derives = if args.input.partial_derives.is_empty() {
@@ -639,7 +652,8 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
                 let vis = &f.vis;
                 let name = &f.name;
                 let ty = &f.ty;
-                quote! { #vis #name: #ty }
+                let output_attrs = passthrough_attrs(&f.attrs, "output");
+                quote! { #(#output_attrs)* #vis #name: #ty }
             });
 
         let output_partial_derives = if output_args.partial_derives.is_empty() {
@@ -726,17 +740,18 @@ fn generate_model(
     });
 
     // Field-level option handlers.
-    let field_is_lax = |f: &&FieldDef| matches!(f.field_type, FieldType::Lax);
+    let field_is_lax_or_virtual =
+        |f: &&FieldDef| matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. });
 
     let field_ignore_handlers: Vec<_> = fields
         .iter()
-        .filter(field_is_lax)
+        .filter(field_is_lax_or_virtual)
         .filter_map(|f| attr_value_tokens(&f.attrs, "ignore").map(|h| (f, h)))
         .collect();
 
     let field_ignore_init: std::collections::HashSet<String> = fields
         .iter()
-        .filter(field_is_lax)
+        .filter(field_is_lax_or_virtual)
         .filter(|f| find_attr(&f.attrs, "ignore_init").is_some())
         .map(|f| f.name.to_string())
         .collect();
@@ -770,15 +785,16 @@ fn generate_model(
     let opts_ty = quote!(&#ctx_options_ty);
     let raw_input_ty = quote!(&#partial_input_name);
 
-    // Collect lax fields that may be ignored during create.
+    // Collect lax/virtual fields that may be ignored during create.
     let mut ignore_field_names: std::collections::HashSet<String> = options
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::Ignore))
         .flat_map(|o| o.fields.iter().cloned())
         .filter(|name| {
-            fields
-                .iter()
-                .any(|f| f.name == *name && matches!(f.field_type, FieldType::Lax))
+            fields.iter().any(|f| {
+                f.name == *name
+                    && matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. })
+            })
         })
         .collect();
     for (f, _) in &field_ignore_handlers {
@@ -805,9 +821,10 @@ fn generate_model(
                 .fields
                 .iter()
                 .filter(|name| {
-                    fields
-                        .iter()
-                        .any(|f| f.name == **name && matches!(f.field_type, FieldType::Lax))
+                    fields.iter().any(|f| {
+                        f.name == **name
+                            && matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. })
+                    })
                 })
                 .map(|f| format_ident!("ignore_{}", f));
             quote! {
@@ -1084,6 +1101,105 @@ fn generate_model(
         }
     });
 
+    // Virtual-field processing pass: sanitize/validate virtual input values and
+    // update the partial input so that dependent resolvers see the final values.
+    let virtual_steps = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
+        .map(|f| {
+            let name = &f.name;
+            let name_str = name.to_string();
+            let ty = &f.ty;
+            let ty_tokens = quote!(#ty);
+            let input_name_tokens = input_field_name(f);
+            let sanitizer = attr_value_tokens(&f.attrs, "sanitize").map(|t| {
+                type_annotate_handler(t, &[ty_tokens.clone(), ctx_ty.clone(), opts_ty.clone()])
+            });
+            let validator = attr_value_tokens(&f.attrs, "validate").map(|t| {
+                type_annotate_handler(t, &[ty_tokens.clone(), ctx_ty.clone(), opts_ty.clone()])
+            });
+
+            let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
+                let flag = format_ident!("ignore_{}", name);
+                quote! { #flag }
+            } else {
+                quote! { false }
+            };
+
+            let base_value = quote! {
+                {
+                    let __maybe: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
+                        ::core::option::Option::None
+                    } else {
+                        input.#input_name_tokens.clone()
+                    };
+                    __maybe.unwrap_or_default()
+                }
+            };
+
+            let sanitizer_expr = if let Some(sanitizer) = sanitizer {
+                quote! {
+                    value = ::ivo::run_sanitizer(value, &ctx, &_ctx_options, |value, ctx, opts| {
+                        ::std::boxed::Box::pin((#sanitizer)(value, ctx, opts))
+                    }).await;
+                }
+            } else {
+                quote! {}
+            };
+
+            let validator_expr = if let Some(validator) = validator {
+                quote! {
+                    match ::ivo::run_validator(value, &ctx, &_ctx_options, |value, ctx, opts| {
+                        ::std::boxed::Box::pin((#validator)(value, ctx, opts))
+                    }).await {
+                        ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
+                        ::core::result::Result::Ok(::core::option::Option::None) => {
+                            errors.insert(
+                                ::std::string::String::from(#name_str),
+                                ::ivo::FieldError {
+                                    reason: ::std::string::String::from("validation failed"),
+                                    metadata: ::core::option::Option::None,
+                                },
+                            );
+                            ::core::default::Default::default()
+                        }
+                        ::core::result::Result::Err(e) => {
+                            errors.insert(::std::string::String::from(#name_str), e);
+                            ::core::default::Default::default()
+                        }
+                    }
+                }
+            } else {
+                quote! { value }
+            };
+
+            let value_computation = quote! {
+                {
+                    let mut value: #ty = #base_value;
+                    if !#ignore_flag_tokens {
+                        #sanitizer_expr
+                        value = #validator_expr;
+                    }
+                    value
+                }
+            };
+
+            quote! {
+                let #name: #ty = #value_computation;
+                if #ignore_flag_tokens {
+                    input.#input_name_tokens = ::core::option::Option::None;
+                } else {
+                    input.#input_name_tokens = ::core::option::Option::Some(#name.clone());
+                }
+                let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    output.clone(),
+                    output.clone().into(),
+                    false,
+                );
+            }
+        });
+
     // Re-validation pass: run secondary validators over the built output.
     let re_validate_steps = fields
         .iter()
@@ -1219,7 +1335,19 @@ fn generate_model(
             };
             let is_readonly = find_attr(&f.attrs, "readonly").is_some();
             let readonly_guard = if is_readonly {
-                quote! { false }
+                match &f.field_type {
+                    FieldType::Lax => {
+                        let default_expr = attr_value_tokens(&f.attrs, "lax")
+                            .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                        quote! { output.#name == #default_expr }
+                    }
+                    FieldType::Dependent => {
+                        let default_expr = attr_value_tokens(&f.attrs, "default")
+                            .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                        quote! { output.#name == #default_expr }
+                    }
+                    _ => quote! { false },
+                }
             } else {
                 quote! { true }
             };
@@ -1291,7 +1419,7 @@ fn generate_model(
             where
                 I: ::core::convert::Into<#partial_input_name>,
             {
-                let input: #partial_input_name = input.into();
+                let mut input: #partial_input_name = input.into();
                 let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> = ::std::collections::HashMap::new();
                 let mut output: #output_name = ::core::default::Default::default();
                 let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
@@ -1308,6 +1436,7 @@ fn generate_model(
                 #(#required_evaluations)*
                 #(#required_field_checks)*
 
+                #(#virtual_steps)*
                 #(#create_steps)*
                 #(#re_validate_steps)*
 
