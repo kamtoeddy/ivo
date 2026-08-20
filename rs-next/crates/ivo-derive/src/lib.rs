@@ -412,7 +412,8 @@ fn generate_model(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenS
     let input_name = &args.input.name;
     let partial_input_name = format_ident!("Partial{}", input_name);
     let model_base_name = args.output.as_ref().map(|o| &o.name).unwrap_or(input_name);
-    let model_name = format_ident!("{}SchemaModel", model_base_name);
+    let model_name = format_ident!("{}Model", model_base_name);
+    let model_type_name = format_ident!("{}Type", model_name);
 
     let ctx_options_ty = args
         .ctx_options
@@ -567,13 +568,12 @@ fn generate_model(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenS
         });
 
     quote! {
-        pub struct #model_name;
+        pub struct #model_type_name;
 
-        impl #model_name {
-            pub fn new() -> Self {
-                Self
-            }
+        #[allow(non_upper_case_globals)]
+        pub const #model_name: #model_type_name = #model_type_name;
 
+        impl #model_type_name {
             pub async fn create(
                 &self,
                 input: #input_name,
