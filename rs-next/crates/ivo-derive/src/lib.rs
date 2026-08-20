@@ -270,6 +270,12 @@ fn is_closure(tokens: &proc_macro2::TokenStream) -> bool {
     syn::parse2::<ExprClosure>(tokens.clone()).is_ok()
 }
 
+fn closure_input_count(tokens: &proc_macro2::TokenStream) -> Option<usize> {
+    syn::parse2::<ExprClosure>(tokens.clone())
+        .ok()
+        .map(|c| c.inputs.len())
+}
+
 fn find_attr<'a>(attrs: &'a [Attribute], name: &str) -> Option<&'a Attribute> {
     attrs.iter().find(|a| a.path().is_ident(name))
 }
@@ -289,6 +295,7 @@ fn attr_value_tokens(attrs: &[Attribute], name: &str) -> Option<proc_macro2::Tok
 enum GroupedOptionKind {
     Ignore,
     Required,
+    IgnoreUpdate,
     Timestamps,
 }
 
@@ -305,6 +312,8 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         GroupedOptionKind::Ignore
     } else if attr.path().is_ident("required") {
         GroupedOptionKind::Required
+    } else if attr.path().is_ident("ignore_update") {
+        GroupedOptionKind::IgnoreUpdate
     } else if attr.path().is_ident("timestamps") {
         GroupedOptionKind::Timestamps
     } else {
@@ -316,7 +325,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         _ => {
             return Err(syn::Error::new_spanned(
                 attr,
-                "expected `#[ignore(...)]`, `#[required(...)]`, or `#[timestamps(...)]`",
+                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, or `#[timestamps(...)]`",
             ));
         }
     };
@@ -444,6 +453,53 @@ fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> s
                             format!(
                                 "only lax and virtual fields can belong to grouped {} configs; remove `{}`",
                                 option_name, field
+                            ),
+                        ));
+                    }
+                }
+            }
+            GroupedOptionKind::IgnoreUpdate => {
+                if opt.fields.len() == 1 {
+                    return Err(syn::Error::new(
+                        proc_macro2::Span::call_site(),
+                        "grouped `#[ignore_update([...], handler)]` expects 0 or at least 2 fields",
+                    ));
+                }
+
+                let mut seen = std::collections::HashSet::new();
+                for field in &opt.fields {
+                    if !seen.insert(field) {
+                        return Err(syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!(
+                                "remove duplicates of `{}` in your grouped ignore_update config",
+                                field
+                            ),
+                        ));
+                    }
+                }
+
+                for field in &opt.fields {
+                    let f = fields.iter().find(|f| f.name == field).ok_or_else(|| {
+                        syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!("`{}` does not exist in your schema", field),
+                        )
+                    })?;
+
+                    if !matches!(
+                        f.field_type,
+                        FieldType::Required
+                            | FieldType::Lax
+                            | FieldType::Dependent
+                            | FieldType::CreatedAt
+                            | FieldType::UpdatedAt
+                    ) {
+                        return Err(syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!(
+                                "only required, lax, dependent, and timestamp fields can belong to grouped ignore_update configs; remove `{}`",
+                                field
                             ),
                         ));
                     }
@@ -674,6 +730,7 @@ fn generate_model(
     let ctx_ty = quote!(&::ivo::IvoContext<#partial_input_name, #output_name>);
     let resolver_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
     let opts_ty = quote!(&#ctx_options_ty);
+    let raw_input_ty = quote!(&#partial_input_name);
 
     // Collect lax fields that may be ignored during create.
     let mut ignore_field_names: std::collections::HashSet<String> = options
@@ -797,6 +854,35 @@ fn generate_model(
 
     let required_evaluations = grouped_required_evaluations.chain(field_required_evaluations);
 
+    // Missing-required checks for fields marked with the `#[required]` field type.
+    let required_field_checks = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Required))
+        .map(|f| {
+            let input_tokens = input_field_name(f);
+            let name_str = f.name.to_string();
+            let error_expr = match attr_value_tokens(&f.attrs, "required_error") {
+                Some(tokens) if is_closure(&tokens) => {
+                    let handler =
+                        type_annotate_handler(tokens, &[raw_input_ty.clone(), opts_ty.clone()]);
+                    quote! { (#handler)(&input, &_ctx_options) }
+                }
+                Some(tokens) => quote! { ::std::string::String::from(#tokens) },
+                None => quote! { ::std::string::String::from("field is required") },
+            };
+            quote! {
+                if input.#input_tokens.is_none() {
+                    errors.insert(
+                        ::std::string::String::from(#name_str),
+                        ::ivo::FieldError {
+                            reason: #error_expr,
+                            metadata: ::core::option::Option::None,
+                        },
+                    );
+                }
+            }
+        });
+
     let create_steps = fields.iter().filter(|f| !matches!(f.field_type, FieldType::Virtual { .. })).map(|f| {
         let name = &f.name;
         let name_str = name.to_string();
@@ -856,7 +942,21 @@ fn generate_model(
             FieldType::Constant => {
                 let tokens = attr_value_tokens(&f.attrs, "constant")
                     .unwrap_or_else(|| quote!(::core::default::Default::default()));
-                quote! { (#tokens)() }
+                match closure_input_count(&tokens) {
+                    Some(0) => quote! { (#tokens)() },
+                    Some(_) => {
+                        let resolver = type_annotate_handler(
+                            tokens,
+                            &[resolver_ctx_ty.clone(), opts_ty.clone()],
+                        );
+                        quote! {
+                            ::ivo::run_resolver(ctx.clone(), &_ctx_options, |ctx, opts| {
+                                ::std::boxed::Box::pin((#resolver)(ctx, opts))
+                            }).await
+                        }
+                    }
+                    None => quote! { #tokens },
+                }
             }
             FieldType::Dependent => {
                 if let Some(resolver) = resolver {
@@ -988,26 +1088,85 @@ fn generate_model(
 
     // Update method: apply partial updates.
     let update_ctx_ty = quote!(&::ivo::IvoContext<#partial_output_name, #output_name>);
-    let update_ignore_field_names: std::collections::HashSet<String> = field_ignore_update_handlers
+
+    let updateable_fields: Vec<_> = fields
         .iter()
-        .map(|(f, _)| f.name.to_string())
+        .filter(|f| {
+            matches!(
+                f.field_type,
+                FieldType::Required
+                    | FieldType::Lax
+                    | FieldType::Dependent
+                    | FieldType::CreatedAt
+                    | FieldType::UpdatedAt
+            )
+        })
         .collect();
 
-    let update_ignore_flag_decls = field_ignore_update_handlers.iter().map(|(f, _)| {
-        let flag = format_ident!("ignore_update_{}", f.name);
+    let grouped_ignore_update_options: Vec<_> = options
+        .iter()
+        .filter(|o| matches!(o.kind, GroupedOptionKind::IgnoreUpdate))
+        .collect();
+
+    let mut update_ignore_field_names: std::collections::HashSet<String> =
+        field_ignore_update_handlers
+            .iter()
+            .map(|(f, _)| f.name.to_string())
+            .collect();
+    for opt in &grouped_ignore_update_options {
+        if opt.fields.is_empty() {
+            for f in &updateable_fields {
+                update_ignore_field_names.insert(f.name.to_string());
+            }
+        } else {
+            for field in &opt.fields {
+                update_ignore_field_names.insert(field.clone());
+            }
+        }
+    }
+
+    let update_ignore_flag_decls = update_ignore_field_names.iter().map(|name| {
+        let flag = format_ident!("ignore_update_{}", name);
         quote! { let mut #flag = false; }
     });
 
-    let update_ignore_evaluations = field_ignore_update_handlers.iter().map(|(f, handler)| {
-        let handler =
-            type_annotate_handler(handler.clone(), &[update_ctx_ty.clone(), opts_ty.clone()]);
-        let flag = format_ident!("ignore_update_{}", f.name);
+    let field_ignore_update_evaluations =
+        field_ignore_update_handlers.iter().map(|(f, handler)| {
+            let handler =
+                type_annotate_handler(handler.clone(), &[update_ctx_ty.clone(), opts_ty.clone()]);
+            let flag = format_ident!("ignore_update_{}", f.name);
+            quote! {
+                if (#handler)(&ctx, &_ctx_options) {
+                    #flag = true;
+                }
+            }
+        });
+
+    let grouped_ignore_update_evaluations = grouped_ignore_update_options.iter().map(|opt| {
+        let handler = type_annotate_handler(
+            opt.handler.clone(),
+            &[update_ctx_ty.clone(), opts_ty.clone()],
+        );
+        let flag_idents: Vec<_> = if opt.fields.is_empty() {
+            updateable_fields
+                .iter()
+                .map(|f| format_ident!("ignore_update_{}", f.name))
+                .collect()
+        } else {
+            opt.fields
+                .iter()
+                .map(|f| format_ident!("ignore_update_{}", f))
+                .collect()
+        };
         quote! {
             if (#handler)(&ctx, &_ctx_options) {
-                #flag = true;
+                #(#flag_idents = true;)*
             }
         }
     });
+
+    let update_ignore_evaluations =
+        field_ignore_update_evaluations.chain(grouped_ignore_update_evaluations);
 
     let update_assignments = fields
         .iter()
@@ -1077,6 +1236,7 @@ fn generate_model(
                 #(#field_ignore_evaluations)*
                 #(#ignore_init_assignments)*
                 #(#required_evaluations)*
+                #(#required_field_checks)*
 
                 #(#create_steps)*
                 #(#re_validate_steps)*

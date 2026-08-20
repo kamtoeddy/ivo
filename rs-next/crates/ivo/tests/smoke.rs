@@ -547,3 +547,105 @@ async fn smoke_model_dependent_default() {
     assert_eq!(created.name, "test");
     assert_eq!(created.status, "default-status");
 }
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_required_error_schema {
+    struct Fields {
+        #[required]
+        #[required_error("name is mandatory")]
+        pub name: String,
+    }
+}
+
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
+mod user_constant_static_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[constant(1234)]
+        pub id: i32,
+    }
+}
+
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
+mod user_constant_resolver_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[constant(|_ctx, _opts| async move { 5678 })]
+        pub id: i32,
+    }
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_grouped_ignore_update_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[lax]
+        pub role: String,
+    }
+
+    #[ignore_update([], |_ctx, _opts| true)]
+    const _: () = ();
+}
+
+#[tokio::test]
+async fn smoke_model_required_error_static() {
+    let input = user_required_error_schema::PartialUser::new();
+    let result = user_required_error_schema::UserModel
+        .create(input, &())
+        .await;
+    assert!(result.is_err());
+    let errors = result.unwrap_err();
+    let err = errors.get("name").unwrap();
+    assert_eq!(err.reason, "name is mandatory");
+}
+
+#[tokio::test]
+async fn smoke_model_constant_static() {
+    let input = user_constant_static_schema::UserInput {
+        name: "test".to_string(),
+    };
+    let created = user_constant_static_schema::UserModel
+        .create(input, &())
+        .await
+        .unwrap();
+    assert_eq!(created.id, 1234);
+}
+
+#[tokio::test]
+async fn smoke_model_constant_resolver() {
+    let input = user_constant_resolver_schema::UserInput {
+        name: "test".to_string(),
+    };
+    let created = user_constant_resolver_schema::UserModel
+        .create(input, &())
+        .await
+        .unwrap();
+    assert_eq!(created.id, 5678);
+}
+
+#[tokio::test]
+async fn smoke_model_grouped_ignore_update() {
+    let existing = user_grouped_ignore_update_schema::User {
+        name: "test".to_string(),
+        role: "admin".to_string(),
+    };
+    let mut updates = user_grouped_ignore_update_schema::PartialUser::new();
+    updates.set_role("user".to_string());
+    let updated = user_grouped_ignore_update_schema::UserModel
+        .update(existing, updates, &())
+        .await
+        .unwrap();
+    assert_eq!(updated.role, "admin");
+}
