@@ -2745,8 +2745,11 @@ fn generate_model(
 
     let make_trigger_stmts = |handlers: &[(&FieldDef, proc_macro2::TokenStream)],
                               ctx_ty: &proc_macro2::TokenStream|
-     -> Vec<proc_macro2::TokenStream> {
-        handlers
+     -> (bool, Vec<proc_macro2::TokenStream>) {
+        let is_async = handlers
+            .iter()
+            .any(|(_, handler)| is_async_handler(handler));
+        let stmts = handlers
             .iter()
             .map(|(_f, handler)| {
                 let annotated =
@@ -2757,7 +2760,8 @@ fn generate_model(
                     quote! { (#annotated)(ctx.clone(), &_ctx_options); }
                 }
             })
-            .collect()
+            .collect();
+        (is_async, stmts)
     };
 
     let create_success_handlers: Vec<_> = fields
@@ -2779,8 +2783,10 @@ fn generate_model(
         })
         .collect();
 
-    let create_success_stmts = make_trigger_stmts(&create_success_handlers, &hook_ctx_ty);
-    let create_failure_stmts = make_trigger_stmts(&create_failure_handlers, &hook_ctx_ty);
+    let (create_success_is_async, create_success_stmts) =
+        make_trigger_stmts(&create_success_handlers, &hook_ctx_ty);
+    let (create_failure_is_async, create_failure_stmts) =
+        make_trigger_stmts(&create_failure_handlers, &hook_ctx_ty);
 
     let update_success_handlers: Vec<_> = fields
         .iter()
@@ -2801,91 +2807,93 @@ fn generate_model(
         })
         .collect();
 
-    let update_success_stmts = make_trigger_stmts(&update_success_handlers, &update_hook_ctx_ty);
-    let update_failure_stmts = make_trigger_stmts(&update_failure_handlers, &update_hook_ctx_ty);
+    let (update_success_is_async, update_success_stmts) =
+        make_trigger_stmts(&update_success_handlers, &update_hook_ctx_ty);
+    let (update_failure_is_async, update_failure_stmts) =
+        make_trigger_stmts(&update_failure_handlers, &update_hook_ctx_ty);
 
-    let create_success_trigger = if create_success_stmts.is_empty() {
-        quote! { ::ivo::ivo_trigger(async move {}) }
-    } else {
-        quote! {
-            {
-                let __trigger_input = input.clone();
-                let __trigger_output = output.clone();
-                ::ivo::ivo_trigger(async move {
-                    let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                        __trigger_input.clone(),
-                        __trigger_output.clone(),
-                        __trigger_output.clone().into(),
-                        false,
-                    );
-                    #(#create_success_stmts)*
-                })
+    let make_trigger = |stmts: &[proc_macro2::TokenStream],
+                        is_async: bool,
+                        setup: proc_macro2::TokenStream|
+     -> proc_macro2::TokenStream {
+        if stmts.is_empty() {
+            quote! { ::ivo::ivo_sync_trigger(|| {}) }
+        } else if is_async {
+            quote! {
+                {
+                    #setup
+                    ::ivo::ivo_trigger(async move {
+                        #(#stmts)*
+                    })
+                }
+            }
+        } else {
+            quote! {
+                {
+                    #setup
+                    ::ivo::ivo_sync_trigger(move || {
+                        #(#stmts)*
+                    })
+                }
             }
         }
     };
 
-    let create_failure_trigger = if create_failure_stmts.is_empty() {
-        quote! { ::ivo::ivo_trigger(async move {}) }
-    } else {
-        quote! {
-            {
-                let __trigger_input = input.clone();
-                let __trigger_output = output.clone();
-                ::ivo::ivo_trigger(async move {
-                    let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                        __trigger_input.clone(),
-                        __trigger_output.clone(),
-                        __trigger_output.clone().into(),
-                        false,
-                    );
-                    #(#create_failure_stmts)*
-                })
-            }
-        }
+    let create_success_trigger = {
+        let setup = quote! {
+            let __trigger_input = input.clone();
+            let __trigger_output = output.clone();
+            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                __trigger_input.clone(),
+                __trigger_output.clone(),
+                __trigger_output.clone().into(),
+                false,
+            );
+        };
+        make_trigger(&create_success_stmts, create_success_is_async, setup)
     };
 
-    let update_success_trigger = if update_success_stmts.is_empty() {
-        quote! { ::ivo::ivo_trigger(async move {}) }
-    } else {
-        quote! {
-            {
-                let __trigger_updates = updates.clone();
-                let __trigger_output = output.clone();
-                ::ivo::ivo_trigger(async move {
-                    let ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
-                        __trigger_updates.clone(),
-                        __trigger_output.clone(),
-                        __trigger_updates.clone(),
-                        true,
-                    );
-                    #(#update_success_stmts)*
-                })
-            }
-        }
+    let create_failure_trigger = {
+        let setup = quote! {
+            let __trigger_input = input.clone();
+            let __trigger_output = output.clone();
+            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                __trigger_input.clone(),
+                __trigger_output.clone(),
+                __trigger_output.clone().into(),
+                false,
+            );
+        };
+        make_trigger(&create_failure_stmts, create_failure_is_async, setup)
     };
 
-    let update_failure_trigger = if update_failure_stmts.is_empty() {
-        quote! { ::ivo::ivo_trigger(async move {}) }
-    } else {
-        quote! {
-            {
-                let __trigger_updates = updates.clone();
-                let __trigger_output = output.clone();
-                ::ivo::ivo_trigger(async move {
-                    let ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
-                        __trigger_updates.clone(),
-                        __trigger_output.clone(),
-                        __trigger_updates.clone(),
-                        true,
-                    );
-                    #(#update_failure_stmts)*
-                })
-            }
-        }
+    let update_success_trigger = {
+        let setup = quote! {
+            let __trigger_updates = updates.clone();
+            let __trigger_output = output.clone();
+            let ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
+                __trigger_updates.clone(),
+                __trigger_output.clone(),
+                __trigger_updates.clone(),
+                true,
+            );
+        };
+        make_trigger(&update_success_stmts, update_success_is_async, setup)
     };
 
-    let trigger_ty = quote!(::ivo::IvoTrigger);
-    let ctx_options_return_ty = quote!(::ivo::IvoCtxOptions<#ctx_options_ty>);
+    let update_failure_trigger = {
+        let setup = quote! {
+            let __trigger_updates = updates.clone();
+            let __trigger_output = output.clone();
+            let ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
+                __trigger_updates.clone(),
+                __trigger_output.clone(),
+                __trigger_updates.clone(),
+                true,
+            );
+        };
+        make_trigger(&update_failure_stmts, update_failure_is_async, setup)
+    };
 
     let create_sig = if create_has_async {
         quote! { pub async fn create }
@@ -2917,8 +2925,8 @@ fn generate_model(
                 input: I,
                 _ctx_options: #ctx_options_ty,
             ) -> ::core::result::Result<
-                (#output_name, #trigger_ty, #ctx_options_return_ty),
-                (#payload_ty, #trigger_ty, #ctx_options_return_ty),
+                ::ivo::IvoSuccessHandle<#output_name, #ctx_options_ty, #create_success_is_async>,
+                ::ivo::IvoFailureHandle<#payload_ty, #ctx_options_ty, #create_failure_is_async>,
             >
             where
                 I: ::core::convert::Into<#partial_input_name>,
@@ -2952,16 +2960,20 @@ fn generate_model(
                 if errors.is_empty() {
                     let __return_opts = _ctx_options.clone();
                     let __success_trigger = #create_success_trigger;
-                    ::core::result::Result::Ok((output, __success_trigger, __return_opts))
+                    ::core::result::Result::Ok(::ivo::IvoSuccessHandle::new(
+                        output,
+                        __return_opts,
+                        __success_trigger,
+                    ))
                 } else {
                     let __return_opts = _ctx_options.clone();
                     let __failure_trigger = #create_failure_trigger;
-                    ::core::result::Result::Err((
+                    ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
                         <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
                             errors, &*_rw_ctx_options.read(),
                         ),
-                        __failure_trigger,
                         __return_opts,
+                        __failure_trigger,
                     ))
                 }
             }
@@ -2972,8 +2984,8 @@ fn generate_model(
                 updates: #partial_output_name,
                 _ctx_options: #ctx_options_ty,
             ) -> ::core::result::Result<
-                (#output_name, #trigger_ty, #ctx_options_return_ty),
-                (#payload_ty, #trigger_ty, #ctx_options_return_ty),
+                ::ivo::IvoSuccessHandle<#output_name, #ctx_options_ty, #update_success_is_async>,
+                ::ivo::IvoFailureHandle<#payload_ty, #ctx_options_ty, #update_failure_is_async>,
             > {
                 let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
                 let _ctx_options = _rw_ctx_options.read_only();
@@ -3008,18 +3020,22 @@ fn generate_model(
                 if !errors.is_empty() {
                     let __return_opts = _ctx_options.clone();
                     let __failure_trigger = #update_failure_trigger;
-                    return ::core::result::Result::Err((
+                    return ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
                         <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
                             errors, &*_rw_ctx_options.read(),
                         ),
-                        __failure_trigger,
                         __return_opts,
+                        __failure_trigger,
                     ));
                 }
 
                 let __return_opts = _ctx_options.clone();
                 let __success_trigger = #update_success_trigger;
-                ::core::result::Result::Ok((output, __success_trigger, __return_opts))
+                ::core::result::Result::Ok(::ivo::IvoSuccessHandle::new(
+                    output,
+                    __return_opts,
+                    __success_trigger,
+                ))
             }
 
             #delete_sig(

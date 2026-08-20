@@ -400,13 +400,206 @@ impl<F: Future> Future for IvoTriggerFuture<F> {
     }
 }
 
-/// Type-erased trigger future returned by generated `create`/`update` methods.
+/// Type-erased trigger future stored inside `IvoTriggerFn::Async`.
 pub type IvoTrigger = IvoTriggerFuture<Pin<Box<dyn Future<Output = ()> + Send>>>;
 
-/// Wrap a trigger future in the type-erased `IvoTrigger` form.
-pub fn ivo_trigger<F>(future: F) -> IvoTrigger
+/// A trigger that is either a synchronous closure or an asynchronous future.
+pub enum IvoTriggerFn {
+    Sync(Box<dyn FnOnce() + Send>),
+    Async(IvoTrigger),
+}
+
+impl fmt::Debug for IvoTriggerFn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IvoTriggerFn::Sync(_) => f.debug_struct("SyncTrigger").finish(),
+            IvoTriggerFn::Async(_) => f.debug_struct("AsyncTrigger").finish(),
+        }
+    }
+}
+
+/// Wrap a synchronous trigger closure.
+pub fn ivo_sync_trigger<F>(handler: F) -> IvoTriggerFn
+where
+    F: FnOnce() + Send + 'static,
+{
+    IvoTriggerFn::Sync(Box::new(handler))
+}
+
+/// Wrap an asynchronous trigger future.
+pub fn ivo_trigger<F>(future: F) -> IvoTriggerFn
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    IvoTriggerFuture::new(Box::pin(future))
+    IvoTriggerFn::Async(IvoTriggerFuture::new(Box::pin(future)))
+}
+
+/// Handle returned on a successful `create`/`update`.
+///
+/// Call `handle_success` to run the `on_success` triggers that were captured for
+/// this operation. If all captured handlers are synchronous (or there are none),
+/// `handle_success` is synchronous. If any captured handler is asynchronous,
+/// `handle_success` is asynchronous.
+pub struct IvoSuccessHandle<O, CtxOptions, const ASYNC: bool> {
+    output: O,
+    ctx_options: IvoCtxOptions<CtxOptions>,
+    trigger: IvoTriggerFn,
+}
+
+impl<O, CtxOptions, const ASYNC: bool> IvoSuccessHandle<O, CtxOptions, ASYNC> {
+    pub fn new(output: O, ctx_options: IvoCtxOptions<CtxOptions>, trigger: IvoTriggerFn) -> Self {
+        Self {
+            output,
+            ctx_options,
+            trigger,
+        }
+    }
+
+    pub fn output(&self) -> &O {
+        &self.output
+    }
+
+    pub fn into_output(self) -> O {
+        self.output
+    }
+
+    pub fn ctx_options(&self) -> &IvoCtxOptions<CtxOptions> {
+        &self.ctx_options
+    }
+
+    pub fn into_ctx_options(self) -> IvoCtxOptions<CtxOptions> {
+        self.ctx_options
+    }
+}
+
+impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, false> {
+    pub fn handle_success(self) {
+        match self.trigger {
+            IvoTriggerFn::Sync(f) => f(),
+            IvoTriggerFn::Async(_) => unreachable!(),
+        }
+    }
+}
+
+impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, true> {
+    pub async fn handle_success(self) {
+        match self.trigger {
+            IvoTriggerFn::Async(t) => t.await,
+            IvoTriggerFn::Sync(_) => unreachable!(),
+        }
+    }
+}
+
+impl<O, CtxOptions, const ASYNC: bool> std::ops::Deref for IvoSuccessHandle<O, CtxOptions, ASYNC> {
+    type Target = O;
+
+    fn deref(&self) -> &Self::Target {
+        &self.output
+    }
+}
+
+impl<O, CtxOptions, const ASYNC: bool> std::ops::DerefMut
+    for IvoSuccessHandle<O, CtxOptions, ASYNC>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.output
+    }
+}
+
+impl<O: fmt::Debug, CtxOptions, const ASYNC: bool> fmt::Debug
+    for IvoSuccessHandle<O, CtxOptions, ASYNC>
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IvoSuccessHandle")
+            .field("output", &self.output)
+            .finish()
+    }
+}
+
+/// Handle returned on a failed `create`/`update`.
+///
+/// Call `handle_failure` to run the `on_failure` triggers that were captured for
+/// this operation. If all captured handlers are synchronous (or there are none),
+/// `handle_failure` is synchronous. If any captured handler is asynchronous,
+/// `handle_failure` is asynchronous.
+pub struct IvoFailureHandle<Payload, CtxOptions, const ASYNC: bool> {
+    errors: Payload,
+    ctx_options: IvoCtxOptions<CtxOptions>,
+    trigger: IvoTriggerFn,
+}
+
+impl<Payload, CtxOptions, const ASYNC: bool> IvoFailureHandle<Payload, CtxOptions, ASYNC> {
+    pub fn new(
+        errors: Payload,
+        ctx_options: IvoCtxOptions<CtxOptions>,
+        trigger: IvoTriggerFn,
+    ) -> Self {
+        Self {
+            errors,
+            ctx_options,
+            trigger,
+        }
+    }
+
+    pub fn errors(&self) -> &Payload {
+        &self.errors
+    }
+
+    pub fn into_errors(self) -> Payload {
+        self.errors
+    }
+
+    pub fn ctx_options(&self) -> &IvoCtxOptions<CtxOptions> {
+        &self.ctx_options
+    }
+
+    pub fn into_ctx_options(self) -> IvoCtxOptions<CtxOptions> {
+        self.ctx_options
+    }
+}
+
+impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, false> {
+    pub fn handle_failure(self) {
+        match self.trigger {
+            IvoTriggerFn::Sync(f) => f(),
+            IvoTriggerFn::Async(_) => unreachable!(),
+        }
+    }
+}
+
+impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, true> {
+    pub async fn handle_failure(self) {
+        match self.trigger {
+            IvoTriggerFn::Async(t) => t.await,
+            IvoTriggerFn::Sync(_) => unreachable!(),
+        }
+    }
+}
+
+impl<Payload, CtxOptions, const ASYNC: bool> std::ops::Deref
+    for IvoFailureHandle<Payload, CtxOptions, ASYNC>
+{
+    type Target = Payload;
+
+    fn deref(&self) -> &Self::Target {
+        &self.errors
+    }
+}
+
+impl<Payload, CtxOptions, const ASYNC: bool> std::ops::DerefMut
+    for IvoFailureHandle<Payload, CtxOptions, ASYNC>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.errors
+    }
+}
+
+impl<Payload: fmt::Debug, CtxOptions, const ASYNC: bool> fmt::Debug
+    for IvoFailureHandle<Payload, CtxOptions, ASYNC>
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IvoFailureHandle")
+            .field("errors", &self.errors)
+            .finish()
+    }
 }
