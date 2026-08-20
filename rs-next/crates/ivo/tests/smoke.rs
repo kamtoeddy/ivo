@@ -649,3 +649,22 @@ async fn smoke_model_grouped_ignore_update() {
         .unwrap();
     assert_eq!(updated.role, "admin");
 }
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq), derive_partial(Debug)))]
+mod user_derive_partial_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[lax]
+        pub role: String,
+    }
+}
+
+#[test]
+fn smoke_derive_partial() {
+    let mut partial = user_derive_partial_schema::PartialUser::new();
+    partial.set_name("test".to_string());
+    let debug = format!("{:?}", partial);
+    assert!(debug.contains("test"));
+}

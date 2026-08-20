@@ -588,8 +588,16 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
             quote! { #vis #name: #ty }
         });
 
+    let input_partial_derives = if args.input.partial_derives.is_empty() {
+        quote! {}
+    } else {
+        let paths = &args.input.partial_derives;
+        quote! { #[ivo(partial_derive(#(#paths),*))] }
+    };
+
     let input_struct = quote! {
         #[derive(::core::clone::Clone, ::ivo::IvoInputStruct, ::ivo::IvoStruct, #(#input_derives),*)]
+        #input_partial_derives
         pub struct #input_name {
             #(#input_fields,)*
         }
@@ -612,8 +620,16 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
                 quote! { #vis #name: #ty }
             });
 
+        let output_partial_derives = if output_args.partial_derives.is_empty() {
+            quote! {}
+        } else {
+            let paths = &output_args.partial_derives;
+            quote! { #[ivo(partial_derive(#(#paths),*))] }
+        };
+
         quote! {
             #[derive(::core::clone::Clone, ::ivo::IvoStruct, #(#output_derives),*)]
+            #output_partial_derives
             pub struct #output_name {
                 #(#output_fields,)*
             }
@@ -1288,7 +1304,7 @@ fn generate_model(
 // Derive macros
 // ---------------------------------------------------------------------------
 
-#[proc_macro_derive(IvoStruct)]
+#[proc_macro_derive(IvoStruct, attributes(ivo))]
 pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as syn::DeriveInput);
     let name = &ast.ident;
@@ -1301,6 +1317,34 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
     let field_idents: Vec<_> = fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
     let field_tys: Vec<_> = fields.iter().map(|f| &f.ty).collect();
     let partial_name = format_ident!("Partial{}", name);
+
+    let partial_derives: Vec<Path> = ast
+        .attrs
+        .iter()
+        .find_map(|attr| {
+            if !attr.path().is_ident("ivo") {
+                return None;
+            }
+            let syn::Meta::List(list) = &attr.meta else {
+                return None;
+            };
+            let inner: syn::Meta = syn::parse2(list.tokens.clone()).ok()?;
+            let syn::Meta::List(pd) = inner else {
+                return None;
+            };
+            if !pd.path.is_ident("partial_derive") {
+                return None;
+            }
+            syn::punctuated::Punctuated::<Path, Token![,]>::parse_terminated
+                .parse2(pd.tokens.clone())
+                .ok()
+                .map(|p| {
+                    p.into_iter()
+                        .filter(|path| !is_clone_derive(path))
+                        .collect()
+                })
+        })
+        .unwrap_or_default();
 
     let partial_fields = field_idents.iter().zip(&field_tys).map(|(name, ty)| {
         quote! { pub #name: ::core::option::Option<#ty> }
@@ -1354,7 +1398,7 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
     });
 
     quote! {
-        #[derive(::core::clone::Clone)]
+        #[derive(::core::clone::Clone, #(#partial_derives),*)]
         #vis struct #partial_name {
             #(#partial_fields,)*
         }
