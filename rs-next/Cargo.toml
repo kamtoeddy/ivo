@@ -1,0 +1,16 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+version = "0.5.0"
+edition = "2021"
+authors = ["kamtoeddy <kamtoeddytagne@gmail.com>"]
+license-file = "../LICENSE"
+repository = "https://github.com/kamtoeddy/ivo"
+homepage = "https://ivo.kamtoeddy.com/docs/rs"
+keywords = ["ivo", "schema", "validation", "data-modelling"]
+rust-version = "1.80.0"
+
+[workspace.dependencies]
+ivo-derive = { path = "crates/ivo-derive", version = "0.5.0" }
