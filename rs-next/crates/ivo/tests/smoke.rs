@@ -6,7 +6,7 @@ mod user_schema {
         #[required]
         pub name: String,
 
-        #[lax("user")]
+        #[lax(String::from("user"))]
         pub role: String,
     }
 }
@@ -218,7 +218,7 @@ mod user_virtual_alias_schema {
         pub email: String,
 
         #[depends_on(email)]
-        #[resolve(|ctx, _opts| async move { ctx.input().raw_email.clone() })]
+        #[resolve(|ctx, _opts| async move { ctx.input().raw_email.clone().unwrap() })]
         pub raw_email: String,
     }
 }
@@ -235,4 +235,114 @@ async fn smoke_virtual_alias() {
         .unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.raw_email, "Test@Example.COM");
+}
+
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
+mod user_timestamps_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[created_at]
+        pub created_at: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[tokio::test]
+async fn smoke_timestamps() {
+    let input = user_timestamps_schema::UserInput {
+        name: "test".to_string(),
+    };
+    let created = user_timestamps_schema::UserModel
+        .create(input, &())
+        .await
+        .unwrap();
+    assert_eq!(created.name, "test");
+    assert_eq!(created.created_at, "timestamp");
+    assert_eq!(created.updated_at, "timestamp");
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_lax_default_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[lax(String::from("user"))]
+        pub role: String,
+    }
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_grouped_ignore_schema {
+    struct Fields {
+        #[lax(String::from("default_a"))]
+        pub a: String,
+
+        #[lax(String::from("default_b"))]
+        pub b: String,
+    }
+
+    #[ignore(["a", "b"], |_ctx, _opts| async move { true })]
+    const _: () = ();
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_grouped_required_schema {
+    struct Fields {
+        #[lax]
+        pub a: String,
+
+        #[lax]
+        pub b: String,
+    }
+
+    #[required(["a", "b"], |_ctx, _opts| async move { true })]
+    const _: () = ();
+}
+
+#[tokio::test]
+async fn smoke_model_lax_default() {
+    let mut input = user_lax_default_schema::PartialUser::new();
+    input.set_name("test".to_string());
+    let created = user_lax_default_schema::UserModel
+        .create(input, &())
+        .await
+        .unwrap();
+    assert_eq!(created.name, "test");
+    assert_eq!(created.role, "user");
+}
+
+#[tokio::test]
+async fn smoke_model_grouped_ignore() {
+    let mut input = user_grouped_ignore_schema::PartialUser::new();
+    input.set_a("provided_a".to_string());
+    input.set_b("provided_b".to_string());
+    let created = user_grouped_ignore_schema::UserModel
+        .create(input, &())
+        .await
+        .unwrap();
+    assert_eq!(created.a, "default_a");
+    assert_eq!(created.b, "default_b");
+}
+
+#[tokio::test]
+async fn smoke_model_grouped_required() {
+    let mut input = user_grouped_required_schema::PartialUser::new();
+    input.set_b("b".to_string());
+    let result = user_grouped_required_schema::UserModel
+        .create(input, &())
+        .await;
+    assert!(result.is_err());
+    let errors = result.unwrap_err();
+    assert!(errors.contains_key("a"));
 }

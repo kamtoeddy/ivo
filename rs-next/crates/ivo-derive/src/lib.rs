@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::{Parse, Parser},
     parse_macro_input, Attribute, ExprClosure, Ident, ItemMod, Pat, PatType, Path, Token, Type,
@@ -266,6 +266,10 @@ fn type_annotate_handler(
     quote! { #closure }
 }
 
+fn is_closure(tokens: &proc_macro2::TokenStream) -> bool {
+    syn::parse2::<ExprClosure>(tokens.clone()).is_ok()
+}
+
 fn find_attr<'a>(attrs: &'a [Attribute], name: &str) -> Option<&'a Attribute> {
     attrs.iter().find(|a| a.path().is_ident(name))
 }
@@ -275,6 +279,181 @@ fn attr_value_tokens(attrs: &[Attribute], name: &str) -> Option<proc_macro2::Tok
         syn::Meta::List(list) => Some(list.tokens.clone()),
         _ => None,
     })
+}
+
+// ---------------------------------------------------------------------------
+// Grouped schema options
+// ---------------------------------------------------------------------------
+
+#[derive(Clone)]
+enum GroupedOptionKind {
+    Ignore,
+    Required,
+    Timestamps,
+}
+
+#[derive(Clone)]
+struct GroupedOption {
+    kind: GroupedOptionKind,
+    #[allow(dead_code)]
+    fields: Vec<String>,
+    handler: proc_macro2::TokenStream,
+}
+
+fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
+    let kind = if attr.path().is_ident("ignore") {
+        GroupedOptionKind::Ignore
+    } else if attr.path().is_ident("required") {
+        GroupedOptionKind::Required
+    } else if attr.path().is_ident("timestamps") {
+        GroupedOptionKind::Timestamps
+    } else {
+        return Ok(None);
+    };
+
+    let list = match &attr.meta {
+        syn::Meta::List(list) => list,
+        _ => {
+            return Err(syn::Error::new_spanned(
+                attr,
+                "expected `#[ignore(...)]`, `#[required(...)]`, or `#[timestamps(...)]`",
+            ));
+        }
+    };
+
+    match kind {
+        GroupedOptionKind::Timestamps => Ok(Some(GroupedOption {
+            kind,
+            fields: Vec::new(),
+            handler: list.tokens.clone(),
+        })),
+        _ => {
+            let mut exprs = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated
+                .parse2(list.tokens.clone())?;
+            if exprs.len() != 2 {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    "expected `#[ignore([...], handler)]` or `#[required([...], handler)]`",
+                ));
+            }
+            let handler = exprs.pop().unwrap().into_value().into_token_stream();
+            let fields_expr = match exprs.pop().unwrap().into_value() {
+                syn::Expr::Array(a) => a,
+                other => {
+                    return Err(syn::Error::new_spanned(
+                        other,
+                        "first argument must be an array of field names",
+                    ));
+                }
+            };
+
+            let mut fields = Vec::new();
+            for expr in &fields_expr.elems {
+                let syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(s),
+                    ..
+                }) = expr
+                else {
+                    return Err(syn::Error::new_spanned(
+                        expr,
+                        "field list must contain string literals",
+                    ));
+                };
+                fields.push(s.value());
+            }
+
+            Ok(Some(GroupedOption {
+                kind,
+                fields,
+                handler,
+            }))
+        }
+    }
+}
+
+fn parse_grouped_options(item_mod: &ItemMod) -> syn::Result<Vec<GroupedOption>> {
+    let content = item_mod
+        .content
+        .as_ref()
+        .map(|(_, items)| items)
+        .ok_or_else(|| syn::Error::new_spanned(item_mod, "schema module must have a body"))?;
+
+    let mut options = Vec::new();
+
+    for item in content {
+        let syn::Item::Const(c) = item else {
+            continue;
+        };
+        // Match anonymous const _: () = ()
+        if !c.ident.to_string().starts_with('_') {
+            continue;
+        }
+        for attr in &c.attrs {
+            if let Some(opt) = parse_option_attr(attr)? {
+                options.push(opt);
+            }
+        }
+    }
+
+    Ok(options)
+}
+
+fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> syn::Result<()> {
+    for opt in options {
+        match opt.kind {
+            GroupedOptionKind::Ignore | GroupedOptionKind::Required => {
+                let option_name = match opt.kind {
+                    GroupedOptionKind::Ignore => "ignore",
+                    _ => "required",
+                };
+
+                if opt.fields.len() < 2 {
+                    return Err(syn::Error::new(
+                        proc_macro2::Span::call_site(),
+                        format!(
+                            "grouped `#[{}([...], handler)]` expects at least 2 fields",
+                            option_name
+                        ),
+                    ));
+                }
+
+                let mut seen = std::collections::HashSet::new();
+                for field in &opt.fields {
+                    if !seen.insert(field) {
+                        return Err(syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!(
+                                "remove duplicates of `{}` in your grouped {} config",
+                                field, option_name
+                            ),
+                        ));
+                    }
+                }
+
+                for field in &opt.fields {
+                    let f = fields.iter().find(|f| f.name == field).ok_or_else(|| {
+                        syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!("`{}` does not exist in your schema", field),
+                        )
+                    })?;
+
+                    if !matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. }) {
+                        return Err(syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!(
+                                "only lax and virtual fields can belong to grouped {} configs; remove `{}`",
+                                option_name, field
+                            ),
+                        ));
+                    }
+                }
+            }
+            GroupedOptionKind::Timestamps => {}
+        }
+    }
+
+    Ok(())
 }
 
 fn parse_fields_struct(item_mod: &ItemMod) -> syn::Result<Vec<FieldDef>> {
@@ -408,7 +587,11 @@ fn input_field_name(f: &FieldDef) -> proc_macro2::TokenStream {
     }
 }
 
-fn generate_model(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenStream {
+fn generate_model(
+    args: &SchemaArgs,
+    fields: &[FieldDef],
+    options: &[GroupedOption],
+) -> proc_macro2::TokenStream {
     let input_name = &args.input.name;
     let partial_input_name = format_ident!("Partial{}", input_name);
     let model_base_name = args.output.as_ref().map(|o| &o.name).unwrap_or(input_name);
@@ -440,10 +623,82 @@ fn generate_model(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenS
         (quote! { #input_name }, quote! { #partial_input_name })
     };
 
+    let timestamps_resolver = options.iter().find_map(|o| {
+        if matches!(o.kind, GroupedOptionKind::Timestamps) {
+            Some(o.handler.clone())
+        } else {
+            None
+        }
+    });
+
     // Create method: sanitize/validate input fields, resolve dependents, and build output.
-    let ctx_ty = quote!(&::ivo::IvoContext<#input_name, #output_name>);
-    let resolver_ctx_ty = quote!(::ivo::IvoContext<#input_name, #output_name>);
+    // The create method accepts any type convertible to the partial input so that callers
+    // may pass either the full input struct or a partial.
+    let ctx_ty = quote!(&::ivo::IvoContext<#partial_input_name, #output_name>);
+    let resolver_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
     let opts_ty = quote!(&#ctx_options_ty);
+
+    // Collect fields that may be ignored by grouped #[ignore(...)] options.
+    let ignore_field_names: std::collections::HashSet<String> = options
+        .iter()
+        .filter(|o| matches!(o.kind, GroupedOptionKind::Ignore))
+        .flat_map(|o| o.fields.iter().cloned())
+        .collect();
+
+    let ignore_flag_decls = ignore_field_names.iter().map(|name| {
+        let flag = format_ident!("ignore_{}", name);
+        quote! { let mut #flag = false; }
+    });
+
+    let ignore_evaluations = options
+        .iter()
+        .filter(|o| matches!(o.kind, GroupedOptionKind::Ignore))
+        .enumerate()
+        .map(|(i, o)| {
+            let handler =
+                type_annotate_handler(o.handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
+            let opt_flag = format_ident!("__ignore_opt_{}", i);
+            let field_flags = o.fields.iter().map(|f| format_ident!("ignore_{}", f));
+            quote! {
+                let #opt_flag: bool = (#handler)(&ctx, &_ctx_options).await;
+                if #opt_flag {
+                    #(#field_flags = true;)*
+                }
+            }
+        });
+
+    let required_evaluations = options
+        .iter()
+        .filter(|o| matches!(o.kind, GroupedOptionKind::Required))
+        .enumerate()
+        .map(|(i, o)| {
+            let handler =
+                type_annotate_handler(o.handler.clone(), &[ctx_ty.clone(), opts_ty.clone()]);
+            let opt_flag = format_ident!("__required_opt_{}", i);
+            let checks = o.fields.iter().map(|fname| {
+                let f = fields.iter().find(|f| f.name == fname).unwrap();
+                let input_tokens = input_field_name(f);
+                let name_str = fname.clone();
+                quote! {
+                    if input.#input_tokens.is_none() {
+                        errors.insert(
+                            ::std::string::String::from(#name_str),
+                            ::ivo::FieldError {
+                                reason: ::std::string::String::from("field is required"),
+                                metadata: ::core::option::Option::None,
+                            },
+                        );
+                    }
+                }
+            });
+            quote! {
+                let #opt_flag: bool = (#handler)(&ctx, &_ctx_options).await;
+                if #opt_flag {
+                    #(#checks)*
+                }
+            }
+        });
+
     let create_steps = fields.iter().filter(|f| !matches!(f.field_type, FieldType::Virtual { .. })).map(|f| {
         let name = &f.name;
         let name_str = name.to_string();
@@ -456,10 +711,49 @@ fn generate_model(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenS
         let resolver = attr_value_tokens(&f.attrs, "resolve")
             .map(|t| type_annotate_handler(t, &[resolver_ctx_ty.clone(), opts_ty.clone()]));
 
+        let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
+            let flag = format_ident!("ignore_{}", name);
+            quote! { #flag }
+        } else {
+            quote! { false }
+        };
+
+        let lax_default_expr = match &f.field_type {
+            FieldType::Lax => attr_value_tokens(&f.attrs, "lax").map(|t| {
+                if is_closure(&t) {
+                    quote! { (#t)() }
+                } else {
+                    t
+                }
+            }),
+            _ => None,
+        };
+        let default_expr = lax_default_expr
+            .unwrap_or_else(|| quote! { ::core::default::Default::default() });
+
         let base_value = match &f.field_type {
-            FieldType::Required | FieldType::Lax | FieldType::CreatedAt | FieldType::UpdatedAt => {
+            FieldType::Required | FieldType::Lax => {
                 let input_name_tokens = input_field_name(f);
-                quote! { input.#input_name_tokens.clone() }
+                quote! {
+                    {
+                        let __maybe: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
+                            ::core::option::Option::None
+                        } else {
+                            input.#input_name_tokens.clone()
+                        };
+                        __maybe.unwrap_or_else(|| {
+                            let __default: #ty_tokens = #default_expr;
+                            __default
+                        })
+                    }
+                }
+            }
+            FieldType::CreatedAt | FieldType::UpdatedAt => {
+                if let Some(resolver) = &timestamps_resolver {
+                    quote! { (#resolver)() }
+                } else {
+                    quote! { ::core::default::Default::default() }
+                }
             }
             FieldType::Constant => {
                 let tokens = attr_value_tokens(&f.attrs, "constant")
@@ -480,9 +774,9 @@ fn generate_model(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenS
             FieldType::Virtual { .. } => unreachable!(),
         };
 
-        let sanitized = if let Some(sanitizer) = sanitizer {
+        let sanitizer_expr = if let Some(sanitizer) = sanitizer {
             quote! {
-                let value: #ty = ::ivo::run_sanitizer(value, &ctx, &_ctx_options, |value, ctx, opts| {
+                value = ::ivo::run_sanitizer(value, &ctx, &_ctx_options, |value, ctx, opts| {
                     ::std::boxed::Box::pin((#sanitizer)(value, ctx, opts))
                 }).await;
             }
@@ -490,50 +784,47 @@ fn generate_model(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenS
             quote! {}
         };
 
-        let value_computation = if let Some(validator) = validator {
+        let validator_expr = if let Some(validator) = validator {
             quote! {
-                {
-                    let value: #ty = #base_value;
-                    #sanitized
-                    let result: ::core::result::Result<
-                        ::core::option::Option<#ty>,
-                        ::ivo::FieldError<#metadata_ty>,
-                    > = ::ivo::run_validator(value, &ctx, &_ctx_options, |value, ctx, opts| {
-                        ::std::boxed::Box::pin((#validator)(value, ctx, opts))
-                    }).await;
-                    match result {
-                        ::core::result::Result::Ok(::core::option::Option::Some(value)) => value,
-                        ::core::result::Result::Ok(::core::option::Option::None) => {
-                            errors.insert(
-                                ::std::string::String::from(#name_str),
-                                ::ivo::FieldError {
-                                    reason: ::std::string::String::from("validation failed"),
-                                    metadata: ::core::option::Option::None,
-                                },
-                            );
-                            ::core::default::Default::default()
-                        }
-                        ::core::result::Result::Err(e) => {
-                            errors.insert(::std::string::String::from(#name_str), e);
-                            ::core::default::Default::default()
-                        }
+                match ::ivo::run_validator(value, &ctx, &_ctx_options, |value, ctx, opts| {
+                    ::std::boxed::Box::pin((#validator)(value, ctx, opts))
+                }).await {
+                    ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
+                    ::core::result::Result::Ok(::core::option::Option::None) => {
+                        errors.insert(
+                            ::std::string::String::from(#name_str),
+                            ::ivo::FieldError {
+                                reason: ::std::string::String::from("validation failed"),
+                                metadata: ::core::option::Option::None,
+                            },
+                        );
+                        ::core::default::Default::default()
+                    }
+                    ::core::result::Result::Err(e) => {
+                        errors.insert(::std::string::String::from(#name_str), e);
+                        ::core::default::Default::default()
                     }
                 }
             }
         } else {
-            quote! {
-                {
-                    let value: #ty = #base_value;
-                    #sanitized
-                    value
+            quote! { value }
+        };
+
+        let value_computation = quote! {
+            {
+                let mut value: #ty = #base_value;
+                if !#ignore_flag_tokens {
+                    #sanitizer_expr
+                    value = #validator_expr;
                 }
+                value
             }
         };
 
         quote! {
             let #name: #ty = #value_computation;
             output.#name = #name.clone();
-            let ctx = ::ivo::IvoContext::<#input_name, #output_name>::new(
+            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                 input.clone(),
                 output.clone(),
                 output.clone().into(),
@@ -574,26 +865,38 @@ fn generate_model(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenS
         pub const #model_name: #model_type_name = #model_type_name;
 
         impl #model_type_name {
-            pub async fn create(
+            pub async fn create<I>(
                 &self,
-                input: #input_name,
+                input: I,
                 _ctx_options: &#ctx_options_ty,
-            ) -> Result<#output_name, #payload_ty> {
+            ) -> Result<#output_name, #payload_ty>
+            where
+                I: ::core::convert::Into<#partial_input_name>,
+            {
+                let input: #partial_input_name = input.into();
                 let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> = ::std::collections::HashMap::new();
                 let mut output: #output_name = ::core::default::Default::default();
-                let mut ctx = ::ivo::IvoContext::<#input_name, #output_name>::new(
+                let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     output.clone(),
                     output.clone().into(),
                     false,
                 );
 
+                #(#ignore_flag_decls)*
+                #(#ignore_evaluations)*
+                #(#required_evaluations)*
+
                 #(#create_steps)*
 
                 if errors.is_empty() {
                     ::core::result::Result::Ok(output)
                 } else {
-                    ::core::result::Result::Err(errors)
+                    ::core::result::Result::Err(
+                        <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                            errors, _ctx_options,
+                        ),
+                    )
                 }
             }
 
@@ -779,9 +1082,17 @@ pub fn ivo_schema(args: TokenStream, input: TokenStream) -> TokenStream {
         Ok(f) => f,
         Err(e) => return e.to_compile_error().into(),
     };
+    let options = match parse_grouped_options(&input_mod) {
+        Ok(o) => o,
+        Err(e) => return e.to_compile_error().into(),
+    };
+
+    if let Err(e) = validate_grouped_options(&fields, &options) {
+        return e.to_compile_error().into();
+    }
 
     let struct_defs = generate_structs(&args, &fields);
-    let model_defs = generate_model(&args, &fields);
+    let model_defs = generate_model(&args, &fields, &options);
 
     quote! {
         #mod_vis mod #mod_name {
