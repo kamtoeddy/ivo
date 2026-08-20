@@ -481,3 +481,217 @@ This design directly addresses the "specialize synchronous handlers" optimizatio
 
 - Async handlers must use explicit `async` syntax. A closure that calls an async function but omits `.await` (and the surrounding `async` block) is classified as sync and will fail to compile against the generated sync signature.
 - Function-item handlers use the `async fn_name` marker to indicate asynchrony; a bare `fn_name` is always treated as sync.
+
+## 16. TODO: Model method signatures
+
+This section documents the generated methods on the schema model based on the existing runtime. The exact naming, tuple ordering, and trigger shapes are still to be finalized.
+
+### `create`
+
+```rust
+pub fn create(
+    &self,
+    input: &PartialUserInput,
+    options: UserCtxOptions,
+) -> Result<
+    (User, UserSuccessTrigger, UserCtxOptions),
+    (UserErrorPayload, UserFailureTrigger, UserCtxOptions),
+>
+```
+
+- If any directly-invoked handler is async, the method becomes `async fn`.
+- Directly-invoked handlers include validators, re-validators, sanitizers, defaults, resolvers, timestamp resolver, and grouped options such as `ignore`, `required`, and `post_validate`.
+- `on_success` / `on_failure` handlers do **not** make `create` async; they determine the sync/async nature of the returned triggers.
+
+### `update`
+
+```rust
+pub fn update(
+    &self,
+    data: &User,
+    updates: &PartialUserInput,
+    options: UserCtxOptions,
+) -> Result<
+    (PartialUser, UserSuccessTrigger, UserCtxOptions),
+    (Option<UserErrorPayload>, UserFailureTrigger, UserCtxOptions),
+>
+```
+
+- `update` returns `PartialUser`, **not** the full output struct.
+- If all final values equal the previous values, it returns `Err((None, failure_trigger, options))` — the “nothing to update” case.
+- The error payload is `Option<Payload>` because the failure may be either validation errors (`Some(payload)`) or nothing-to-update (`None`).
+
+### `delete`
+
+```rust
+pub fn delete(&self, data: &User, options: UserCtxOptions)
+```
+
+- `delete` invokes all field-level and schema-level `on_delete` handlers directly and returns `()`.
+- It is async if any `on_delete` handler is async.
+
+### Handler triggers
+
+`UserSuccessTrigger` and `UserFailureTrigger` are callables (closures or function items) returned alongside the result. Their sync/async nature is determined only by the `on_success` / `on_failure` handlers they wrap.
+
+```rust
+// Core handlers are sync, so create is sync.
+let (user, handle_success, opts) = model.create(input)?;
+
+// on_success handlers are async, so the trigger is async.
+handle_success().await?;
+```
+
+On failure, the returned error includes a failure trigger instead:
+
+```rust
+let (error, handle_failure, opts) = model.create(input).unwrap_err();
+handle_failure().await?;
+```
+
+## 17. TODO: Execution pipeline
+
+The runtime executes `create` and `update` in the following order. This needs to be validated against the macro-generated design and may be adjusted.
+
+1. Filter input fields (`ignore`, `ignore_init`, `ignore_update`, `readonly`).
+2. Attach defaults for `#[lax]` / `#[dependent]` fields.
+3. Evaluate missing required fields (`#[required]` fields and conditional `#[required]` on `#[lax]` / `#[virtual]`).
+4. Validate fields (`#[validate]`).
+5. Re-validate fields (`#[re_validate]`).
+6. Post-validate (`#[post_validate]` pre-validator, then post-validator).
+7. Sanitize virtual fields (`#[sanitize]`).
+8. Resolve dependent fields (`#[resolve]`), looping until no new changes.
+9. Attach constants (`#[value]`).
+10. Attach timestamps (`#[created_at]` / `#[updated_at]`).
+11. Evaluate update validity (strip unchanged fields for `update`).
+12. Prepare success / failure triggers.
+
+## 18. TODO: Field attribute matrix
+
+The following matrix is based on the existing builder API. It must be reconciled with §12 and finalized.
+
+| Attribute                   | Allowed on                               | Signature / form                                  | Notes                                                                                            |
+| --------------------------- | ---------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `#[required]`               | `#[lax]`, `#[virtual]`                   | `\|ctx, opts\| async move { Option<String> }`     | Conditional required check. Distinct from the `#[required]` field type.                          |
+| `#[required_error("...")]`  | `#[required]`                            | static string                                     | Error when field is missing at create.                                                           |
+| `#[required_error_fn(...)]` | `#[required]`                            | `\|raw_input, opts\| -> String`                   | Dynamic required error message.                                                                  |
+| `#[ignore]`                 | `#[lax]`, `#[virtual]`                   | `\|ctx, opts\| -> bool`                           | Skip field if resolver returns true.                                                             |
+| `#[ignore_init]`            | `#[lax]`, `#[virtual]`                   | none                                              | Ignore field during create.                                                                      |
+| `#[ignore_update]`          | `#[required]`, `#[lax]`, `#[virtual]`    | `\|partial_input, full_output, rw_opts\| -> bool` | Ignore field during update.                                                                      |
+| `#[readonly]`               | `#[required]`, `#[lax]`, `#[dependent]`  | none                                              | Required: no updates allowed. Lax/dependent: update only if current value equals static default. |
+| `#[validate(...)]`          | `#[required]`, `#[lax]`, `#[virtual]`    | `\|value, ctx, opts\| -> Result<Option<T>, ...>`  | Primary validation.                                                                              |
+| `#[re_validate(...)]`       | `#[required]`, `#[lax]`, `#[virtual]`    | same as validate                                  | Secondary validation after primary.                                                              |
+| `#[sanitize(...)]`          | `#[virtual]`                             | `\|value, ctx, opts\| -> T`                       | Mutates virtual input value. Runs after validate/re-validate/post_validate.                      |
+| `#[resolve(...)]`           | `#[dependent]`                           | `\|ctx, opts\| -> T`                              | Resolver run when any parent changes.                                                            |
+| `#[default(...)]`           | `#[dependent]`; also inline for `#[lax]` | static or resolver                                | Static default or context-aware resolver.                                                        |
+| `#[value(...)]`             | `#[constant]`                            | static or resolver                                | Static value or context-aware resolver.                                                          |
+| `#[depends_on(...)]`        | `#[dependent]`                           | list of field names                               | Required; at least one parent.                                                                   |
+| `#[virtual(alias = "...")]` | `#[virtual]`                             | string                                            | Alias names a dependent field that depends on this virtual.                                      |
+| `#[on_delete]`              | per §12 whitelist                        | `\|ctx, opts\| -> ()`                             | Lifecycle hook invoked directly by `delete`.                                                     |
+| `#[on_success]`             | per §12 whitelist                        | `\|ctx, opts\| -> ()`                             | Returned as a trigger from `create`/`update`.                                                    |
+| `#[on_failure]`             | per §12 whitelist                        | `\|ctx, opts\| -> ()`                             | Returned as a trigger from `create`/`update`.                                                    |
+
+## 19. TODO: Schema options reference
+
+Grouped options and their constraints, based on the existing runtime.
+
+| Option                                                 | Min fields   | Allowed field types                                                             | Notes                                           |
+| ------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `#[ignore([...], \|ctx, opts\| ...)]`                  | ≥2           | `#[lax]`, `#[virtual]`                                                          | Skip fields when resolver returns true.         |
+| `#[ignore_update([...], \|partial, full, opts\| ...)]` | 0 or ≥2      | `#[required]`, `#[lax]`, `#[virtual]`                                           | Empty array means global update-ignore switch.  |
+| `#[required([...], \|ctx, opts\| ...)]`                | ≥2           | `#[lax]`, `#[virtual]`                                                          | Group requirement check.                        |
+| `#[post_validate([...], \|b\| ...)]`                   | ≥2           | `#[lax]`, `#[required]`, `#[virtual]`                                           | Builder supports `pre_validate` and `validate`. |
+| `#[on_success([...], \|b\| ...)]`                      | 0 or more    | Output fields, including `#[constant]` / `#[dependent]`, but **not** timestamps | Empty array means always fire on success.       |
+| `#[on_delete([...], \|data, opts\| ...)]`              | schema-level | —                                                                               | Invoked directly inside `delete`.               |
+| `#[timestamps(\|\| ...)]`                              | schema-level | —                                                                               | Resolver must be **synchronous**.               |
+
+Additional rules:
+
+- Duplicate field names within a grouped option are rejected.
+- Aliases in grouped option arrays must be resolved to their underlying virtual field config names.
+- `#[on_success]` referencing a virtual alias must resolve to the alias target.
+
+## 20. TODO: Context types and error sanitizer
+
+Handlers receive different context/options types depending on their role.
+
+| Handler                                                   | Context                | Options                       | Notes                                           |
+| --------------------------------------------------------- | ---------------------- | ----------------------------- | ----------------------------------------------- |
+| Validators, re-validators, sanitizers, resolvers          | `IvoContext<I, O>`     | `IvoRwCtxOptions<CtxOptions>` | Core handlers can mutate options.               |
+| Lax / dependent defaults                                  | `IvoDefaultCtx<I>`     | `IvoRwCtxOptions<CtxOptions>` | Access to input and raw input.                  |
+| Constant value resolvers                                  | `IvoConstantCtx<I, O>` | `IvoRwCtxOptions<CtxOptions>` | Access to input, raw input, and current values. |
+| Lifecycle hooks (`on_success`, `on_failure`, `on_delete`) | `IvoContext<I, O>`     | `IvoCtxOptions<CtxOptions>`   | Read-only options.                              |
+
+### `IvoContext<I, O>` accessors
+
+- `input()` — current partial input.
+- `raw_input()` — original partial input.
+- `values()` — current full output values being built.
+- `changes()` — current update changes (update only).
+- `full_values()` — previous full output values (update only).
+- `previous_values()` — alias for `full_values()`.
+- `is_update()` — whether the context is for an update.
+
+### Error sanitizer trait
+
+```rust
+trait IvoErrorSanitizer<CtxOptions> {
+    type Metadata: Clone + Send + Sync;
+    type Payload;
+
+    fn sanitize(
+        payload: IvoErrorPayload<Self::Metadata>,
+        ctx_options: &CtxOptions,
+    ) -> Self::Payload;
+}
+```
+
+- `Metadata` is attached to individual field errors by validators.
+- `Payload` is the final error shape returned by `create`/`update`.
+- `DefaultErrorSanitizer` uses `Metadata = ()` and `Payload = IvoErrorPayload<()>`.
+
+## 21. TODO: Dependency graph validation rules
+
+Rules enforced at schema build time:
+
+- Every `#[dependent]` field must declare at least one parent via `#[depends_on(...)]`.
+- Parent fields can be `#[required]`, `#[lax]`, `#[virtual]`, or other `#[dependent]` fields.
+- Parents **cannot** be `#[constant]` or timestamp fields (`#[created_at]` / `#[updated_at]`).
+- No circular dependencies.
+- No redundant (transitive) dependencies. For example, if `a` depends on `[b, c]` and `b` depends on `[c]`, then `a` should not list `c`.
+- A `#[virtual]` field without an alias must be referenced by at least one dependent field's `#[depends_on(...)]`.
+- A `#[virtual(alias = "X")]` alias must name a dependent field, and that dependent field must depend on the virtual field.
+- Timestamp field names cannot be reused as field names or aliases.
+- Duplicate `#[depends_on(...)]` entries and self-dependencies are rejected.
+
+## 22. TODO: Readonly semantics
+
+`#[readonly]` behaves differently depending on the field type:
+
+- On `#[required]`: the field is never allowed in updates. It is stripped from update input before validation.
+- On `#[lax(...)]` / `#[dependent]` with a static default: an update is allowed only if the current stored value equals the static default. The field's resolver runs only when this condition holds.
+
+This distinction must be preserved in the macro-generated code.
+
+## 23. TODO: Derive compatibility / passthrough mapping
+
+The existing `IvoStruct` and `IvoInputStruct` derives understand passthrough attributes via `#[ivo(...)]`. The new field-level passthrough attributes (`#[input(...)]`, `#[output(...)]`, `#[partial(...)]`, `#[input_partial(...)]`, `#[output_partial(...)]`) are not natively recognized by the existing derives.
+
+Options to resolve:
+
+1. The `#[ivo_schema]` macro translates new passthrough attributes into `#[ivo(...)]` before applying the derive.
+2. Extend `IvoStruct` / `IvoInputStruct` to recognize the new attributes directly.
+
+Decision pending.
+
+## 24. TODO: Other runtime behaviors
+
+Miscellaneous behaviors from the existing runtime that need explicit design decisions:
+
+- **Partial struct utilities**: generated partials have `new()`, `is_empty()`, `into_option()`, and per-field `set_*`, `with_*`, `unset_*` methods.
+- **Validator return semantics**: `Ok(None)` means “use input as-is”; `Ok(Some(value))` replaces the input value.
+- **Virtual values do not appear on output partial**: virtual field validation updates only input, not output/`changes`.
+- **Lax fields without validators**: still considered “provided” and copied to output.
+- **Defaults attach only when missing**: for `#[lax]`, defaults are skipped if the field was provided; for `#[dependent]`, defaults are always attached if configured.
+- **Optional `updated_at`**: initialized to `None` on create; set to `Some(now)` on update only if the field already had a value.
+- **Constants resolved after dependents**: dependents cannot depend on constants because constants are attached later in the pipeline.
