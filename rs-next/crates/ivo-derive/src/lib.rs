@@ -361,6 +361,7 @@ struct GroupedOption {
     #[allow(dead_code)]
     fields: Vec<String>,
     handler: proc_macro2::TokenStream,
+    pre_validate: Option<proc_macro2::TokenStream>,
 }
 
 fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
@@ -385,7 +386,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         _ => {
             return Err(syn::Error::new_spanned(
                 attr,
-                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, `#[on_delete(...)]`, `#[timestamps(...)]`, or `#[post_validate(...)]`",
+                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, `#[on_delete(...)]`, `#[timestamps(...)]`, or `#[post_validate([...], validate = ..., pre_validate = ...)]`",
             ));
         }
     };
@@ -395,14 +396,90 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
             kind,
             fields: Vec::new(),
             handler: list.tokens.clone(),
+            pre_validate: None,
         })),
+        GroupedOptionKind::PostValidate => {
+            let exprs = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated
+                .parse2(list.tokens.clone())?;
+            let mut expr_iter = exprs.into_iter();
+            let fields_expr = match expr_iter.next() {
+                Some(syn::Expr::Array(a)) => a,
+                Some(other) => {
+                    return Err(syn::Error::new_spanned(
+                        other,
+                        "first argument must be an array of field names",
+                    ));
+                }
+                None => {
+                    return Err(syn::Error::new_spanned(
+                        attr,
+                        "expected `#[post_validate([...], validate = ..., pre_validate = ...)]`",
+                    ));
+                }
+            };
+
+            let mut fields = Vec::new();
+            for expr in &fields_expr.elems {
+                let syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(s),
+                    ..
+                }) = expr
+                else {
+                    return Err(syn::Error::new_spanned(
+                        expr,
+                        "field list must contain string literals",
+                    ));
+                };
+                fields.push(s.value());
+            }
+
+            let mut pre_validate: Option<proc_macro2::TokenStream> = None;
+            let mut validate: Option<proc_macro2::TokenStream> = None;
+            for expr in expr_iter {
+                let syn::Expr::Assign(assign) = expr else {
+                    return Err(syn::Error::new_spanned(
+                        expr,
+                        "expected `pre_validate = ...` or `validate = ...`",
+                    ));
+                };
+                let ident = match assign.left.as_ref() {
+                    syn::Expr::Path(p) => p.path.get_ident().cloned(),
+                    _ => None,
+                };
+                let value = assign.right.to_token_stream();
+                match ident.as_ref().map(|i| i.to_string()).as_deref() {
+                    Some("pre_validate") => pre_validate = Some(value),
+                    Some("validate") => validate = Some(value),
+                    _ => {
+                        return Err(syn::Error::new_spanned(
+                            assign,
+                            "expected `pre_validate = ...` or `validate = ...`",
+                        ));
+                    }
+                }
+            }
+
+            let Some(handler) = validate else {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    "`#[post_validate]` requires a `validate = ...` handler",
+                ));
+            };
+
+            Ok(Some(GroupedOption {
+                kind,
+                fields,
+                handler,
+                pre_validate,
+            }))
+        }
         _ => {
             let mut exprs = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated
                 .parse2(list.tokens.clone())?;
             if exprs.len() != 2 {
                 return Err(syn::Error::new_spanned(
                     attr,
-                    "expected `#[ignore([...], handler)]`, `#[required([...], handler)]`, or `#[post_validate([...], handler)]`",
+                    "expected `#[ignore([...], handler)]`, `#[required([...], handler)]`, or `#[ignore_update([...], handler)]`",
                 ));
             }
             let handler = exprs.pop().unwrap().into_value().into_token_stream();
@@ -435,6 +512,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
                 kind,
                 fields,
                 handler,
+                pre_validate: None,
             }))
         }
     }
@@ -2321,7 +2399,6 @@ fn generate_model(
         .map(|o| {
             let ctx_expr = quote!(&ctx);
             let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) = make_post_validate_call(&o.handler, &ctx_expr, &opts_expr);
 
             let field_names: Vec<_> = o
                 .fields
@@ -2353,40 +2430,62 @@ fn generate_model(
                 .collect();
 
             let allowed_names: Vec<_> = field_names.iter().map(|(n, _)| n.clone()).collect();
-            let apply_updates = field_names.into_iter().map(|(_, stmt)| stmt);
+            let apply_updates: Vec<_> = field_names.into_iter().map(|(_, stmt)| stmt).collect();
 
             let allowed_names_expr = quote! {
                 [#(#allowed_names),*]
             };
 
-            let stmt = quote! {
-                let __post_result: ::core::result::Result<
-                    ::core::option::Option<#partial_input_name>,
-                    #input_errors_name<#metadata_ty>,
-                > = #call;
-                match __post_result {
-                    ::core::result::Result::Ok(::core::option::Option::Some(__post_updates)) => {
-                        #(#apply_updates)*
-                        let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                            input.clone(),
-                            output.clone(),
-                            output.clone().into(),
-                            false,
-                        );
-                    }
-                    ::core::result::Result::Ok(::core::option::Option::None) => {}
-                    ::core::result::Result::Err(__post_errors) => {
-                        let __post_payload: ::ivo::IvoErrorPayload<#metadata_ty> =
-                            __post_errors.into();
-                        let __allowed: &[&str] = &#allowed_names_expr;
-                        for (__field_name, __field_error) in __post_payload {
-                            if __allowed.contains(&__field_name.as_str()) {
-                                errors.insert(__field_name, __field_error);
+            let make_validator_block =
+                |handler: &proc_macro2::TokenStream| -> (bool, proc_macro2::TokenStream) {
+                    let (is_async, call) = make_post_validate_call(handler, &ctx_expr, &opts_expr);
+                    let block = quote! {
+                        let __post_result: ::core::result::Result<
+                            ::core::option::Option<#partial_input_name>,
+                            #input_errors_name<#metadata_ty>,
+                        > = #call;
+                        match __post_result {
+                            ::core::result::Result::Ok(
+                                ::core::option::Option::Some(__post_updates),
+                            ) => {
+                                #(#apply_updates)*
+                                ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                                    input.clone(),
+                                    output.clone(),
+                                    output.clone().into(),
+                                    false,
+                                );
+                            }
+                            ::core::result::Result::Ok(::core::option::Option::None) => {}
+                            ::core::result::Result::Err(__post_errors) => {
+                                let __post_payload: ::ivo::IvoErrorPayload<#metadata_ty> =
+                                    __post_errors.into();
+                                let __allowed: &[&str] = &#allowed_names_expr;
+                                for (__field_name, __field_error) in __post_payload {
+                                    if __allowed.contains(&__field_name.as_str()) {
+                                        errors.insert(__field_name, __field_error);
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-            };
+                    };
+                    (is_async, block)
+                };
+
+            let mut is_async = false;
+            let mut stmts: Vec<proc_macro2::TokenStream> = Vec::new();
+
+            if let Some(pre_handler) = &o.pre_validate {
+                let (a, block) = make_validator_block(pre_handler);
+                is_async |= a;
+                stmts.push(block);
+            }
+
+            let (a, block) = make_validator_block(&o.handler);
+            is_async |= a;
+            stmts.push(block);
+
+            let stmt = quote! { #(#stmts)* };
             (is_async, stmt)
         })
         .collect();
@@ -2785,6 +2884,7 @@ fn generate_model(
                 #(#virtual_steps)*
                 #(#create_steps)*
                 #(#re_validate_steps)*
+                let mut ctx = ctx;
                 #(#post_validate_steps)*
 
                 if errors.is_empty() {
@@ -3245,7 +3345,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate([], |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate([], validate = |_ctx, _opts| async move { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3267,7 +3367,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a"], |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a"], validate = |_ctx, _opts| async move { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3289,7 +3389,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a", "a"], |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "a"], validate = |_ctx, _opts| async move { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3311,7 +3411,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a", "missing"], |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "missing"], validate = |_ctx, _opts| async move { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3333,7 +3433,7 @@ mod tests {
                     pub id: String,
                 }
 
-                #[post_validate(["a", "id"], |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "id"], validate = |_ctx, _opts| async move { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3356,7 +3456,7 @@ mod tests {
                     pub b: i32,
                 }
 
-                #[post_validate(["a", "b"], |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "b"], validate = |_ctx, _opts| async move { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3378,7 +3478,7 @@ mod tests {
                     pub created_at: String,
                 }
 
-                #[post_validate(["a", "created_at"], |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "created_at"], validate = |_ctx, _opts| async move { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3405,11 +3505,33 @@ mod tests {
                     pub email: String,
                 }
 
-                #[post_validate(["name", "email"], |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["name", "email"], validate = |_ctx, _opts| async move { Ok(None) })]
                 const _: () = ();
             }
             "#,
         );
         assert_compile_error(&out, "post_validate virtual alias");
+    }
+
+    #[test]
+    fn rejects_post_validate_missing_validate_handler() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub a: String,
+
+                    #[required]
+                    pub b: String,
+                }
+
+                #[post_validate(["a", "b"], pre_validate = |_ctx, _opts| async move { Ok(None) })]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_compile_error(&out, "post_validate missing validate handler");
     }
 }

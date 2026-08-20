@@ -875,7 +875,7 @@ mod user_post_validate_pass_schema {
         pub password_confirmation: String,
     }
 
-    #[post_validate(["password", "password_confirmation"], |_ctx, _opts| async move {
+    #[post_validate(["password", "password_confirmation"], validate = |_ctx, _opts| async move {
         if _ctx.input().password != _ctx.input().password_confirmation {
             let mut errors = UserErrors::new();
             errors.set_password("passwords do not match", None);
@@ -897,7 +897,7 @@ mod user_post_validate_fail_schema {
         pub password_confirmation: String,
     }
 
-    #[post_validate(["password", "password_confirmation"], |_ctx, _opts| async move {
+    #[post_validate(["password", "password_confirmation"], validate = |_ctx, _opts| async move {
         if _ctx.input().password != _ctx.input().password_confirmation {
             let mut errors = UserErrors::new();
             errors.set_password("passwords do not match", None);
@@ -919,7 +919,7 @@ mod user_post_validate_sync_schema {
         pub b: String,
     }
 
-    #[post_validate(["a", "b"], |_ctx, _opts| {
+    #[post_validate(["a", "b"], validate = |_ctx, _opts| {
         let mut updates = PartialUser::new();
         updates.set_a("updated_a".to_string());
         updates.set_b("updated_b".to_string());
@@ -968,5 +968,51 @@ async fn smoke_model_post_validate_sync() {
         .unwrap();
     assert_eq!(created.a, "updated_a");
     assert_eq!(created.b, "updated_b");
+    trigger.await;
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_post_validate_pre_schema {
+    struct Fields {
+        #[required]
+        pub a: String,
+
+        #[required]
+        pub b: String,
+    }
+
+    #[post_validate(
+        ["a", "b"],
+        pre_validate = |_ctx, _opts| async move {
+            let mut updates = PartialUser::new();
+            updates.set_a("pre_a".to_string());
+            updates.set_b("pre_b".to_string());
+            Ok(Some(updates))
+        },
+        validate = |_ctx, _opts| async move {
+            if _ctx.input().a != Some("pre_a".to_string()) {
+                let mut errors = UserErrors::new();
+                errors.set_a("a was not updated by pre_validate", None);
+                Err(errors)
+            } else {
+                Ok(None)
+            }
+        }
+    )]
+    const _: () = ();
+}
+
+#[tokio::test]
+async fn smoke_model_post_validate_pre_validate() {
+    let input = user_post_validate_pre_schema::User {
+        a: "orig".to_string(),
+        b: "orig".to_string(),
+    };
+    let (created, trigger, _opts) = user_post_validate_pre_schema::UserModel
+        .create(input, ())
+        .await
+        .unwrap();
+    assert_eq!(created.a, "pre_a");
+    assert_eq!(created.b, "pre_b");
     trigger.await;
 }
