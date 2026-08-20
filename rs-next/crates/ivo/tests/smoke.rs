@@ -675,27 +675,51 @@ fn smoke_derive_partial() {
     input(UserInput, derive(Debug, Clone, PartialEq)),
     output(User, derive(Debug, Clone, PartialEq))
 )]
-mod user_on_delete_schema {
+mod user_on_delete_field_schema {
     struct Fields {
         #[required]
         pub name: String,
 
         #[constant(|| String::from("id"))]
-        #[on_delete(|ctx, _opts| async move { assert_eq!(ctx.input().id, "id") })]
+        #[on_delete(|_data, _opts| async move { panic!("field on_delete invoked") })]
         pub id: String,
     }
+}
 
-    #[on_delete(|ctx, _opts| async move { assert_eq!(ctx.input().name, "deleted") })]
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
+mod user_on_delete_grouped_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+    }
+
+    #[on_delete(|_data, _opts| async move { panic!("grouped on_delete invoked") })]
     const _: () = ();
 }
 
 #[tokio::test]
-async fn smoke_model_on_delete() {
-    let output = user_on_delete_schema::User {
+#[should_panic(expected = "field on_delete invoked")]
+async fn smoke_model_on_delete_field() {
+    let output = user_on_delete_field_schema::User {
         name: "deleted".to_string(),
         id: "id".to_string(),
     };
-    user_on_delete_schema::UserModel
+    user_on_delete_field_schema::UserModel
+        .delete(&output, &())
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+#[should_panic(expected = "grouped on_delete invoked")]
+async fn smoke_model_on_delete_grouped() {
+    let output = user_on_delete_grouped_schema::User {
+        name: "deleted".to_string(),
+    };
+    user_on_delete_grouped_schema::UserModel
         .delete(&output, &())
         .await
         .unwrap();

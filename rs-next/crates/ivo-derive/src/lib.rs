@@ -1373,7 +1373,7 @@ fn generate_model(
         });
 
     // Delete method: lifecycle hooks.
-    let delete_ctx_ty = quote!(::ivo::IvoContext<#output_name, #output_name>);
+    let data_ref_ty = quote!(&#output_name);
 
     let field_on_delete_hooks = fields
         .iter()
@@ -1388,8 +1388,8 @@ fn generate_model(
                 .into_iter()
                 .map(|handler| {
                     let handler =
-                        type_annotate_handler(handler, &[delete_ctx_ty.clone(), opts_ty.clone()]);
-                    quote! { ::ivo::run_hook(ctx.clone(), _ctx_options, #handler).await; }
+                        type_annotate_handler(handler, &[data_ref_ty.clone(), opts_ty.clone()]);
+                    quote! { ::ivo::run_hook(data, _ctx_options, #handler).await; }
                 })
         });
 
@@ -1398,8 +1398,8 @@ fn generate_model(
         .filter(|o| matches!(o.kind, GroupedOptionKind::OnDelete))
         .map(|o| {
             let handler =
-                type_annotate_handler(o.handler.clone(), &[delete_ctx_ty.clone(), opts_ty.clone()]);
-            quote! { ::ivo::run_hook(ctx.clone(), _ctx_options, #handler).await; }
+                type_annotate_handler(o.handler.clone(), &[data_ref_ty.clone(), opts_ty.clone()]);
+            quote! { ::ivo::run_hook(data, _ctx_options, #handler).await; }
         });
 
     let on_delete_hooks = field_on_delete_hooks.chain(grouped_on_delete_hooks);
@@ -1477,12 +1477,6 @@ fn generate_model(
                 data: &#output_name,
                 _ctx_options: &#ctx_options_ty,
             ) -> Result<(), #payload_ty> {
-                let ctx = ::ivo::IvoContext::<#output_name, #output_name>::new(
-                    data.clone(),
-                    data.clone(),
-                    data.clone().into(),
-                    false,
-                );
                 #(#on_delete_hooks)*
                 ::core::result::Result::Ok(())
             }
