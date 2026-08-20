@@ -532,7 +532,11 @@ pub fn delete(&self, data: &User, options: UserCtxOptions)
 
 ### Handler triggers
 
-`UserSuccessTrigger` and `UserFailureTrigger` are callables (closures or function items) returned alongside the result. Their sync/async nature is determined only by the `on_success` / `on_failure` handlers they wrap.
+`UserSuccessTrigger` and `UserFailureTrigger` are callables (closures or function items) returned alongside the result. Their sync/async nature is determined only by the `on_success` / `on_failure` handlers they wrap:
+
+- If **all** `on_success` handlers are sync, `handle_success` is a sync callable.
+- If **any** `on_success` handler is async, `handle_success` is an async callable.
+- The same rule applies to `handle_failure` and `on_failure` handlers.
 
 ```rust
 // Core handlers are sync, so create is sync.
@@ -540,6 +544,13 @@ let (user, handle_success, opts) = model.create(input)?;
 
 // on_success handlers are async, so the trigger is async.
 handle_success().await?;
+```
+
+If all `on_success` handlers were sync, the call would be synchronous:
+
+```rust
+let (user, handle_success, opts) = model.create(input)?;
+handle_success()?; // no .await
 ```
 
 On failure, the returned error includes a failure trigger instead:
