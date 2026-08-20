@@ -139,6 +139,33 @@ where
     resolver(ctx, opts)
 }
 
+pub async fn run_post_validator<Ctx, Opts, F, Partial, Errors>(
+    ctx: Ctx,
+    opts: Opts,
+    validator: F,
+) -> Result<Option<Partial>, Errors>
+where
+    F: FnOnce(
+        Ctx,
+        Opts,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Option<Partial>, Errors>>>,
+    >,
+{
+    validator(ctx, opts).await
+}
+
+pub fn run_post_validator_sync<Ctx, Opts, F, Partial, Errors>(
+    ctx: Ctx,
+    opts: Opts,
+    validator: F,
+) -> Result<Option<Partial>, Errors>
+where
+    F: FnOnce(Ctx, Opts) -> Result<Option<Partial>, Errors>,
+{
+    validator(ctx, opts)
+}
+
 pub trait IvoErrorSanitizer<CtxOptions> {
     type Metadata: Clone + Send + Sync;
     type Payload;

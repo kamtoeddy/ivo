@@ -864,3 +864,109 @@ async fn smoke_model_on_failure_trigger() {
     trigger.await;
     assert_eq!(ON_FAILURE_COUNTER.load(Ordering::SeqCst), 1);
 }
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_post_validate_pass_schema {
+    struct Fields {
+        #[required]
+        pub password: String,
+
+        #[required]
+        pub password_confirmation: String,
+    }
+
+    #[post_validate(["password", "password_confirmation"], |_ctx, _opts| async move {
+        if _ctx.input().password != _ctx.input().password_confirmation {
+            let mut errors = UserErrors::new();
+            errors.set_password("passwords do not match", None);
+            Err(errors)
+        } else {
+            Ok(None)
+        }
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_post_validate_fail_schema {
+    struct Fields {
+        #[required]
+        pub password: String,
+
+        #[required]
+        pub password_confirmation: String,
+    }
+
+    #[post_validate(["password", "password_confirmation"], |_ctx, _opts| async move {
+        if _ctx.input().password != _ctx.input().password_confirmation {
+            let mut errors = UserErrors::new();
+            errors.set_password("passwords do not match", None);
+            Err(errors)
+        } else {
+            Ok(None)
+        }
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+mod user_post_validate_sync_schema {
+    struct Fields {
+        #[required]
+        pub a: String,
+
+        #[required]
+        pub b: String,
+    }
+
+    #[post_validate(["a", "b"], |_ctx, _opts| {
+        let mut updates = PartialUser::new();
+        updates.set_a("updated_a".to_string());
+        updates.set_b("updated_b".to_string());
+        Ok(Some(updates))
+    })]
+    const _: () = ();
+}
+
+#[tokio::test]
+async fn smoke_model_post_validate_pass() {
+    let input = user_post_validate_pass_schema::User {
+        password: "secret".to_string(),
+        password_confirmation: "secret".to_string(),
+    };
+    let (created, trigger, _opts) = user_post_validate_pass_schema::UserModel
+        .create(input, ())
+        .await
+        .unwrap();
+    assert_eq!(created.password, "secret");
+    assert_eq!(created.password_confirmation, "secret");
+    trigger.await;
+}
+
+#[tokio::test]
+async fn smoke_model_post_validate_fail() {
+    let input = user_post_validate_fail_schema::User {
+        password: "secret".to_string(),
+        password_confirmation: "different".to_string(),
+    };
+    let (errors, trigger, _opts) = user_post_validate_fail_schema::UserModel
+        .create(input, ())
+        .await
+        .unwrap_err();
+    assert!(errors.contains_key("password"));
+    trigger.await;
+}
+
+#[tokio::test]
+async fn smoke_model_post_validate_sync() {
+    let input = user_post_validate_sync_schema::User {
+        a: "a".to_string(),
+        b: "b".to_string(),
+    };
+    let (created, trigger, _opts) = user_post_validate_sync_schema::UserModel
+        .create(input, ())
+        .unwrap();
+    assert_eq!(created.a, "updated_a");
+    assert_eq!(created.b, "updated_b");
+    trigger.await;
+}

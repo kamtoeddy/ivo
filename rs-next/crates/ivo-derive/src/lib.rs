@@ -352,6 +352,7 @@ enum GroupedOptionKind {
     IgnoreUpdate,
     OnDelete,
     Timestamps,
+    PostValidate,
 }
 
 #[derive(Clone)]
@@ -373,6 +374,8 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         GroupedOptionKind::OnDelete
     } else if attr.path().is_ident("timestamps") {
         GroupedOptionKind::Timestamps
+    } else if attr.path().is_ident("post_validate") {
+        GroupedOptionKind::PostValidate
     } else {
         return Ok(None);
     };
@@ -382,7 +385,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         _ => {
             return Err(syn::Error::new_spanned(
                 attr,
-                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, `#[on_delete(...)]`, or `#[timestamps(...)]`",
+                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, `#[on_delete(...)]`, `#[timestamps(...)]`, or `#[post_validate(...)]`",
             ));
         }
     };
@@ -399,7 +402,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
             if exprs.len() != 2 {
                 return Err(syn::Error::new_spanned(
                     attr,
-                    "expected `#[ignore([...], handler)]` or `#[required([...], handler)]`",
+                    "expected `#[ignore([...], handler)]`, `#[required([...], handler)]`, or `#[post_validate([...], handler)]`",
                 ));
             }
             let handler = exprs.pop().unwrap().into_value().into_token_stream();
@@ -571,6 +574,64 @@ fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> s
                 }
             }
             GroupedOptionKind::Timestamps => {}
+            GroupedOptionKind::PostValidate => {
+                if opt.fields.len() < 2 {
+                    return Err(syn::Error::new(
+                        proc_macro2::Span::call_site(),
+                        "post-validation expects at least 2 fields",
+                    ));
+                }
+
+                let mut seen = std::collections::HashSet::new();
+                for field in &opt.fields {
+                    if !seen.insert(field) {
+                        return Err(syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!(
+                                "remove duplicates of `{}` in your post-validation config",
+                                field
+                            ),
+                        ));
+                    }
+                }
+
+                for field in &opt.fields {
+                    if let Some(alias_field) = fields.iter().find(|f| {
+                        matches!(
+                            &f.field_type,
+                            FieldType::Virtual { alias: Some(alias) } if alias == field
+                        )
+                    }) {
+                        return Err(syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!(
+                                "`{}` is an alias; use `{}` instead",
+                                field, alias_field.name
+                            ),
+                        ));
+                    }
+
+                    let f = fields.iter().find(|f| f.name == field).ok_or_else(|| {
+                        syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!("`{}` does not exist in your schema", field),
+                        )
+                    })?;
+
+                    if !matches!(
+                        f.field_type,
+                        FieldType::Required | FieldType::Lax | FieldType::Virtual { .. }
+                    ) {
+                        return Err(syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!(
+                                "only required, lax and virtual fields can be post-validated; remove `{}`",
+                                field
+                            ),
+                        ));
+                    }
+                }
+            }
         }
     }
 
@@ -1297,6 +1358,91 @@ fn generate_partial_and_impls(
     }
 }
 
+fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_macro2::TokenStream {
+    let errors_name = format_ident!("{}Errors", name);
+
+    let error_fields = fields.iter().map(|f| {
+        let name = &f.name;
+        quote! { #name: ::core::option::Option<::ivo::FieldError<Metadata>> }
+    });
+
+    let error_defaults = fields.iter().map(|f| {
+        let name = &f.name;
+        quote! { #name: ::core::option::Option::None }
+    });
+
+    let is_empty_checks = fields.iter().map(|f| {
+        let name = &f.name;
+        quote! { self.#name.is_none() }
+    });
+
+    let setters = fields.iter().map(|f| {
+        let name = &f.name;
+        let setter = format_ident!("set_{}", name);
+        quote! {
+            pub fn #setter(
+                &mut self,
+                reason: impl ::core::convert::Into<::std::string::String>,
+                metadata: ::core::option::Option<Metadata>,
+            ) {
+                self.#name = ::core::option::Option::Some(::ivo::FieldError {
+                    reason: reason.into(),
+                    metadata,
+                });
+            }
+        }
+    });
+
+    let insertions = fields.iter().map(|f| {
+        let name = &f.name;
+        let name_str = name.to_string();
+        quote! {
+            if let ::core::option::Option::Some(e) = self.#name {
+                payload.insert(::std::string::String::from(#name_str), e);
+            }
+        }
+    });
+
+    quote! {
+        #[derive(::core::clone::Clone)]
+        pub struct #errors_name<Metadata: ::core::clone::Clone = ::ivo::DefaultFieldErrorMetadata> {
+            #(#error_fields,)*
+        }
+
+        impl<Metadata: ::core::clone::Clone> #errors_name<Metadata> {
+            pub fn new() -> Self {
+                Self { #(#error_defaults,)* }
+            }
+
+            pub fn is_empty(&self) -> bool {
+                #(#is_empty_checks)&&*
+            }
+
+            #(#setters)*
+
+            pub fn into_payload(self) -> ::ivo::IvoErrorPayload<Metadata> {
+                let mut payload = ::ivo::IvoErrorPayload::new();
+                #(#insertions)*
+                payload
+            }
+        }
+
+        impl<Metadata: ::core::clone::Clone> ::core::default::Default for #errors_name<Metadata> {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
+
+        impl<Metadata: ::core::clone::Clone> ::core::convert::From<#errors_name<Metadata>>
+            for ::ivo::IvoErrorPayload<Metadata>
+        {
+            fn from(errors: #errors_name<Metadata>) -> Self {
+                errors.into_payload()
+            }
+        }
+    }
+}
+
 fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenStream {
     let input_name = &args.input.name;
     let input_derives: Vec<_> = args
@@ -1397,9 +1543,12 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
         (quote! {}, quote! {})
     };
 
+    let input_errors_struct = generate_errors_struct(input_name, &input_partial_fields);
+
     quote! {
         #input_struct
         #input_partial_impls
+        #input_errors_struct
         #output_struct
         #output_partial_impls
     }
@@ -1427,6 +1576,7 @@ fn generate_model(
 ) -> proc_macro2::TokenStream {
     let input_name = &args.input.name;
     let partial_input_name = format_ident!("Partial{}", input_name);
+    let input_errors_name = format_ident!("{}Errors", input_name);
     let model_base_name = args.output.as_ref().map(|o| &o.name).unwrap_or(input_name);
     let model_name = format_ident!("{}Model", model_base_name);
     let model_type_name = format_ident!("{}Type", model_name);
@@ -1509,6 +1659,8 @@ fn generate_model(
     let resolver_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
     let opts_ty = quote!(&::ivo::IvoRwCtxOptions<#ctx_options_ty>);
     let hook_opts_ty = quote!(&::ivo::IvoCtxOptions<#ctx_options_ty>);
+    let post_validate_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
+    let post_validate_opts_ty = quote!(::ivo::IvoRwCtxOptions<#ctx_options_ty>);
     let raw_input_ty = quote!(&#partial_input_name);
 
     // Helpers to emit either a sync call or an awaited async runtime helper.
@@ -1628,6 +1780,33 @@ fn generate_model(
             (
                 false,
                 quote! { (#annotated)(#value_expr, #ctx_expr, #opts_expr) },
+            )
+        }
+    };
+
+    let make_post_validate_call = |handler: &proc_macro2::TokenStream,
+                                   _ctx_expr: &proc_macro2::TokenStream,
+                                   _opts_expr: &proc_macro2::TokenStream|
+     -> (bool, proc_macro2::TokenStream) {
+        let annotated = type_annotate_handler(
+            handler.clone(),
+            &[post_validate_ctx_ty.clone(), post_validate_opts_ty.clone()],
+        );
+        if is_async_handler(handler) {
+            (
+                true,
+                quote! {
+                    ::ivo::run_post_validator(ctx.clone(), _rw_ctx_options.clone(), |ctx, opts| {
+                        ::std::boxed::Box::pin((#annotated)(ctx, opts))
+                    }).await
+                },
+            )
+        } else {
+            (
+                false,
+                quote! {
+                    ::ivo::run_post_validator_sync(ctx.clone(), _rw_ctx_options.clone(), #annotated)
+                },
             )
         }
     };
@@ -2136,6 +2315,84 @@ fn generate_model(
     create_has_async |= re_validate_pairs.iter().any(|(a, _)| *a);
     let re_validate_steps = re_validate_pairs.into_iter().map(|(_, stmt)| stmt);
 
+    let post_validate_pairs: Vec<_> = options
+        .iter()
+        .filter(|o| matches!(o.kind, GroupedOptionKind::PostValidate))
+        .map(|o| {
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) = make_post_validate_call(&o.handler, &ctx_expr, &opts_expr);
+
+            let field_names: Vec<_> = o
+                .fields
+                .iter()
+                .map(|name| {
+                    let f = fields.iter().find(|f| f.name == *name).unwrap();
+                    let input_name = input_field_name(f);
+                    let name_str = name.clone();
+                    let is_virtual = matches!(f.field_type, FieldType::Virtual { .. });
+                    let output_update = if is_virtual {
+                        quote! {}
+                    } else {
+                        quote! {
+                            if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
+                                output.#input_name = __v.clone();
+                            }
+                        }
+                    };
+                    (
+                        name_str,
+                        quote! {
+                            if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
+                                input.#input_name = ::core::option::Option::Some(__v.clone());
+                            }
+                            #output_update
+                        },
+                    )
+                })
+                .collect();
+
+            let allowed_names: Vec<_> = field_names.iter().map(|(n, _)| n.clone()).collect();
+            let apply_updates = field_names.into_iter().map(|(_, stmt)| stmt);
+
+            let allowed_names_expr = quote! {
+                [#(#allowed_names),*]
+            };
+
+            let stmt = quote! {
+                let __post_result: ::core::result::Result<
+                    ::core::option::Option<#partial_input_name>,
+                    #input_errors_name<#metadata_ty>,
+                > = #call;
+                match __post_result {
+                    ::core::result::Result::Ok(::core::option::Option::Some(__post_updates)) => {
+                        #(#apply_updates)*
+                        let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                            input.clone(),
+                            output.clone(),
+                            output.clone().into(),
+                            false,
+                        );
+                    }
+                    ::core::result::Result::Ok(::core::option::Option::None) => {}
+                    ::core::result::Result::Err(__post_errors) => {
+                        let __post_payload: ::ivo::IvoErrorPayload<#metadata_ty> =
+                            __post_errors.into();
+                        let __allowed: &[&str] = &#allowed_names_expr;
+                        for (__field_name, __field_error) in __post_payload {
+                            if __allowed.contains(&__field_name.as_str()) {
+                                errors.insert(__field_name, __field_error);
+                            }
+                        }
+                    }
+                }
+            };
+            (is_async, stmt)
+        })
+        .collect();
+    create_has_async |= post_validate_pairs.iter().any(|(a, _)| *a);
+    let post_validate_steps = post_validate_pairs.into_iter().map(|(_, stmt)| stmt);
+
     // Update method: apply partial updates.
     let update_ctx_ty = quote!(&::ivo::IvoContext<#partial_output_name, #output_name>);
 
@@ -2528,6 +2785,7 @@ fn generate_model(
                 #(#virtual_steps)*
                 #(#create_steps)*
                 #(#re_validate_steps)*
+                #(#post_validate_steps)*
 
                 if errors.is_empty() {
                     let __return_opts = _ctx_options.clone();
@@ -2971,5 +3229,187 @@ mod tests {
                 "#,
         );
         assert_no_compile_error(&out, "valid dependency chain");
+    }
+
+    #[test]
+    fn rejects_post_validate_empty_fields() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub a: String,
+
+                    #[required]
+                    pub b: String,
+                }
+
+                #[post_validate([], |_ctx, _opts| async move { Ok(None) })]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_compile_error(&out, "post_validate empty fields");
+    }
+
+    #[test]
+    fn rejects_post_validate_single_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub a: String,
+
+                    #[required]
+                    pub b: String,
+                }
+
+                #[post_validate(["a"], |_ctx, _opts| async move { Ok(None) })]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_compile_error(&out, "post_validate single field");
+    }
+
+    #[test]
+    fn rejects_post_validate_duplicate_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub a: String,
+
+                    #[required]
+                    pub b: String,
+                }
+
+                #[post_validate(["a", "a"], |_ctx, _opts| async move { Ok(None) })]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_compile_error(&out, "post_validate duplicate field");
+    }
+
+    #[test]
+    fn rejects_post_validate_missing_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub a: String,
+
+                    #[required]
+                    pub b: String,
+                }
+
+                #[post_validate(["a", "missing"], |_ctx, _opts| async move { Ok(None) })]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_compile_error(&out, "post_validate missing field");
+    }
+
+    #[test]
+    fn rejects_post_validate_constant_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub a: String,
+
+                    #[constant(|| String::from("id"))]
+                    pub id: String,
+                }
+
+                #[post_validate(["a", "id"], |_ctx, _opts| async move { Ok(None) })]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_compile_error(&out, "post_validate constant field");
+    }
+
+    #[test]
+    fn rejects_post_validate_dependent_field() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub a: String,
+
+                    #[depends_on(a)]
+                    #[default(|| 1)]
+                    pub b: i32,
+                }
+
+                #[post_validate(["a", "b"], |_ctx, _opts| async move { Ok(None) })]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_compile_error(&out, "post_validate dependent field");
+    }
+
+    #[test]
+    fn rejects_post_validate_timestamp_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub a: String,
+
+                    #[created_at]
+                    pub created_at: String,
+                }
+
+                #[post_validate(["a", "created_at"], |_ctx, _opts| async move { Ok(None) })]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_compile_error(&out, "post_validate timestamp field");
+    }
+
+    #[test]
+    fn rejects_post_validate_virtual_alias() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub name: String,
+
+                    #[ivo_virtual(alias = "email")]
+                    #[validate(|v, _ctx, _opts| async move { Ok(Some(v)) })]
+                    pub raw_email: String,
+
+                    #[depends_on(raw_email)]
+                    #[default(|| String::from("x"))]
+                    pub email: String,
+                }
+
+                #[post_validate(["name", "email"], |_ctx, _opts| async move { Ok(None) })]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_compile_error(&out, "post_validate virtual alias");
     }
 }
