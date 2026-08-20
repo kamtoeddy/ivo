@@ -2531,14 +2531,16 @@ fn generate_model(
 
                 if errors.is_empty() {
                     let __return_opts = _ctx_options.clone();
-                    ::core::result::Result::Ok((output, #create_success_trigger, __return_opts))
+                    let __success_trigger = #create_success_trigger;
+                    ::core::result::Result::Ok((output, __success_trigger, __return_opts))
                 } else {
                     let __return_opts = _ctx_options.clone();
+                    let __failure_trigger = #create_failure_trigger;
                     ::core::result::Result::Err((
                         <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
                             errors, &*_rw_ctx_options.read(),
                         ),
-                        #create_failure_trigger,
+                        __failure_trigger,
                         __return_opts,
                     ))
                 }
@@ -2570,7 +2572,8 @@ fn generate_model(
                 #(#update_assignments)*
 
                 let __return_opts = _ctx_options.clone();
-                ::core::result::Result::Ok((output, #update_success_trigger, __return_opts))
+                let __success_trigger = #update_success_trigger;
+                ::core::result::Result::Ok((output, __success_trigger, __return_opts))
             }
 
             #delete_sig(

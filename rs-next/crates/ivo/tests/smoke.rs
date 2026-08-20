@@ -1,4 +1,8 @@
 use ivo::ivo_schema;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+static ON_SUCCESS_COUNTER: AtomicUsize = AtomicUsize::new(0);
+static ON_FAILURE_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 #[ivo_schema(input(User))]
 mod user_schema {
@@ -798,4 +802,65 @@ fn smoke_partial_passthrough_attrs() {
     let mut output_partial = user_partial_passthrough_schema::PartialUser::new();
     output_partial.set_name("test".to_string());
     assert!(!output_partial.is_empty());
+}
+
+#[tokio::test]
+async fn smoke_model_on_success_trigger() {
+    ON_SUCCESS_COUNTER.store(0, Ordering::SeqCst);
+
+    #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+    mod user_on_success_schema {
+        struct Fields {
+            #[required]
+            #[on_success(|_ctx, _opts| async move {
+                crate::ON_SUCCESS_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            })]
+            pub name: String,
+        }
+    }
+
+    let input = user_on_success_schema::User {
+        name: "test".to_string(),
+    };
+    let (created, trigger, _opts) = user_on_success_schema::UserModel.create(input, ()).unwrap();
+    assert_eq!(created.name, "test");
+    trigger.await;
+    assert_eq!(ON_SUCCESS_COUNTER.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn smoke_model_on_failure_trigger() {
+    ON_FAILURE_COUNTER.store(0, Ordering::SeqCst);
+
+    #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+    mod user_on_failure_schema {
+        struct Fields {
+            #[required]
+            #[validate(|name, _ctx, _opts| async move {
+                if name.is_empty() {
+                    Err(::ivo::FieldError {
+                        reason: String::from("name must not be empty"),
+                        metadata: None,
+                    })
+                } else {
+                    Ok(Some(name))
+                }
+            })]
+            #[on_failure(|_ctx, _opts| async move {
+                crate::ON_FAILURE_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            })]
+            pub name: String,
+        }
+    }
+
+    let input = user_on_failure_schema::User {
+        name: String::new(),
+    };
+    let (errors, trigger, _opts) = user_on_failure_schema::UserModel
+        .create(input, ())
+        .await
+        .unwrap_err();
+    assert!(errors.contains_key("name"));
+    trigger.await;
+    assert_eq!(ON_FAILURE_COUNTER.load(Ordering::SeqCst), 1);
 }
