@@ -1,12 +1,28 @@
+[package]
+name = "ivo"
+publish = true
+description = "The rust implementation of the ivo schema valitator"
+categories.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
 [workspace]
-members = ["crates/*"]
+members = ["crates/*", "examples/*"]
 resolver = "2"
 
 [workspace.package]
 version = "0.5.0"
 edition = "2021"
 authors = ["kamtoeddy <kamtoeddytagne@gmail.com>"]
-license-file = "../LICENSE"
+categories = ["data-structures", "development-tools"]
+license-file = "LICENSE"
+readme = "README.md"
 repository = "https://github.com/kamtoeddy/ivo"
 homepage = "https://ivo.kamtoeddy.com/docs/rs"
 keywords = ["ivo", "schema", "validation", "data-modelling"]
@@ -14,3 +30,14 @@ rust-version = "1.80.0"
 
 [workspace.dependencies]
 ivo-derive = { path = "crates/ivo-derive", version = "0.5.0" }
+
+[dependencies]
+ivo-derive = { path = "./crates/derive", version = "0.5.0" }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "macros"] }
+
+
+[[example]]
+name = "dependent_on_dependent"
+path = "examples/dependent_on_dependent.rs"

@@ -1,0 +1,156 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kamtoeddy/ivo/main/docs/static/img/logo.png" alt="ivo logo" width="120" />
+</p>
+
+# Rust Implementation
+
+This is the documentation of the Rust implementation of ivo.
+
+# Installation
+
+```bash
+$ cargo add ivo
+```
+
+# How to use
+
+ivo expects you to define your data model with structs that implement `IvoInputStruct` (required for input structs) and `IvoStruct` and this can be done via their respective derive macros as shown below.
+
+```rs
+use chrono::{DateTime, Utc};
+use ivo::{IvoInputStruct, IvoStruct};
+
+#[derive(Clone, PartailEq, IvoInputStruct)]
+struct UserInput {
+    email: Option<String>,
+    phone_number: Option<String>,
+    username: String,
+}
+
+type Timestamp = DateTime<Utc>;
+
+#[derive(Clone, PartailEq, IvoStruct)]
+struct User {
+    id: String,
+    created_at: Timestamp,
+    email: Option<String>,
+    phone_number: Option<String>,
+    updated_at: Option<Timestamp>,
+    username: String,
+    username_last_updated_at: Option<Timestamp>,
+}
+```
+
+## IvoStruct
+
+Deriving `IvoStruct` on **User** generates a struct called **`PartialUser`** together some helper methods for **User** and **PartialUser**.
+
+- **User** gets three helper methods with the following signatures:
+
+  ```rs
+  impl IvoStruct for User {
+      fn append_updates(&mut self, updates: &Self::Partial);
+
+      // and
+      fn clone_with_updates(&self, updates: &Self::Partial) -> Self;
+  }
+
+  impl From<User> for PartialUser {
+      fn from(value: User) -> PartialUser;
+  }
+  ```
+
+- **PartialUser** has the signature:
+
+  ```rs
+  struct PartialUser {
+    id: Option<String>,
+    created_at: Option<Timestamp>,
+    email: Option<String>,
+    phone_number: Option<Option<String>>,
+    updated_at: Option<Option<Timestamp>>,
+    username: Option<String>,
+    username_last_updated_at: Option<Option<Timestamp>>,
+  }
+
+  impl PartialUser {
+    // the constructor
+    fn new() -> Self;
+
+    // you also get two types of builder methods for each field
+    fn set_id(&mut self, value: String) -> &mut Self;
+    fn with_id(mut self, value: String) -> Self;
+
+    // ... more builder methods for the other fields
+
+    fn set_username_last_updated_at(&mut self, value: Option<Timestamp>) -> &mut Self;
+    fn with_username_last_updated_at(mut self, value: Option<Timestamp>) -> Self;
+
+    // you also get a method to unset (or set value to None) for each field
+    fn unset_id(&mut self) -> &mut Self;
+
+    // converts PartialUser to Some(Self) if at least one field is_some, otherwise none
+    fn into_option(self) -> Option<Self>;
+
+    // returns true if every field in PartialUser is_none, otherwise false
+    fn is_empty(&self) -> bool;
+  }
+  ```
+
+- The `#[ivo(...)]` attribute can be used to customize PartialStructs and their fields.
+
+  ```rs
+  #[derive(Clone, PartailEq, IvoInputStruct)]
+  #[ivo(derive(Serialize, Deserialize))]
+  struct UserInput {
+      email: Option<String>,
+      #[ivo(serde(skip_serializing_if = "Option::is_none"))]
+      phone_number: Option<String>,
+      username: String,
+  }
+
+  #[derive(Serialize, Deserialize)] // 👈 because it was provided above
+  struct PartialUserInput {
+      email: Option<Option<String>>,
+      #[serde(skip_serializing_if = "Option::is_none")] // 👈 because it was provided above
+      phone_number: Option<Option<String>>,
+      username: Option<String>,
+  }
+  ```
+
+## IvoInputStruct
+
+Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` and generates two structs: **`PartialUserInput`** and **`UserInputErrors`**.
+
+- **UserInputErrors** is used to return errors from post-validators and grouped required resolvers and has the signature:
+
+  ```rs
+  struct UserInputErrors {
+    email: Option<Option<String>>,
+    phone_number: Option<Option<String>>,
+    username: Option<String>,
+  }
+
+  impl UserInputErrors {
+    // the constructor
+    fn new() -> Self;
+
+    // you also get two types of builder methods for each field
+    fn set_email(&mut self, reason: &str, metadata: Option<IvoErrorSanitizer::Metadata>) -> &mut Self;
+    fn with_email(mut self, reason: &str, metadata: Option<IvoErrorSanitizer::Metadata>) -> Self;
+    // ... more builder methods for the other fields
+
+    // you also get a method to unset (or set value to None) for each field
+    fn unset_email(&mut self) -> &mut Self;
+
+    // converts UserInputErrors to Some(Self) if at least one field is_some, otherwise none
+    fn into_option(self) -> Option<Self>;
+
+    // returns true if every field in UserInputErrors is_none, otherwise false
+    fn is_empty(&self) -> bool;
+  }
+  ```
+
+## Docs
+
+[Read the docs](https://ivo.kamtoeddy.com/docs/rs)
