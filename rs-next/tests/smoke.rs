@@ -99,8 +99,8 @@ async fn smoke_model_update_single_struct() {
     let updated = user_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert_eq!(updated.name, "new");
-    assert_eq!(updated.role, "user");
+    assert_eq!(updated.name, Some("new".to_string()));
+    assert_eq!(updated.role, None);
 }
 
 #[tokio::test]
@@ -447,7 +447,8 @@ async fn smoke_model_field_ignore_update() {
     let updated = user_field_ignore_update_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert_eq!(updated.role, "admin");
+    assert!(updated.role.is_none());
+    assert!(updated.is_empty());
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
@@ -532,8 +533,8 @@ async fn smoke_model_readonly_update() {
     let updated = user_readonly_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert_eq!(updated.name, "new");
-    assert_eq!(updated.id, "1");
+    assert_eq!(updated.name, Some("new".to_string()));
+    assert_eq!(updated.id, None);
 }
 
 #[tokio::test]
@@ -643,7 +644,8 @@ async fn smoke_model_grouped_ignore_update() {
     let updated = user_grouped_ignore_update_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert_eq!(updated.role, "admin");
+    assert!(updated.role.is_none());
+    assert!(updated.is_empty());
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq), derive_partial(Debug)))]
@@ -737,14 +739,19 @@ async fn smoke_model_readonly_lax_default() {
     let updated = user_readonly_lax_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert_eq!(updated.role, "admin");
+    assert_eq!(updated.role, Some("admin".to_string()));
 
+    let existing = user_readonly_lax_schema::User {
+        name: "test".to_string(),
+        role: "admin".to_string(),
+    };
     let mut updates = user_readonly_lax_schema::PartialUser::new();
     updates.set_role("super".to_string());
     let updated = user_readonly_lax_schema::UserModel
-        .update(updated.into_output(), updates, ())
+        .update(existing, updates, ())
         .unwrap();
-    assert_eq!(updated.role, "admin");
+    assert!(updated.role.is_none());
+    assert!(updated.is_empty());
 }
 
 #[ivo_schema(
@@ -1089,6 +1096,6 @@ async fn smoke_model_post_validate_update_update() {
         .update(existing, updates, ())
         .await
         .unwrap();
-    assert_eq!(updated.a, "updated");
-    assert_eq!(updated.b, "updated_b");
+    assert_eq!(updated.a, Some("updated".to_string()));
+    assert_eq!(updated.b, Some("updated_b".to_string()));
 }

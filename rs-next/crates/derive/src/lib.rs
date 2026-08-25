@@ -1277,6 +1277,14 @@ fn is_clone_derive(path: &Path) -> bool {
     path.get_ident().map(|i| i == "Clone").unwrap_or(false)
 }
 
+fn is_partial_eq_derive(path: &Path) -> bool {
+    path.get_ident().map(|i| i == "PartialEq").unwrap_or(false)
+}
+
+fn is_debug_derive(path: &Path) -> bool {
+    path.get_ident().map(|i| i == "Debug").unwrap_or(false)
+}
+
 struct PartialFieldInfo {
     name: Ident,
     ty: Type,
@@ -1293,7 +1301,7 @@ fn generate_partial_and_impls(
     let partial_name = format_ident!("Partial{}", name);
     let partial_derives: Vec<_> = partial_derives
         .iter()
-        .filter(|p| !is_clone_derive(p))
+        .filter(|p| !is_clone_derive(p) && !is_debug_derive(p))
         .collect();
 
     let partial_fields = fields.iter().map(|f| {
@@ -1377,7 +1385,7 @@ fn generate_partial_and_impls(
     };
 
     quote! {
-        #[derive(::core::clone::Clone, #(#partial_derives),*)]
+        #[derive(::core::clone::Clone, ::core::fmt::Debug, #(#partial_derives),*)]
         #vis struct #partial_name {
             #(#partial_fields,)*
         }
@@ -1580,7 +1588,7 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
         let output_derives: Vec<_> = output_args
             .derives
             .iter()
-            .filter(|p| !is_clone_derive(p))
+            .filter(|p| !is_clone_derive(p) && !is_partial_eq_derive(p))
             .collect();
 
         let mut output_partial_fields = Vec::new();
@@ -1602,7 +1610,7 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
             });
 
         let output_struct = quote! {
-            #[derive(::core::clone::Clone, #(#output_derives),*)]
+            #[derive(::core::clone::Clone, ::core::cmp::PartialEq, #(#output_derives),*)]
             pub struct #output_name {
                 #(#output_fields,)*
             }
@@ -2413,7 +2421,7 @@ fn generate_model(
             let ctx_expr = quote!(ctx);
             let opts_expr = quote!(_rw_ctx_options);
 
-            let field_names: Vec<_> = o
+            let field_infos: Vec<_> = o
                 .fields
                 .iter()
                 .map(|name| {
@@ -2421,12 +2429,27 @@ fn generate_model(
                     let input_name = input_field_name(f);
                     let name_str = name.clone();
                     let is_virtual = matches!(f.field_type, FieldType::Virtual { .. });
-                    let output_update = if is_virtual {
+                    let create_output_update = if is_virtual {
                         quote! {}
                     } else {
                         quote! {
                             if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
-                                output.#input_name = __v.clone();
+                                if &output.#input_name != __v {
+                                    output.#input_name = __v.clone();
+                                }
+                            }
+                        }
+                    };
+                    let update_output_update = if is_virtual {
+                        quote! {}
+                    } else {
+                        let setter = format_ident!("set_{}", name);
+                        quote! {
+                            if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
+                                if &output.#input_name != __v {
+                                    output.#input_name = __v.clone();
+                                    __changes.#setter(__v.clone());
+                                }
                             }
                         }
                     };
@@ -2436,81 +2459,122 @@ fn generate_model(
                             if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
                                 input.#input_name = ::core::option::Option::Some(__v.clone());
                             }
-                            #output_update
+                            #create_output_update
+                        },
+                        quote! {
+                            if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
+                                input.#input_name = ::core::option::Option::Some(__v.clone());
+                            }
+                            #update_output_update
                         },
                     )
                 })
                 .collect();
 
-            let allowed_names: Vec<_> = field_names.iter().map(|(n, _)| n.clone()).collect();
-            let apply_updates: Vec<_> = field_names.into_iter().map(|(_, stmt)| stmt).collect();
+            let allowed_names: Vec<_> = field_infos.iter().map(|(n, _, _)| n.clone()).collect();
+            let create_apply_updates: Vec<_> = field_infos
+                .iter()
+                .map(|(_, create_stmt, _)| create_stmt.clone())
+                .collect();
+            let update_apply_updates: Vec<_> = field_infos
+                .iter()
+                .map(|(_, _, update_stmt)| update_stmt.clone())
+                .collect();
 
             let allowed_names_expr = quote! {
                 [#(#allowed_names),*]
             };
 
-            let make_validator_block =
-                |handler: &proc_macro2::TokenStream| -> (bool, proc_macro2::TokenStream) {
-                    let (is_async, call) = make_post_validate_call(handler, &ctx_expr, &opts_expr);
-                    let block = quote! {
-                        let __post_result: ::core::result::Result<
-                            ::core::option::Option<#partial_input_name>,
-                            #input_errors_name<#metadata_ty>,
-                        > = #call;
-                        match __post_result {
-                            ::core::result::Result::Ok(
-                                ::core::option::Option::Some(__post_updates),
-                            ) => {
-                                #(#apply_updates)*
-                                ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                                    input.clone(),
-                                    output.clone(),
-                                    output.clone().into(),
-                                    false,
-                                );
-                            }
-                            ::core::result::Result::Ok(::core::option::Option::None) => {}
-                            ::core::result::Result::Err(__post_errors) => {
-                                let __post_payload: ::ivo::IvoErrorPayload<#metadata_ty> =
-                                    __post_errors.into();
-                                let __allowed: &[&str] = &#allowed_names_expr;
-                                for (__field_name, __field_error) in __post_payload {
-                                    if __allowed.contains(&__field_name.as_str()) {
-                                        errors.insert(__field_name, __field_error);
-                                    }
+            let make_validator_block = |handler: &proc_macro2::TokenStream,
+                                        apply_updates: &[proc_macro2::TokenStream],
+                                        changes_expr: &proc_macro2::TokenStream|
+             -> (bool, proc_macro2::TokenStream) {
+                let (is_async, call) = make_post_validate_call(handler, &ctx_expr, &opts_expr);
+                let block = quote! {
+                    let __post_result: ::core::result::Result<
+                        ::core::option::Option<#partial_input_name>,
+                        #input_errors_name<#metadata_ty>,
+                    > = #call;
+                    match __post_result {
+                        ::core::result::Result::Ok(
+                            ::core::option::Option::Some(__post_updates),
+                        ) => {
+                            #(#apply_updates)*
+                            ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                                input.clone(),
+                                output.clone(),
+                                #changes_expr,
+                                false,
+                            );
+                        }
+                        ::core::result::Result::Ok(::core::option::Option::None) => {}
+                        ::core::result::Result::Err(__post_errors) => {
+                            let __post_payload: ::ivo::IvoErrorPayload<#metadata_ty> =
+                                __post_errors.into();
+                            let __allowed: &[&str] = &#allowed_names_expr;
+                            for (__field_name, __field_error) in __post_payload {
+                                if __allowed.contains(&__field_name.as_str()) {
+                                    errors.insert(__field_name, __field_error);
                                 }
                             }
                         }
-                    };
-                    (is_async, block)
+                    }
                 };
+                (is_async, block)
+            };
 
             let mut is_async = false;
-            let mut stmts: Vec<proc_macro2::TokenStream> = Vec::new();
+            let mut create_stmts: Vec<proc_macro2::TokenStream> = Vec::new();
+            let mut update_stmts: Vec<proc_macro2::TokenStream> = Vec::new();
 
             if let Some(pre_handler) = &o.pre_validate {
-                let (a, block) = make_validator_block(pre_handler);
-                is_async |= a;
-                stmts.push(block);
+                let (a, create_block) = make_validator_block(
+                    pre_handler,
+                    &create_apply_updates,
+                    &quote!(output.clone().into()),
+                );
+                let (b, update_block) = make_validator_block(
+                    pre_handler,
+                    &update_apply_updates,
+                    &quote!(__changes.clone()),
+                );
+                is_async |= a | b;
+                create_stmts.push(create_block);
+                update_stmts.push(update_block);
             }
 
-            let (a, block) = make_validator_block(&o.handler);
-            is_async |= a;
-            stmts.push(block);
+            let (a, create_block) = make_validator_block(
+                &o.handler,
+                &create_apply_updates,
+                &quote!(output.clone().into()),
+            );
+            let (b, update_block) = make_validator_block(
+                &o.handler,
+                &update_apply_updates,
+                &quote!(__changes.clone()),
+            );
+            is_async |= a | b;
+            create_stmts.push(create_block);
+            update_stmts.push(update_block);
 
-            let stmt = quote! { #(#stmts)* };
-            (is_async, stmt)
+            let create_stmt = quote! { #(#create_stmts)* };
+            let update_stmt = quote! { #(#update_stmts)* };
+            (is_async, create_stmt, update_stmt)
         })
         .collect();
-    create_has_async |= post_validate_pairs.iter().any(|(a, _)| *a);
-    update_has_async |= post_validate_pairs.iter().any(|(a, _)| *a);
-    let post_validate_steps: Vec<_> = post_validate_pairs
-        .into_iter()
-        .map(|(_, stmt)| stmt)
+    create_has_async |= post_validate_pairs.iter().any(|(a, _, _)| *a);
+    update_has_async |= post_validate_pairs.iter().any(|(a, _, _)| *a);
+    let post_validate_create_steps: Vec<_> = post_validate_pairs
+        .iter()
+        .map(|(_, create_stmt, _)| create_stmt.clone())
+        .collect();
+    let post_validate_update_steps: Vec<_> = post_validate_pairs
+        .iter()
+        .map(|(_, _, update_stmt)| update_stmt.clone())
         .collect();
 
     // Update method: apply partial updates.
-    let update_ctx_ty = quote!(&::ivo::IvoContext<#partial_output_name, #output_name>);
+    let update_ctx_ty = quote!(&::ivo::IvoContext<#partial_input_name, #output_name>);
 
     let updateable_fields: Vec<_> = fields
         .iter()
@@ -2609,6 +2673,8 @@ fn generate_model(
         .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
         .map(|f| {
             let name = &f.name;
+            let input_name = input_field_name(f);
+            let setter = format_ident!("set_{}", name);
             let ignore_update_flag = if update_ignore_field_names.contains(&name.to_string()) {
                 let flag = format_ident!("ignore_update_{}", name);
                 quote! { #flag }
@@ -2634,23 +2700,25 @@ fn generate_model(
                 quote! { true }
             };
             match &f.field_type {
-                FieldType::Required
-                | FieldType::Lax
-                | FieldType::Dependent
-                | FieldType::CreatedAt
-                | FieldType::UpdatedAt => {
+                FieldType::Required | FieldType::Lax => {
                     quote! {
                         if !#ignore_update_flag && #readonly_guard {
-                            if let ::core::option::Option::Some(v) = &updates.#name {
-                                output.#name = v.clone();
+                            if let ::core::option::Option::Some(v) = &updates.#input_name {
+                                if &output.#name != v {
+                                    output.#name = v.clone();
+                                    __changes.#setter(v.clone());
+                                }
                             }
                         }
                     }
                 }
-                FieldType::Constant => {
+                FieldType::Constant
+                | FieldType::Dependent
+                | FieldType::CreatedAt
+                | FieldType::UpdatedAt
+                | FieldType::Virtual { .. } => {
                     quote! {}
                 }
-                FieldType::Virtual { .. } => unreachable!(),
             }
         });
 
@@ -2730,7 +2798,7 @@ fn generate_model(
 
     // Success / failure triggers.
     let hook_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
-    let update_hook_ctx_ty = quote!(::ivo::IvoContext<#partial_output_name, #output_name>);
+    let update_hook_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
 
     let hook_field_filter = |f: &&FieldDef| {
         matches!(
@@ -2871,10 +2939,10 @@ fn generate_model(
         let setup = quote! {
             let __trigger_updates = updates.clone();
             let __trigger_output = output.clone();
-            let ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
+            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_updates.clone(),
                 __trigger_output.clone(),
-                __trigger_updates.clone(),
+                __trigger_changes.clone(),
                 true,
             );
         };
@@ -2885,10 +2953,10 @@ fn generate_model(
         let setup = quote! {
             let __trigger_updates = updates.clone();
             let __trigger_output = output.clone();
-            let ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
+            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_updates.clone(),
                 __trigger_output.clone(),
-                __trigger_updates.clone(),
+                __trigger_changes.clone(),
                 true,
             );
         };
@@ -2955,7 +3023,7 @@ fn generate_model(
                 #(#create_steps)*
                 #(#re_validate_steps)*
                 let mut ctx = ctx;
-                #(#post_validate_steps)*
+                #(#post_validate_create_steps)*
 
                 if errors.is_empty() {
                     let __return_opts = _ctx_options.clone();
@@ -2981,20 +3049,21 @@ fn generate_model(
             #update_sig(
                 &self,
                 existing: #output_name,
-                updates: #partial_output_name,
+                updates: #partial_input_name,
                 _ctx_options: #ctx_options_ty,
             ) -> ::core::result::Result<
-                ::ivo::IvoSuccessHandle<#output_name, #ctx_options_ty, #update_success_is_async>,
+                ::ivo::IvoSuccessHandle<#partial_output_name, #ctx_options_ty, #update_success_is_async>,
                 ::ivo::IvoFailureHandle<#payload_ty, #ctx_options_ty, #update_failure_is_async>,
             > {
                 let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
                 let _ctx_options = _rw_ctx_options.read_only();
 
                 let mut output = existing;
-                let mut ctx = ::ivo::IvoContext::<#partial_output_name, #output_name>::new(
+                let mut __changes: #partial_output_name = ::core::default::Default::default();
+                let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                     updates.clone(),
                     output.clone(),
-                    updates.clone(),
+                    __changes.clone(),
                     true,
                 );
 
@@ -3012,12 +3081,13 @@ fn generate_model(
                     let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                         input.clone(),
                         output.clone(),
-                        updates.clone(),
+                        __changes.clone(),
                         true,
                     );
-                    #(#post_validate_steps)*
+                    #(#post_validate_update_steps)*
                 }
                 if !errors.is_empty() {
+                    let __trigger_changes = __changes.clone();
                     let __return_opts = _ctx_options.clone();
                     let __failure_trigger = #update_failure_trigger;
                     return ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
@@ -3029,10 +3099,11 @@ fn generate_model(
                     ));
                 }
 
+                let __trigger_changes = __changes.clone();
                 let __return_opts = _ctx_options.clone();
                 let __success_trigger = #update_success_trigger;
                 ::core::result::Result::Ok(::ivo::IvoSuccessHandle::new(
-                    output,
+                    __changes,
                     __return_opts,
                     __success_trigger,
                 ))

@@ -463,6 +463,17 @@ impl<O, CtxOptions, const ASYNC: bool> IvoSuccessHandle<O, CtxOptions, ASYNC> {
         self.output
     }
 
+    /// Alias for `output`. The contained value is the full `Output` after
+    /// `create` and the `PartialOutput` of changed fields after `update`.
+    pub fn values(&self) -> &O {
+        &self.output
+    }
+
+    /// Alias for `into_output`.
+    pub fn into_values(self) -> O {
+        self.output
+    }
+
     pub fn ctx_options(&self) -> &IvoCtxOptions<CtxOptions> {
         &self.ctx_options
     }

@@ -29,7 +29,7 @@ keywords = ["ivo", "schema", "validation", "data-modelling"]
 rust-version = "1.80.0"
 
 [workspace.dependencies]
-ivo-derive = { path = "crates/ivo-derive", version = "0.5.0" }
+ivo-derive = { path = "crates/derive", version = "0.5.0" }
 
 [dependencies]
 ivo-derive = { path = "./crates/derive", version = "0.5.0" }
