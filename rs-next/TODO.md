@@ -51,3 +51,7 @@
 - [x] Port `examples/virtuals_with_ignore_init.rs` to the `#[ivo_schema]` macro API.
 - [x] Port `examples/virtuals_with_ignore_update.rs` to the `#[ivo_schema]` macro API.
 - [x] Support bare `#[ignore_update]` and conditional `#[ignore]` on `#[ivo_virtual]` fields during updates, so ignored virtual fields do not re-trigger dependent resolvers and updates consisting only of ignored virtual fields return the "nothing to update" failure.
+- [x] Port `rs/tests/extras/error_sanitizer.rs` to `rs-next/tests/extras/error_sanitizer.rs`.
+- [x] Port `rs/tests/extras/ctx_options/mod.rs` and its submodules (`constants`, `dependents`, `lax`, `required`, `virtuals`) to `rs-next/tests/extras/ctx_options/`.
+- [x] Add `mod extras;` to the integration test root so the ported tests are included in the test suite.
+- [x] Skip `re_validate` on virtual fields and virtual-field `validate`/`sanitize` during updates in the ported `ctx_options/virtuals.rs` tests because the new macro processes virtual fields only at creation time.
