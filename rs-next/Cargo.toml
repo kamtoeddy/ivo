@@ -72,3 +72,7 @@ path = "examples/lax_with_validators.rs"
 [[example]]
 name = "lax_readonly"
 path = "examples/lax_readonly.rs"
+
+[[example]]
+name = "lax_required"
+path = "examples/lax_required.rs"
