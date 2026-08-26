@@ -92,3 +92,7 @@ path = "examples/lax_with_ignore_update.rs"
 [[example]]
 name = "virtuals_with_alias_name"
 path = "examples/virtuals_with_alias_name.rs"
+
+[[example]]
+name = "virtuals_with_alias_name_same_as_dependent"
+path = "examples/virtuals_with_alias_name_same_as_dependent.rs"
