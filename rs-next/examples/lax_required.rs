@@ -7,7 +7,13 @@ const USERNAME_REQUIRED_ERROR: &str = "username is required at this time";
 
 fn main() {
     let created = data_schema::DataModel
-        .create(data_schema::PartialData::new(), ())
+        .create(
+            data_schema::PartialData {
+                lax: None,
+                username: None,
+            },
+            (),
+        )
         .ok()
         .unwrap();
 
@@ -21,10 +27,10 @@ fn main() {
         }
     );
 
-    let data = created.data.clone();
+    let created_data = created.data.clone();
     created.handle_success();
 
-    data_schema::DataModel.delete(&data, ());
+    data_schema::DataModel.delete(&created_data, ());
 
     let username = "some username".to_string();
 
@@ -49,10 +55,10 @@ fn main() {
         }
     );
 
-    let data = created.data.clone();
+    let created_data = created.data.clone();
     created.handle_success();
 
-    data_schema::DataModel.delete(&data, ());
+    data_schema::DataModel.delete(&created_data, ());
 
     let failed = data_schema::DataModel
         .create(
@@ -167,10 +173,10 @@ fn main() {
         }
     );
 
-    let updates_data = updated.data.clone();
+    let updated_data = updated.data.clone();
     updated.handle_success();
 
-    let data = data.clone_with_updates(&updates_data);
+    let data = data.clone_with_updates(&updated_data);
 
     data_schema::DataModel.delete(&data, ());
 
@@ -204,10 +210,10 @@ fn main() {
         }
     );
 
-    let updates_data = updated.data.clone();
+    let updated_data = updated.data.clone();
     updated.handle_success();
 
-    let data = data.clone_with_updates(&updates_data);
+    let data = data.clone_with_updates(&updated_data);
 
     data_schema::DataModel.delete(&data, ());
 
@@ -240,10 +246,10 @@ fn main() {
         }
     );
 
-    let updates_data = updated.data.clone();
+    let updated_data = updated.data.clone();
     updated.handle_success();
 
-    let data = data.clone_with_updates(&updates_data);
+    let data = data.clone_with_updates(&updated_data);
 
     data_schema::DataModel.delete(&data, ());
 }
@@ -271,15 +277,8 @@ mod data_schema {
 
         #[lax(crate::DEFAULT_USERNAME.to_string())]
         #[required(|ctx, _| {
-            let input_lax = ctx.input().lax.clone();
-            let previous_lax = if ctx.is_update() {
-                Some(ctx.full_values().lax.clone())
-            } else {
-                None
-            };
-
-            if input_lax == Some(crate::REQUIRED_TRIGGER_VALUE.to_string())
-                || previous_lax == Some(crate::REQUIRED_TRIGGER_VALUE.to_string())
+            if ctx.input().lax == Some(crate::REQUIRED_TRIGGER_VALUE.to_string())
+                || ctx.values().lax == crate::REQUIRED_TRIGGER_VALUE.to_string()
             {
                 Some(crate::USERNAME_REQUIRED_ERROR.to_string())
             } else {
