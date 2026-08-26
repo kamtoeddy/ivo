@@ -967,20 +967,271 @@ async_test_matrix!(
 );
 
 // grouped on_success + conditional on_success triggering
-//
-// The new macro does not support options-level grouped `on_success` configs
-// (only grouped `ignore`, `required`, `ignore_update`, `on_delete`, `timestamps`,
-// and `post_validate`). It also fires field-level `on_success` handlers on every
-// successful operation, not only when the field was resolved/updated. The old
-// tests below are therefore skipped:
-// - should_trigger_grouped_on_success_with_at_creation_if_resolved
-// - should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
-// - should_trigger_grouped_on_success_during_updates_if_resolved
-// - should_not_trigger_grouped_on_success_during_updates_if_not_resolved_because_it_is_readonly
-// - should_not_trigger_grouped_on_success_during_updates_if_not_resolved
-// - should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_updates
+
+async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let created = grouped_on_success_schema::DataModel
+        .create(
+            grouped_on_success_schema::PartialDataInput {
+                lax: Some(default_lax_value),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        grouped_on_success_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value,
+        }
+    );
+
+    created.handle_success().await;
+}
+
+async_test_matrix!(
+    "[options.on_success]: on_success triggered for dependent",
+    should_trigger_grouped_on_success_with_at_creation_if_resolved
+);
+
+async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let created = grouped_on_success_schema::DataModel
+        .create(
+            grouped_on_success_schema::PartialDataInput { lax: None },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        grouped_on_success_schema::Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value,
+        }
+    );
+
+    created.handle_success().await;
+}
+
+async_test_matrix!(
+    "[options.on_success]: on_success triggered for dependent",
+    should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
+);
+
+async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+    let lax = Some(default_lax_value + 1);
+
+    let updated = grouped_on_success_schema::DataModel
+        .update(
+            grouped_on_success_schema::Data {
+                dependent: default_dependent_value,
+                lax: default_lax_value,
+            },
+            grouped_on_success_schema::PartialDataInput { lax },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        grouped_on_success_schema::PartialData {
+            dependent: Some(default_dependent_value + 1),
+            lax,
+        }
+    );
+
+    updated.handle_success().await;
+}
+
+async_test_matrix!(
+    "[options.on_success]: on_success triggered for dependent",
+    should_trigger_grouped_on_success_during_updates_if_resolved
+);
+
+async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_because_it_is_readonly(
+) {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+    let lax = Some(default_lax_value + 1);
+
+    let updated = grouped_on_success_readonly_schema::DataModel
+        .update(
+            grouped_on_success_readonly_schema::Data {
+                dependent: default_dependent_value + 1,
+                lax: default_lax_value,
+            },
+            grouped_on_success_readonly_schema::PartialDataInput { lax },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        grouped_on_success_readonly_schema::PartialData {
+            dependent: None,
+            lax,
+        }
+    );
+
+    updated.handle_success().await;
+}
+
+async_test_matrix!(
+    should_not_trigger_grouped_on_success_during_updates_if_not_resolved_because_it_is_readonly
+);
+
+async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+    let lax_1 = Some(default_lax_value + 1);
+
+    let updated = grouped_on_success_unrelated_schema::DataModel
+        .update(
+            grouped_on_success_unrelated_schema::Data {
+                dependent: default_dependent_value + 1,
+                lax: default_lax_value,
+                lax_1: default_lax_value,
+            },
+            grouped_on_success_unrelated_schema::PartialDataInput { lax: None, lax_1 },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        grouped_on_success_unrelated_schema::PartialData {
+            dependent: None,
+            lax: None,
+            lax_1,
+        }
+    );
+
+    updated.handle_success().await;
+}
+
+async_test_matrix!(should_not_trigger_grouped_on_success_during_updates_if_not_resolved);
+
+async fn should_trigger_entity_level_on_success_handlers_at_creation_and_during_updates() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let created = entity_level_on_success_schema::DataModel
+        .create(
+            entity_level_on_success_schema::PartialDataInput { lax: None },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        entity_level_on_success_schema::Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value,
+        }
+    );
+
+    created.handle_success().await;
+}
+
+async_test_matrix!(
+    "[entity.on_success]: entity-level on_success triggered",
+    should_trigger_entity_level_on_success_handlers_at_creation_and_during_updates
+);
 
 // schemas
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod grouped_on_success_schema {
+    struct Fields {
+        #[depends_on(lax)]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+
+    #[on_success(["dependent"], async |_, _| {
+        if true {
+            panic!("[options.on_success]: on_success triggered for dependent");
+        }
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod grouped_on_success_readonly_schema {
+    struct Fields {
+        #[depends_on(lax)]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[readonly]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+
+    #[on_success(["dependent"], async |_, _| {
+        if true {
+            panic!("[options.on_success]: on_success triggered for dependent");
+        }
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod grouped_on_success_unrelated_schema {
+    struct Fields {
+        #[depends_on(lax)]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax_1: i32,
+    }
+
+    #[on_success(["dependent"], async |_, _| {
+        if true {
+            panic!("[options.on_success]: on_success triggered for dependent");
+        }
+    })]
+    const _: () = ();
+}
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1364,4 +1615,72 @@ mod async_on_success_multiple_schema {
         #[lax(async |_, _| 20)]
         pub lax: i32,
     }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod entity_level_on_success_schema {
+    struct Fields {
+        #[depends_on(lax)]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+
+    #[on_success(async |_, _| {
+        if true {
+            panic!("[entity.on_success]: entity-level on_success triggered");
+        }
+    })]
+    const _: () = ();
+}
+
+#[test]
+#[should_panic(expected = "[entity.on_success]: no-args on_success triggered")]
+fn should_trigger_sync_entity_level_on_success_with_no_args() {
+    let created = entity_level_on_success_no_args_schema::DataModel
+        .create(
+            entity_level_on_success_no_args_schema::PartialDataInput { lax: None },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        entity_level_on_success_no_args_schema::Data {
+            dependent: 1234,
+            lax: 20,
+        }
+    );
+
+    created.handle_success();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod entity_level_on_success_no_args_schema {
+    struct Fields {
+        #[depends_on(lax)]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+
+    #[on_success(|| {
+        if true {
+            panic!("[entity.on_success]: no-args on_success triggered");
+        }
+    })]
+    const _: () = ();
 }

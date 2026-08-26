@@ -159,7 +159,7 @@ enum FieldType {
     Dependent,
     Virtual { alias: Option<String> },
     CreatedAt,
-    UpdatedAt,
+    UpdatedAt { optional: bool },
 }
 
 struct FieldDef {
@@ -197,7 +197,10 @@ fn parse_field_type(attrs: &[Attribute]) -> syn::Result<Option<FieldType>> {
             return Ok(Some(FieldType::CreatedAt));
         }
         if attr.path().is_ident("updated_at") {
-            return Ok(Some(FieldType::UpdatedAt));
+            return Ok(Some(FieldType::UpdatedAt { optional: false }));
+        }
+        if attr.path().is_ident("optional_updated_at") {
+            return Ok(Some(FieldType::UpdatedAt { optional: true }));
         }
     }
     Ok(None)
@@ -347,6 +350,7 @@ enum GroupedOptionKind {
     Required,
     IgnoreUpdate,
     OnDelete,
+    OnSuccess,
     Timestamps,
     PostValidate,
 }
@@ -369,6 +373,8 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         GroupedOptionKind::IgnoreUpdate
     } else if attr.path().is_ident("on_delete") {
         GroupedOptionKind::OnDelete
+    } else if attr.path().is_ident("on_success") {
+        GroupedOptionKind::OnSuccess
     } else if attr.path().is_ident("timestamps") {
         GroupedOptionKind::Timestamps
     } else if attr.path().is_ident("post_validate") {
@@ -382,7 +388,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         _ => {
             return Err(syn::Error::new_spanned(
                 attr,
-                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, `#[on_delete(...)]`, `#[timestamps(...)]`, or `#[post_validate([...], validate = ..., pre_validate = ...)]`",
+                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, `#[on_delete(...)]`, `#[on_success(...)]`, `#[timestamps(...)]`, or `#[post_validate([...], validate = ..., pre_validate = ...)]`",
             ));
         }
     };
@@ -394,6 +400,48 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
             handler: list.tokens.clone(),
             pre_validate: None,
         })),
+        GroupedOptionKind::OnSuccess => {
+            let mut exprs = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated
+                .parse2(list.tokens.clone())?;
+            if exprs.len() == 2 {
+                if let Some(syn::Expr::Array(fields_expr)) = exprs.first() {
+                    if fields_expr.elems.is_empty() {
+                        return Err(syn::Error::new_spanned(
+                            attr,
+                            "grouped `#[on_success([...], handler)]` expects at least one field",
+                        ));
+                    }
+                    let mut fields = Vec::new();
+                    for expr in &fields_expr.elems {
+                        let syn::Expr::Lit(syn::ExprLit {
+                            lit: syn::Lit::Str(s),
+                            ..
+                        }) = expr
+                        else {
+                            return Err(syn::Error::new_spanned(
+                                expr,
+                                "field list must contain string literals",
+                            ));
+                        };
+                        fields.push(s.value());
+                    }
+                    let handler = exprs.pop().unwrap().into_value().into_token_stream();
+                    return Ok(Some(GroupedOption {
+                        kind,
+                        fields,
+                        handler,
+                        pre_validate: None,
+                    }));
+                }
+            }
+            // Entity-level success handler: `#[on_success(|| { ... })]`.
+            Ok(Some(GroupedOption {
+                kind,
+                fields: Vec::new(),
+                handler: list.tokens.clone(),
+                pre_validate: None,
+            }))
+        }
         GroupedOptionKind::PostValidate => {
             let exprs = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated
                 .parse2(list.tokens.clone())?;
@@ -627,7 +675,7 @@ fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> s
                             | FieldType::Lax
                             | FieldType::Dependent
                             | FieldType::CreatedAt
-                            | FieldType::UpdatedAt
+                            | FieldType::UpdatedAt { .. }
                     ) {
                         return Err(syn::Error::new(
                             proc_macro2::Span::call_site(),
@@ -645,6 +693,29 @@ fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> s
                         proc_macro2::Span::call_site(),
                         "`#[on_delete(...)]` does not accept a field list",
                     ));
+                }
+            }
+            GroupedOptionKind::OnSuccess => {
+                let mut seen = std::collections::HashSet::new();
+                for field in &opt.fields {
+                    if !seen.insert(field) {
+                        return Err(syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!(
+                                "remove duplicates of `{}` in your grouped on_success config",
+                                field
+                            ),
+                        ));
+                    }
+                }
+
+                for field in &opt.fields {
+                    if fields.iter().find(|f| f.name == field).is_none() {
+                        return Err(syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            format!("`{}` does not exist in your schema", field),
+                        ));
+                    }
                 }
             }
             GroupedOptionKind::Timestamps => {}
@@ -744,7 +815,14 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
                 let path = a.path().get_ident().map(|i| i.to_string());
                 match path.as_deref() {
                     Some("required") => matches!(a.meta, syn::Meta::Path(_)),
-                    Some("lax" | "constant" | "ivo_virtual" | "created_at" | "updated_at") => true,
+                    Some(
+                        "lax"
+                        | "constant"
+                        | "ivo_virtual"
+                        | "created_at"
+                        | "updated_at"
+                        | "optional_updated_at",
+                    ) => true,
                     Some("dependent") => matches!(a.meta, syn::Meta::Path(_)),
                     Some("depends_on") => true,
                     _ => false,
@@ -842,7 +920,7 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
                 "on_success",
                 "on_failure",
             ],
-            FieldType::CreatedAt | FieldType::UpdatedAt => &[],
+            FieldType::CreatedAt | FieldType::UpdatedAt { .. } => &[],
         };
 
         for (name, attr) in &behavior_names {
@@ -976,7 +1054,7 @@ fn field_type_name(ft: &FieldType) -> &'static str {
         FieldType::Dependent => "dependent",
         FieldType::Virtual { .. } => "virtual",
         FieldType::CreatedAt => "created_at",
-        FieldType::UpdatedAt => "updated_at",
+        FieldType::UpdatedAt { .. } => "updated_at",
     }
 }
 
@@ -993,7 +1071,10 @@ fn validate_field_names(fields: &[FieldDef]) -> syn::Result<()> {
                 format!("duplicate field name `{}`", f.name),
             ));
         }
-        if matches!(f.field_type, FieldType::CreatedAt | FieldType::UpdatedAt) {
+        if matches!(
+            f.field_type,
+            FieldType::CreatedAt | FieldType::UpdatedAt { .. }
+        ) {
             timestamp_names.push(f.name.to_string());
         }
         if let Some(parent_tokens) = attr_value_tokens(&f.attrs, "depends_on") {
@@ -1041,7 +1122,7 @@ fn validate_single_dual_mode(args: &SchemaArgs, fields: &[FieldDef]) -> syn::Res
                 | FieldType::Dependent
                 | FieldType::Virtual { .. }
                 | FieldType::CreatedAt
-                | FieldType::UpdatedAt
+                | FieldType::UpdatedAt { .. }
         )
     });
 
@@ -1114,7 +1195,7 @@ fn validate_dependencies(fields: &[FieldDef]) -> syn::Result<()> {
             let parent_field = fields.iter().find(|pf| pf.name == *parent).unwrap();
             if matches!(
                 parent_field.field_type,
-                FieldType::Constant | FieldType::CreatedAt | FieldType::UpdatedAt
+                FieldType::Constant | FieldType::CreatedAt | FieldType::UpdatedAt { .. }
             ) {
                 return Err(syn::Error::new_spanned(
                     &f.name,
@@ -1828,7 +1909,7 @@ fn generate_model(
                     | FieldType::Lax
                     | FieldType::Dependent
                     | FieldType::CreatedAt
-                    | FieldType::UpdatedAt
+                    | FieldType::UpdatedAt { .. }
             )
         })
         .filter_map(|f| attr_value_tokens(&f.attrs, "ignore_update").map(|h| (f, h)))
@@ -2222,12 +2303,15 @@ fn generate_model(
                         }
                     }
                 }
-                FieldType::CreatedAt | FieldType::UpdatedAt => {
+                FieldType::CreatedAt | FieldType::UpdatedAt { optional: false } => {
                     if let Some(resolver) = &timestamps_resolver {
                         quote! { (#resolver)() }
                     } else {
                         quote! { ::core::default::Default::default() }
                     }
+                }
+                FieldType::UpdatedAt { optional: true } => {
+                    quote! { ::core::default::Default::default() }
                 }
                 FieldType::Constant => {
                     let tokens = attr_value_tokens(&f.attrs, "constant")
@@ -2739,7 +2823,7 @@ fn generate_model(
                     | FieldType::Lax
                     | FieldType::Dependent
                     | FieldType::CreatedAt
-                    | FieldType::UpdatedAt
+                    | FieldType::UpdatedAt { .. }
             )
         })
         .collect();
@@ -2994,7 +3078,7 @@ fn generate_model(
                 FieldType::Constant
                 | FieldType::Dependent
                 | FieldType::CreatedAt
-                | FieldType::UpdatedAt
+                | FieldType::UpdatedAt { .. }
                 | FieldType::Virtual { .. } => {
                     (false, quote! {})
                 }
@@ -3108,6 +3192,39 @@ fn generate_model(
     };
     update_has_async |= dependent_update_pairs.iter().any(|(a, _)| *a);
     let dependent_update_assignments = dependent_update_pairs.into_iter().map(|(_, stmt)| stmt);
+
+    // Re-resolve `updated_at` fields on every successful update. Optional fields
+    // become `Some(value)`; non-optional fields are overwritten with the new value.
+    let timestamp_update_pairs: Vec<_> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::UpdatedAt { .. }))
+        .map(|f| {
+            let name = &f.name;
+            let setter = format_ident!("set_{}", name);
+            let optional = matches!(f.field_type, FieldType::UpdatedAt { optional: true });
+            let resolver_expr = if let Some(resolver) = &timestamps_resolver {
+                quote! { (#resolver)() }
+            } else {
+                quote! { ::core::default::Default::default() }
+            };
+            let stmt = if optional {
+                quote! {
+                    let __timestamp_value = #resolver_expr;
+                    output.#name = ::core::option::Option::Some(__timestamp_value.clone());
+                    __changes.#setter(::core::option::Option::Some(__timestamp_value));
+                }
+            } else {
+                quote! {
+                    let __timestamp_value = #resolver_expr;
+                    output.#name = __timestamp_value.clone();
+                    __changes.#setter(__timestamp_value);
+                }
+            };
+            (false, stmt)
+        })
+        .collect();
+    update_has_async |= timestamp_update_pairs.iter().any(|(a, _)| *a);
+    let timestamp_update_assignments = timestamp_update_pairs.into_iter().map(|(_, stmt)| stmt);
 
     let post_input_inits: Vec<_> = fields
         .iter()
@@ -3288,15 +3405,162 @@ fn generate_model(
         })
         .collect();
 
-    let has_failure_handlers =
-        !create_failure_handlers.is_empty() || !update_failure_handlers.is_empty();
-    let has_success_handlers =
-        !create_success_handlers.is_empty() || !update_success_handlers.is_empty();
-
     let (update_success_is_async, update_success_stmts) =
         make_trigger_stmts(&update_success_handlers, &update_hook_ctx_ty);
+
+    let grouped_on_success_options: Vec<_> = options
+        .iter()
+        .filter(|o| matches!(o.kind, GroupedOptionKind::OnSuccess))
+        .collect();
+
+    let make_grouped_on_success_stmts = |opts: &[&GroupedOption],
+                                         ctx_ty: &proc_macro2::TokenStream|
+     -> (bool, Vec<proc_macro2::TokenStream>) {
+        let mut any_async = false;
+        let stmts = opts
+            .iter()
+            .map(|o| {
+                let handler = &o.handler;
+                let handler_is_async = is_async_handler(handler);
+                any_async |= handler_is_async;
+                let input_count = closure_input_count(handler).unwrap_or(0);
+                let param_types: Vec<_> = match input_count {
+                    0 => vec![],
+                    1 => vec![ctx_ty.clone()],
+                    _ => vec![ctx_ty.clone(), hook_opts_ty.clone()],
+                };
+                let annotated = type_annotate_handler(handler.clone(), &param_types);
+                let condition = if o.fields.is_empty() {
+                    quote! { true }
+                } else {
+                    let checks = o
+                        .fields
+                        .iter()
+                        .map(|f| quote! { __triggered_fields.contains(#f) });
+                    quote! { (#(#checks)||*) }
+                };
+                let call = if handler_is_async {
+                    match input_count {
+                        0 => quote! { (#annotated)().await },
+                        1 => quote! { (#annotated)(ctx.clone()).await },
+                        _ => {
+                            quote! { ::ivo::run_hook(ctx.clone(), &_ctx_options, #annotated).await }
+                        }
+                    }
+                } else {
+                    match input_count {
+                        0 => quote! { (#annotated)() },
+                        1 => quote! { (#annotated)(ctx.clone()) },
+                        _ => quote! { (#annotated)(ctx.clone(), &_ctx_options) },
+                    }
+                };
+                quote! {
+                    if #condition {
+                        #call;
+                    }
+                }
+            })
+            .collect();
+        (any_async, stmts)
+    };
+
+    let (create_grouped_on_success_is_async, create_grouped_on_success_stmts) =
+        make_grouped_on_success_stmts(&grouped_on_success_options, &hook_ctx_ty);
+    let (update_grouped_on_success_is_async, update_grouped_on_success_stmts) =
+        make_grouped_on_success_stmts(&grouped_on_success_options, &update_hook_ctx_ty);
+
+    let create_success_stmts: Vec<_> = create_success_stmts
+        .into_iter()
+        .chain(create_grouped_on_success_stmts)
+        .collect();
+    let create_success_is_async = create_success_is_async || create_grouped_on_success_is_async;
+
+    let update_success_stmts: Vec<_> = update_success_stmts
+        .into_iter()
+        .chain(update_grouped_on_success_stmts)
+        .collect();
+    let update_success_is_async = update_success_is_async || update_grouped_on_success_is_async;
+
+    let has_failure_handlers =
+        !create_failure_handlers.is_empty() || !update_failure_handlers.is_empty();
+    let has_success_handlers = !create_success_stmts.is_empty() || !update_success_stmts.is_empty();
+
     let (update_failure_is_async, update_failure_stmts) =
         make_trigger_stmts(&update_failure_handlers, &update_hook_ctx_ty);
+
+    let create_triggered_fields_init = if grouped_on_success_options.is_empty() {
+        quote! {}
+    } else {
+        let non_virtual_field_names: Vec<String> = fields
+            .iter()
+            .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
+            .map(|f| f.name.to_string())
+            .collect();
+        let virtual_provided_checks: Vec<_> = fields
+            .iter()
+            .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
+            .map(|f| {
+                let input_name = input_field_name(f);
+                let name_str = f.name.to_string();
+                quote! {
+                    if input.#input_name.is_some() {
+                        __triggered_fields.insert(#name_str);
+                    }
+                }
+            })
+            .collect();
+        quote! {
+            let mut __triggered_fields: ::std::collections::HashSet<&'static str> =
+                ::std::collections::HashSet::new();
+            #(
+                __triggered_fields.insert(#non_virtual_field_names);
+            )*
+            #(#virtual_provided_checks)*
+        }
+    };
+
+    let update_triggered_fields_init = if grouped_on_success_options.is_empty() {
+        quote! {}
+    } else {
+        let non_virtual_checks: Vec<_> = fields
+            .iter()
+            .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
+            .map(|f| {
+                let name = &f.name;
+                let name_str = name.to_string();
+                quote! {
+                    if __trigger_changes.#name.is_some() {
+                        __triggered_fields.insert(#name_str);
+                    }
+                }
+            })
+            .collect();
+        let virtual_provided_checks: Vec<_> = fields
+            .iter()
+            .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
+            .map(|f| {
+                let input_name = input_field_name(f);
+                let name_str = f.name.to_string();
+                let ignore_flag = if update_ignore_field_names.contains(&name_str) {
+                    let flag = format_ident!("ignore_update_{}", f.name);
+                    quote! { #flag }
+                } else {
+                    quote! { false }
+                };
+                quote! {
+                    if !#ignore_flag && updates.#input_name.is_some() {
+                        __triggered_fields.insert(#name_str);
+                    }
+                }
+            })
+            .collect();
+        quote! {
+            let mut __triggered_fields: ::std::collections::HashSet<&'static str> =
+                ::std::collections::HashSet::new();
+            #(#non_virtual_checks)*
+            #(#virtual_provided_checks)*
+        }
+    };
 
     let make_trigger = |stmts: &[proc_macro2::TokenStream],
                         is_async: bool,
@@ -3329,6 +3593,7 @@ fn generate_model(
         let setup = quote! {
             let __trigger_input = input.clone();
             let __trigger_output = output.clone();
+            #create_triggered_fields_init
             let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
                 __trigger_output.clone(),
@@ -3357,6 +3622,7 @@ fn generate_model(
         let setup = quote! {
             let __trigger_updates = updates.clone();
             let __trigger_output = output.clone();
+            #update_triggered_fields_init
             let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_updates.clone(),
                 __trigger_output.clone(),
@@ -3499,6 +3765,7 @@ fn generate_model(
                     true,
                 );
                 #(#dependent_update_assignments)*
+                #(#timestamp_update_assignments)*
 
                 let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                     updates.clone(),

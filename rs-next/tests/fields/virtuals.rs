@@ -1002,11 +1002,12 @@ async_test_matrix!(should_not_trigger_async_on_success_handlers_if_virtual_is_ig
 // `on_success` configurations. Those tests from the old `on_success.rs` file
 // are therefore skipped.
 
-// The new macro does not run virtual-field validators, ignores, or required
-// handlers during updates, and `ignore_update` on virtual fields is not
-// supported. Old tests that rely on failing virtual-field validation during
-// an update (or on `raw_input()` reflecting the original, unignored input) are
-// skipped because the semantics have changed.
+// The new macro does not run virtual-field validators or ignore handlers during
+// updates, and `ignore_update` on virtual fields is not supported. Conditional
+// `#[required(handler)]` checks are run on update, but primary validation and
+// ignore logic for virtual fields is create-only. Old tests that rely on failing
+// virtual-field validation during an update (or on `raw_input()` reflecting the
+// original, unignored input) are skipped because the semantics have changed.
 
 // -----------------------------------------------------------------------------
 // Schema definitions
