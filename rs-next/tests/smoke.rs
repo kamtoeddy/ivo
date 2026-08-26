@@ -1079,7 +1079,7 @@ async fn smoke_model_post_validate_update_fail() {
         .update(existing, updates, ())
         .await
         .unwrap_err();
-    assert!(errors.errors.contains_key("a"));
+    assert!(errors.errors.as_ref().unwrap().contains_key("a"));
 }
 
 #[tokio::test]

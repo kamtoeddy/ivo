@@ -551,13 +551,15 @@ pub fn update(
     options: UserCtxOptions,
 ) -> Result<
     IvoSuccessHandle<PartialUser, UserCtxOptions, IS_ASYNC>,
-    IvoFailureHandle<ErrorSanitizer::Payload, UserCtxOptions, IS_ASYNC>,
+    IvoFailureHandle<Option<ErrorSanitizer::Payload>, UserCtxOptions, IS_ASYNC>,
 >
 ```
 
 - `update` takes the existing `User` (the complete output) and a `PartialUserInput` of desired changes.
 - It returns a `PartialUser` containing only the output fields whose values actually changed, i.e. `Output + PartialInput → PartialOutput`.
-- The error payload is `ErrorSanitizer::Payload` containing any validation errors.
+- The error payload is `Option<ErrorSanitizer::Payload>`:
+  - `Some(payload)` means validation failed and `payload` contains the validation errors.
+  - `None` means the update was rejected because nothing would change (the “nothing to update” case).
 
 ### `delete`
 

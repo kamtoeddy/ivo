@@ -388,7 +388,7 @@ fn should_respect_the_required_rule() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.errors.as_ref().unwrap().get("virtual_field").unwrap().reason,
         update_required_error
     );
 }
@@ -446,7 +446,7 @@ async fn should_respect_the_required_rule_async() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.errors.as_ref().unwrap().get("virtual_field").unwrap().reason,
         update_required_error
     );
 }
@@ -496,13 +496,13 @@ fn should_properly_handle_grouped_required_errors() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.get("lax_2").is_none());
+    assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.errors.as_ref().unwrap().get("virtual_field").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
     assert_eq!(
-        errors.errors.get("lax_1").unwrap().reason,
+        errors.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
 }
@@ -551,13 +551,13 @@ async fn should_properly_handle_grouped_required_errors_async() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.get("lax_2").is_none());
+    assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.errors.as_ref().unwrap().get("virtual_field").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
     assert_eq!(
-        errors.errors.get("lax_1").unwrap().reason,
+        errors.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
 }

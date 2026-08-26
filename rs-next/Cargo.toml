@@ -60,3 +60,11 @@ path = "examples/dependent_on_dependent.rs"
 [[example]]
 name = "dependent_readonly"
 path = "examples/dependent_readonly.rs"
+
+[[example]]
+name = "lax_defaults"
+path = "examples/lax_defaults.rs"
+
+[[example]]
+name = "lax_with_validators"
+path = "examples/lax_with_validators.rs"

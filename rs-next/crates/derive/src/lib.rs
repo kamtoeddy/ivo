@@ -3744,7 +3744,7 @@ fn generate_model(
                 _ctx_options: #ctx_options_ty,
             ) -> ::core::result::Result<
                 ::ivo::IvoSuccessHandle<#partial_output_name, #ctx_options_ty, #update_success_is_async, #has_success_handlers>,
-                ::ivo::IvoFailureHandle<#payload_ty, #ctx_options_ty, #update_failure_is_async, #has_failure_handlers>,
+                ::ivo::IvoFailureHandle<::core::option::Option<#payload_ty>, #ctx_options_ty, #update_failure_is_async, #has_failure_handlers>,
             > {
                 let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
                 let _ctx_options = _rw_ctx_options.read_only();
@@ -3811,8 +3811,10 @@ fn generate_model(
                     let __return_opts = _ctx_options.clone();
                     let __failure_trigger = #update_failure_trigger;
                     return ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
-                        <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                            errors, &*_rw_ctx_options.read(),
+                        ::core::option::Option::Some(
+                            <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                                errors, &*_rw_ctx_options.read(),
+                            ),
                         ),
                         __return_opts,
                         __failure_trigger,
@@ -3820,15 +3822,11 @@ fn generate_model(
                 }
 
                 if __update_attempted && __changes.is_empty() {
-                    let __no_change_errors: ::ivo::IvoErrorPayload<#metadata_ty> =
-                        ::std::collections::HashMap::new();
                     let __trigger_changes = __changes.clone();
                     let __return_opts = _ctx_options.clone();
                     let __failure_trigger = #update_failure_trigger;
                     return ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
-                        <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                            __no_change_errors, &*_rw_ctx_options.read(),
-                        ),
+                        ::core::option::Option::None,
                         __return_opts,
                         __failure_trigger,
                     ));

@@ -15,7 +15,7 @@ fn should_reject_updates_if_no_value_has_changed() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 }
 
 async fn should_reject_updates_if_no_value_has_changed_async() {
@@ -30,7 +30,7 @@ async fn should_reject_updates_if_no_value_has_changed_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_async);
@@ -48,7 +48,7 @@ fn should_reject_updates_if_no_value_has_changed_after_validation() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 }
 
 async fn should_reject_updates_if_no_value_has_changed_after_validation_async() {
@@ -64,7 +64,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation_async() 
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_validation_async);
@@ -82,7 +82,7 @@ fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 }
 
 async fn should_reject_updates_if_no_value_has_changed_after_re_validation_async() {
@@ -98,7 +98,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation_async
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_re_validation_async);
@@ -124,7 +124,7 @@ fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 
     let err = no_change_after_post_validation_sync_schema::DataInputModel
         .update(
@@ -141,7 +141,7 @@ fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 }
 
 async fn should_reject_updates_if_no_value_has_changed_after_post_validation_async() {
@@ -165,7 +165,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation_asy
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 
     let err = no_change_after_post_validation_async_schema::DataInputModel
         .update(
@@ -183,7 +183,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation_asy
         .err()
         .unwrap();
 
-    assert!(err.errors.is_empty());
+    assert!(err.errors.is_none());
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_post_validation_async);
@@ -594,7 +594,7 @@ fn should_respect_the_required_rule() {
         .unwrap();
 
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
         "lax is required for this update"
     );
 }
@@ -655,7 +655,7 @@ async fn should_respect_the_required_rule_async() {
         .unwrap();
 
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
         "lax is required for this update"
     );
 }
@@ -834,7 +834,7 @@ fn should_not_update_if_primary_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            err.errors.get("lax").unwrap().reason,
+            err.errors.as_ref().unwrap().get("lax").unwrap().reason,
             LAX_OUT_OF_RANGE_ERROR
         );
     }
@@ -887,7 +887,7 @@ async fn should_not_update_if_primary_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            err.errors.get("lax").unwrap().reason,
+            err.errors.as_ref().unwrap().get("lax").unwrap().reason,
             LAX_OUT_OF_RANGE_ERROR
         );
     }
@@ -1219,7 +1219,7 @@ fn should_not_update_if_re_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            err.errors.get("lax").unwrap().reason,
+            err.errors.as_ref().unwrap().get("lax").unwrap().reason,
             REVALIDATED_LAX_OUT_OF_RANGE_ERROR
         );
     }
@@ -1276,7 +1276,7 @@ async fn should_not_update_if_re_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            err.errors.get("lax").unwrap().reason,
+            err.errors.as_ref().unwrap().get("lax").unwrap().reason,
             REVALIDATED_LAX_OUT_OF_RANGE_ERROR
         );
     }
@@ -1837,10 +1837,10 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
         lax_1,
         "should not update if one field has an error after pre-validator in post-validation"
     );
@@ -1860,14 +1860,14 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should not update if any field has an error after pre-validator in post-validation"
     );
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
         lax,
         "should not update if any field has an error after pre-validator in post-validation"
     );
@@ -1887,10 +1887,10 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_1").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from pre-validator in post-validation"
     );
@@ -1915,10 +1915,10 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_1").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from post-validator"
     );
@@ -2138,10 +2138,10 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
         lax_1,
         "should not update if one field has an error after pre-validator in post-validation"
     );
@@ -2162,14 +2162,14 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should not update if any field has an error after pre-validator in post-validation"
     );
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
         lax,
         "should not update if any field has an error after pre-validator in post-validation"
     );
@@ -2190,10 +2190,10 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_1").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from pre-validator in post-validation"
     );
@@ -2219,10 +2219,10 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_1").is_none());
+    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from post-validator"
     );

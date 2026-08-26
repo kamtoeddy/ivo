@@ -189,6 +189,8 @@ Return `impl FnOnce()` triggers:
 
 - `create`: `Result<(Output, SuccessTrigger, CtxOptions), (ErrorSanitizer::Payload, FailureTrigger, CtxOptions)>`.
 - `update`: `Result<(PartialOutput, SuccessTrigger, CtxOptions), (Option<ErrorSanitizer::Payload>, FailureTrigger, CtxOptions)>`.
+  - `Some(payload)` indicates validation errors.
+  - `None` indicates a “nothing to update” rejection (the update would not change any output field).
 - `delete`: generated only when `on_delete` handlers exist; returns `()` and is async if any `on_delete` handler is async.
 
 ## Phase 6: Runtime support
