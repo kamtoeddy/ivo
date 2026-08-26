@@ -671,16 +671,12 @@ fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> s
 
                     if !matches!(
                         f.field_type,
-                        FieldType::Required
-                            | FieldType::Lax
-                            | FieldType::Dependent
-                            | FieldType::CreatedAt
-                            | FieldType::UpdatedAt { .. }
+                        FieldType::Required | FieldType::Lax | FieldType::Virtual { .. }
                     ) {
                         return Err(syn::Error::new(
                             proc_macro2::Span::call_site(),
                             format!(
-                                "only required, lax, dependent, and timestamp fields can belong to grouped ignore_update configs; remove `{}`",
+                                "only required, lax, and virtual fields can belong to grouped ignore_update configs; remove `{}`",
                                 field
                             ),
                         ));
@@ -1030,6 +1026,65 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
                     &f.name,
                     format!(
                         "field `{}`: #[readonly] and #[ignore_update] cannot both be used on a required field",
+                        f.name
+                    ),
+                ));
+            }
+        }
+
+        if matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. }) {
+            let has_ignore = behavior_names.iter().any(|(n, _)| n == "ignore");
+            let has_ignore_init = behavior_names.iter().any(|(n, _)| n == "ignore_init");
+            let has_ignore_update = behavior_names.iter().any(|(n, _)| n == "ignore_update");
+
+            if has_ignore && attr_value_tokens(&f.attrs, "ignore").is_none() {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: #[ignore] must be conditional; use #[ignore(|ctx, _| ...)]",
+                        f.name
+                    ),
+                ));
+            }
+
+            if has_ignore_init && attr_value_tokens(&f.attrs, "ignore_init").is_some() {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: conditional #[ignore_init] is currently not accepted",
+                        f.name
+                    ),
+                ));
+            }
+
+            if has_ignore && has_ignore_init {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: #[ignore] and #[ignore_init] cannot both be used on the same field",
+                        f.name
+                    ),
+                ));
+            }
+
+            if has_ignore && has_ignore_update {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: #[ignore] and #[ignore_update] cannot both be used on the same field",
+                        f.name
+                    ),
+                ));
+            }
+
+            if has_ignore_init
+                && has_ignore_update
+                && attr_value_tokens(&f.attrs, "ignore_update").is_none()
+            {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: init and update cannot be fully disabled",
                         f.name
                     ),
                 ));
@@ -4328,6 +4383,129 @@ mod tests {
                 "#,
         );
         assert_compile_error(&out, "bare lax without default");
+    }
+
+    #[test]
+    fn rejects_bare_ignore_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[ignore]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "bare ignore on lax");
+    }
+
+    #[test]
+    fn accepts_conditional_ignore_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[ignore(|_, _| false)]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_no_compile_error(&out, "conditional ignore on lax");
+    }
+
+    #[test]
+    fn rejects_conditional_ignore_init_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[ignore_init(|_, _| false)]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "conditional ignore_init on lax");
+    }
+
+    #[test]
+    fn rejects_ignore_plus_ignore_init_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[ignore(|_, _| false)]
+                        #[ignore_init]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "ignore plus ignore_init on lax");
+    }
+
+    #[test]
+    fn rejects_ignore_plus_ignore_update_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[ignore(|_, _| false)]
+                        #[ignore_update(|_, _| false)]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "ignore plus ignore_update on lax");
+    }
+
+    #[test]
+    fn rejects_ignore_init_plus_bare_ignore_update_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[ignore_init]
+                        #[ignore_update]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "ignore_init plus bare ignore_update on lax");
+    }
+
+    #[test]
+    fn accepts_ignore_init_plus_resolved_ignore_update_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[ignore_init]
+                        #[ignore_update(|_, _| false)]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_no_compile_error(&out, "ignore_init plus resolved ignore_update on lax");
     }
 
     #[test]

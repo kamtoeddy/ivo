@@ -2,16 +2,16 @@
 
 ## Ignore-attribute rules
 
-- [ ] Reject bare `#[ignore]`. `#[ignore]` must always be conditional (`#[ignore(|ctx, _| ...)]`).
-- [ ] Reject `#[ignore]` + `#[ignore_init]` on the same `lax` / `virtual` field.
-- [ ] Reject `#[ignore]` + `#[ignore_update]` on the same `lax` / `virtual` field.
-- [ ] Reject `#[ignore_init]` + bare `#[ignore_update]` on the same `lax` / `virtual` field.
+- [x] Reject bare `#[ignore]`. `#[ignore]` must always be conditional (`#[ignore(|ctx, _| ...)]`).
+- [x] Reject `#[ignore]` + `#[ignore_init]` on the same `lax` / `virtual` field.
+- [x] Reject `#[ignore]` + `#[ignore_update]` on the same `lax` / `virtual` field.
+- [x] Reject `#[ignore_init]` + bare `#[ignore_update]` on the same `lax` / `virtual` field.
   - Error: "init and update cannot be fully disabled".
-- [ ] Allow `#[ignore_init]` + `#[ignore_update(||resolver)]` on the same `lax` / `virtual` field.
-- [ ] Reject resolver form of `#[ignore_init]` (`#[ignore_init(||resolver)]`).
+- [x] Allow `#[ignore_init]` + `#[ignore_update(||resolver)]` on the same `lax` / `virtual` field.
+- [x] Reject resolver form of `#[ignore_init]` (`#[ignore_init(||resolver)]`).
   - Error: "conditional #[ignore_init] is currently not accepted".
-- [ ] Grouped `#[ignore([...], ...)]` stays limited to `lax` / `virtual` fields.
-- [ ] Grouped `#[ignore_update([...], ...)]` limited to `required`, `lax`, and `virtual` fields.
+- [x] Grouped `#[ignore([...], ...)]` stays limited to `lax` / `virtual` fields.
+- [x] Grouped `#[ignore_update([...], ...)]` limited to `required`, `lax`, and `virtual` fields.
 
 ## Required-field rules
 
