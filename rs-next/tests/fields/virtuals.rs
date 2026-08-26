@@ -143,7 +143,7 @@ fn should_return_empty_updates_when_no_value_has_changed() {
         sync_no_change_schema::Data { dependent: value }
     );
 
-    let updated = sync_no_change_schema::DataModel
+    let failed = sync_no_change_schema::DataModel
         .update(
             created.data.clone(),
             sync_no_change_schema::PartialDataInput {
@@ -151,13 +151,10 @@ fn should_return_empty_updates_when_no_value_has_changed() {
             },
             (),
         )
-        .ok()
+        .err()
         .unwrap();
 
-    assert_eq!(
-        updated.data,
-        sync_no_change_schema::PartialData { dependent: None }
-    );
+    assert!(failed.errors.is_none());
 }
 
 async fn should_return_empty_updates_when_no_value_has_changed_async() {
@@ -179,7 +176,7 @@ async fn should_return_empty_updates_when_no_value_has_changed_async() {
         async_no_change_schema::Data { dependent: value }
     );
 
-    let updated = async_no_change_schema::DataModel
+    let failed = async_no_change_schema::DataModel
         .update(
             created.data.clone(),
             async_no_change_schema::PartialDataInput {
@@ -188,13 +185,10 @@ async fn should_return_empty_updates_when_no_value_has_changed_async() {
             (),
         )
         .await
-        .ok()
+        .err()
         .unwrap();
 
-    assert_eq!(
-        updated.data,
-        async_no_change_schema::PartialData { dependent: None }
-    );
+    assert!(failed.errors.is_none());
 }
 
 async_test_matrix!(should_return_empty_updates_when_no_value_has_changed_async);
@@ -388,7 +382,13 @@ fn should_respect_the_required_rule() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("virtual_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
         update_required_error
     );
 }
@@ -446,7 +446,13 @@ async fn should_respect_the_required_rule_async() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("virtual_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
         update_required_error
     );
 }
@@ -498,7 +504,13 @@ fn should_properly_handle_grouped_required_errors() {
 
     assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("virtual_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
         EXPECTED_REQUIRED_ERROR
     );
     assert_eq!(
@@ -553,7 +565,13 @@ async fn should_properly_handle_grouped_required_errors_async() {
 
     assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("virtual_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
         EXPECTED_REQUIRED_ERROR
     );
     assert_eq!(

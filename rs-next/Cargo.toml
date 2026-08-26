@@ -68,3 +68,7 @@ path = "examples/lax_defaults.rs"
 [[example]]
 name = "lax_with_validators"
 path = "examples/lax_with_validators.rs"
+
+[[example]]
+name = "lax_readonly"
+path = "examples/lax_readonly.rs"

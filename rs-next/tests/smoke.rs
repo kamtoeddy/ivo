@@ -749,11 +749,11 @@ async fn smoke_model_readonly_lax_default() {
     };
     let mut updates = user_readonly_lax_schema::PartialUser::new();
     updates.set_role("super".to_string());
-    let updated = user_readonly_lax_schema::UserModel
+    let failed = user_readonly_lax_schema::UserModel
         .update(existing, updates, ())
+        .err()
         .unwrap();
-    assert!(updated.data.role.is_none());
-    assert!(updated.data.is_empty());
+    assert!(failed.errors.is_none());
 }
 
 #[ivo_schema(

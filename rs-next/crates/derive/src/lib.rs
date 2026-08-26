@@ -3063,21 +3063,23 @@ fn generate_model(
                     };
 
                     let stmt = quote! {
-                        if !#ignore_update_flag && #readonly_guard {
+                        if !#ignore_update_flag {
                             if let ::core::option::Option::Some(v) = &updates.#input_name {
-                                let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                                    updates.clone(),
-                                    output.clone(),
-                                    __changes.clone(),
-                                    true,
-                                );
                                 __update_attempted = true;
-                                let mut __field_valid = true;
-                                let mut value: #ty_tokens = v.clone();
-                                #sanitizer_expr
-                                #validator_assignment
-                                if __field_valid && &value != &__original_output.#name {
-                                    output.#name = value;
+                                if #readonly_guard {
+                                    let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                                        updates.clone(),
+                                        output.clone(),
+                                        __changes.clone(),
+                                        true,
+                                    );
+                                    let mut __field_valid = true;
+                                    let mut value: #ty_tokens = v.clone();
+                                    #sanitizer_expr
+                                    #validator_assignment
+                                    if __field_valid && &value != &__original_output.#name {
+                                        output.#name = value;
+                                    }
                                 }
                             }
                         }
@@ -3181,17 +3183,20 @@ fn generate_model(
                     None => (false, resolver.clone()),
                 };
                 let stmt = quote! {
-                    if !#ignore_update_flag && #parent_guard && #readonly_guard {
-                        let __new_value: #ty = #resolver_expr;
-                        if &__new_value != &__original_output.#name {
-                            output.#name = __new_value.clone();
-                            __changes.#setter(__new_value);
-                            ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                                updates.clone(),
-                                output.clone(),
-                                __changes.clone(),
-                                true,
-                            );
+                    if !#ignore_update_flag && #parent_guard {
+                        __update_attempted = true;
+                        if #readonly_guard {
+                            let __new_value: #ty = #resolver_expr;
+                            if &__new_value != &__original_output.#name {
+                                output.#name = __new_value.clone();
+                                __changes.#setter(__new_value);
+                                ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                                    updates.clone(),
+                                    output.clone(),
+                                    __changes.clone(),
+                                    true,
+                                );
+                            }
                         }
                     }
                 };

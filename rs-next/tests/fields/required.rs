@@ -310,7 +310,13 @@ fn should_not_update_if_primary_validation_fails() {
 
         let errors = result.unwrap_err();
         assert_eq!(
-            errors.errors.as_ref().unwrap().get("required").unwrap().reason,
+            errors
+                .errors
+                .as_ref()
+                .unwrap()
+                .get("required")
+                .unwrap()
+                .reason,
             OUT_OF_RANGE_ERROR
         );
     }
@@ -364,7 +370,13 @@ async fn should_not_update_if_primary_validation_fails_async() {
 
         let errors = result.unwrap_err();
         assert_eq!(
-            errors.errors.as_ref().unwrap().get("required").unwrap().reason,
+            errors
+                .errors
+                .as_ref()
+                .unwrap()
+                .get("required")
+                .unwrap()
+                .reason,
             OUT_OF_RANGE_ERROR
         );
     }
@@ -617,7 +629,13 @@ fn should_not_update_if_re_validation_fails() {
 
         let errors = result.unwrap_err();
         assert_eq!(
-            errors.errors.as_ref().unwrap().get("required").unwrap().reason,
+            errors
+                .errors
+                .as_ref()
+                .unwrap()
+                .get("required")
+                .unwrap()
+                .reason,
             REVALIDATED_OUT_OF_RANGE_ERROR
         );
     }
@@ -681,7 +699,13 @@ async fn should_not_update_if_re_validation_fails_async() {
 
         let errors = result.unwrap_err();
         assert_eq!(
-            errors.errors.as_ref().unwrap().get("required").unwrap().reason,
+            errors
+                .errors
+                .as_ref()
+                .unwrap()
+                .get("required")
+                .unwrap()
+                .reason,
             REVALIDATED_OUT_OF_RANGE_ERROR
         );
     }
@@ -1075,7 +1099,7 @@ fn should_respect_the_readonly_rule() {
 
     let required = required + 2;
 
-    let updated = sync_readonly_schema::DataModel
+    let failed = sync_readonly_schema::DataModel
         .update(
             created.data.clone(),
             sync_readonly_schema::PartialData {
@@ -1084,16 +1108,10 @@ fn should_respect_the_readonly_rule() {
             },
             (),
         )
-        .ok()
+        .err()
         .unwrap();
 
-    assert_eq!(
-        updated.data,
-        sync_readonly_schema::PartialData {
-            lax: None,
-            required: None
-        }
-    );
+    assert!(failed.errors.is_none());
 }
 
 async fn should_respect_the_readonly_rule_async() {
@@ -1120,7 +1138,7 @@ async fn should_respect_the_readonly_rule_async() {
 
     let required = required + 2;
 
-    let updated = async_readonly_schema::DataModel
+    let failed = async_readonly_schema::DataModel
         .update(
             created.data.clone(),
             async_readonly_schema::PartialData {
@@ -1130,16 +1148,10 @@ async fn should_respect_the_readonly_rule_async() {
             (),
         )
         .await
-        .ok()
+        .err()
         .unwrap();
 
-    assert_eq!(
-        updated.data,
-        async_readonly_schema::PartialData {
-            lax: None,
-            required: None
-        }
-    );
+    assert!(failed.errors.is_none());
 }
 
 async_test_matrix!(should_respect_the_readonly_rule_async);
@@ -1487,7 +1499,13 @@ fn should_trigger_on_failure_handlers_during_updates() {
 
     let errors = result.unwrap_err();
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("required").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required")
+            .unwrap()
+            .reason,
         "validation failed"
     );
     errors.handle_failure();
@@ -1511,7 +1529,13 @@ async fn should_trigger_on_failure_handlers_during_updates_async() {
 
     let errors = result.unwrap_err();
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("required").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required")
+            .unwrap()
+            .reason,
         "validation failed"
     );
     errors.handle_failure().await;
@@ -1546,7 +1570,13 @@ fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignore
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required").is_none());
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("required2").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required2")
+            .unwrap()
+            .reason,
         "validation failed"
     );
     errors.handle_failure();
@@ -1573,7 +1603,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required").is_none());
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("required2").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required2")
+            .unwrap()
+            .reason,
         "validation failed"
     );
     errors.handle_failure().await;
@@ -1606,7 +1642,13 @@ fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignore
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required").is_none());
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("required2").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required2")
+            .unwrap()
+            .reason,
         "validation failed"
     );
     errors.handle_failure();
@@ -1636,7 +1678,13 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required").is_none());
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("required2").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required2")
+            .unwrap()
+            .reason,
         "validation failed"
     );
     errors.handle_failure().await;
@@ -1930,7 +1978,13 @@ fn should_respect_post_validation_config() {
     assert!(errors.errors.as_ref().unwrap().get("required").is_none());
     assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("required_1").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required_1")
+            .unwrap()
+            .reason,
         REQUIRED_1_PRE_VALIDATION_FAIL
     );
 
@@ -1953,8 +2007,26 @@ fn should_respect_post_validation_config() {
 
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
-    assert_eq!(errors.errors.as_ref().unwrap().get("required").unwrap().reason, required);
-    assert_eq!(errors.errors.as_ref().unwrap().get("required_1").unwrap().reason, required);
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required")
+            .unwrap()
+            .reason,
+        required
+    );
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required_1")
+            .unwrap()
+            .reason,
+        required
+    );
 
     let data = sync_post_validation_schema::Data {
         required: value.clone(),
@@ -1976,7 +2048,16 @@ fn should_respect_post_validation_config() {
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required_1").is_none());
     assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
-    assert_eq!(errors.errors.as_ref().unwrap().get("required").unwrap().reason, required);
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required")
+            .unwrap()
+            .reason,
+        required
+    );
 
     let data = sync_post_validation_schema::Data {
         required: value.clone(),
@@ -1998,7 +2079,16 @@ fn should_respect_post_validation_config() {
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required_1").is_none());
     assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
-    assert_eq!(errors.errors.as_ref().unwrap().get("required").unwrap().reason, required);
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required")
+            .unwrap()
+            .reason,
+        required
+    );
 }
 
 async fn should_respect_post_validation_config_async() {
@@ -2144,7 +2234,13 @@ async fn should_respect_post_validation_config_async() {
     assert!(errors.errors.as_ref().unwrap().get("required").is_none());
     assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("required_1").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required_1")
+            .unwrap()
+            .reason,
         REQUIRED_1_PRE_VALIDATION_FAIL
     );
 
@@ -2169,8 +2265,26 @@ async fn should_respect_post_validation_config_async() {
 
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
-    assert_eq!(errors.errors.as_ref().unwrap().get("required").unwrap().reason, required);
-    assert_eq!(errors.errors.as_ref().unwrap().get("required_1").unwrap().reason, required);
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required")
+            .unwrap()
+            .reason,
+        required
+    );
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required_1")
+            .unwrap()
+            .reason,
+        required
+    );
 
     let data = async_post_validation_schema::Data {
         required: value.clone(),
@@ -2194,7 +2308,16 @@ async fn should_respect_post_validation_config_async() {
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required_1").is_none());
     assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
-    assert_eq!(errors.errors.as_ref().unwrap().get("required").unwrap().reason, required);
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required")
+            .unwrap()
+            .reason,
+        required
+    );
 
     let data = async_post_validation_schema::Data {
         required: value.clone(),
@@ -2218,7 +2341,16 @@ async fn should_respect_post_validation_config_async() {
     let errors = result.unwrap_err();
     assert!(errors.errors.as_ref().unwrap().get("required_1").is_none());
     assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
-    assert_eq!(errors.errors.as_ref().unwrap().get("required").unwrap().reason, required);
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("required")
+            .unwrap()
+            .reason,
+        required
+    );
 }
 
 async_test_matrix!(should_respect_post_validation_config_async);
