@@ -1,19 +1,42 @@
-also add rules so that:
+# Pending validation / semantics work
 
-- [ ] `ignore + (ignore_init/ignore_update)` should be rejected
-- [ ] `#[ignore_init] + #[ignore_update]` should be rejected
-- [ ] `#[ignore_init(||resolver)]` + `#[ignore_update]` or `#[ignore_init]` + `#[ignore_update(||resolver)]` should be allowed for lax and virtual fields.
-- [ ] `#[ignore_init(||resolver)]` + `#[ignore_update(||resolver)]` should warn and hint to use `#[ignore(||resolver)]` instead (is this feasible)?
-- [ ] Required fields:
-  - [ ] `[readonly]` is allowed to prevent any further updates to that required field
-  - [ ] `[ignore_update(||resolver)]` is allowed.
-  - [ ] `[readonly]` + `[ignore_update(||resolver)]` should be rejected.
-  - [ ] they cannot have `ignore`, `ignore_init` or `ignore_init(||resolver)` or `#[ignore_update]`;
-  - [ ] if `#[ignore_update]` is provided, reject and hint for `[readonly]` to be used instead (is this feasible)?
+## Ignore-attribute rules
 
-recently completed:
+- [ ] Reject bare `#[ignore]`. `#[ignore]` must always be conditional (`#[ignore(|ctx, _| ...)]`).
+- [ ] Reject `#[ignore]` + `#[ignore_init]` on the same `lax` / `virtual` field.
+- [ ] Reject `#[ignore]` + `#[ignore_update]` on the same `lax` / `virtual` field.
+- [ ] Reject `#[ignore_init]` + bare `#[ignore_update]` on the same `lax` / `virtual` field.
+  - Error: "init and update cannot be fully disabled".
+- [ ] Allow `#[ignore_init]` + `#[ignore_update(||resolver)]` on the same `lax` / `virtual` field.
+- [ ] Reject resolver form of `#[ignore_init]` (`#[ignore_init(||resolver)]`).
+  - Error: "conditional #[ignore_init] is currently not accepted".
+- [ ] Grouped `#[ignore([...], ...)]` stays limited to `lax` / `virtual` fields.
+- [ ] Grouped `#[ignore_update([...], ...)]` limited to `required`, `lax`, and `virtual` fields.
+
+## Required-field rules
+
+- [ ] Allow `#[readonly]` on required fields.
+- [ ] Allow `#[ignore_update(||resolver)]` on required fields.
+- [ ] Reject bare `#[ignore_update]` on required fields.
+  - Error: "#[ignore_update] on a required field must be conditional; use #[readonly] to always ignore updates".
+- [ ] Reject `#[readonly]` + `#[ignore_update]` on required fields.
+- [ ] Keep `#[ignore]` and `#[ignore_init]` disallowed on required fields.
+
+## Lax-field rules
+
+- [ ] Allow `#[readonly]` + `#[ignore]` on `lax` fields.
+- [ ] Allow `#[readonly]` + `#[ignore_init]` on `lax` fields.
+- [ ] Reject `#[readonly]` + `#[ignore_update]` on `lax` fields.
+
+## Other
+
+- [ ] Allow field-level `#[ignore]` and grouped `#[ignore([...], ...)]` to reference the same field.
+- [ ] Allow `#[ignore(...)]` + `#[required(...)]` on the same `lax` / `virtual` field; evaluate independently.
+- [ ] All hints are delivered as compile-error messages (no stable Rust warnings).
+
+# Recently completed
 
 - [x] Port `examples/lax_with_ignore_init.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
 - [x] Port `examples/lax_with_ignore_update.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
-- [x] Reconcile `#[ignore]` / `#[ignore_update]` semantics: field-level `#[ignore]` (bare or with a resolver) applies to both create and update on `#[lax]` / `#[ivo_virtual]` fields; `#[ignore_init]` is create-only; `#[ignore_update]` is update-only. Bare `#[ignore]` / `#[ignore_update]` mean "always ignore"; resolver forms are evaluated at runtime.
+- [x] Reconcile `#[ignore]` / `#[ignore_update]` semantics: field-level `#[ignore]` (with a resolver) applies to both create and update on `#[lax]` / `#[ivo_virtual]` fields; `#[ignore_init]` is create-only; `#[ignore_update]` is update-only.
 - [x] Fix unconditional ignore-update flag bug that treated every `#[ignore_update(...)]` field as bare/always-ignore.
