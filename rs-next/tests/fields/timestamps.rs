@@ -5,7 +5,7 @@ use ivo::ivo_schema;
 //
 // The new `#[ivo_schema(...)]` macro supports timestamps via:
 //   - `#[created_at]` / `#[updated_at]` / `#[optional_updated_at]` on a field
-//   - `#[timestamps(|| ...)] const _: () = ();` to provide the resolver
+//   - `#[timestamps(|| ...)]` or `#[timestamps(path::to_now)]` const _: () = ();` to provide the resolver
 //
 // `updated_at` is re-resolved on every successful update; `optional_updated_at`
 // is `None` on create and `Some(value)` on update.
@@ -230,7 +230,7 @@ mod sync_created_at_default_name_schema {
         pub created_at: Timestamp,
     }
 
-    #[timestamps(|| now())]
+    #[timestamps(now)]
     const _: () = ();
 }
 

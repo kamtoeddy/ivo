@@ -129,7 +129,7 @@ mod user_schema {
         pub v_slug: String,
     }
 
-    #[timestamps(|| Utc::now())]
+    #[timestamps(Utc::now)]
     const _: () = ();
 
     #[required(["email", "phone_number"], |ctx, _| {

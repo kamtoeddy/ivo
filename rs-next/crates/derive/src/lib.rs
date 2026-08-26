@@ -372,7 +372,36 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
     };
 
     match kind {
-        GroupedOptionKind::Timestamps | GroupedOptionKind::OnDelete => Ok(Some(GroupedOption {
+        GroupedOptionKind::Timestamps => {
+            if let Ok(closure) = syn::parse2::<syn::ExprClosure>(list.tokens.clone()) {
+                if closure.asyncness.is_some() {
+                    return Err(syn::Error::new_spanned(
+                        attr,
+                        "async timestamp resolvers are not supported; use a synchronous closure `|| now()` or a sync function path `now`",
+                    ));
+                }
+            }
+            let async_leading = list.tokens.clone().into_iter().next().is_some_and(|tt| {
+                if let proc_macro2::TokenTree::Ident(ident) = tt {
+                    ident == "async"
+                } else {
+                    false
+                }
+            });
+            if async_leading {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    "async timestamp resolvers are not supported; use a synchronous closure `|| now()` or a sync function path `now`",
+                ));
+            }
+            Ok(Some(GroupedOption {
+                kind,
+                fields: Vec::new(),
+                handler: list.tokens.clone(),
+                pre_validate: None,
+            }))
+        }
+        GroupedOptionKind::OnDelete => Ok(Some(GroupedOption {
             kind,
             fields: Vec::new(),
             handler: list.tokens.clone(),
