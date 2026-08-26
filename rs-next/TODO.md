@@ -62,3 +62,9 @@
 - [x] Port `rs/tests/options/required.rs` validation tests to `rs-next/tests/options/compile_fail/required.rs`.
 - [x] Port `rs/tests/options/mod.rs` runtime tests (`ignore_update` behavior, `on_delete`, and `on_success` allow-list) to `rs-next/tests/options/mod.rs`; port the invalid `on_success` config tests to `rs-next/tests/options/compile_fail/on_success.rs`.
 - [x] Add `mod options;` to the integration test root so the ported option tests are included in the test suite.
+
+- [x] Port the remaining `rs/tests/fields/lax` test cases (`ignore`, `on_delete`, `on_failure`, `on_success`) into `rs-next/tests/fields/lax.rs` using the `#[ivo_schema]` macro API, and verify the full `fields` test suite passes.
+
+- [x] Fix field-level `#[on_success]` handlers firing unconditionally during updates; they now only run when the corresponding field actually changed (or, for virtual fields, when it was provided and not ignored).
+
+- [x] Port `rs/tests/ivo_derive.rs` to `rs-next/tests/ivo_struct.rs` using the `#[ivo_schema]` macro API, adding `seahash`, `serde`, and `serde_json` as dev-dependencies.

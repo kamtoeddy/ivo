@@ -1783,14 +1783,10 @@ async_test_matrix!(
     should_trigger_on_success_handlers_during_updates_if_provided_async
 );
 
-// SKIPPED: tests asserting that on_success does NOT trigger when a field is not
-// provided during an update. The new API fires all registered on_success handlers
-// on every successful update; handlers that need per-field guards can inspect
-// ctx.changes().field themselves.
-
-// SKIPPED: tests asserting that on_success does NOT trigger when a field is
-// provided but ignored/readonly during an update. Same reason as above: the new
-// API invokes all on_success handlers on success.
+// Field-level on_success handlers now only fire during updates when the field
+// actually changed (or, for virtual fields, when it was provided and not
+// ignored). The `lax` suite covers the `not provided` and `ignored` cases;
+// equivalent `required` tests can be added here when needed.
 
 // SKIPPED: tests using options.on_success with an empty fields array. The new
 // macro does not expose a grouped/empty-fields on_success option.

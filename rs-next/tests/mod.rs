@@ -45,6 +45,7 @@ macro_rules! async_test_matrix {
 mod extras;
 mod field_configs;
 mod fields;
+mod ivo_struct;
 mod options;
 mod smoke;
 

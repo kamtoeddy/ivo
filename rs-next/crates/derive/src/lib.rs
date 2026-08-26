@@ -3666,8 +3666,49 @@ fn generate_model(
         })
         .collect();
 
-    let (update_success_is_async, update_success_stmts) =
-        make_trigger_stmts(&update_success_handlers, &update_hook_ctx_ty);
+    // Update-time field-level on_success handlers should only run for fields that
+    // actually participated in the update (i.e. the resulting change is present).
+    // Non-virtual fields are checked against `__trigger_changes`; virtual fields
+    // are checked against the raw update input, respecting `ignore_update` flags.
+    let (update_success_is_async, update_success_stmts) = {
+        let is_async = update_success_handlers
+            .iter()
+            .any(|(_, handler)| is_async_handler(handler));
+        let stmts: Vec<proc_macro2::TokenStream> = update_success_handlers
+            .iter()
+            .map(|(f, handler)| {
+                let annotated = type_annotate_handler(
+                    handler.clone(),
+                    &[update_hook_ctx_ty.clone(), hook_opts_ty.clone()],
+                );
+                let call = if is_async_handler(handler) {
+                    quote! { ::ivo::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+                } else {
+                    quote! { ::ivo::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                };
+                let name = &f.name;
+                let name_str = name.to_string();
+                let condition = if matches!(f.field_type, FieldType::Virtual { .. }) {
+                    let input_name = input_field_name(f);
+                    let ignored = if update_ignore_field_names.contains(&name_str) {
+                        let flag = format_ident!("ignore_update_{}", f.name);
+                        quote! { #flag }
+                    } else {
+                        quote! { false }
+                    };
+                    quote! { !#ignored && __trigger_updates.#input_name.is_some() }
+                } else {
+                    quote! { __trigger_changes.#name.is_some() }
+                };
+                quote! {
+                    if #condition {
+                        #call
+                    }
+                }
+            })
+            .collect();
+        (is_async, stmts)
+    };
 
     let grouped_on_success_options: Vec<_> = options
         .iter()
