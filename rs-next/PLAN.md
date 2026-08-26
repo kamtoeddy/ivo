@@ -173,6 +173,8 @@ Generate only the phases needed for the schema:
 - Expose `handle_success` on `IvoSuccessHandle` only when `on_success` handlers exist; otherwise omit the method.
 - Expose `handle_failure` on `IvoFailureHandle` only when `on_failure` handlers exist; otherwise omit the method.
 
+**Data-flow philosophy.** `create` goes from `PartialInput` to `Output`; `update` goes from `Output + PartialInput` to `PartialOutput`. To keep call sites ergonomic, `create` accepts `impl Into<PartialInput>`. The macro emits an `Into<PartialInput>` implementation for the generated full `Input` struct, so callers may pass either `PartialInput` or `Input`. `update` keeps the stricter `existing: Output, updates: PartialInput` shape because updates are always partial.
+
 ### 5.3 Handler triggers
 
 Return `impl FnOnce()` triggers:
