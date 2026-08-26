@@ -2161,7 +2161,6 @@ fn generate_model(
             let ty_tokens = quote!(#ty);
             let sanitizer = attr_value_tokens(&f.attrs, "sanitize");
             let validator = attr_value_tokens(&f.attrs, "validate");
-            let resolver = attr_value_tokens(&f.attrs, "resolve");
 
             let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
                 let flag = format_ident!("ignore_{}", name);
@@ -2228,14 +2227,11 @@ fn generate_model(
                     }
                 }
                 FieldType::Dependent => {
-                    let resolver = resolver
-                        .as_ref()
-                        .expect("dependent fields must have a #[resolve(...)] handler");
-                    let ctx_expr = quote!(ctx.clone());
-                    let opts_expr = quote!(&_rw_ctx_options);
-                    let (is_async, call) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
+                    let default_expr = attr_value_tokens(&f.attrs, "default")
+                        .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                    let (is_async, expr) = make_default_value_expr(&default_expr);
                     field_is_async |= is_async;
-                    call
+                    expr
                 }
                 FieldType::Virtual { .. } => unreachable!(),
             };
@@ -2308,6 +2304,95 @@ fn generate_model(
         .collect();
     create_has_async |= create_step_pairs.iter().any(|(a, _)| *a);
     let create_steps = create_step_pairs.into_iter().map(|(_, stmt)| stmt);
+
+    // Dependent-field resolution pass for create: only resolve a dependent when
+    // at least one of its parents was provided in the input or was resolved in
+    // a previous iteration. The loop propagates changes through the dependency
+    // graph in topological order until no more values change.
+    let dependent_create_init_fields: Vec<_> = fields
+        .iter()
+        .filter(|f| {
+            matches!(
+                f.field_type,
+                FieldType::Required | FieldType::Lax | FieldType::Virtual { .. }
+            )
+        })
+        .map(|f| {
+            let name_str = f.name.to_string();
+            let input_name = input_field_name(f);
+            quote! {
+                if input.#input_name.is_some() {
+                    __dependent_current_parents.insert(#name_str);
+                }
+            }
+        })
+        .collect();
+
+    let dependent_create_pairs: Vec<_> = {
+        let order = dependency_order(fields);
+        order
+            .into_iter()
+            .filter_map(|name| {
+                let name_ident = format_ident!("{}", name);
+                fields.iter().find(|f| f.name == name_ident)
+            })
+            .filter(|f| matches!(f.field_type, FieldType::Dependent))
+            .map(|f| {
+                let name = &f.name;
+                let name_str = name.to_string();
+                let ty = &f.ty;
+                let parents = parse_depends_on(f).unwrap_or_default();
+                let parent_checks: Vec<_> = parents
+                    .iter()
+                    .map(|p| quote! { __dependent_current_parents.contains(#p) })
+                    .collect();
+                let parent_guard = if parent_checks.is_empty() {
+                    quote! { false }
+                } else {
+                    quote! { (#(#parent_checks)||*) }
+                };
+                let resolver = attr_value_tokens(&f.attrs, "resolve")
+                    .expect("dependent fields must have a #[resolve(...)] handler");
+                let ctx_expr = quote!(ctx.clone());
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, resolver_expr) =
+                    make_resolver_call(&resolver, &ctx_expr, &opts_expr);
+                let stmt = quote! {
+                    if #parent_guard {
+                        let __new_value: #ty = #resolver_expr;
+                        if &__new_value != &output.#name {
+                            output.#name = __new_value.clone();
+                            __dependent_next_parents.insert(#name_str);
+                        }
+                        ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                            input.clone(),
+                            output.clone(),
+                            output.clone().into(),
+                            false,
+                        );
+                    }
+                };
+                (is_async, stmt)
+            })
+            .collect()
+    };
+    create_has_async |= dependent_create_pairs.iter().any(|(a, _)| *a);
+    let dependent_create_steps = dependent_create_pairs.into_iter().map(|(_, stmt)| stmt);
+
+    let dependent_create_block = quote! {
+        let mut __dependent_current_parents: ::std::collections::HashSet<&'static str> =
+            ::std::collections::HashSet::new();
+        #(#dependent_create_init_fields)*
+        loop {
+            let mut __dependent_next_parents: ::std::collections::HashSet<&'static str> =
+                ::std::collections::HashSet::new();
+            #(#dependent_create_steps)*
+            if __dependent_next_parents.is_empty() {
+                break;
+            }
+            __dependent_current_parents = __dependent_next_parents;
+        }
+    };
 
     // Virtual-field processing pass: sanitize/validate virtual input values and
     // update the partial input so that dependent resolvers see the final values.
@@ -3182,6 +3267,8 @@ fn generate_model(
 
                 #(#virtual_steps)*
                 #(#create_steps)*
+                let mut ctx = ctx;
+                #dependent_create_block
                 #(#re_validate_steps)*
                 let mut ctx = ctx;
                 #(#post_validate_create_steps)*
