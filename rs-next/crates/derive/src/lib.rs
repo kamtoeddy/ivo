@@ -719,9 +719,6 @@ fn is_non_static_default(tokens: &proc_macro2::TokenStream) -> bool {
     if syn::parse2::<syn::ExprAsync>(tokens.clone()).is_ok() {
         return true;
     }
-    if syn::parse2::<syn::ExprPath>(tokens.clone()).is_ok() {
-        return true;
-    }
     false
 }
 
@@ -2934,6 +2931,14 @@ fn generate_model(
                 } else {
                     quote! { (#(#parent_checks)||*) }
                 };
+                let is_readonly = find_attr(&f.attrs, "readonly").is_some();
+                let readonly_guard = if is_readonly {
+                    let default_expr = attr_value_tokens(&f.attrs, "default")
+                        .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                    quote! { output.#name == #default_expr }
+                } else {
+                    quote! { true }
+                };
                 let resolver = attr_value_tokens(&f.attrs, "resolve")
                     .expect("dependent fields must have a #[resolve(...)] handler");
                 let (resolver_is_async, resolver_expr) = match closure_input_count(&resolver) {
@@ -2952,7 +2957,7 @@ fn generate_model(
                     None => (false, resolver.clone()),
                 };
                 let stmt = quote! {
-                    if !#ignore_update_flag && #parent_guard {
+                    if !#ignore_update_flag && #parent_guard && #readonly_guard {
                         let __new_value: #ty = #resolver_expr;
                         if &__new_value != &__original_output.#name {
                             output.#name = __new_value.clone();

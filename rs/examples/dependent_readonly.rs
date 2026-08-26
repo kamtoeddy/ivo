@@ -54,6 +54,8 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         .ok()
         .unwrap();
 
+    println!("\nupdated: {:#?}", updates);
+
     assert_eq!(
         updates,
         PartialData {
@@ -104,6 +106,8 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         .ok()
         .unwrap();
 
+    println!("\nupdated: {:#?}", updates);
+
     assert_eq!(
         updates,
         PartialData {
@@ -131,6 +135,8 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         .await
         .ok()
         .unwrap();
+
+    println!("\nupdated: {:#?}", updates);
 
     assert_eq!(
         updates,
