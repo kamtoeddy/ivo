@@ -531,6 +531,7 @@ dependencies = [
 name = "ivo"
 version = "0.5.0"
 dependencies = [
+ "async-lock 3.4.2",
  "async-std",
  "chrono",
  "ivo-derive",

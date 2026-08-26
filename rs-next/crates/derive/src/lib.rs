@@ -3887,6 +3887,18 @@ fn generate_model(
         quote! { pub fn update }
     };
 
+    let create_options_read = if create_has_async {
+        quote! { _rw_ctx_options.read().await }
+    } else {
+        quote! { _rw_ctx_options.read_sync() }
+    };
+
+    let update_options_read = if update_has_async {
+        quote! { _rw_ctx_options.read().await }
+    } else {
+        quote! { _rw_ctx_options.read_sync() }
+    };
+
     quote! {
         pub struct #model_type_name;
 
@@ -3946,7 +3958,7 @@ fn generate_model(
                     let __failure_trigger = #create_failure_trigger;
                     ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
                         <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                            errors, &*_rw_ctx_options.read(),
+                            errors, &*#create_options_read,
                         ),
                         __return_opts,
                         __failure_trigger,
@@ -4031,7 +4043,7 @@ fn generate_model(
                     return ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
                         ::core::option::Option::Some(
                             <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                                errors, &*_rw_ctx_options.read(),
+                                errors, &*#update_options_read,
                             ),
                         ),
                         __return_opts,

@@ -1330,9 +1330,7 @@ mod sync_grouped_required_schema {
     #[required(
         ["virtual_field", "lax_1"],
         |ctx, _| {
-            if ctx.input().lax_2.is_none() {
-                return None;
-            }
+            ctx.input().lax_2.as_ref()?;
             let mut errors = DataInputErrors::new();
             errors.set_virtual_field("field is required", None);
             errors.set_lax_1("field is required", None);
@@ -1370,10 +1368,13 @@ mod async_grouped_required_schema {
             if ctx.input().lax_2.is_none() {
                 return None;
             }
-            let mut errors = DataInputErrors::new();
-            errors.set_virtual_field("field is required", None);
-            errors.set_lax_1("field is required", None);
-            Some(errors)
+            // ctx.input().lax_2.as_ref()?;
+
+            Some(
+                DataInputErrors::new()
+                    .with_virtual_field("field is required", None)
+                    .with_lax_1("field is required", None),
+            )
         }
     )]
     const _: () = ();

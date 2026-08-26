@@ -348,15 +348,19 @@ impl<I, O> IvoConstantCtx<I, O> {
 
 // Options wrappers
 
-pub struct IvoCtxOptions<CtxOptions>(pub std::sync::Arc<std::sync::RwLock<CtxOptions>>);
+pub struct IvoCtxOptions<CtxOptions>(pub std::sync::Arc<async_lock::RwLock<CtxOptions>>);
 
 impl<CtxOptions> IvoCtxOptions<CtxOptions> {
     pub fn new(rw: &IvoRwCtxOptions<CtxOptions>) -> Self {
         Self(rw.0.clone())
     }
 
-    pub fn read(&self) -> std::sync::RwLockReadGuard<'_, CtxOptions> {
-        self.0.read().unwrap()
+    pub fn read(&self) -> impl Future<Output = async_lock::RwLockReadGuard<'_, CtxOptions>> + '_ {
+        self.0.read()
+    }
+
+    pub fn read_sync(&self) -> async_lock::RwLockReadGuard<'_, CtxOptions> {
+        self.0.read_blocking()
     }
 }
 
@@ -366,19 +370,27 @@ impl<CtxOptions> Clone for IvoCtxOptions<CtxOptions> {
     }
 }
 
-pub struct IvoRwCtxOptions<CtxOptions>(pub std::sync::Arc<std::sync::RwLock<CtxOptions>>);
+pub struct IvoRwCtxOptions<CtxOptions>(pub std::sync::Arc<async_lock::RwLock<CtxOptions>>);
 
 impl<CtxOptions> IvoRwCtxOptions<CtxOptions> {
     pub fn new(opts: CtxOptions) -> Self {
-        Self(std::sync::Arc::new(std::sync::RwLock::new(opts)))
+        Self(std::sync::Arc::new(async_lock::RwLock::new(opts)))
     }
 
-    pub fn read(&self) -> std::sync::RwLockReadGuard<'_, CtxOptions> {
-        self.0.read().unwrap()
+    pub fn read(&self) -> impl Future<Output = async_lock::RwLockReadGuard<'_, CtxOptions>> + '_ {
+        self.0.read()
     }
 
-    pub fn write(&self) -> std::sync::RwLockWriteGuard<'_, CtxOptions> {
-        self.0.write().unwrap()
+    pub fn write(&self) -> impl Future<Output = async_lock::RwLockWriteGuard<'_, CtxOptions>> + '_ {
+        self.0.write()
+    }
+
+    pub fn read_sync(&self) -> async_lock::RwLockReadGuard<'_, CtxOptions> {
+        self.0.read_blocking()
+    }
+
+    pub fn write_sync(&self) -> async_lock::RwLockWriteGuard<'_, CtxOptions> {
+        self.0.write_blocking()
     }
 
     pub fn read_only(&self) -> IvoCtxOptions<CtxOptions> {

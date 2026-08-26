@@ -81,7 +81,7 @@ mod user_schema {
             Ok(None)
         })]
         #[re_validate(async |uname, _, o| {
-            if o.read().find_user_by_username(&uname).await.is_some() {
+            if o.read().await.find_user_by_username(&uname).await.is_some() {
                 return Err(("username: \"{uname}\" is already taken".into(), None));
             }
             Ok(Some(format!("revalidated-'{uname}'")))
@@ -108,7 +108,7 @@ mod user_schema {
 
         #[depends_on(username, v_slug)]
         #[default(SlugifiedString::from(""))]
-        #[resolve(async |_, o| { o.read().slug_id.clone().unwrap() })]
+        #[resolve(async |_, o| { o.read().await.slug_id.clone().unwrap() })]
         #[on_delete(|data, _| {
             println!("[dependent_slug_id]: on delete: {:?}", data.slug_id);
         })]
@@ -168,7 +168,7 @@ mod user_schema {
             slug_string, slug_id
         );
 
-        let mut options = o.write();
+        let mut options = o.write().await;
 
         if options.find_user_by_slug_id(&slug_id).await.is_none() {
             options.update_slug_id(&slug_id);

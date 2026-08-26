@@ -39,6 +39,7 @@
 - [x] Port `examples/main_demo/` to the `#[ivo_schema]` macro API (folder example with `validators` feature) and verify it builds and runs with `--features validators`.
 - [x] Support grouped `#[required([...], \|ctx, opts\| ...)]` returning `Option<{InputName}Errors>` for per-field custom error messages; invoke the handler only when none of the listed fields were provided.
 - [x] Allow `#[timestamps(path::to_now)]` as a shorthand for `#[timestamps(|| path::to_now())]`, while keeping timestamps strictly synchronous and rejecting async resolvers with a clear macro error.
+- [x] Replace `std::sync::RwLock` in `IvoRwCtxOptions` / `IvoCtxOptions` with `async-lock::RwLock`; expose async `.read()` / `.write()` and sync `.read_sync()` / `.write_sync()` so async resolvers no longer hold synchronous guards across await points.
 - [x] Port `examples/lax_with_ignore_init.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
 - [x] Port `examples/lax_with_ignore_update.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
 - [x] Reconcile `#[ignore]` / `#[ignore_update]` semantics: field-level `#[ignore]` (with a resolver) applies to both create and update on `#[lax]` / `#[ivo_virtual]` fields; `#[ignore_init]` is create-only; `#[ignore_update]` is update-only.
