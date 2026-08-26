@@ -14,24 +14,29 @@ async fn main() {
 
     let data = created.data.clone();
     println!("\ncreated: {:#?}", data);
-    let _ = created.handle_success().await;
 
     println!("\nCreate duration: {:?}", timer.elapsed());
+
+    let _ = created.handle_success().await;
+
+    println!("\nCreate duration handle_success: {:?}", timer.elapsed());
 
     let timer = Instant::now();
 
     let updated = DataModel
         .update(data, PartialDataInput::new().with_lax("lolol".into()), ())
-        .await
         .unwrap();
     println!("\nupdate: {:#?}", updated.data);
+    println!("\nUpdate duration: {:?}", timer.elapsed());
+
     let _ = updated.handle_success().await;
 
-    println!("\nUpdate  duration: {:?}", timer.elapsed());
+    println!("\nUpdate duration handle_success: {:?}", timer.elapsed());
 }
 
 #[ivo_schema(input(DataInput), output(Data, derive(Debug)))]
 mod data_schema {
+    #[allow(dead_code)]
     pub const DEFAULT_DEPENDENT: i32 = 1;
     pub const DEFAULT_LAX: &str = "default-lax";
 
@@ -39,7 +44,7 @@ mod data_schema {
         #[depends_on(lax)]
         #[default(DEFAULT_DEPENDENT)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
-        #[on_success(|ctx, _| async move {
+        #[on_success(|ctx, _| {
             println!("\n[on_success]: dependent = {}", ctx.values().dependent);
         })]
         #[on_delete(|data, _| {
@@ -49,7 +54,7 @@ mod data_schema {
 
         #[depends_on(dependent)]
         #[default(DEFAULT_DEPENDENT)]
-        #[resolve(|ctx, _| async move  {ctx.values().dependent + 10})]
+        #[resolve(|ctx, _| {ctx.values().dependent + 10})]
         #[on_success(|ctx, _| {
             println!("\n[on_success]: dependent_1 = {}", ctx.values().dependent_1);
         })]
@@ -68,7 +73,7 @@ mod data_schema {
         pub lax: String,
 
         #[lax(DEFAULT_LAX.to_string())]
-        #[on_success(|ctx, _| {
+        #[on_success(|ctx, _| async move {
             println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1);
         })]
         #[on_delete(|data, _| {

@@ -2181,6 +2181,7 @@ fn generate_model(
             let ty_tokens = quote!(#ty);
             let sanitizer = attr_value_tokens(&f.attrs, "sanitize");
             let validator = attr_value_tokens(&f.attrs, "validate");
+            let resolver = attr_value_tokens(&f.attrs, "resolve");
 
             let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
                 let flag = format_ident!("ignore_{}", name);
@@ -2240,16 +2241,14 @@ fn generate_model(
                     }
                 }
                 FieldType::Dependent => {
-                    let default_tokens = attr_value_tokens(&f.attrs, "default")
-                        .expect("dependent fields must have a #[default(...)] value");
-                    let (default_is_async, default_expr) = make_default_value_expr(&default_tokens);
-                    field_is_async |= default_is_async;
-                    quote! {
-                        {
-                            let __default: #ty = #default_expr;
-                            __default
-                        }
-                    }
+                    let resolver = resolver
+                        .as_ref()
+                        .expect("dependent fields must have a #[resolve(...)] handler");
+                    let ctx_expr = quote!(ctx.clone());
+                    let opts_expr = quote!(&_rw_ctx_options);
+                    let (is_async, call) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
+                    field_is_async |= is_async;
+                    call
                 }
                 FieldType::Virtual { .. } => unreachable!(),
             };

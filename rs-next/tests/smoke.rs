@@ -211,7 +211,10 @@ async fn smoke_model_resolver() {
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
     };
-    let created = user_dependent_schema::UserModel.create(input, ()).unwrap();
+    let created = user_dependent_schema::UserModel
+        .create(input, ())
+        .await
+        .unwrap();
     assert_eq!(created.first_name, "John");
     assert_eq!(created.last_name, "Doe");
     assert_eq!(created.full_name, "John Doe");
@@ -548,6 +551,7 @@ async fn smoke_model_dependent_default() {
     };
     let created = user_dependent_default_schema::UserModel
         .create(input, ())
+        .await
         .unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.status, "default-status");
