@@ -1912,7 +1912,19 @@ fn generate_model(
                     | FieldType::UpdatedAt { .. }
             )
         })
-        .filter_map(|f| attr_value_tokens(&f.attrs, "ignore_update").map(|h| (f, h)))
+        .filter_map(|f| {
+            attr_value_tokens(&f.attrs, "ignore_update")
+                .or_else(|| {
+                    // Field-level `#[ignore]` on lax/virtual fields also applies to updates,
+                    // matching the behaviour of the old builder API.
+                    if matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. }) {
+                        attr_value_tokens(&f.attrs, "ignore")
+                    } else {
+                        None
+                    }
+                })
+                .map(|h| (f, h))
+        })
         .collect();
 
     // Create method: sanitize/validate input fields, resolve dependents, and build output.
@@ -2837,6 +2849,11 @@ fn generate_model(
         })
         .collect();
 
+    let grouped_ignore_options: Vec<_> = options
+        .iter()
+        .filter(|o| matches!(o.kind, GroupedOptionKind::Ignore))
+        .collect();
+
     let grouped_ignore_update_options: Vec<_> = options
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::IgnoreUpdate))
@@ -2847,6 +2864,12 @@ fn generate_model(
             .iter()
             .map(|(f, _)| f.name.to_string())
             .collect();
+    // Grouped `#[ignore(...)]` applies to updates as well as creates.
+    for opt in &grouped_ignore_options {
+        for field in &opt.fields {
+            update_ignore_field_names.insert(field.clone());
+        }
+    }
     for opt in &grouped_ignore_update_options {
         if opt.fields.is_empty() {
             for f in &updateable_fields {
@@ -2882,8 +2905,9 @@ fn generate_model(
         .collect();
     update_has_async |= field_ignore_update_pairs.iter().any(|(a, _)| *a);
 
-    let grouped_ignore_update_pairs: Vec<_> = grouped_ignore_update_options
+    let grouped_ignore_update_pairs: Vec<_> = grouped_ignore_options
         .iter()
+        .chain(grouped_ignore_update_options.iter())
         .map(|opt| {
             let ctx_expr = quote!(&ctx);
             let opts_expr = quote!(&_rw_ctx_options);

@@ -1,6 +1,7 @@
 - [x] Implement the “nothing to update” distinction for `Model.update`: update failures return `IvoFailureHandle<Option<Payload>, ...>` where `errors: Some(payload)` means validation failed and `errors: None` means the update would not change any output field.
 - [x] Fix the readonly/nothing-to-update bug: a provided update field that is blocked by `#[readonly]` now counts as an attempted update, so an update with no resulting output changes returns `errors: None` instead of `Ok(empty)`.
+- [x] Fix `#[ignore]` semantics: field-level and grouped `#[ignore]` now apply to both create and update (matching the old builder API). `#[ignore_init]` remains create-only and `#[ignore_update]` remains update-only.
 - [x] Update all test call sites that inspect update error payloads to work with `Option<Payload>`.
-- [x] Port `examples/lax_defaults.rs`, `examples/lax_with_validators.rs`, `examples/lax_readonly.rs`, and `examples/lax_required.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
+- [x] Port `examples/lax_defaults.rs`, `examples/lax_with_validators.rs`, `examples/lax_readonly.rs`, `examples/lax_required.rs`, and `examples/lax_with_ignore.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
 - [x] Document the Ivo data-flow philosophy and update-failure semantics in `GOAL.md` and `PLAN.md`.
 - [x] Ensure all handlers expect `Fn` closures rather than `FnOnce` because they may be invoked multiple times.

@@ -83,8 +83,8 @@ Store each field as a typed `FieldDef` enum variant.
 
 For each `const _: () = ()` item in `mod options`, parse attached attributes:
 
-- `#[ignore([...], |ctx, opts| ...)]`
-- `#[ignore_update([...], |partial, full, opts| ...)]`
+- `#[ignore([...], |ctx, opts| ...)]` — applies to both create and update.
+- `#[ignore_update([...], |partial, full, opts| ...)]` — update only.
 - `#[required([...], |ctx, opts| ...)]`
 - `#[post_validate([...], |b| b.validate(...).pre_validate(...))]`
 - `#[on_success([...], |b| b.handle(...))]`
