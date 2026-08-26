@@ -24,9 +24,9 @@
 
 ## Lax-field rules
 
-- [ ] Allow `#[readonly]` + `#[ignore]` on `lax` fields.
-- [ ] Allow `#[readonly]` + `#[ignore_init]` on `lax` fields.
-- [ ] Reject `#[readonly]` + `#[ignore_update]` on `lax` fields.
+- [x] Allow `#[readonly]` + `#[ignore]` on `lax` fields.
+- [x] Allow `#[readonly]` + `#[ignore_init]` on `lax` fields.
+- [x] Reject `#[readonly]` + `#[ignore_update]` on `lax` fields.
 
 ## Other
 

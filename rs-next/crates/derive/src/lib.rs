@@ -1026,6 +1026,18 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
         }
 
         if matches!(f.field_type, FieldType::Lax) {
+            let has_readonly = behavior_names.iter().any(|(n, _)| n == "readonly");
+            let has_ignore_update = behavior_names.iter().any(|(n, _)| n == "ignore_update");
+            if has_readonly && has_ignore_update {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: `#[readonly]` and `#[ignore_update]` cannot both be used on a lax field",
+                        f.name
+                    ),
+                ));
+            }
+
             let lax_attr = f
                 .attrs
                 .iter()
@@ -4291,6 +4303,60 @@ mod tests {
                 "#,
         );
         assert_compile_error(&out, "bare lax without default");
+    }
+
+    #[test]
+    fn rejects_readonly_with_ignore_update_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[readonly]
+                        #[ignore_update]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "readonly with ignore_update on lax");
+    }
+
+    #[test]
+    fn accepts_readonly_with_ignore_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[readonly]
+                        #[ignore(|_, _| false)]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_no_compile_error(&out, "readonly with ignore on lax");
+    }
+
+    #[test]
+    fn accepts_readonly_with_ignore_init_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[readonly]
+                        #[ignore_init]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_no_compile_error(&out, "readonly with ignore_init on lax");
     }
 
     #[test]
