@@ -13,6 +13,7 @@ async fn main() {
 
 #[ivo_schema(input(DataInput), output(Data, derive(Debug, PartialEq)))]
 mod data_schema {
+    #[allow(dead_code)]
     pub const DEFAULT_DEPENDENT: i32 = 1;
     pub const DEFAULT_LAX: &str = "default-lax";
 
@@ -188,14 +189,14 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         lax_1: DEFAULT_LAX.to_string(),
     };
 
-    let updated_lax_1 = Some("jane-doe".to_string());
+    let updated_lax = Some("jane-doe".to_string());
 
     let updates = DataModel
         .update(
             data.clone(),
             PartialDataInput {
                 lax: None,
-                lax_1: updated_lax_1.clone(),
+                lax_1: updated_lax.clone(),
             },
             (),
         )
@@ -208,14 +209,15 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
             dependent: None,
             dependent_1: None,
             lax: None,
-            lax_1: updated_lax_1
+            lax_1: updated_lax
         }
     );
 
-    let updated = updates.data.clone();
+    let data_1 = updates.data.clone();
+
     updates.handle_success().await;
 
-    let data_1 = data.clone_with_updates(&updated);
+    let data_1 = data.clone_with_updates(&data_1);
 
     DataModel.delete(&data_1, ());
 
@@ -224,7 +226,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
 
     let updates = DataModel
         .update(
-            data_1.clone(),
+            data.clone(),
             PartialDataInput {
                 lax: updated_lax.clone(),
                 lax_1: updated_lax_1.clone(),
@@ -234,30 +236,31 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         .ok()
         .unwrap();
 
-    let dependent = Some(data_1.dependent + 1);
+    let dependent = Some(data.dependent + 1);
 
     assert_eq!(
         updates.data,
         PartialData {
-            dependent,
+            dependent: dependent.clone(),
             dependent_1: dependent.map(|v| v + 10),
             lax: updated_lax,
             lax_1: updated_lax_1
         }
     );
 
-    let updated_data = updates.data.clone();
+    let data_1 = updates.data.clone();
+
     updates.handle_success().await;
 
-    let data_2 = data_1.clone_with_updates(&updated_data);
+    let data_1 = data.clone_with_updates(&data_1);
 
-    DataModel.delete(&data_2, ());
+    DataModel.delete(&data_1, ());
 
     let updated_lax = Some("jane-doe".to_string());
 
     let updates = DataModel
         .update(
-            data_2.clone(),
+            data.clone(),
             PartialDataInput {
                 lax: updated_lax.clone(),
                 lax_1: None,
@@ -267,22 +270,23 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         .ok()
         .unwrap();
 
-    let dependent = Some(data_2.dependent + 1);
+    let dependent = Some(data.dependent + 1);
 
     assert_eq!(
         updates.data,
         PartialData {
-            dependent,
+            dependent: dependent.clone(),
             dependent_1: dependent.map(|v| v + 10),
             lax: updated_lax,
             lax_1: None
         }
     );
 
-    let updated_data = updates.data.clone();
+    let data_1 = updates.data.clone();
+
     updates.handle_success().await;
 
-    let data = data_2.clone_with_updates(&updated_data);
+    let data_1 = data.clone_with_updates(&data_1);
 
-    DataModel.delete(&data, ());
+    DataModel.delete(&data_1, ());
 }
