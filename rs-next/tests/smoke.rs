@@ -22,6 +22,7 @@ mod user_schema {
 mod user_schema_dual {
     struct Fields {
         #[required]
+        #[on_delete(|_data, _opts| async move { println!("deleted"); })]
         pub name: String,
 
         #[constant(|| String::from("default-id"))]
@@ -119,7 +120,7 @@ async fn smoke_model_delete_dual_struct() {
         name: "test".to_string(),
         id: String::from("default-id"),
     };
-    user_schema_dual::UserModel.delete(&output, ());
+    user_schema_dual::UserModel.delete(&output, ()).await;
 }
 
 #[tokio::test]

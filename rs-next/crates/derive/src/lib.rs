@@ -1748,6 +1748,17 @@ fn generate_model(
         <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::Metadata
     );
 
+    let has_field_on_delete = fields.iter().any(|f| {
+        matches!(
+            f.field_type,
+            FieldType::Constant | FieldType::Required | FieldType::Lax | FieldType::Dependent
+        ) && f.attrs.iter().any(|a| a.path().is_ident("on_delete"))
+    });
+    let has_grouped_on_delete = options
+        .iter()
+        .any(|o| matches!(o.kind, GroupedOptionKind::OnDelete));
+    let has_on_delete = has_field_on_delete || has_grouped_on_delete;
+
     let (output_name, partial_output_name) = if let Some(output_args) = &args.output {
         let out = &output_args.name;
         let pout = format_ident!("Partial{}", out);
@@ -2880,54 +2891,80 @@ fn generate_model(
         })
         .collect();
 
-    // Delete method: lifecycle hooks.
-    let data_ref_ty = quote!(&#output_name);
+    // Delete method: lifecycle hooks (only generated when needed).
+    let delete_method = if has_on_delete {
+        let data_ref_ty = quote!(&#output_name);
 
-    let make_on_delete_call =
-        |handler: proc_macro2::TokenStream| -> (bool, proc_macro2::TokenStream) {
-            let annotated = type_annotate_handler(
-                handler.clone(),
-                &[data_ref_ty.clone(), hook_opts_ty.clone()],
-            );
-            let is_async = is_async_handler(&handler);
-            let call = if is_async {
-                quote! { ::ivo::run_hook(data, &_ctx_options, #annotated).await; }
-            } else {
-                quote! { (#annotated)(data, &_ctx_options); }
+        let make_on_delete_call =
+            |handler: proc_macro2::TokenStream| -> (bool, proc_macro2::TokenStream) {
+                let annotated = type_annotate_handler(
+                    handler.clone(),
+                    &[data_ref_ty.clone(), hook_opts_ty.clone()],
+                );
+                let is_async = is_async_handler(&handler);
+                let call = if is_async {
+                    quote! { ::ivo::run_hook(data, &_ctx_options, #annotated).await; }
+                } else {
+                    quote! { (#annotated)(data, &_ctx_options); }
+                };
+                (is_async, call)
             };
-            (is_async, call)
+
+        let field_on_delete_hook_pairs: Vec<_> = fields
+            .iter()
+            .filter(|f| {
+                matches!(
+                    f.field_type,
+                    FieldType::Constant
+                        | FieldType::Required
+                        | FieldType::Lax
+                        | FieldType::Dependent
+                )
+            })
+            .flat_map(|f| {
+                attr_values_tokens(&f.attrs, "on_delete")
+                    .into_iter()
+                    .map(&make_on_delete_call)
+            })
+            .collect();
+
+        let grouped_on_delete_hook_pairs: Vec<_> = options
+            .iter()
+            .filter(|o| matches!(o.kind, GroupedOptionKind::OnDelete))
+            .map(|o| make_on_delete_call(o.handler.clone()))
+            .collect();
+
+        let delete_is_async = field_on_delete_hook_pairs
+            .iter()
+            .chain(&grouped_on_delete_hook_pairs)
+            .any(|(is_async, _)| *is_async);
+
+        let on_delete_hooks = field_on_delete_hook_pairs
+            .into_iter()
+            .chain(grouped_on_delete_hook_pairs)
+            .map(|(_, call)| call);
+
+        let delete_sig = if delete_is_async {
+            quote! { pub async fn delete }
+        } else {
+            quote! { pub fn delete }
         };
 
-    let field_on_delete_hook_pairs: Vec<_> = fields
-        .iter()
-        .filter(|f| {
-            matches!(
-                f.field_type,
-                FieldType::Constant | FieldType::Required | FieldType::Lax | FieldType::Dependent
-            )
-        })
-        .flat_map(|f| {
-            attr_values_tokens(&f.attrs, "on_delete")
-                .into_iter()
-                .map(&make_on_delete_call)
-        })
-        .collect();
+        quote! {
+            #delete_sig(
+                &self,
+                data: &#output_name,
+                _ctx_options: #ctx_options_ty,
+            ) {
+                let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
+                let _ctx_options = _rw_ctx_options.read_only();
 
-    let grouped_on_delete_hook_pairs: Vec<_> = options
-        .iter()
-        .filter(|o| matches!(o.kind, GroupedOptionKind::OnDelete))
-        .map(|o| make_on_delete_call(o.handler.clone()))
-        .collect();
-
-    let delete_is_async = field_on_delete_hook_pairs
-        .iter()
-        .chain(&grouped_on_delete_hook_pairs)
-        .any(|(is_async, _)| *is_async);
-
-    let on_delete_hooks = field_on_delete_hook_pairs
-        .into_iter()
-        .chain(grouped_on_delete_hook_pairs)
-        .map(|(_, call)| call);
+                #(#on_delete_hooks)*
+            }
+        }
+    } else {
+        quote! {}
+    };
 
     // Success / failure triggers.
     let hook_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
@@ -3108,12 +3145,6 @@ fn generate_model(
         quote! { pub fn update }
     };
 
-    let delete_sig = if delete_is_async {
-        quote! { pub async fn delete }
-    } else {
-        quote! { pub fn delete }
-    };
-
     quote! {
         pub struct #model_type_name;
 
@@ -3251,16 +3282,7 @@ fn generate_model(
                 ))
             }
 
-            #delete_sig(
-                &self,
-                data: &#output_name,
-                _ctx_options: #ctx_options_ty,
-            ) {
-                let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
-                let _ctx_options = _rw_ctx_options.read_only();
-
-                #(#on_delete_hooks)*
-            }
+            #delete_method
         }
     }
 }
@@ -3893,5 +3915,50 @@ mod tests {
             "#,
         );
         assert_compile_error(&out, "post_validate missing validate handler");
+    }
+
+    #[test]
+    fn omits_delete_when_no_on_delete_handler() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub name: String,
+                }
+            }
+            "#,
+        );
+        assert_no_compile_error(&out, "schema without on_delete");
+        assert!(
+            !out.contains("pub fn delete") && !out.contains("pub async fn delete"),
+            "expected no delete method, got: {}",
+            out
+        );
+    }
+
+    #[test]
+    fn includes_delete_when_on_delete_handler_present() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub name: String,
+                }
+
+                #[on_delete(|_data, _opts| {})]
+                const _: () = ();
+            }
+            "#,
+        );
+        assert_no_compile_error(&out, "schema with on_delete");
+        assert!(
+            out.contains("pub fn delete") || out.contains("pub async fn delete"),
+            "expected delete method, got: {}",
+            out
+        );
     }
 }

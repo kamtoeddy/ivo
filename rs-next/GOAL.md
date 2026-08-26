@@ -551,7 +551,8 @@ pub fn update(
 pub fn delete(&self, data: &User, options: UserCtxOptions)
 ```
 
-- `delete` invokes all field-level and schema-level `on_delete` handlers directly and returns `()`.
+- `delete` is generated only when the schema declares at least one field-level or schema-level `on_delete` handler.
+- It invokes all such handlers directly and returns `()`.
 - It is async if any `on_delete` handler is async.
 
 ### Handler triggers

@@ -147,7 +147,7 @@ Generate the input and output structs.
 
 ## Phase 5: Schema model generation
 
-Generate `create`, `update`, and `delete` methods on the schema model.
+Generate `create` and `update` methods on the schema model. Generate `delete` only if the schema declares at least one field-level or grouped `on_delete` handler.
 
 ### 5.1 Dynamic pipeline
 
@@ -168,7 +168,7 @@ Generate only the phases needed for the schema:
 ### 5.2 Sync/async method signatures
 
 - Determine if `create`/`update` are sync or async based on directly-invoked handlers.
-- Determine if `delete` is sync or async based on `on_delete` handlers.
+- Generate `delete` only when at least one `on_delete` handler exists; determine if it is sync or async based on those handlers.
 - Determine trigger sync/async based on `on_success` / `on_failure` handlers.
 
 ### 5.3 Handler triggers
@@ -183,7 +183,7 @@ Return `impl FnOnce()` triggers:
 
 - `create`: `Result<(Output, SuccessTrigger, CtxOptions), (ErrorSanitizer::Payload, FailureTrigger, CtxOptions)>`.
 - `update`: `Result<(PartialOutput, SuccessTrigger, CtxOptions), (Option<ErrorSanitizer::Payload>, FailureTrigger, CtxOptions)>`.
-- `delete`: returns `()`; async if any `on_delete` handler is async.
+- `delete`: generated only when `on_delete` handlers exist; returns `()` and is async if any `on_delete` handler is async.
 
 ## Phase 6: Runtime support
 
