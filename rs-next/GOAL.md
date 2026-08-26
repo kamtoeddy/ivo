@@ -474,7 +474,7 @@ In the mixed case, sync handlers are called directly without `BoxFuture` or `joi
 
 ### Returned handler triggers
 
-`create` and `update` return `Result<IvoSuccessHandle<...>, IvoFailureHandle<...>>`. The handle exposes the operation result and a `handle_success` / `handle_failure` method whose sync/async nature is determined only by the `on_success` / `on_failure` handlers it wraps:
+`create` and `update` return `Result<IvoSuccessHandle<...>, IvoFailureHandle<...>>`. The success handle always exposes `handle_success`. The failure handle exposes `handle_failure` only when the schema declares at least one `on_failure` handler. The sync/async nature of each method is determined only by the `on_success` / `on_failure` handlers it wraps:
 
 ```rust
 // Core handlers are sync, so create is sync.
@@ -557,13 +557,13 @@ pub fn delete(&self, data: &User, options: UserCtxOptions)
 
 ### Handler triggers
 
-`IvoSuccessHandle` and `IvoFailureHandle` wrap the operation result and any captured `on_success` / `on_failure` triggers. Call `handle_success` or `handle_failure` to invoke those triggers. The handle methods consume `self` and return `()`; if any wrapped handler is async the method is `async`.
+`IvoSuccessHandle` and `IvoFailureHandle` wrap the operation result and any captured `on_success` / `on_failure` triggers. Call `handle_success` to invoke success triggers; call `handle_failure` to invoke failure triggers, but only when `on_failure` handlers exist. The handle methods consume `self` and return `()`; if any wrapped handler is async the method is `async`.
 
 The sync/async nature of each method is determined only by the `on_success` / `on_failure` handlers it wraps:
 
 - If **all** `on_success` handlers are sync, `handle_success` is a sync method returning `()`.
 - If **any** `on_success` handler is async, `handle_success` is an `async` method returning `()`.
-- The same rule applies to `handle_failure` and `on_failure` handlers.
+- The same rule applies to `handle_failure` and `on_failure` handlers, but `handle_failure` is only available when at least one `on_failure` handler exists.
 
 ```rust
 // Core handlers are sync, so create is sync.
@@ -587,7 +587,7 @@ let handle = model.create(input).unwrap_err();
 handle.handle_failure().await;
 ```
 
-When a schema has no `on_success` / `on_failure` handlers, `handle_success` / `handle_failure` are still available as sync no-ops.
+When a schema has no `on_success` handlers, `handle_success` is still available as a sync no-op. When a schema has no `on_failure` handlers, `handle_failure` is not present on `IvoFailureHandle`.
 
 ## 17. Execution pipeline
 

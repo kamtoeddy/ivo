@@ -533,13 +533,15 @@ impl<O: fmt::Debug, CtxOptions, const ASYNC: bool> fmt::Debug
 /// this operation. If all captured handlers are synchronous (or there are none),
 /// `handle_failure` is synchronous. If any captured handler is asynchronous,
 /// `handle_failure` is asynchronous.
-pub struct IvoFailureHandle<Payload, CtxOptions, const ASYNC: bool> {
+pub struct IvoFailureHandle<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> {
     errors: Payload,
     ctx_options: IvoCtxOptions<CtxOptions>,
     trigger: IvoTriggerFn,
 }
 
-impl<Payload, CtxOptions, const ASYNC: bool> IvoFailureHandle<Payload, CtxOptions, ASYNC> {
+impl<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool>
+    IvoFailureHandle<Payload, CtxOptions, ASYNC, HAS_FAILURE>
+{
     pub fn new(
         errors: Payload,
         ctx_options: IvoCtxOptions<CtxOptions>,
@@ -569,7 +571,7 @@ impl<Payload, CtxOptions, const ASYNC: bool> IvoFailureHandle<Payload, CtxOption
     }
 }
 
-impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, false> {
+impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, false, true> {
     pub fn handle_failure(self) {
         match self.trigger {
             IvoTriggerFn::Sync(f) => f(),
@@ -578,7 +580,7 @@ impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, false> {
     }
 }
 
-impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, true> {
+impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, true, true> {
     pub async fn handle_failure(self) {
         match self.trigger {
             IvoTriggerFn::Async(t) => t.await,
@@ -587,8 +589,8 @@ impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, true> {
     }
 }
 
-impl<Payload, CtxOptions, const ASYNC: bool> std::ops::Deref
-    for IvoFailureHandle<Payload, CtxOptions, ASYNC>
+impl<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> std::ops::Deref
+    for IvoFailureHandle<Payload, CtxOptions, ASYNC, HAS_FAILURE>
 {
     type Target = Payload;
 
@@ -597,16 +599,16 @@ impl<Payload, CtxOptions, const ASYNC: bool> std::ops::Deref
     }
 }
 
-impl<Payload, CtxOptions, const ASYNC: bool> std::ops::DerefMut
-    for IvoFailureHandle<Payload, CtxOptions, ASYNC>
+impl<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> std::ops::DerefMut
+    for IvoFailureHandle<Payload, CtxOptions, ASYNC, HAS_FAILURE>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.errors
     }
 }
 
-impl<Payload: fmt::Debug, CtxOptions, const ASYNC: bool> fmt::Debug
-    for IvoFailureHandle<Payload, CtxOptions, ASYNC>
+impl<Payload: fmt::Debug, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> fmt::Debug
+    for IvoFailureHandle<Payload, CtxOptions, ASYNC, HAS_FAILURE>
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("IvoFailureHandle")

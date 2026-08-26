@@ -3045,6 +3045,9 @@ fn generate_model(
         })
         .collect();
 
+    let has_failure_handlers =
+        !create_failure_handlers.is_empty() || !update_failure_handlers.is_empty();
+
     let (update_success_is_async, update_success_stmts) =
         make_trigger_stmts(&update_success_handlers, &update_hook_ctx_ty);
     let (update_failure_is_async, update_failure_stmts) =
@@ -3158,7 +3161,7 @@ fn generate_model(
                 _ctx_options: #ctx_options_ty,
             ) -> ::core::result::Result<
                 ::ivo::IvoSuccessHandle<#output_name, #ctx_options_ty, #create_success_is_async>,
-                ::ivo::IvoFailureHandle<#payload_ty, #ctx_options_ty, #create_failure_is_async>,
+                ::ivo::IvoFailureHandle<#payload_ty, #ctx_options_ty, #create_failure_is_async, #has_failure_handlers>,
             >
             where
                 I: ::core::convert::Into<#partial_input_name>,
@@ -3217,7 +3220,7 @@ fn generate_model(
                 _ctx_options: #ctx_options_ty,
             ) -> ::core::result::Result<
                 ::ivo::IvoSuccessHandle<#partial_output_name, #ctx_options_ty, #update_success_is_async>,
-                ::ivo::IvoFailureHandle<#payload_ty, #ctx_options_ty, #update_failure_is_async>,
+                ::ivo::IvoFailureHandle<#payload_ty, #ctx_options_ty, #update_failure_is_async, #has_failure_handlers>,
             > {
                 let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
                 let _ctx_options = _rw_ctx_options.read_only();
@@ -3915,6 +3918,71 @@ mod tests {
             "#,
         );
         assert_compile_error(&out, "post_validate missing validate handler");
+    }
+
+    fn extract_failure_handle_ty(out: &str) -> Option<String> {
+        let start = out.find("IvoFailureHandle")?;
+        let mut depth = 0;
+        let mut end = None;
+        for (i, c) in out[start..].char_indices() {
+            if c == '<' {
+                depth += 1;
+            } else if c == '>' {
+                depth -= 1;
+                if depth == 0 {
+                    end = Some(start + i + c.len_utf8());
+                    break;
+                }
+            }
+        }
+        out.get(start..end?).map(|s| s.to_string())
+    }
+
+    #[test]
+    fn omits_handle_failure_without_on_failure_handler() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub name: String,
+                }
+            }
+            "#,
+        );
+        assert_no_compile_error(&out, "schema without on_failure");
+        let ty = extract_failure_handle_ty(&out)
+            .expect("expected IvoFailureHandle type in generated code");
+        assert!(
+            ty.replace(' ', "").ends_with(",false,false>"),
+            "expected HAS_FAILURE=false, got: {}",
+            ty
+        );
+    }
+
+    #[test]
+    fn includes_handle_failure_with_on_failure_handler() {
+        let out = expand(
+            "input(User)",
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    #[on_failure(|_ctx, _opts| {})]
+                    pub name: String,
+                }
+            }
+            "#,
+        );
+        assert_no_compile_error(&out, "schema with on_failure");
+        let ty = extract_failure_handle_ty(&out)
+            .expect("expected IvoFailureHandle type in generated code");
+        assert!(
+            ty.replace(' ', "").ends_with(",false,true>"),
+            "expected HAS_FAILURE=true, got: {}",
+            ty
+        );
     }
 
     #[test]
