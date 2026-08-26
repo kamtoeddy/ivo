@@ -511,8 +511,8 @@ impl<O: fmt::Debug, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> fmt:
 /// `handle_failure` is synchronous. If any captured handler is asynchronous,
 /// `handle_failure` is asynchronous.
 pub struct IvoFailureHandle<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> {
-    errors: Payload,
-    ctx_options: IvoCtxOptions<CtxOptions>,
+    pub errors: Payload,
+    pub ctx_options: IvoCtxOptions<CtxOptions>,
     trigger: IvoTriggerFn,
 }
 
@@ -529,22 +529,6 @@ impl<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool>
             ctx_options,
             trigger,
         }
-    }
-
-    pub fn errors(&self) -> &Payload {
-        &self.errors
-    }
-
-    pub fn into_errors(self) -> Payload {
-        self.errors
-    }
-
-    pub fn ctx_options(&self) -> &IvoCtxOptions<CtxOptions> {
-        &self.ctx_options
-    }
-
-    pub fn into_ctx_options(self) -> IvoCtxOptions<CtxOptions> {
-        self.ctx_options
     }
 }
 
