@@ -42,5 +42,9 @@ name = "constants"
 path = "examples/constants.rs"
 
 [[example]]
+name = "dependent_defaults"
+path = "examples/dependent_defaults.rs"
+
+[[example]]
 name = "dependent_on_dependent"
 path = "examples/dependent_on_dependent.rs"
