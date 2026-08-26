@@ -7,7 +7,7 @@ use data_schema::*;
 #[tokio::main]
 async fn main() {
     should_not_update_if_resolver_was_run_at_creation().await;
-    // should_reject_update_if_resolver_was_run_during_prior_update().await;
+    should_reject_update_if_resolver_was_run_during_prior_update().await;
     timed().await;
 }
 
@@ -181,112 +181,109 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
     created.handle_success().await;
 }
 
-// async fn should_reject_update_if_resolver_was_run_during_prior_update() {
-//     let data = Data {
-//         dependent: DEFAULT_DEPENDENT,
-//         dependent_1: DEFAULT_DEPENDENT,
-//         lax: DEFAULT_LAX.to_string(),
-//         lax_1: DEFAULT_LAX.to_string(),
-//     };
+async fn should_reject_update_if_resolver_was_run_during_prior_update() {
+    let data = Data {
+        dependent: DEFAULT_DEPENDENT,
+        dependent_1: DEFAULT_DEPENDENT,
+        lax: DEFAULT_LAX.to_string(),
+        lax_1: DEFAULT_LAX.to_string(),
+    };
 
-//     let updated_lax = Some("jane-doe".to_string());
+    let updated_lax_1 = Some("jane-doe".to_string());
 
-//     let updates = DataModel
-//         .update(
-//             data,
-//             PartialDataInput {
-//                 lax: None,
-//                 lax_1: updated_lax.clone(),
-//             },
-//             (),
-//         )
-//         .ok()
-//         .unwrap();
+    let updates = DataModel
+        .update(
+            data.clone(),
+            PartialDataInput {
+                lax: None,
+                lax_1: updated_lax_1.clone(),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
 
-//     assert_eq!(
-//         updates.data,
-//         PartialData {
-//             dependent: None,
-//             dependent_1: None,
-//             lax: None,
-//             lax_1: updated_lax
-//         }
-//     );
+    assert_eq!(
+        updates.data,
+        PartialData {
+            dependent: None,
+            dependent_1: None,
+            lax: None,
+            lax_1: updated_lax_1
+        }
+    );
 
-//     let data = updates.data.clone();
+    let updated = updates.data.clone();
+    updates.handle_success().await;
 
-//     updates.handle_success().await;
+    let data_1 = data.clone_with_updates(&updated);
 
-//     let data_1 = data.clone_with_updates(&data);
+    DataModel.delete(&data_1, ());
 
-//     DataModel.delete(&data_1, ());
+    let updated_lax = Some("jane-doe".to_string());
+    let updated_lax_1 = Some("james-doe".to_string());
 
-//     let updated_lax = Some("jane-doe".to_string());
-//     let updated_lax_1 = Some("james-doe".to_string());
+    let updates = DataModel
+        .update(
+            data_1.clone(),
+            PartialDataInput {
+                lax: updated_lax.clone(),
+                lax_1: updated_lax_1.clone(),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
 
-//     let updates = DataModel
-//         .update(
-//             data_1,
-//             PartialDataInput {
-//                 lax: updated_lax.clone(),
-//                 lax_1: updated_lax_1.clone(),
-//             },
-//             (),
-//         )
-//         .ok()
-//         .unwrap();
+    let dependent = Some(data_1.dependent + 1);
 
-//     let dependent = Some(data.dependent + 1);
+    assert_eq!(
+        updates.data,
+        PartialData {
+            dependent: dependent.clone(),
+            dependent_1: dependent.map(|v| v + 10),
+            lax: updated_lax,
+            lax_1: updated_lax_1
+        }
+    );
 
-//     assert_eq!(
-//         updates.data,
-//         PartialData {
-//             dependent: dependent.clone(),
-//             dependent_1: dependent.map(|v| v + 10),
-//             lax: updated_lax,
-//             lax_1: updated_lax_1
-//         }
-//     );
+    let updated_data = updates.data.clone();
+    updates.handle_success().await;
 
-//     let data = updates.data.clone();
+    let data_2 = data_1.clone_with_updates(&updated_data);
 
-//     updates.handle_success().await;
+    DataModel.delete(&data_2, ());
 
-//     let data_1 = data.clone_with_updates(&data);
+    let updated_lax = Some("jane-doe".to_string());
 
-//     DataModel.delete(&data_1, ());
+    let updates = DataModel
+        .update(
+            data_2.clone(),
+            PartialDataInput {
+                lax: updated_lax.clone(),
+                lax_1: None,
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
 
-//     let updated_lax = Some("jane-doe".to_string());
+    let dependent = Some(data_2.dependent + 1);
 
-//     let updates = DataModel
-//         .update(
-//             data_1,
-//             PartialDataInput {
-//                 lax: updated_lax.clone(),
-//                 lax_1: None,
-//             },
-//             (),
-//         )
-//         .ok()
-//         .unwrap();
+    assert_eq!(
+        updates.data,
+        PartialData {
+            dependent: dependent.clone(),
+            dependent_1: dependent.map(|v| v + 10),
+            lax: updated_lax,
+            lax_1: None
+        }
+    );
 
-//     let dependent = Some(data.dependent + 1);
+    let updated_data = updates.data.clone();
+    updates.handle_success().await;
 
-//     assert_eq!(
-//         updates.data,
-//         PartialData {
-//             dependent: dependent.clone(),
-//             dependent_1: dependent.map(|v| v + 10),
-//             lax: updated_lax,
-//             lax_1: None
-//         }
-//     );
+    let data = data_2.clone_with_updates(&updated_data);
 
-//     let updated_data = updates.data.clone();
-
-//     updates.handle_success().await;
-
-//     let data = data_1.clone_with_updates(&updated_data);
-
-//     DataModel.delete(&data, ());
-// }
+    DataModel.delete(&data, ());
+}

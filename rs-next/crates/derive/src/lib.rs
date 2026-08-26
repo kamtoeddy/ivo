@@ -1345,6 +1345,10 @@ fn is_debug_derive(path: &Path) -> bool {
     path.get_ident().map(|i| i == "Debug").unwrap_or(false)
 }
 
+fn is_default_derive(path: &Path) -> bool {
+    path.get_ident().map(|i| i == "Default").unwrap_or(false)
+}
+
 struct PartialFieldInfo {
     name: Ident,
     ty: Type,
@@ -1361,7 +1365,12 @@ fn generate_partial_and_impls(
     let partial_name = format_ident!("Partial{}", name);
     let partial_derives: Vec<_> = partial_derives
         .iter()
-        .filter(|p| !is_clone_derive(p) && !is_debug_derive(p))
+        .filter(|p| {
+            !is_clone_derive(p)
+                && !is_debug_derive(p)
+                && !is_partial_eq_derive(p)
+                && !is_default_derive(p)
+        })
         .collect();
 
     let partial_fields = fields.iter().map(|f| {
@@ -1381,13 +1390,33 @@ fn generate_partial_and_impls(
         quote! { #name: ::core::default::Default::default() }
     });
 
-    let update_fields = fields.iter().map(|f| {
-        let name = &f.name;
-        quote! {
-            if let ::core::option::Option::Some(v) = &updates.#name {
-                self.#name = v.clone();
+    let update_fields: Vec<_> = fields
+        .iter()
+        .map(|f| {
+            let name = &f.name;
+            quote! {
+                if let ::core::option::Option::Some(v) = &updates.#name {
+                    self.#name = v.clone();
+                }
             }
-        }
+        })
+        .collect();
+
+    let clone_update_fields: Vec<_> = fields
+        .iter()
+        .map(|f| {
+            let name = &f.name;
+            quote! {
+                if let ::core::option::Option::Some(v) = &updates.#name {
+                    clone.#name = v.clone();
+                }
+            }
+        })
+        .collect();
+
+    let clone_with_updates_fields = fields.iter().map(|f| {
+        let name = &f.name;
+        quote! { #name: updates.#name.clone().or_else(|| self.#name.clone()) }
     });
 
     let from_fields = fields.iter().map(|f| {
@@ -1445,7 +1474,7 @@ fn generate_partial_and_impls(
     };
 
     quote! {
-        #[derive(::core::clone::Clone, ::core::fmt::Debug, #(#partial_derives),*)]
+        #[derive(::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::PartialEq, ::core::default::Default, #(#partial_derives),*)]
         #vis struct #partial_name {
             #(#partial_fields,)*
         }
@@ -1459,13 +1488,11 @@ fn generate_partial_and_impls(
                 #(self.#field_idents.is_none())&&*
             }
 
-            #(#setters)*
-        }
-
-        impl ::core::default::Default for #partial_name {
-            fn default() -> Self {
-                Self::new()
+            pub fn clone_with_updates(&self, updates: &Self) -> Self {
+                Self { #(#clone_with_updates_fields,)* }
             }
+
+            #(#setters)*
         }
 
         impl ::ivo::PartialStructMethods for #partial_name {
@@ -1484,6 +1511,14 @@ fn generate_partial_and_impls(
 
         impl ::ivo::WithPartialStruct for #name {
             type Partial = #partial_name;
+        }
+
+        impl #name {
+            pub fn clone_with_updates(&self, updates: &#partial_name) -> Self {
+                let mut clone = self.clone();
+                #(#clone_update_fields)*
+                clone
+            }
         }
 
         impl ::ivo::IvoStructMethods for #name {
@@ -2845,9 +2880,9 @@ fn generate_model(
                     quote! {
                         if !#ignore_update_flag && #readonly_guard {
                             if let ::core::option::Option::Some(v) = &updates.#input_name {
+                                __changes.#setter(v.clone());
                                 if &output.#name != v {
                                     output.#name = v.clone();
-                                    __changes.#setter(v.clone());
                                 }
                             }
                         }
@@ -2890,11 +2925,20 @@ fn generate_model(
                     .filter_map(|p| {
                         let parent_ident = format_ident!("{}", p);
                         let parent_def = fields.iter().find(|f| f.name == parent_ident)?;
+                        let parent = format_ident!("{}", p);
                         if matches!(parent_def.field_type, FieldType::Virtual { .. }) {
                             let input_name = input_field_name(parent_def);
                             Some(quote! { updates.#input_name.is_some() })
+                        } else if matches!(
+                            parent_def.field_type,
+                            FieldType::Required | FieldType::Lax
+                        ) {
+                            let input_name = input_field_name(parent_def);
+                            Some(quote! {
+                                updates.#input_name.is_some()
+                                    || __original_output.#parent != output.#parent
+                            })
                         } else {
-                            let parent = format_ident!("{}", p);
                             Some(quote! { __original_output.#parent != output.#parent })
                         }
                     })
