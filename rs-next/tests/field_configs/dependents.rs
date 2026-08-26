@@ -29,6 +29,40 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
     let _ = virtual_alias_matching_dependent_schema::DataModel;
 }
 
+#[tokio::test]
+async fn should_resolve_async_dynamic_default_for_dependent_field() {
+    let created = async_dynamic_default_dependent_schema::DataModel
+        .create(
+            async_dynamic_default_dependent_schema::PartialDataInput {
+                lax: None,
+                required: Some(String::from("x")),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(created.data.dependent, 1);
+}
+
+#[tokio::test]
+async fn should_resolve_async_resolver_for_dependent_field() {
+    let created = async_resolve_dependent_schema::DataModel
+        .create(
+            async_resolve_dependent_schema::PartialDataInput {
+                lax: Some(String::from("x")),
+                required: Some(String::from("x")),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(created.data.dependent, 2);
+}
+
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -360,6 +394,56 @@ mod virtual_alias_matching_dependent_schema {
         #[ivo_virtual(alias = "dependent")]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_dynamic_default_dependent_schema {
+    struct Fields {
+        #[depends_on(lax)]
+        #[default(async |_, _| 1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_resolve_dependent_schema {
+    struct Fields {
+        #[depends_on(lax)]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        pub required: String,
 
         #[updated_at]
         pub updated_at: String,
