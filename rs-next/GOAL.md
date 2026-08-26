@@ -30,10 +30,10 @@ Schemas are declared, not built imperatively. A single proc macro (`#[ivo_schema
   mod user_schema {
       struct Fields { ... }
 
-      #[ignore(["secret"], |_ctx, _opts| async move { true })]
+      #[ignore(["secret"], async |_ctx, _opts| { true })]
       const _: () = ();
 
-      #[required(["name", "email"], |_ctx, _opts| async move { ... })]
+      #[required(["name", "email"], async |_ctx, _opts| { ... })]
       const _: () = ();
   }
   ```
@@ -73,15 +73,15 @@ Each grouped option is attached to an anonymous const item directly inside the s
 mod user_schema {
     struct Fields { ... }
 
-    #[ignore(["secret"], |_ctx, _opts| async move { true })]
+    #[ignore(["secret"], async |_ctx, _opts| { true })]
     const _: () = ();
 
-    #[required(["name", "email"], |_ctx, _opts| async move { ... })]
+    #[required(["name", "email"], async |_ctx, _opts| { ... })]
     const _: () = ();
 
     #[post_validate(
         ["password", "password_confirmation"],
-        validate = |ctx, _opts| async move {
+        validate = async |ctx, _opts| {
             if ctx.input().password != ctx.input().password_confirmation {
                 let mut errors = UserInputErrors::new();
                 errors.set_password("passwords do not match", None);
@@ -146,7 +146,7 @@ Example schema with both input and output structs:
 mod user_schema {
     struct Fields {
         #[required]
-        #[validate(|name, _ctx, _opts| async move { Ok(Some(name)) })]
+        #[validate(async |name, _ctx, _opts| { Ok(Some(name)) })]
         name: String,
 
         #[lax("user")]
@@ -159,19 +159,19 @@ mod user_schema {
         id: Uuid,
 
         #[depends_on(age)]
-        #[resolve(|ctx, _opts| async move { format!("{}", ctx.values().age.unwrap_or(0)) })]
+        #[resolve(async |ctx, _opts| { format!("{}", ctx.values().age.unwrap_or(0)) })]
         age_label: String,
 
         #[ivo_virtual(alias = "raw_email")]
-        #[sanitize(|email, _ctx, _opts| async move { email.to_lowercase() })]
+        #[sanitize(async |email, _ctx, _opts| { email.to_lowercase() })]
         email: String,
 
         #[depends_on(email)]
-        #[resolve(|ctx, _opts| async move { ctx.input().email.clone().unwrap() })]
+        #[resolve(async |ctx, _opts| { ctx.input().email.clone().unwrap() })]
         raw_email: String,
     }
 
-    #[ignore(["secret"], |_ctx, _opts| async move { true })]
+    #[ignore(["secret"], async |_ctx, _opts| { true })]
     const _: () = ();
 }
 ```
@@ -202,13 +202,12 @@ pub struct User {
 
 The `#[default(...)]` attribute accepts all of these forms:
 
-| Syntax                                         | Semantics                                                    |
-| ---------------------------------------------- | ------------------------------------------------------------ |
-| `#[default(expr)]`                             | Static default value                                         |
-| `#[default(\|\| expr)]`                        | Sync resolver, no context (wrapped in `async move`)          |
-| `#[default(async \|\| expr)]`                  | Async resolver, no context                                   |
-| `#[default(\|ctx, opts\| async move { ... })]` | Async resolver with full context                             |
-| `#[default(async \|ctx, opts\| { ... })]`      | Async resolver with full context (when compiler supports it) |
+| Syntax                                    | Semantics                        |
+| ----------------------------------------- | -------------------------------- |
+| `#[default(expr)]`                        | Static default value             |
+| `#[default(\|\| expr)]`                   | Sync resolver, no context        |
+| `#[default(async \|\| expr)]`             | Async resolver, no context       |
+| `#[default(async \|ctx, opts\| { ... })]` | Async resolver with full context |
 
 The same forms apply to `#[value(...)]` for constants.
 
@@ -241,7 +240,7 @@ Options that target fields (`ignore`, `ignore_update`, `required`, `post_validat
 When a group needs a stable identifier for error messages or debug output, an optional named const may be used:
 
 ```rust
-#[required(["name", "email"], |_ctx, _opts| async move { ... })]
+#[required(["name", "email"], async |_ctx, _opts| { ... })]
 const NAME_EMAIL_REQUIRED: () = ();
 ```
 
@@ -427,12 +426,12 @@ The macro determines whether each handler is synchronous or asynchronous at comp
 
 ### Handler classification
 
-| Handler form                                              | Classification |
-| --------------------------------------------------------- | -------------- |
-| Closure returning a plain value                           | **Sync**       |
-| Closure with `async move { ... }` or `async { ... }` body | **Async**      |
-| Function item `handler_name`                              | **Sync**       |
-| Function item `async handler_name`                        | **Async**      |
+| Handler form                          | Classification |
+| ------------------------------------- | -------------- |
+| Closure returning a plain value       | **Sync**       |
+| Async closure `async \|...\| { ... }` | **Async**      |
+| Function item `handler_name`          | **Sync**       |
+| Function item `async handler_name`    | **Async**      |
 
 Examples:
 
@@ -443,7 +442,7 @@ struct Fields {
     name: String,
 
     // Async validator
-    #[validate(|email, _ctx, _opts| async move { validate_email(email).await })]
+    #[validate(async |email, _ctx, _opts| { validate_email(email).await })]
     email: String,
 
     // Sync resolver
@@ -626,7 +625,7 @@ The following matrix lists every field-level attribute, the field types it may a
 
 | Attribute                       | Allowed on                                | Signature / form                                     | Notes                                                                                                                                                             |
 | ------------------------------- | ----------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `#[required]`                   | `#[lax]`, `#[ivo_virtual]`                | `\|ctx, opts\| async move { Option<String> }`        | Conditional required check. Distinct from the `#[required]` field type.                                                                                           |
+| `#[required]`                   | `#[lax]`, `#[ivo_virtual]`                | `async \|ctx, opts\| { Option<String> }`             | Conditional required check. Distinct from the `#[required]` field type.                                                                                           |
 | `#[required_error(...)]`        | `#[required]`                             | static string **or** `\|raw_input, opts\| -> String` | Error when field is missing at create. Accepts a static string or a closure for dynamic messages.                                                                 |
 | `#[ignore]`                     | `#[lax]`, `#[ivo_virtual]`                | `\|ctx, opts\| -> bool`                              | Skip field if resolver returns true.                                                                                                                              |
 | `#[ignore_init]`                | `#[lax]`, `#[ivo_virtual]`                | none                                                 | Ignore field during create.                                                                                                                                       |

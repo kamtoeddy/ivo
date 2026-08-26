@@ -26,7 +26,7 @@ readme = "README.md"
 repository = "https://github.com/kamtoeddy/ivo"
 homepage = "https://ivo.kamtoeddy.com/docs/rs"
 keywords = ["ivo", "schema", "validation", "data-modelling"]
-rust-version = "1.80.0"
+rust-version = "1.85.0"
 
 [workspace.dependencies]
 ivo-derive = { path = "crates/derive", version = "0.5.0" }

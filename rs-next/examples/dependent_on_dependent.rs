@@ -73,7 +73,7 @@ mod data_schema {
         pub lax: String,
 
         #[lax(DEFAULT_LAX.to_string())]
-        #[on_success(|ctx, _| async move {
+        #[on_success(async |ctx, _| {
             println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1);
         })]
         #[on_delete(|data, _| {

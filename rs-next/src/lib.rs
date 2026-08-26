@@ -21,21 +21,16 @@ pub struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
 
 pub type IvoErrorPayload<Metadata> = HashMap<String, FieldError<Metadata>>;
 
-pub async fn run_resolver<T, Ctx, Opts, F, Fut>(ctx: Ctx, opts: &Opts, resolver: F) -> T
+pub async fn run_resolver<T, Ctx, Opts, F>(ctx: Ctx, opts: &Opts, resolver: F) -> T
 where
-    F: FnOnce(Ctx, &Opts) -> Fut,
-    Fut: std::future::Future<Output = T>,
+    F: AsyncFn(Ctx, &Opts) -> T,
 {
     resolver(ctx, opts).await
 }
 
 pub async fn run_sanitizer<T, Ctx, Opts, F>(value: T, ctx: &Ctx, opts: &Opts, sanitizer: F) -> T
 where
-    F: for<'a> FnOnce(
-        T,
-        &'a Ctx,
-        &'a Opts,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = T> + 'a>>,
+    F: AsyncFn(T, &Ctx, &Opts) -> T,
 {
     sanitizer(value, ctx, opts).await
 }
@@ -48,23 +43,14 @@ pub async fn run_validator<T, Ctx, Opts, F, Metadata>(
 ) -> Result<Option<T>, FieldError<Metadata>>
 where
     Metadata: Clone,
-    F: for<'a> FnOnce(
-        T,
-        &'a Ctx,
-        &'a Opts,
-    ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<Option<T>, FieldError<Metadata>>> + 'a>,
-    >,
+    F: AsyncFn(T, &Ctx, &Opts) -> Result<Option<T>, FieldError<Metadata>>,
 {
     validator(value, ctx, opts).await
 }
 
 pub async fn run_boolean_resolver<Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, resolver: F) -> bool
 where
-    F: for<'a> FnOnce(
-        &'a Ctx,
-        &'a Opts,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool> + 'a>>,
+    F: AsyncFn(&Ctx, &Opts) -> bool,
 {
     resolver(ctx, opts).await
 }
@@ -75,19 +61,14 @@ pub async fn run_required_resolver<Ctx, Opts, F>(
     resolver: F,
 ) -> Option<String>
 where
-    F: for<'a> FnOnce(
-        &'a Ctx,
-        &'a Opts,
-    )
-        -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<String>> + 'a>>,
+    F: AsyncFn(&Ctx, &Opts) -> Option<String>,
 {
     resolver(ctx, opts).await
 }
 
-pub async fn run_hook<Ctx, Opts, F, Fut>(ctx: Ctx, opts: &Opts, handler: F)
+pub async fn run_hook<Ctx, Opts, F>(ctx: Ctx, opts: &Opts, handler: F)
 where
-    F: FnOnce(Ctx, &Opts) -> Fut,
-    Fut: std::future::Future<Output = ()>,
+    F: AsyncFn(Ctx, &Opts),
 {
     handler(ctx, opts).await
 }
@@ -145,12 +126,7 @@ pub async fn run_post_validator<Ctx, Opts, F, Partial, Errors>(
     validator: F,
 ) -> Result<Option<Partial>, Errors>
 where
-    F: FnOnce(
-        Ctx,
-        Opts,
-    ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<Option<Partial>, Errors>>>,
-    >,
+    F: AsyncFn(Ctx, Opts) -> Result<Option<Partial>, Errors>,
 {
     validator(ctx, opts).await
 }

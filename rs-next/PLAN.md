@@ -96,7 +96,7 @@ For each `const _: () = ()` item in `mod options`, parse attached attributes:
 For each handler closure/function item, classify as sync or async:
 
 - `|...| expr` → sync.
-- `|...| async move { ... }` / `|...| async { ... }` → async.
+- `async |...| { ... }` → async.
 - `fn_name` → sync.
 - `async fn_name` → async.
 

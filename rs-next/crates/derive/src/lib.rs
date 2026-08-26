@@ -275,13 +275,9 @@ fn is_closure(tokens: &proc_macro2::TokenStream) -> bool {
 }
 
 fn is_async_handler(tokens: &proc_macro2::TokenStream) -> bool {
-    if syn::parse2::<syn::ExprAsync>(tokens.clone()).is_ok() {
-        return true;
-    }
-    if let Ok(closure) = syn::parse2::<syn::ExprClosure>(tokens.clone()) {
-        return matches!(closure.body.as_ref(), syn::Expr::Async(_));
-    }
-    false
+    syn::parse2::<syn::ExprClosure>(tokens.clone())
+        .ok()
+        .is_some_and(|closure| closure.asyncness.is_some())
 }
 
 fn closure_input_count(tokens: &proc_macro2::TokenStream) -> Option<usize> {
@@ -1837,11 +1833,7 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! {
-                    ::ivo::run_boolean_resolver(#ctx_expr, #opts_expr, |ctx, opts| {
-                        ::std::boxed::Box::pin((#annotated)(ctx, opts))
-                    }).await
-                },
+                quote! { ::ivo::run_boolean_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (false, quote! { (#annotated)(#ctx_expr, #opts_expr) })
@@ -1860,11 +1852,7 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! {
-                    ::ivo::run_required_resolver(#ctx_expr, #opts_expr, |ctx, opts| {
-                        ::std::boxed::Box::pin((#annotated)(ctx, opts))
-                    }).await
-                },
+                quote! { ::ivo::run_required_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (false, quote! { (#annotated)(#ctx_expr, #opts_expr) })
@@ -1880,11 +1868,7 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! {
-                    ::ivo::run_resolver(#ctx_expr, #opts_expr, |ctx, opts| {
-                        ::std::boxed::Box::pin((#annotated)(ctx, opts))
-                    }).await
-                },
+                quote! { ::ivo::run_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (false, quote! { (#annotated)(#ctx_expr, #opts_expr) })
@@ -1894,7 +1878,13 @@ fn generate_model(
     let make_default_value_expr =
         |tokens: &proc_macro2::TokenStream| -> (bool, proc_macro2::TokenStream) {
             match closure_input_count(tokens) {
-                Some(0) => (false, quote! { (#tokens)() }),
+                Some(0) => {
+                    if is_async_handler(tokens) {
+                        (true, quote! { (#tokens)().await })
+                    } else {
+                        (false, quote! { (#tokens)() })
+                    }
+                }
                 Some(_) => {
                     let ctx_expr = quote!(ctx.clone());
                     let opts_expr = quote!(&_rw_ctx_options);
@@ -1917,11 +1907,7 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! {
-                    ::ivo::run_sanitizer(#value_expr, #ctx_expr, #opts_expr, |value, ctx, opts| {
-                        ::std::boxed::Box::pin((#annotated)(value, ctx, opts))
-                    }).await
-                },
+                quote! { ::ivo::run_sanitizer(#value_expr, #ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (
@@ -1944,11 +1930,7 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! {
-                    ::ivo::run_validator(#value_expr, #ctx_expr, #opts_expr, |value, ctx, opts| {
-                        ::std::boxed::Box::pin((#annotated)(value, ctx, opts))
-                    }).await
-                },
+                quote! { ::ivo::run_validator(#value_expr, #ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (
@@ -1973,9 +1955,7 @@ fn generate_model(
                     ::ivo::run_post_validator(
                         #ctx_expr.clone(),
                         #opts_expr.clone(),
-                        |ctx, opts| {
-                            ::std::boxed::Box::pin((#annotated)(ctx, opts))
-                        },
+                        #annotated,
                     )
                     .await
                 },
@@ -2229,7 +2209,14 @@ fn generate_model(
                     let tokens = attr_value_tokens(&f.attrs, "constant")
                         .unwrap_or_else(|| quote!(::core::default::Default::default()));
                     match closure_input_count(&tokens) {
-                        Some(0) => quote! { (#tokens)() },
+                        Some(0) => {
+                            if is_async_handler(&tokens) {
+                                field_is_async = true;
+                                quote! { (#tokens)().await }
+                            } else {
+                                quote! { (#tokens)() }
+                            }
+                        }
                         Some(_) => {
                             let ctx_expr = quote!(ctx.clone());
                             let opts_expr = quote!(&_rw_ctx_options);
@@ -2835,7 +2822,13 @@ fn generate_model(
                 let resolver = attr_value_tokens(&f.attrs, "resolve")
                     .expect("dependent fields must have a #[resolve(...)] handler");
                 let (resolver_is_async, resolver_expr) = match closure_input_count(&resolver) {
-                    Some(0) => (false, quote! { (#resolver)() }),
+                    Some(0) => {
+                        if is_async_handler(&resolver) {
+                            (true, quote! { (#resolver)().await })
+                        } else {
+                            (false, quote! { (#resolver)() })
+                        }
+                    }
                     Some(_) => {
                         let ctx_expr = quote!(ctx.clone());
                         let opts_expr = quote!(&_rw_ctx_options);
@@ -3392,7 +3385,7 @@ mod tests {
             mod s {
                 struct Fields {
                     #[required]
-                    #[sanitize(|v, _ctx, _opts| async move { v })]
+                    #[sanitize(async |v, _ctx, _opts| { v })]
                     pub name: String,
                 }
             }
@@ -3409,7 +3402,7 @@ mod tests {
             mod s {
                 struct Fields {
                     #[constant(|| String::from("id"))]
-                    #[validate(|v, _ctx, _opts| async move { Ok(Some(v)) })]
+                    #[validate(async |v, _ctx, _opts| { Ok(Some(v)) })]
                     pub id: String,
                 }
             }
@@ -3511,7 +3504,7 @@ mod tests {
             mod s {
                 struct Fields {
                     #[required]
-                    #[re_validate(|v, _ctx, _opts| async move { Ok(Some(v)) })]
+                    #[re_validate(async |v, _ctx, _opts| { Ok(Some(v)) })]
                     pub name: String,
                 }
             }
@@ -3684,7 +3677,7 @@ mod tests {
 
                         #[depends_on(first_name, last_name)]
                         #[default(String::from(""))]
-                        #[resolve(|ctx, _opts| async move {
+                        #[resolve(async |ctx, _opts| {
                             format!("{} {}", ctx.values().first_name, ctx.values().last_name)
                         })]
                         pub full_name: String,
@@ -3731,7 +3724,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate([], validate = |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate([], validate = async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3753,7 +3746,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a"], validate = |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a"], validate = async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3775,7 +3768,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a", "a"], validate = |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "a"], validate = async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3797,7 +3790,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a", "missing"], validate = |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "missing"], validate = async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3819,7 +3812,7 @@ mod tests {
                     pub id: String,
                 }
 
-                #[post_validate(["a", "id"], validate = |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "id"], validate = async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3842,7 +3835,7 @@ mod tests {
                     pub b: i32,
                 }
 
-                #[post_validate(["a", "b"], validate = |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "b"], validate = async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3864,7 +3857,7 @@ mod tests {
                     pub created_at: String,
                 }
 
-                #[post_validate(["a", "created_at"], validate = |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "created_at"], validate = async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3883,7 +3876,7 @@ mod tests {
                     pub name: String,
 
                     #[ivo_virtual(alias = "email")]
-                    #[validate(|v, _ctx, _opts| async move { Ok(Some(v)) })]
+                    #[validate(async |v, _ctx, _opts| { Ok(Some(v)) })]
                     pub raw_email: String,
 
                     #[depends_on(raw_email)]
@@ -3891,7 +3884,7 @@ mod tests {
                     pub email: String,
                 }
 
-                #[post_validate(["name", "email"], validate = |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["name", "email"], validate = async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -3913,7 +3906,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a", "b"], pre_validate = |_ctx, _opts| async move { Ok(None) })]
+                #[post_validate(["a", "b"], pre_validate = async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,

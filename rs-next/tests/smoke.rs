@@ -22,7 +22,7 @@ mod user_schema {
 mod user_schema_dual {
     struct Fields {
         #[required]
-        #[on_delete(|_data, _opts| async move { println!("deleted"); })]
+        #[on_delete(async |_data, _opts| { println!("deleted"); })]
         pub name: String,
 
         #[constant(|| String::from("default-id"))]
@@ -34,7 +34,7 @@ mod user_schema_dual {
 mod user_validation_schema {
     struct Fields {
         #[required]
-        #[validate(|name, _ctx, _opts| async move {
+        #[validate(async |name, _ctx, _opts| {
             if name.is_empty() {
                 Err(::ivo::FieldError {
                     reason: String::from("name must not be empty"),
@@ -158,12 +158,12 @@ mod user_sanitization_schema {
         pub name: String,
 
         #[ivo_virtual(alias = "raw_email")]
-        #[sanitize(|email, _ctx, _opts| async move { email.to_lowercase() })]
+        #[sanitize(async |email, _ctx, _opts| { email.to_lowercase() })]
         pub email: String,
 
         #[depends_on(email)]
         #[default(|ctx, _opts| ctx.input().raw_email.clone().unwrap())]
-        #[resolve(|ctx, _opts| async move { ctx.input().raw_email.clone().unwrap() })]
+        #[resolve(async |ctx, _opts| { ctx.input().raw_email.clone().unwrap() })]
         pub raw_email: String,
     }
 }
@@ -198,7 +198,7 @@ mod user_dependent_schema {
         #[default(|ctx, _opts| {
             format!("{} {}", ctx.values().first_name, ctx.values().last_name)
         })]
-        #[resolve(|ctx, _opts| async move {
+        #[resolve(async |ctx, _opts| {
             format!("{} {}", ctx.values().first_name, ctx.values().last_name)
         })]
         pub full_name: String,
@@ -230,12 +230,12 @@ mod user_virtual_alias_schema {
         pub name: String,
 
         #[ivo_virtual(alias = "raw_email")]
-        #[sanitize(|email, _ctx, _opts| async move { email.to_lowercase() })]
+        #[sanitize(async |email, _ctx, _opts| { email.to_lowercase() })]
         pub email: String,
 
         #[depends_on(email)]
         #[default(|ctx, _opts| ctx.input().raw_email.clone().unwrap())]
-        #[resolve(|ctx, _opts| async move { ctx.input().raw_email.clone().unwrap() })]
+        #[resolve(async |ctx, _opts| { ctx.input().raw_email.clone().unwrap() })]
         pub raw_email: String,
     }
 }
@@ -306,7 +306,7 @@ mod user_grouped_ignore_schema {
         pub b: String,
     }
 
-    #[ignore(["a", "b"], |_ctx, _opts| async move { true })]
+    #[ignore(["a", "b"], async |_ctx, _opts| { true })]
     const _: () = ();
 }
 
@@ -320,7 +320,7 @@ mod user_grouped_required_schema {
         pub b: String,
     }
 
-    #[required(["a", "b"], |_ctx, _opts| async move { true })]
+    #[required(["a", "b"], async |_ctx, _opts| { true })]
     const _: () = ();
 }
 
@@ -461,8 +461,8 @@ async fn smoke_model_field_ignore_update() {
 mod user_re_validate_schema {
     struct Fields {
         #[required]
-        #[validate(|name, _ctx, _opts| async move { Ok(Some(name)) })]
-        #[re_validate(|name, _ctx, _opts| async move {
+        #[validate(async |name, _ctx, _opts| { Ok(Some(name)) })]
+        #[re_validate(async |name, _ctx, _opts| {
             if name == "bad" {
                 Err(::ivo::FieldError {
                     reason: String::from("name cannot be bad"),
@@ -484,7 +484,7 @@ mod user_readonly_schema {
 
         #[required]
         #[readonly]
-        #[validate(|id, _ctx, _opts| async move { Ok(Some(id)) })]
+        #[validate(async |id, _ctx, _opts| { Ok(Some(id)) })]
         pub id: String,
     }
 }
@@ -500,7 +500,7 @@ mod user_dependent_default_schema {
 
         #[depends_on(name)]
         #[default(|_ctx, _opts| String::from("default-status"))]
-        #[resolve(|_ctx, _opts| async move { String::from("default-status") })]
+        #[resolve(async |_ctx, _opts| { String::from("default-status") })]
         pub status: String,
     }
 }
@@ -589,7 +589,7 @@ mod user_constant_resolver_schema {
         #[required]
         pub name: String,
 
-        #[constant(|_ctx, _opts| async move { 5678 })]
+        #[constant(async |_ctx, _opts| { 5678 })]
         pub id: i32,
     }
 }
@@ -685,7 +685,7 @@ mod user_on_delete_field_schema {
         pub name: String,
 
         #[constant(|| String::from("id"))]
-        #[on_delete(|_data, _opts| async move { panic!("field on_delete invoked") })]
+        #[on_delete(async |_data, _opts| { panic!("field on_delete invoked") })]
         pub id: String,
     }
 }
@@ -697,7 +697,7 @@ mod user_on_delete_grouped_schema {
         pub name: String,
     }
 
-    #[on_delete(|_data, _opts| async move { panic!("grouped on_delete invoked") })]
+    #[on_delete(async |_data, _opts| { panic!("grouped on_delete invoked") })]
     const _: () = ();
 }
 
@@ -827,7 +827,7 @@ async fn smoke_model_on_success_trigger() {
     mod user_on_success_schema {
         struct Fields {
             #[required]
-            #[on_success(|_ctx, _opts| async move {
+            #[on_success(async |_ctx, _opts| {
                 crate::ON_SUCCESS_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             })]
             pub name: String,
@@ -851,7 +851,7 @@ async fn smoke_model_on_failure_trigger() {
     mod user_on_failure_schema {
         struct Fields {
             #[required]
-            #[validate(|name, _ctx, _opts| async move {
+            #[validate(async |name, _ctx, _opts| {
                 if name.is_empty() {
                     Err(::ivo::FieldError {
                         reason: String::from("name must not be empty"),
@@ -861,7 +861,7 @@ async fn smoke_model_on_failure_trigger() {
                     Ok(Some(name))
                 }
             })]
-            #[on_failure(|_ctx, _opts| async move {
+            #[on_failure(async |_ctx, _opts| {
                 crate::ON_FAILURE_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             })]
             pub name: String,
@@ -890,7 +890,7 @@ mod user_post_validate_pass_schema {
         pub password_confirmation: String,
     }
 
-    #[post_validate(["password", "password_confirmation"], validate = |_ctx, _opts| async move {
+    #[post_validate(["password", "password_confirmation"], validate = async |_ctx, _opts| {
         if _ctx.input().password != _ctx.input().password_confirmation {
             let mut errors = UserErrors::new();
             errors.set_password("passwords do not match", None);
@@ -912,7 +912,7 @@ mod user_post_validate_fail_schema {
         pub password_confirmation: String,
     }
 
-    #[post_validate(["password", "password_confirmation"], validate = |_ctx, _opts| async move {
+    #[post_validate(["password", "password_confirmation"], validate = async |_ctx, _opts| {
         if _ctx.input().password != _ctx.input().password_confirmation {
             let mut errors = UserErrors::new();
             errors.set_password("passwords do not match", None);
@@ -995,13 +995,13 @@ mod user_post_validate_pre_schema {
 
     #[post_validate(
         ["a", "b"],
-        pre_validate = |_ctx, _opts| async move {
+        pre_validate = async |_ctx, _opts| {
             let mut updates = PartialUser::new();
             updates.set_a("pre_a".to_string());
             updates.set_b("pre_b".to_string());
             Ok(Some(updates))
         },
-        validate = |_ctx, _opts| async move {
+        validate = async |_ctx, _opts| {
             if _ctx.input().a != Some("pre_a".to_string()) {
                 let mut errors = UserErrors::new();
                 errors.set_a("a was not updated by pre_validate", None);
@@ -1040,7 +1040,7 @@ mod user_post_validate_update_fail_schema {
 
     #[post_validate(
         ["a", "b"],
-        validate = |_ctx, _opts| async move {
+        validate = async |_ctx, _opts| {
             if _ctx.input().a == Some("bad".to_string()) {
                 let mut errors = UserErrors::new();
                 errors.set_a("bad update value", None);
@@ -1065,7 +1065,7 @@ mod user_post_validate_update_update_schema {
 
     #[post_validate(
         ["a", "b"],
-        validate = |_ctx, _opts| async move {
+        validate = async |_ctx, _opts| {
             let mut updates = PartialUser::new();
             updates.set_a("updated".to_string());
             updates.set_b("updated_b".to_string());
