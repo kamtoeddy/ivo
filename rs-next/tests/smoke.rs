@@ -153,7 +153,7 @@ mod user_sanitization_schema {
         #[required]
         pub name: String,
 
-        #[ivo_virtual(alias = "raw_email")]
+        #[ivo_virtual(raw_email)]
         #[sanitize(async |email, _ctx, _opts| { email.to_lowercase() })]
         pub email: String,
 
@@ -225,7 +225,7 @@ mod user_virtual_alias_schema {
         #[required]
         pub name: String,
 
-        #[ivo_virtual(alias = "raw_email")]
+        #[ivo_virtual(raw_email)]
         #[sanitize(async |email, _ctx, _opts| { email.to_lowercase() })]
         pub email: String,
 

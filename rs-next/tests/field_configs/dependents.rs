@@ -361,7 +361,7 @@ mod virtual_alias_schema {
         #[validate(|v, _, _| Ok(Some(v)))]
         pub required: String,
 
-        #[ivo_virtual(alias = "alias_name")]
+        #[ivo_virtual(alias_name)]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
@@ -391,7 +391,7 @@ mod virtual_alias_matching_dependent_schema {
         #[validate(|v, _, _| Ok(Some(v)))]
         pub required: String,
 
-        #[ivo_virtual(alias = "dependent")]
+        #[ivo_virtual(dependent)]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 

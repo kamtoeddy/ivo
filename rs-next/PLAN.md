@@ -71,7 +71,7 @@ Find by module name (not attribute):
 
 For each field in `mod fields`, parse:
 
-- Field-type attribute: `#[required]`, `#[lax(default)]`, `#[constant(value)]`, `#[dependent]`, `#[virtual(alias = "...")]`, `#[created_at]`, `#[updated_at]`.
+- Field-type attribute: `#[required]`, `#[lax(default)]`, `#[constant(value)]`, `#[dependent]`, `#[virtual(alias_name)]`, `#[created_at]`, `#[updated_at]`.
 - Visibility keyword.
 - Field name and type.
 - Behavior attributes: `#[validate(...)]`, `#[re_validate(...)]`, `#[sanitize(...)]`, `#[resolve(...)]`, `#[default(...)]`, `#[value(...)]`, `#[depends_on(...)]`, `#[readonly]`, `#[ignore]`, `#[ignore_init]`, `#[ignore_update]`, `#[required_error(...)]`, `#[on_delete]`, `#[on_success]`, `#[on_failure]`.

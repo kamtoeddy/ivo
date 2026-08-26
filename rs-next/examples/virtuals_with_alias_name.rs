@@ -104,7 +104,7 @@ mod data_schema {
         })]
         pub dependent: String,
 
-        #[ivo_virtual(alias = "virtual_alias")]
+        #[ivo_virtual(virtual_alias)]
         #[validate(|_, _, _| Ok(None))]
         #[on_success(|ctx, _| {
             println!(

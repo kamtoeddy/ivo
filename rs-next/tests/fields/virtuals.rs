@@ -1071,7 +1071,7 @@ mod async_no_alias_schema {
 )]
 mod sync_alias_schema {
     struct Fields {
-        #[ivo_virtual(alias = "virtual_alias")]
+        #[ivo_virtual(virtual_alias)]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
@@ -1088,7 +1088,7 @@ mod sync_alias_schema {
 )]
 mod async_alias_schema {
     struct Fields {
-        #[ivo_virtual(alias = "virtual_alias")]
+        #[ivo_virtual(virtual_alias)]
         #[validate(async |v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
@@ -1105,7 +1105,7 @@ mod async_alias_schema {
 )]
 mod sync_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(alias = "dependent")]
+        #[ivo_virtual(dependent)]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
@@ -1122,7 +1122,7 @@ mod sync_alias_as_dependent_schema {
 )]
 mod async_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(alias = "dependent")]
+        #[ivo_virtual(dependent)]
         #[validate(async |v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 

@@ -210,34 +210,12 @@ fn parse_virtual_alias(attr: &Attribute) -> syn::Result<Option<String>> {
     match &attr.meta {
         syn::Meta::Path(_) => Ok(None),
         syn::Meta::List(list) => {
-            let meta: syn::Meta = list.parse_args()?;
-            let syn::Meta::NameValue(nv) = meta else {
-                return Err(syn::Error::new_spanned(
-                    attr,
-                    "expected `#[virtual]` or `#[virtual(alias = \"...\")]`",
-                ));
-            };
-            if !nv.path.is_ident("alias") {
-                return Err(syn::Error::new_spanned(
-                    attr,
-                    "expected `#[virtual]` or `#[virtual(alias = \"...\")]`",
-                ));
-            }
-            let syn::Expr::Lit(syn::ExprLit {
-                lit: syn::Lit::Str(s),
-                ..
-            }) = &nv.value
-            else {
-                return Err(syn::Error::new_spanned(
-                    attr,
-                    "alias must be a string literal",
-                ));
-            };
-            Ok(Some(s.value()))
+            let alias: syn::Ident = list.parse_args()?;
+            Ok(Some(alias.to_string()))
         }
         _ => Err(syn::Error::new_spanned(
             attr,
-            "expected `#[virtual]` or `#[virtual(alias = \"...\")]`",
+            "expected `#[ivo_virtual]` or `#[ivo_virtual(alias_name)]`",
         )),
     }
 }
@@ -4868,7 +4846,7 @@ mod tests {
                     #[required]
                     pub name: String,
 
-                    #[ivo_virtual(alias = "email")]
+                    #[ivo_virtual(email)]
                     #[validate(async |v, _ctx, _opts| { Ok(Some(v)) })]
                     pub raw_email: String,
 

@@ -130,7 +130,7 @@ while still supporting a bare `#[lax]` when no default is needed.
 Virtual fields may similarly declare an alias inline:
 
 ```rust
-#[ivo_virtual(alias = "raw_email")]
+#[ivo_virtual(raw_email)]
 email: String,
 ```
 
@@ -162,7 +162,7 @@ mod user_schema {
         #[resolve(async |ctx, _opts| { format!("{}", ctx.values().age.unwrap_or(0)) })]
         age_label: String,
 
-        #[ivo_virtual(alias = "raw_email")]
+        #[ivo_virtual(raw_email)]
         #[sanitize(async |email, _ctx, _opts| { email.to_lowercase() })]
         email: String,
 
@@ -256,7 +256,7 @@ The macro decides which fields belong on the input struct and which belong on th
 | `#[constant]`                  | —            | field name                  |
 | `#[depends_on(...)]`           | —            | field name                  |
 | `#[ivo_virtual]` without alias | field name   | —                           |
-| `#[ivo_virtual(alias = "X")]`  | alias `X`    | —                           |
+| `#[ivo_virtual(X)]`            | alias `X`    | —                           |
 | `#[created_at]`                | —            | field name                  |
 | `#[updated_at]`                | —            | field name or `Option<...>` |
 
@@ -300,7 +300,7 @@ The macro enforces that each field type only accepts the attributes that the exi
 - `#[constant(value_or_resolver)]` accepts `#[on_delete]`, `#[on_success]`; it rejects bare `#[constant]`, `#[value]`, `#[validate]`, `#[on_failure]`, `#[default]`, `#[ignore_init]`. `#[on_delete]` and `#[on_success]` may be provided multiple times.
 - `#[required]` accepts `#[validate]`, `#[re_validate]`, `#[required_error]`, `#[ignore_update]`, `#[readonly]`, `#[on_delete]`, `#[on_success]`, `#[on_failure]`; it rejects `#[default]`, `#[ignore_init]`, `#[required]`, `#[ignore]`, `#[sanitize]`, `#[alias]`. A validator is optional (but `#[re_validate]` still requires `#[validate]`). `#[readonly]` disallows all updates. Lifecycle hooks may be provided multiple times.
 - `#[depends_on(...)]` / `#[dependent]` accepts `#[resolve]`, `#[default]`, `#[readonly]`, `#[on_delete]`, `#[on_success]`; it rejects `#[validate]`, `#[re_validate]`, `#[on_failure]`, `#[ignore_init]`, `#[ignore_update]`, `#[ignore]`, `#[sanitize]`, `#[alias]`. `#[readonly]` requires a static `#[default]`. `#[on_delete]` and `#[on_success]` may be provided multiple times.
-- `#[ivo_virtual]` / `#[ivo_virtual(alias = "...")]` accepts `#[sanitize]`, `#[validate]`, `#[re_validate]`, `#[required]`, `#[ignore]`, `#[ignore_init]`, `#[ignore_update]`, `#[on_success]`, `#[on_failure]`; it rejects `#[alias]`, `#[on_delete]`, `#[default]`, `#[value]`, `#[readonly]`. A validator is optional (but `#[re_validate]` still requires `#[validate]`). `#[on_success]` and `#[on_failure]` may be provided multiple times.
+- `#[ivo_virtual]` / `#[ivo_virtual(alias_name)]` accepts `#[sanitize]`, `#[validate]`, `#[re_validate]`, `#[required]`, `#[ignore]`, `#[ignore_init]`, `#[ignore_update]`, `#[on_success]`, `#[on_failure]`; it rejects `#[alias]`, `#[on_delete]`, `#[default]`, `#[value]`, `#[readonly]`. A validator is optional (but `#[re_validate]` still requires `#[validate]`). `#[on_success]` and `#[on_failure]` may be provided multiple times.
 - `#[lax]` / `#[lax(default_or_resolver)]` accepts `#[validate]`, `#[re_validate]`, `#[required]`, `#[ignore]`, `#[ignore_init]`, `#[ignore_update]`, `#[readonly]`, `#[on_delete]`, `#[on_success]`, `#[on_failure]`; it rejects `#[default]`, `#[required_error]`, `#[value]`, `#[resolve]`, `#[sanitize]`, `#[alias]`. `#[readonly]` requires a static `#[lax(...)]` default. `#[re_validate]` requires `#[validate]`. Lifecycle hooks may be provided multiple times. A lax field without a validator is still considered provided and copied to the output.
 - `#[created_at]` / `#[updated_at]` reject all field attributes. Their type must match the timestamp resolver's return type (`T` or `Option<T>` for `#[updated_at]`).
 
@@ -640,25 +640,25 @@ This is a key performance advantage of the macro-driven design: the generated `c
 
 The following matrix lists every field-level attribute, the field types it may appear on, its signature or form, and its semantics.
 
-| Attribute                       | Allowed on                                | Signature / form                                          | Notes                                                                                                                                                               |
-| ------------------------------- | ----------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `#[required]`                   | `#[lax]`, `#[ivo_virtual]`                | `async \|ctx, opts\| { Option<String> }`                  | Conditional required check. Distinct from the `#[required]` field type.                                                                                             |
-| `#[required_error(...)]`        | `#[required]`                             | static string **or** `\|raw_input, opts\| -> String`      | Error when field is missing at create. Accepts a static string or a closure for dynamic messages.                                                                   |
-| `#[ignore]`                     | `#[lax]`, `#[ivo_virtual]`                | `\|ctx, opts\| -> bool`                                   | Must be conditional; bare `#[ignore]` is rejected. Applies to both create and update. Not allowed with `#[ignore_init]` or `#[ignore_update]` on the same field.    |
-| `#[ignore_init]`                | `#[lax]`, `#[ivo_virtual]`                | none                                                      | Ignore field during create only. Resolver form is rejected. Not allowed with `#[ignore]` or bare `#[ignore_update]`; allowed with `#[ignore_update(\|\|resolver)]`. |
-| `#[ignore_update]`              | `#[required]`, `#[lax]`, `#[ivo_virtual]` | bare or `\|partial_input, full_output, rw_opts\| -> bool` | On `#[required]` only the resolver form is allowed (bare is rejected; use `#[readonly]`). Not allowed with `#[readonly]`, `#[ignore]`, or bare `#[ignore_init]`.    |
-| `#[readonly]`                   | `#[required]`, `#[lax]`, `#[dependent]`   | none                                                      | Required: no updates allowed. Lax/dependent: update only if current value equals static default. Cannot be combined with `#[ignore_update]`.                        |
-| `#[validate(...)]`              | `#[required]`, `#[lax]`, `#[ivo_virtual]` | `\|value, ctx, opts\| -> Result<Option<T>, ...>`          | Primary validation. `Ok(None)` uses the input as-is; `Ok(Some(value))` replaces it.                                                                                 |
-| `#[re_validate(...)]`           | `#[required]`, `#[lax]`, `#[ivo_virtual]` | same as validate                                          | Secondary validation after primary. Only allowed when `#[validate]` is also present.                                                                                |
-| `#[sanitize(...)]`              | `#[ivo_virtual]`                          | `\|value, ctx, opts\| -> T`                               | Mutates virtual input value. Runs after validate/re-validate/post_validate. Virtual values do not appear on the output partial.                                     |
-| `#[resolve(...)]`               | `#[dependent]`                            | `\|ctx, opts\| -> T`                                      | Resolver run when any parent changes.                                                                                                                               |
-| `#[default(...)]`               | `#[dependent]`; also inline for `#[lax]`  | static or resolver                                        | Static default or context-aware resolver. For `#[lax]`, defaults attach only when the field is missing; for `#[dependent]`, defaults always attach if configured.   |
-| `#[value(...)]`                 | `#[constant]`                             | static or resolver                                        | Static value or context-aware resolver.                                                                                                                             |
-| `#[depends_on(...)]`            | `#[dependent]`                            | list of field names                                       | Required; at least one parent.                                                                                                                                      |
-| `#[ivo_virtual(alias = "...")]` | `#[ivo_virtual]`                          | string                                                    | Alias names a dependent field that depends on this virtual.                                                                                                         |
-| `#[on_delete]`                  | per §12 whitelist                         | `\|ctx, opts\| -> ()`                                     | Lifecycle hook invoked directly by `delete`. May be provided multiple times.                                                                                        |
-| `#[on_success]`                 | per §12 whitelist                         | `\|ctx, opts\| -> ()`                                     | Returned as a trigger from `create`/`update`. May be provided multiple times.                                                                                       |
-| `#[on_failure]`                 | per §12 whitelist                         | `\|ctx, opts\| -> ()`                                     | Returned as a trigger from `create`/`update`. May be provided multiple times.                                                                                       |
+| Attribute                    | Allowed on                                | Signature / form                                          | Notes                                                                                                                                                               |
+| ---------------------------- | ----------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `#[required]`                | `#[lax]`, `#[ivo_virtual]`                | `async \|ctx, opts\| { Option<String> }`                  | Conditional required check. Distinct from the `#[required]` field type.                                                                                             |
+| `#[required_error(...)]`     | `#[required]`                             | static string **or** `\|raw_input, opts\| -> String`      | Error when field is missing at create. Accepts a static string or a closure for dynamic messages.                                                                   |
+| `#[ignore]`                  | `#[lax]`, `#[ivo_virtual]`                | `\|ctx, opts\| -> bool`                                   | Must be conditional; bare `#[ignore]` is rejected. Applies to both create and update. Not allowed with `#[ignore_init]` or `#[ignore_update]` on the same field.    |
+| `#[ignore_init]`             | `#[lax]`, `#[ivo_virtual]`                | none                                                      | Ignore field during create only. Resolver form is rejected. Not allowed with `#[ignore]` or bare `#[ignore_update]`; allowed with `#[ignore_update(\|\|resolver)]`. |
+| `#[ignore_update]`           | `#[required]`, `#[lax]`, `#[ivo_virtual]` | bare or `\|partial_input, full_output, rw_opts\| -> bool` | On `#[required]` only the resolver form is allowed (bare is rejected; use `#[readonly]`). Not allowed with `#[readonly]`, `#[ignore]`, or bare `#[ignore_init]`.    |
+| `#[readonly]`                | `#[required]`, `#[lax]`, `#[dependent]`   | none                                                      | Required: no updates allowed. Lax/dependent: update only if current value equals static default. Cannot be combined with `#[ignore_update]`.                        |
+| `#[validate(...)]`           | `#[required]`, `#[lax]`, `#[ivo_virtual]` | `\|value, ctx, opts\| -> Result<Option<T>, ...>`          | Primary validation. `Ok(None)` uses the input as-is; `Ok(Some(value))` replaces it.                                                                                 |
+| `#[re_validate(...)]`        | `#[required]`, `#[lax]`, `#[ivo_virtual]` | same as validate                                          | Secondary validation after primary. Only allowed when `#[validate]` is also present.                                                                                |
+| `#[sanitize(...)]`           | `#[ivo_virtual]`                          | `\|value, ctx, opts\| -> T`                               | Mutates virtual input value. Runs after validate/re-validate/post_validate. Virtual values do not appear on the output partial.                                     |
+| `#[resolve(...)]`            | `#[dependent]`                            | `\|ctx, opts\| -> T`                                      | Resolver run when any parent changes.                                                                                                                               |
+| `#[default(...)]`            | `#[dependent]`; also inline for `#[lax]`  | static or resolver                                        | Static default or context-aware resolver. For `#[lax]`, defaults attach only when the field is missing; for `#[dependent]`, defaults always attach if configured.   |
+| `#[value(...)]`              | `#[constant]`                             | static or resolver                                        | Static value or context-aware resolver.                                                                                                                             |
+| `#[depends_on(...)]`         | `#[dependent]`                            | list of field names                                       | Required; at least one parent.                                                                                                                                      |
+| `#[ivo_virtual(alias_name)]` | `#[ivo_virtual]`                          | identifier                                                | Alias name for the generated input field; a dependent field may depend on the virtual via either the alias or the declared field name.                              |
+| `#[on_delete]`               | per §12 whitelist                         | `\|ctx, opts\| -> ()`                                     | Lifecycle hook invoked directly by `delete`. May be provided multiple times.                                                                                        |
+| `#[on_success]`              | per §12 whitelist                         | `\|ctx, opts\| -> ()`                                     | Returned as a trigger from `create`/`update`. May be provided multiple times.                                                                                       |
+| `#[on_failure]`              | per §12 whitelist                         | `\|ctx, opts\| -> ()`                                     | Returned as a trigger from `create`/`update`. May be provided multiple times.                                                                                       |
 
 Field-level attributes other than lifecycle hooks (`#[on_delete]`, `#[on_success]`, `#[on_failure]`) may not be repeated on the same field.
 
@@ -743,7 +743,7 @@ Rules enforced at schema build time:
 - No circular dependencies.
 - No redundant (transitive) dependencies. For example, if `a` depends on `[b, c]` and `b` depends on `[c]`, then `a` should not list `c`.
 - A `#[ivo_virtual]` field must be referenced by at least one dependent field's `#[depends_on(...)]`, regardless of whether it has an alias.
-- A `#[ivo_virtual(alias = "X")]` alias must be unique within the schema and must not collide with any field name or timestamp field name. It may match a dependent field's name only if that dependent field depends on the virtual field. The alias appears on the generated input struct in place of the virtual field name.
+- A `#[ivo_virtual(X)]` alias must be unique within the schema and must not collide with any field name or timestamp field name. It may match a dependent field's name only if that dependent field depends on the virtual field. The alias appears on the generated input struct in place of the virtual field name.
 - Timestamp field names cannot be reused as field names or aliases.
 - Duplicate `#[depends_on(...)]` entries and self-dependencies are rejected.
 

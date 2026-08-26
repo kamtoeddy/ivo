@@ -35,7 +35,7 @@ mod virtual_with_alias_schema {
         #[required]
         pub name: String,
 
-        #[ivo_virtual(alias = "alias_name")]
+        #[ivo_virtual(alias_name)]
         pub virtual_field: String,
 
         #[depends_on(virtual_field)]
@@ -54,7 +54,7 @@ mod virtual_alias_as_dependent_name_schema {
         #[required]
         pub name: String,
 
-        #[ivo_virtual(alias = "dependent")]
+        #[ivo_virtual(dependent)]
         pub virtual_field: String,
 
         #[depends_on(virtual_field)]
