@@ -100,3 +100,7 @@ path = "examples/virtuals_with_alias_name_same_as_dependent.rs"
 [[example]]
 name = "virtuals_with_required"
 path = "examples/virtuals_with_required.rs"
+
+[[example]]
+name = "option_on_success"
+path = "examples/option_on_success.rs"
