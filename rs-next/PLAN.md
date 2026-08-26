@@ -108,7 +108,7 @@ Build a `Schema` struct and enforce all compile-time rules from GOAL.md.
 2. **Attribute whitelist.** Each field type only accepts its allowed attributes.
 3. **Attribute prerequisites.**
    - `#[re_validate]` requires `#[validate]`.
-   - `#[readonly]` on required requires `#[validate]`.
+   - `#[readonly]` on required disallows updates; a validator is not required.
    - `#[readonly]` on lax/dependent requires a static default.
 4. **Repetition rules.** Only `#[on_delete]`, `#[on_success]`, `#[on_failure]` may repeat on a field.
 5. **Dependency graph rules.**

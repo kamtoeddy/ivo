@@ -890,15 +890,8 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
         if behavior_names.iter().any(|(n, _)| n == "readonly") {
             match &f.field_type {
                 FieldType::Required => {
-                    if !behavior_names.iter().any(|(n, _)| n == "validate") {
-                        return Err(syn::Error::new_spanned(
-                            &f.name,
-                            format!(
-                                "field `{}`: `#[readonly]` on a required field requires `#[validate]`",
-                                f.name
-                            ),
-                        ));
-                    }
+                    // Read-only required fields are always disallowed in updates;
+                    // a validator is not required.
                 }
                 FieldType::Lax => {
                     let lax_attr = f.attrs.iter().find(|a| a.path().is_ident("lax"));
@@ -3633,23 +3626,6 @@ mod tests {
             "#,
         );
         assert_compile_error(&out, "re_validate without validate");
-    }
-
-    #[test]
-    fn rejects_readonly_on_required_without_validate() {
-        let out = expand(
-            "input(User)",
-            r#"
-            mod s {
-                struct Fields {
-                    #[required]
-                    #[readonly]
-                    pub id: String,
-                }
-            }
-            "#,
-        );
-        assert_compile_error(&out, "readonly on required without validate");
     }
 
     #[test]
