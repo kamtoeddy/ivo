@@ -2026,6 +2026,7 @@ fn generate_model(
                 f.field_type,
                 FieldType::Required
                     | FieldType::Lax
+                    | FieldType::Virtual { .. }
                     | FieldType::Dependent
                     | FieldType::CreatedAt
                     | FieldType::UpdatedAt { .. }
@@ -2064,6 +2065,7 @@ fn generate_model(
                 f.field_type,
                 FieldType::Required
                     | FieldType::Lax
+                    | FieldType::Virtual { .. }
                     | FieldType::Dependent
                     | FieldType::CreatedAt
                     | FieldType::UpdatedAt { .. }
@@ -2818,18 +2820,20 @@ fn generate_model(
                 &opts_expr,
             );
             let stmt = quote! {
-                let __value: #ty = output.#name.clone();
-                let __result: ::core::result::Result<
-                    ::core::option::Option<#ty>,
-                    ::ivo::FieldError<#metadata_ty>,
-                > = #call;
-                match __result {
-                    ::core::result::Result::Ok(::core::option::Option::Some(__new_value)) => {
-                        output.#name = __new_value.clone();
-                    }
-                    ::core::result::Result::Ok(::core::option::Option::None) => {}
-                    ::core::result::Result::Err(e) => {
-                        errors.insert(::std::string::String::from(#name_str), e);
+                if !errors.contains_key(#name_str) {
+                    let __value: #ty = output.#name.clone();
+                    let __result: ::core::result::Result<
+                        ::core::option::Option<#ty>,
+                        ::ivo::FieldError<#metadata_ty>,
+                    > = #call;
+                    match __result {
+                        ::core::result::Result::Ok(::core::option::Option::Some(__new_value)) => {
+                            output.#name = __new_value.clone();
+                        }
+                        ::core::result::Result::Ok(::core::option::Option::None) => {}
+                        ::core::result::Result::Err(e) => {
+                            errors.insert(::std::string::String::from(#name_str), e);
+                        }
                     }
                 }
             };
@@ -3307,6 +3311,29 @@ fn generate_model(
     update_has_async |= update_assignment_pairs.iter().any(|(a, _)| *a);
     let update_assignments = update_assignment_pairs.into_iter().map(|(_, stmt)| stmt);
 
+    // A virtual field that is ignored on update still counts as an attempted update,
+    // so that an update consisting only of an ignored virtual field returns the
+    // "nothing to update" failure rather than an empty success.
+    let virtual_ignore_update_attempts: Vec<_> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
+        .map(|f| {
+            let input_name = input_field_name(f);
+            let name_str = f.name.to_string();
+            let ignored = if update_ignore_field_names.contains(&name_str) {
+                let flag = format_ident!("ignore_update_{}", f.name);
+                quote! { #flag }
+            } else {
+                quote! { false }
+            };
+            quote! {
+                if #ignored && updates.#input_name.is_some() {
+                    __update_attempted = true;
+                }
+            }
+        })
+        .collect();
+
     let change_recompute_fields: Vec<_> = fields
         .iter()
         .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
@@ -3343,20 +3370,28 @@ fn generate_model(
                         let parent_ident = format_ident!("{}", p);
                         let parent_def = fields.iter().find(|f| f.name == parent_ident)?;
                         let parent = format_ident!("{}", p);
+                        let parent_ignored = if update_ignore_field_names.contains(p) {
+                            let flag = format_ident!("ignore_update_{}", p);
+                            quote! { #flag }
+                        } else {
+                            quote! { false }
+                        };
                         if matches!(parent_def.field_type, FieldType::Virtual { .. }) {
                             let input_name = input_field_name(parent_def);
-                            Some(quote! { updates.#input_name.is_some() })
+                            Some(quote! { !#parent_ignored && updates.#input_name.is_some() })
                         } else if matches!(
                             parent_def.field_type,
                             FieldType::Required | FieldType::Lax
                         ) {
                             let input_name = input_field_name(parent_def);
                             Some(quote! {
-                                updates.#input_name.is_some()
-                                    || __original_output.#parent != output.#parent
+                                !#parent_ignored && (
+                                    updates.#input_name.is_some()
+                                        || __original_output.#parent != output.#parent
+                                )
                             })
                         } else {
-                            Some(quote! { __original_output.#parent != output.#parent })
+                            Some(quote! { !#parent_ignored && __original_output.#parent != output.#parent })
                         }
                     })
                     .collect();
@@ -3998,6 +4033,7 @@ fn generate_model(
                 #(#update_required_evaluations)*
 
                 #(#update_assignments)*
+                #(#virtual_ignore_update_attempts)*
 
                 let mut __post_input: #partial_input_name = ::core::default::Default::default();
                 #(#post_input_inits)*

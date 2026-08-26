@@ -44,3 +44,10 @@
 - [x] Port `examples/lax_with_ignore_update.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
 - [x] Reconcile `#[ignore]` / `#[ignore_update]` semantics: field-level `#[ignore]` (with a resolver) applies to both create and update on `#[lax]` / `#[ivo_virtual]` fields; `#[ignore_init]` is create-only; `#[ignore_update]` is update-only.
 - [x] Fix unconditional ignore-update flag bug that treated every `#[ignore_update(...)]` field as bare/always-ignore.
+- [x] Port `examples/timestamps_with_default_names.rs` to the `#[ivo_schema]` macro API.
+- [x] Port `examples/timestamps_with_custom_names.rs` to the `#[ivo_schema]` macro API.
+- [x] Port `examples/virtuals.rs` to the `#[ivo_schema]` macro API (re-validator section omitted because `#[re_validate]` on virtual fields is not supported).
+- [x] Port `examples/virtuals_with_ignore.rs` to the `#[ivo_schema]` macro API.
+- [x] Port `examples/virtuals_with_ignore_init.rs` to the `#[ivo_schema]` macro API.
+- [x] Port `examples/virtuals_with_ignore_update.rs` to the `#[ivo_schema]` macro API.
+- [x] Support bare `#[ignore_update]` and conditional `#[ignore]` on `#[ivo_virtual]` fields during updates, so ignored virtual fields do not re-trigger dependent resolvers and updates consisting only of ignored virtual fields return the "nothing to update" failure.

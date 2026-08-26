@@ -119,6 +119,50 @@ name = "option_on_success"
 path = "examples/option_on_success.rs"
 
 [[example]]
+name = "required"
+path = "examples/required.rs"
+
+[[example]]
+name = "required_error"
+path = "examples/required_error.rs"
+
+[[example]]
+name = "required_readonly"
+path = "examples/required_readonly.rs"
+
+[[example]]
+name = "required_with_ignore_update"
+path = "examples/required_with_ignore_update.rs"
+
+[[example]]
+name = "required_with_re_validate"
+path = "examples/required_with_re_validate.rs"
+
+[[example]]
+name = "timestamps_with_default_names"
+path = "examples/timestamps_with_default_names.rs"
+
+[[example]]
 name = "main_demo"
 path = "examples/main_demo/src/main.rs"
 required-features = ["validators"]
+
+[[example]]
+name = "timestamps_with_custom_names"
+path = "examples/timestamps_with_custom_names.rs"
+
+[[example]]
+name = "virtuals"
+path = "examples/virtuals.rs"
+
+[[example]]
+name = "virtuals_with_ignore"
+path = "examples/virtuals_with_ignore.rs"
+
+[[example]]
+name = "virtuals_with_ignore_init"
+path = "examples/virtuals_with_ignore_init.rs"
+
+[[example]]
+name = "virtuals_with_ignore_update"
+path = "examples/virtuals_with_ignore_update.rs"
