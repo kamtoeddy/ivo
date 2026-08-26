@@ -2471,40 +2471,38 @@ fn generate_model(
                 field_is_async |= is_async;
                 quote! {
                     match #call {
-                        ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
-                        ::core::result::Result::Ok(::core::option::Option::None) => value,
+                        ::core::result::Result::Ok(::core::option::Option::Some(v)) => {
+                            value = v;
+                        }
+                        ::core::result::Result::Ok(::core::option::Option::None) => {}
                         ::core::result::Result::Err(e) => {
                             errors.insert(::std::string::String::from(#name_str), e);
-                            ::core::default::Default::default()
+                            __field_valid = false;
                         }
                     }
                 }
-            } else {
-                quote! { value }
-            };
-
-            let validator_assignment = if validator.is_some() {
-                quote! { value = #validator_expr; }
             } else {
                 quote! {}
             };
 
             let value_computation = quote! {
                 {
+                    let mut __field_valid = true;
                     let mut value: #ty = #base_value;
                     if !#ignore_flag_tokens {
                         #sanitizer_expr
-                        #validator_assignment
+                        #validator_expr
                     }
-                    value
+                    (value, __field_valid)
                 }
             };
 
             let stmt = quote! {
-                let #name: #ty = #value_computation;
+                let __provided = input.#input_name_tokens.is_some();
+                let (#name, __field_valid): (#ty, bool) = #value_computation;
                 if #ignore_flag_tokens {
                     input.#input_name_tokens = ::core::option::Option::None;
-                } else {
+                } else if __field_valid && __provided {
                     input.#input_name_tokens = ::core::option::Option::Some(#name.clone());
                 }
                 let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
@@ -2560,7 +2558,11 @@ fn generate_model(
         })
         .collect();
     create_has_async |= re_validate_pairs.iter().any(|(a, _)| *a);
-    let re_validate_steps = re_validate_pairs.into_iter().map(|(_, stmt)| stmt);
+    update_has_async |= re_validate_pairs.iter().any(|(a, _)| *a);
+    let re_validate_steps: Vec<_> = re_validate_pairs
+        .into_iter()
+        .map(|(_, stmt)| stmt)
+        .collect();
 
     let post_validate_options: Vec<_> = options
         .iter()
@@ -2820,14 +2822,90 @@ fn generate_model(
         .chain(grouped_ignore_update_pairs)
         .map(|(_, stmt)| stmt);
 
-    let update_assignments = fields
+    // Conditional required checks for update (mirrors create logic but uses `updates`).
+    let update_grouped_required_pairs: Vec<_> = options
+        .iter()
+        .filter(|o| matches!(o.kind, GroupedOptionKind::Required))
+        .enumerate()
+        .map(|(i, o)| {
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) =
+                make_boolean_call(&o.handler, &update_ctx_ty, &ctx_expr, &opts_expr);
+            let opt_flag = format_ident!("__required_opt_{}", i);
+            let checks = o.fields.iter().map(|fname| {
+                let f = fields.iter().find(|f| f.name == fname).unwrap();
+                let input_tokens = input_field_name(f);
+                let name_str = fname.clone();
+                quote! {
+                    if updates.#input_tokens.is_none() {
+                        errors.insert(
+                            ::std::string::String::from(#name_str),
+                            ::ivo::FieldError {
+                                reason: ::std::string::String::from("field is required"),
+                                metadata: ::core::option::Option::None,
+                            },
+                        );
+                    }
+                }
+            });
+            let stmt = quote! {
+                let #opt_flag: bool = #call;
+                if #opt_flag {
+                    #(#checks)*
+                }
+            };
+            (is_async, stmt)
+        })
+        .collect();
+    update_has_async |= update_grouped_required_pairs.iter().any(|(a, _)| *a);
+
+    let update_field_required_pairs: Vec<_> = field_required_handlers
+        .iter()
+        .map(|(f, handler)| {
+            let input_tokens = input_field_name(f);
+            let name_str = f.name.to_string();
+            let ctx_expr = quote!(&ctx);
+            let opts_expr = quote!(&_rw_ctx_options);
+            let (is_async, call) =
+                make_required_call(handler, &update_ctx_ty, &ctx_expr, &opts_expr);
+            let stmt = quote! {
+                let __required_msg: ::core::option::Option<::std::string::String> = #call;
+                if let Some(__msg) = __required_msg {
+                    if updates.#input_tokens.is_none() {
+                        errors.insert(
+                            ::std::string::String::from(#name_str),
+                            ::ivo::FieldError {
+                                reason: __msg,
+                                metadata: ::core::option::Option::None,
+                            },
+                        );
+                    }
+                }
+            };
+            (is_async, stmt)
+        })
+        .collect();
+    update_has_async |= update_field_required_pairs.iter().any(|(a, _)| *a);
+
+    let update_required_evaluations = update_grouped_required_pairs
+        .into_iter()
+        .chain(update_field_required_pairs)
+        .map(|(_, stmt)| stmt);
+
+    let update_assignment_pairs: Vec<_> = fields
         .iter()
         .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
         .map(|f| {
             let name = &f.name;
+            let name_str = name.to_string();
             let input_name = input_field_name(f);
-            let setter = format_ident!("set_{}", name);
-            let ignore_update_flag = if update_ignore_field_names.contains(&name.to_string()) {
+            let ty = &f.ty;
+            let ty_tokens = quote!(#ty);
+            let sanitizer = attr_value_tokens(&f.attrs, "sanitize");
+            let validator = attr_value_tokens(&f.attrs, "validate");
+
+            let ignore_update_flag = if update_ignore_field_names.contains(&name_str) {
                 let flag = format_ident!("ignore_update_{}", name);
                 quote! { #flag }
             } else {
@@ -2853,27 +2931,87 @@ fn generate_model(
             };
             match &f.field_type {
                 FieldType::Required | FieldType::Lax => {
-                    quote! {
-                        if !#ignore_update_flag && #readonly_guard {
-                            if let ::core::option::Option::Some(v) = &updates.#input_name {
-                                __changes.#setter(v.clone());
-                                if &output.#name != v {
-                                    output.#name = v.clone();
+                    let mut field_is_async = false;
+
+                    let sanitizer_expr = if let Some(sanitizer) = sanitizer {
+                        let value_expr = quote!(value);
+                        let ctx_expr = quote!(&ctx);
+                        let opts_expr = quote!(&_rw_ctx_options);
+                        let (is_async, call) =
+                            make_sanitizer_call(&sanitizer, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
+                        field_is_async |= is_async;
+                        quote! { value = #call; }
+                    } else {
+                        quote! {}
+                    };
+
+                    let validator_assignment = if let Some(ref validator) = validator {
+                        let value_expr = quote!(value.clone());
+                        let ctx_expr = quote!(&ctx);
+                        let opts_expr = quote!(&_rw_ctx_options);
+                        let (is_async, call) =
+                            make_validator_call(validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
+                        field_is_async |= is_async;
+                        quote! {
+                            match #call {
+                                ::core::result::Result::Ok(::core::option::Option::Some(__validated_value)) => {
+                                    value = __validated_value;
+                                }
+                                ::core::result::Result::Ok(::core::option::Option::None) => {}
+                                ::core::result::Result::Err(e) => {
+                                    errors.insert(::std::string::String::from(#name_str), e);
+                                    __field_valid = false;
+                                    value = ::core::default::Default::default();
                                 }
                             }
                         }
-                    }
+                    } else {
+                        quote! {}
+                    };
+
+                    let stmt = quote! {
+                        if !#ignore_update_flag && #readonly_guard {
+                            if let ::core::option::Option::Some(v) = &updates.#input_name {
+                                let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                                    updates.clone(),
+                                    output.clone(),
+                                    __changes.clone(),
+                                    true,
+                                );
+                                __update_attempted = true;
+                                let mut __field_valid = true;
+                                let mut value: #ty_tokens = v.clone();
+                                #sanitizer_expr
+                                #validator_assignment
+                                if __field_valid && &value != &__original_output.#name {
+                                    output.#name = value;
+                                }
+                            }
+                        }
+                    };
+                    (field_is_async, stmt)
                 }
                 FieldType::Constant
                 | FieldType::Dependent
                 | FieldType::CreatedAt
                 | FieldType::UpdatedAt
                 | FieldType::Virtual { .. } => {
-                    quote! {}
+                    (false, quote! {})
                 }
             }
         })
-        .collect::<Vec<_>>();
+        .collect();
+    update_has_async |= update_assignment_pairs.iter().any(|(a, _)| *a);
+    let update_assignments = update_assignment_pairs.into_iter().map(|(_, stmt)| stmt);
+
+    let change_recompute_fields: Vec<_> = fields
+        .iter()
+        .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
+        .collect();
+    let change_field_names = change_recompute_fields.iter().map(|f| &f.name);
+    let change_field_setters = change_recompute_fields
+        .iter()
+        .map(|f| format_ident!("set_{}", f.name));
 
     let dependent_update_pairs: Vec<_> = {
         let order = dependency_order(fields);
@@ -3337,6 +3475,7 @@ fn generate_model(
                 let mut output = existing;
                 let __original_output = output.clone();
                 let mut __changes: #partial_output_name = ::core::default::Default::default();
+                let mut __update_attempted = false;
                 let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                     updates.clone(),
                     output.clone(),
@@ -3344,8 +3483,12 @@ fn generate_model(
                     true,
                 );
 
+                let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> =
+                    ::std::collections::HashMap::new();
+
                 #(#update_ignore_flag_decls)*
                 #(#update_ignore_evaluations)*
+                #(#update_required_evaluations)*
 
                 #(#update_assignments)*
 
@@ -3357,8 +3500,14 @@ fn generate_model(
                 );
                 #(#dependent_update_assignments)*
 
-                let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> =
-                    ::std::collections::HashMap::new();
+                let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                    updates.clone(),
+                    output.clone(),
+                    __changes.clone(),
+                    true,
+                );
+                #(#re_validate_steps)*
+
                 let mut __post_input: #partial_input_name = ::core::default::Default::default();
                 #(#post_input_inits)*
                 {
@@ -3371,6 +3520,14 @@ fn generate_model(
                     );
                     #(#post_validate_update_steps)*
                 }
+
+                __changes = ::core::default::Default::default();
+                #(
+                    if &__original_output.#change_field_names != &output.#change_field_names {
+                        __changes.#change_field_setters(output.#change_field_names.clone());
+                    }
+                )*
+
                 if !errors.is_empty() {
                     let __trigger_changes = __changes.clone();
                     let __return_opts = _ctx_options.clone();
@@ -3378,6 +3535,21 @@ fn generate_model(
                     return ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
                         <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
                             errors, &*_rw_ctx_options.read(),
+                        ),
+                        __return_opts,
+                        __failure_trigger,
+                    ));
+                }
+
+                if __update_attempted && __changes.is_empty() {
+                    let __no_change_errors: ::ivo::IvoErrorPayload<#metadata_ty> =
+                        ::std::collections::HashMap::new();
+                    let __trigger_changes = __changes.clone();
+                    let __return_opts = _ctx_options.clone();
+                    let __failure_trigger = #update_failure_trigger;
+                    return ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
+                        <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                            __no_change_errors, &*_rw_ctx_options.read(),
                         ),
                         __return_opts,
                         __failure_trigger,

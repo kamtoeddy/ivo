@@ -538,6 +538,7 @@ async fn smoke_model_readonly_update() {
     updates.set_id("2".to_string());
     let updated = user_readonly_schema::UserModel
         .update(existing, updates, ())
+        .await
         .unwrap();
     assert_eq!(updated.data.name, Some("new".to_string()));
     assert_eq!(updated.data.id, None);
