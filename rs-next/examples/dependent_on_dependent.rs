@@ -240,7 +240,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
     assert_eq!(
         updates.data,
         PartialData {
-            dependent: dependent.clone(),
+            dependent,
             dependent_1: dependent.map(|v| v + 10),
             lax: updated_lax,
             lax_1: updated_lax_1
@@ -273,7 +273,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
     assert_eq!(
         updates.data,
         PartialData {
-            dependent: dependent.clone(),
+            dependent,
             dependent_1: dependent.map(|v| v + 10),
             lax: updated_lax,
             lax_1: None

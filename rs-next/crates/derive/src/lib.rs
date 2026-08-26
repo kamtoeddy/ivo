@@ -2283,26 +2283,17 @@ fn generate_model(
                 quote! {}
             };
 
-            let validator_expr = if let Some(validator) = validator {
-                let value_expr = quote!(value);
+            let validator_expr = if let Some(ref validator) = validator {
+                let value_expr = quote!(value.clone());
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) =
-                    make_validator_call(&validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
+                    make_validator_call(validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
                 field_is_async |= is_async;
                 quote! {
                     match #call {
                         ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
-                        ::core::result::Result::Ok(::core::option::Option::None) => {
-                            errors.insert(
-                                ::std::string::String::from(#name_str),
-                                ::ivo::FieldError {
-                                    reason: ::std::string::String::from("validation failed"),
-                                    metadata: ::core::option::Option::None,
-                                },
-                            );
-                            ::core::default::Default::default()
-                        }
+                        ::core::result::Result::Ok(::core::option::Option::None) => value,
                         ::core::result::Result::Err(e) => {
                             errors.insert(::std::string::String::from(#name_str), e);
                             ::core::default::Default::default()
@@ -2313,12 +2304,18 @@ fn generate_model(
                 quote! { value }
             };
 
+            let validator_assignment = if validator.is_some() {
+                quote! { value = #validator_expr; }
+            } else {
+                quote! {}
+            };
+
             let value_computation = quote! {
                 {
                     let mut value: #ty = #base_value;
                     if !#ignore_flag_tokens {
                         #sanitizer_expr
-                        value = #validator_expr;
+                        #validator_assignment
                     }
                     value
                 }
@@ -2475,26 +2472,17 @@ fn generate_model(
                 quote! {}
             };
 
-            let validator_expr = if let Some(validator) = validator {
-                let value_expr = quote!(value);
+            let validator_expr = if let Some(ref validator) = validator {
+                let value_expr = quote!(value.clone());
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) =
-                    make_validator_call(&validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
+                    make_validator_call(validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
                 field_is_async |= is_async;
                 quote! {
                     match #call {
                         ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
-                        ::core::result::Result::Ok(::core::option::Option::None) => {
-                            errors.insert(
-                                ::std::string::String::from(#name_str),
-                                ::ivo::FieldError {
-                                    reason: ::std::string::String::from("validation failed"),
-                                    metadata: ::core::option::Option::None,
-                                },
-                            );
-                            ::core::default::Default::default()
-                        }
+                        ::core::result::Result::Ok(::core::option::Option::None) => value,
                         ::core::result::Result::Err(e) => {
                             errors.insert(::std::string::String::from(#name_str), e);
                             ::core::default::Default::default()
@@ -2505,12 +2493,18 @@ fn generate_model(
                 quote! { value }
             };
 
+            let validator_assignment = if validator.is_some() {
+                quote! { value = #validator_expr; }
+            } else {
+                quote! {}
+            };
+
             let value_computation = quote! {
                 {
                     let mut value: #ty = #base_value;
                     if !#ignore_flag_tokens {
                         #sanitizer_expr
-                        value = #validator_expr;
+                        #validator_assignment
                     }
                     value
                 }
@@ -2566,15 +2560,7 @@ fn generate_model(
                     ::core::result::Result::Ok(::core::option::Option::Some(__new_value)) => {
                         output.#name = __new_value.clone();
                     }
-                    ::core::result::Result::Ok(::core::option::Option::None) => {
-                        errors.insert(
-                            ::std::string::String::from(#name_str),
-                            ::ivo::FieldError {
-                                reason: ::std::string::String::from("re-validation failed"),
-                                metadata: ::core::option::Option::None,
-                            },
-                        );
-                    }
+                    ::core::result::Result::Ok(::core::option::Option::None) => {}
                     ::core::result::Result::Err(e) => {
                         errors.insert(::std::string::String::from(#name_str), e);
                     }

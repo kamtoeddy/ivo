@@ -37,6 +37,9 @@ ivo-derive = { path = "./crates/derive", version = "0.5.0" }
 [dev-dependencies]
 tokio = { version = "1.0", features = ["rt", "rt-multi-thread", "macros"] }
 
+[[example]]
+name = "constants"
+path = "examples/constants.rs"
 
 [[example]]
 name = "dependent_on_dependent"
