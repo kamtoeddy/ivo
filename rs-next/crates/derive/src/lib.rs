@@ -1942,7 +1942,10 @@ fn generate_model(
                 quote! { ::ivo::run_boolean_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
-            (false, quote! { (#annotated)(#ctx_expr, #opts_expr) })
+            (
+                false,
+                quote! { ::ivo::run_boolean_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
+            )
         }
     };
 
@@ -1961,7 +1964,10 @@ fn generate_model(
                 quote! { ::ivo::run_required_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
-            (false, quote! { (#annotated)(#ctx_expr, #opts_expr) })
+            (
+                false,
+                quote! { ::ivo::run_required_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
+            )
         }
     };
 
@@ -1977,7 +1983,10 @@ fn generate_model(
                 quote! { ::ivo::run_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
-            (false, quote! { (#annotated)(#ctx_expr, #opts_expr) })
+            (
+                false,
+                quote! { ::ivo::run_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
+            )
         }
     };
 
@@ -1988,7 +1997,7 @@ fn generate_model(
                     if is_async_handler(tokens) {
                         (true, quote! { (#tokens)().await })
                     } else {
-                        (false, quote! { (#tokens)() })
+                        (false, quote! { ::ivo::run_value_resolver_sync(#tokens) })
                     }
                 }
                 Some(_) => {
@@ -2018,7 +2027,7 @@ fn generate_model(
         } else {
             (
                 false,
-                quote! { ::ivo::run_validator_sync(#value_expr, #ctx_expr, #opts_expr, #annotated) },
+                quote! { ::ivo::run_sanitizer_sync(#value_expr, #ctx_expr, #opts_expr, #annotated) },
             )
         }
     };
@@ -2305,7 +2314,7 @@ fn generate_model(
                 }
                 FieldType::CreatedAt | FieldType::UpdatedAt { optional: false } => {
                     if let Some(resolver) = &timestamps_resolver {
-                        quote! { (#resolver)() }
+                        quote! { ::ivo::run_value_resolver_sync(#resolver) }
                     } else {
                         quote! { ::core::default::Default::default() }
                     }
@@ -2322,7 +2331,7 @@ fn generate_model(
                                 field_is_async = true;
                                 quote! { (#tokens)().await }
                             } else {
-                                quote! { (#tokens)() }
+                                quote! { ::ivo::run_value_resolver_sync(#tokens) }
                             }
                         }
                         Some(_) => {
@@ -3203,7 +3212,7 @@ fn generate_model(
             let setter = format_ident!("set_{}", name);
             let optional = matches!(f.field_type, FieldType::UpdatedAt { optional: true });
             let resolver_expr = if let Some(resolver) = &timestamps_resolver {
-                quote! { (#resolver)() }
+                quote! { ::ivo::run_value_resolver_sync(#resolver) }
             } else {
                 quote! { ::core::default::Default::default() }
             };
@@ -3265,7 +3274,7 @@ fn generate_model(
                 let call = if is_async {
                     quote! { ::ivo::run_hook(data, &_ctx_options, #annotated).await; }
                 } else {
-                    quote! { (#annotated)(data, &_ctx_options); }
+                    quote! { ::ivo::run_hook_sync(data, &_ctx_options, #annotated); }
                 };
                 (is_async, call)
             };
@@ -3355,7 +3364,7 @@ fn generate_model(
                 if is_async_handler(handler) {
                     quote! { ::ivo::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
                 } else {
-                    quote! { (#annotated)(ctx.clone(), &_ctx_options); }
+                    quote! { ::ivo::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
                 }
             })
             .collect();
@@ -3449,9 +3458,11 @@ fn generate_model(
                     }
                 } else {
                     match input_count {
-                        0 => quote! { (#annotated)() },
+                        0 => quote! { ::ivo::run_callback_sync(#annotated) },
                         1 => quote! { (#annotated)(ctx.clone()) },
-                        _ => quote! { (#annotated)(ctx.clone(), &_ctx_options) },
+                        _ => {
+                            quote! { ::ivo::run_hook_sync(ctx.clone(), &_ctx_options, #annotated) }
+                        }
                     }
                 };
                 quote! {

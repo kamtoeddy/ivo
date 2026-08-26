@@ -82,14 +82,14 @@ where
 
 pub fn run_resolver_sync<T, Ctx, Opts, F>(ctx: Ctx, opts: &Opts, resolver: F) -> T
 where
-    F: FnOnce(Ctx, &Opts) -> T,
+    F: Fn(Ctx, &Opts) -> T,
 {
     resolver(ctx, opts)
 }
 
 pub fn run_sanitizer_sync<T, Ctx, Opts, F>(value: T, ctx: &Ctx, opts: &Opts, sanitizer: F) -> T
 where
-    F: FnOnce(T, &Ctx, &Opts) -> T,
+    F: Fn(T, &Ctx, &Opts) -> T,
 {
     sanitizer(value, ctx, opts)
 }
@@ -102,7 +102,7 @@ pub fn run_validator_sync<T, Ctx, Opts, F, Metadata>(
 ) -> Result<Option<T>, FieldError<Metadata>>
 where
     Metadata: Clone,
-    F: FnOnce(T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
+    F: Fn(T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
 {
     match validator(value, ctx, opts) {
         ::core::result::Result::Ok(v) => ::core::result::Result::Ok(v),
@@ -114,7 +114,7 @@ where
 
 pub fn run_boolean_resolver_sync<Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, resolver: F) -> bool
 where
-    F: FnOnce(&Ctx, &Opts) -> bool,
+    F: Fn(&Ctx, &Opts) -> bool,
 {
     resolver(ctx, opts)
 }
@@ -125,9 +125,30 @@ pub fn run_required_resolver_sync<Ctx, Opts, F>(
     resolver: F,
 ) -> Option<String>
 where
-    F: FnOnce(&Ctx, &Opts) -> Option<String>,
+    F: Fn(&Ctx, &Opts) -> Option<String>,
 {
     resolver(ctx, opts)
+}
+
+pub fn run_hook_sync<Ctx, Opts, F>(ctx: Ctx, opts: &Opts, handler: F)
+where
+    F: Fn(Ctx, &Opts),
+{
+    handler(ctx, opts)
+}
+
+pub fn run_callback_sync<F>(handler: F)
+where
+    F: Fn(),
+{
+    handler()
+}
+
+pub fn run_value_resolver_sync<T, F>(resolver: F) -> T
+where
+    F: Fn() -> T,
+{
+    resolver()
 }
 
 pub async fn run_post_validator<Ctx, Opts, F, Partial, Errors>(
@@ -147,7 +168,7 @@ pub fn run_post_validator_sync<Ctx, Opts, F, Partial, Errors>(
     validator: F,
 ) -> Result<Option<Partial>, Errors>
 where
-    F: FnOnce(Ctx, Opts) -> Result<Option<Partial>, Errors>,
+    F: Fn(Ctx, Opts) -> Result<Option<Partial>, Errors>,
 {
     validator(ctx, opts)
 }
