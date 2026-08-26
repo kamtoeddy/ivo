@@ -85,8 +85,8 @@ async fn smoke_model_create_single_struct() {
         role: "user".to_string(),
     };
     let created = user_schema::UserModel.create(input, ()).unwrap();
-    assert_eq!(created.name, "test");
-    assert_eq!(created.role, "user");
+    assert_eq!(created.data.name, "test");
+    assert_eq!(created.data.role, "user");
 }
 
 #[tokio::test]
@@ -100,8 +100,8 @@ async fn smoke_model_update_single_struct() {
     let updated = user_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert_eq!(updated.name, Some("new".to_string()));
-    assert_eq!(updated.role, None);
+    assert_eq!(updated.data.name, Some("new".to_string()));
+    assert_eq!(updated.data.role, None);
 }
 
 #[tokio::test]
@@ -110,8 +110,8 @@ async fn smoke_model_create_dual_struct() {
         name: "test".to_string(),
     };
     let created = user_schema_dual::UserModel.create(input, ()).unwrap();
-    assert_eq!(created.name, "test");
-    assert_eq!(created.id, "default-id");
+    assert_eq!(created.data.name, "test");
+    assert_eq!(created.data.id, "default-id");
 }
 
 #[tokio::test]
@@ -132,7 +132,7 @@ async fn smoke_model_validator_pass() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.name, "test");
+    assert_eq!(created.data.name, "test");
 }
 
 #[tokio::test]
@@ -145,7 +145,7 @@ async fn smoke_model_validator_fail() {
         .await;
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert!(errors.contains_key("name"));
+    assert!(errors.errors.contains_key("name"));
 }
 
 #[ivo_schema(
@@ -178,8 +178,8 @@ async fn smoke_model_sanitizer() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.name, "test");
-    assert_eq!(created.raw_email, "test@example.com");
+    assert_eq!(created.data.name, "test");
+    assert_eq!(created.data.raw_email, "test@example.com");
 }
 
 #[ivo_schema(
@@ -215,9 +215,9 @@ async fn smoke_model_resolver() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.first_name, "John");
-    assert_eq!(created.last_name, "Doe");
-    assert_eq!(created.full_name, "John Doe");
+    assert_eq!(created.data.first_name, "John");
+    assert_eq!(created.data.last_name, "Doe");
+    assert_eq!(created.data.full_name, "John Doe");
 }
 
 #[ivo_schema(
@@ -250,8 +250,8 @@ async fn smoke_virtual_alias() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.name, "test");
-    assert_eq!(created.raw_email, "test@example.com");
+    assert_eq!(created.data.name, "test");
+    assert_eq!(created.data.raw_email, "test@example.com");
 }
 
 #[ivo_schema(
@@ -280,9 +280,9 @@ async fn smoke_timestamps() {
         name: "test".to_string(),
     };
     let created = user_timestamps_schema::UserModel.create(input, ()).unwrap();
-    assert_eq!(created.name, "test");
-    assert_eq!(created.created_at, "timestamp");
-    assert_eq!(created.updated_at, "timestamp");
+    assert_eq!(created.data.name, "test");
+    assert_eq!(created.data.created_at, "timestamp");
+    assert_eq!(created.data.updated_at, "timestamp");
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
@@ -331,8 +331,8 @@ async fn smoke_model_lax_default() {
     let created = user_lax_default_schema::UserModel
         .create(input, ())
         .unwrap();
-    assert_eq!(created.name, "test");
-    assert_eq!(created.role, "user");
+    assert_eq!(created.data.name, "test");
+    assert_eq!(created.data.role, "user");
 }
 
 #[tokio::test]
@@ -344,8 +344,8 @@ async fn smoke_model_grouped_ignore() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.a, "default_a");
-    assert_eq!(created.b, "default_b");
+    assert_eq!(created.data.a, "default_a");
+    assert_eq!(created.data.b, "default_b");
 }
 
 #[tokio::test]
@@ -357,7 +357,7 @@ async fn smoke_model_grouped_required() {
         .await;
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert!(errors.contains_key("a"));
+    assert!(errors.errors.contains_key("a"));
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
@@ -416,8 +416,8 @@ async fn smoke_model_field_ignore() {
     let created = user_field_ignore_schema::UserModel
         .create(input, ())
         .unwrap();
-    assert_eq!(created.a, "default_a");
-    assert_eq!(created.b, "provided_b");
+    assert_eq!(created.data.a, "default_a");
+    assert_eq!(created.data.b, "provided_b");
 }
 
 #[tokio::test]
@@ -428,8 +428,8 @@ async fn smoke_model_field_ignore_init() {
     let created = user_field_ignore_init_schema::UserModel
         .create(input, ())
         .unwrap();
-    assert_eq!(created.a, "default_a");
-    assert_eq!(created.b, "provided_b");
+    assert_eq!(created.data.a, "default_a");
+    assert_eq!(created.data.b, "provided_b");
 }
 
 #[tokio::test]
@@ -439,7 +439,7 @@ async fn smoke_model_field_required() {
     let result = user_field_required_schema::UserModel.create(input, ());
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert!(errors.contains_key("a"));
+    assert!(errors.errors.contains_key("a"));
 }
 
 #[tokio::test]
@@ -453,8 +453,8 @@ async fn smoke_model_field_ignore_update() {
     let updated = user_field_ignore_update_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert!(updated.role.is_none());
-    assert!(updated.is_empty());
+    assert!(updated.data.role.is_none());
+    assert!(updated.data.is_empty());
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
@@ -513,7 +513,7 @@ async fn smoke_model_re_validate_fail() {
     let result = user_re_validate_schema::UserModel.create(input, ()).await;
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert!(errors.contains_key("name"));
+    assert!(errors.errors.contains_key("name"));
 }
 
 #[tokio::test]
@@ -525,7 +525,7 @@ async fn smoke_model_re_validate_pass() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.name, "good");
+    assert_eq!(created.data.name, "good");
 }
 
 #[tokio::test]
@@ -540,8 +540,8 @@ async fn smoke_model_readonly_update() {
     let updated = user_readonly_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert_eq!(updated.name, Some("new".to_string()));
-    assert_eq!(updated.id, None);
+    assert_eq!(updated.data.name, Some("new".to_string()));
+    assert_eq!(updated.data.id, None);
 }
 
 #[tokio::test]
@@ -553,8 +553,8 @@ async fn smoke_model_dependent_default() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.name, "test");
-    assert_eq!(created.status, "default-status");
+    assert_eq!(created.data.name, "test");
+    assert_eq!(created.data.status, "default-status");
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
@@ -614,7 +614,7 @@ async fn smoke_model_required_error_static() {
     let result = user_required_error_schema::UserModel.create(input, ());
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    let err = errors.get("name").unwrap();
+    let err = errors.errors.get("name").unwrap();
     assert_eq!(err.reason, "name is mandatory");
 }
 
@@ -626,7 +626,7 @@ async fn smoke_model_constant_static() {
     let created = user_constant_static_schema::UserModel
         .create(input, ())
         .unwrap();
-    assert_eq!(created.id, 1234);
+    assert_eq!(created.data.id, 1234);
 }
 
 #[tokio::test]
@@ -638,7 +638,7 @@ async fn smoke_model_constant_resolver() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.id, 5678);
+    assert_eq!(created.data.id, 5678);
 }
 
 #[tokio::test]
@@ -652,8 +652,8 @@ async fn smoke_model_grouped_ignore_update() {
     let updated = user_grouped_ignore_update_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert!(updated.role.is_none());
-    assert!(updated.is_empty());
+    assert!(updated.data.role.is_none());
+    assert!(updated.data.is_empty());
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq), derive_partial(Debug)))]
@@ -747,7 +747,7 @@ async fn smoke_model_readonly_lax_default() {
     let updated = user_readonly_lax_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert_eq!(updated.role, Some("admin".to_string()));
+    assert_eq!(updated.data.role, Some("admin".to_string()));
 
     let existing = user_readonly_lax_schema::User {
         name: "test".to_string(),
@@ -758,8 +758,8 @@ async fn smoke_model_readonly_lax_default() {
     let updated = user_readonly_lax_schema::UserModel
         .update(existing, updates, ())
         .unwrap();
-    assert!(updated.role.is_none());
-    assert!(updated.is_empty());
+    assert!(updated.data.role.is_none());
+    assert!(updated.data.is_empty());
 }
 
 #[ivo_schema(
@@ -838,7 +838,7 @@ async fn smoke_model_on_success_trigger() {
         name: "test".to_string(),
     };
     let created = user_on_success_schema::UserModel.create(input, ()).unwrap();
-    assert_eq!(created.name, "test");
+    assert_eq!(created.data.name, "test");
     created.handle_success().await;
     assert_eq!(ON_SUCCESS_COUNTER.load(Ordering::SeqCst), 1);
 }
@@ -875,7 +875,7 @@ async fn smoke_model_on_failure_trigger() {
         .create(input, ())
         .await
         .unwrap_err();
-    assert!(errors.contains_key("name"));
+    assert!(errors.errors.contains_key("name"));
     errors.handle_failure().await;
     assert_eq!(ON_FAILURE_COUNTER.load(Ordering::SeqCst), 1);
 }
@@ -953,8 +953,8 @@ async fn smoke_model_post_validate_pass() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.password, "secret");
-    assert_eq!(created.password_confirmation, "secret");
+    assert_eq!(created.data.password, "secret");
+    assert_eq!(created.data.password_confirmation, "secret");
 }
 
 #[tokio::test]
@@ -967,7 +967,7 @@ async fn smoke_model_post_validate_fail() {
         .create(input, ())
         .await
         .unwrap_err();
-    assert!(errors.contains_key("password"));
+    assert!(errors.errors.contains_key("password"));
 }
 
 #[tokio::test]
@@ -979,8 +979,8 @@ async fn smoke_model_post_validate_sync() {
     let created = user_post_validate_sync_schema::UserModel
         .create(input, ())
         .unwrap();
-    assert_eq!(created.a, "updated_a");
-    assert_eq!(created.b, "updated_b");
+    assert_eq!(created.data.a, "updated_a");
+    assert_eq!(created.data.b, "updated_b");
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
@@ -1024,8 +1024,8 @@ async fn smoke_model_post_validate_pre_validate() {
         .create(input, ())
         .await
         .unwrap();
-    assert_eq!(created.a, "pre_a");
-    assert_eq!(created.b, "pre_b");
+    assert_eq!(created.data.a, "pre_a");
+    assert_eq!(created.data.b, "pre_b");
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
@@ -1088,7 +1088,7 @@ async fn smoke_model_post_validate_update_fail() {
         .update(existing, updates, ())
         .await
         .unwrap_err();
-    assert!(errors.contains_key("a"));
+    assert!(errors.errors.contains_key("a"));
 }
 
 #[tokio::test]
@@ -1104,6 +1104,6 @@ async fn smoke_model_post_validate_update_update() {
         .update(existing, updates, ())
         .await
         .unwrap();
-    assert_eq!(updated.a, Some("updated".to_string()));
-    assert_eq!(updated.b, Some("updated_b".to_string()));
+    assert_eq!(updated.data.a, Some("updated".to_string()));
+    assert_eq!(updated.data.b, Some("updated_b".to_string()));
 }

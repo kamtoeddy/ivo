@@ -452,24 +452,6 @@ impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, true, true> {
     }
 }
 
-impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> std::ops::Deref
-    for IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
-{
-    type Target = O;
-
-    fn deref(&self) -> &Self::Target {
-        &self.data
-    }
-}
-
-impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> std::ops::DerefMut
-    for IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.data
-    }
-}
-
 impl<O: fmt::Debug, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> fmt::Debug
     for IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
 {
@@ -523,24 +505,6 @@ impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, true, true> {
             IvoTriggerFn::Async(t) => t.await,
             IvoTriggerFn::Sync(_) => unreachable!(),
         }
-    }
-}
-
-impl<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> std::ops::Deref
-    for IvoFailureHandle<Payload, CtxOptions, ASYNC, HAS_FAILURE>
-{
-    type Target = Payload;
-
-    fn deref(&self) -> &Self::Target {
-        &self.errors
-    }
-}
-
-impl<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> std::ops::DerefMut
-    for IvoFailureHandle<Payload, CtxOptions, ASYNC, HAS_FAILURE>
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.errors
     }
 }
 
