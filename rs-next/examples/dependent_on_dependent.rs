@@ -8,13 +8,74 @@ use data_schema::*;
 async fn main() {
     let timer = Instant::now();
 
-    let data = DataModel
+    let created = DataModel
         .create(PartialDataInput::new().with_lax("lol".into()), ())
         .unwrap();
-    println!("\ncreated: {:#?}", data.data);
-    let _ = data.handle_success().await;
+
+    let data = created.data.clone();
+    println!("\ncreated: {:#?}", data);
+    let _ = created.handle_success().await;
 
     println!("\nCreate duration: {:?}", timer.elapsed());
+
+    let timer = Instant::now();
+
+    let updated = DataModel
+        .update(data, PartialDataInput::new().with_lax("lolol".into()), ())
+        .await
+        .unwrap();
+    println!("\nupdate: {:#?}", updated.data);
+    let _ = updated.handle_success().await;
+
+    println!("\nUpdate  duration: {:?}", timer.elapsed());
+}
+
+#[ivo_schema(input(DataInput), output(Data, derive(Debug)))]
+mod data_schema {
+    pub const DEFAULT_DEPENDENT: i32 = 1;
+    pub const DEFAULT_LAX: &str = "default-lax";
+
+    struct Fields {
+        #[depends_on(lax)]
+        #[default(DEFAULT_DEPENDENT)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[on_success(|ctx, _| async move {
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: dependent = {}", data.dependent);
+        })]
+        pub dependent: i32,
+
+        #[depends_on(dependent)]
+        #[default(DEFAULT_DEPENDENT)]
+        #[resolve(|ctx, _| async move  {ctx.values().dependent + 10})]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: dependent_1 = {}", ctx.values().dependent_1);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: dependent_1 = {}", data.dependent_1);
+        })]
+        pub dependent_1: i32,
+
+        #[lax(String::from(DEFAULT_LAX))]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: lax = {}", ctx.values().lax);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: lax = {}", data.lax);
+        })]
+        pub lax: String,
+
+        #[lax(DEFAULT_LAX.to_string())]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: lax_1 = {}", data.lax_1);
+        })]
+        pub lax_1: String,
+    }
 }
 
 // #[tokio::main]
@@ -223,51 +284,3 @@ async fn main() {
 
 //     DataModel.delete(&data, ()).await;
 // }
-
-#[ivo_schema(input(DataInput), output(Data, derive(Debug)))]
-mod data_schema {
-    pub const DEFAULT_DEPENDENT: i32 = 1;
-    pub const DEFAULT_LAX: &str = "default-lax";
-
-    struct Fields {
-        #[depends_on(lax)]
-        #[default(DEFAULT_DEPENDENT)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
-        #[on_success(|ctx, _| async move {
-            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
-        })]
-        #[on_delete(|data, _| {
-            println!("\n[on_delete]: dependent = {}", data.dependent);
-        })]
-        pub dependent: i32,
-
-        #[depends_on(dependent)]
-        #[default(DEFAULT_DEPENDENT)]
-        #[resolve(|ctx, _| ctx.values().dependent + 10)]
-        #[on_success(|ctx, _| {
-            println!("\n[on_success]: dependent_1 = {}", ctx.values().dependent_1);
-        })]
-        #[on_delete(|data, _| {
-            println!("\n[on_delete]: dependent_1 = {}", data.dependent_1);
-        })]
-        pub dependent_1: i32,
-
-        #[lax(String::from(DEFAULT_LAX))]
-        #[on_success(|ctx, _| {
-            println!("\n[on_success]: lax = {}", ctx.values().lax);
-        })]
-        #[on_delete(|data, _| {
-            println!("\n[on_delete]: lax = {}", data.lax);
-        })]
-        pub lax: String,
-
-        #[lax(DEFAULT_LAX.to_string())]
-        #[on_success(|ctx, _| {
-            println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1);
-        })]
-        #[on_delete(|data, _| {
-            println!("\n[on_delete]: lax_1 = {}", data.lax_1);
-        })]
-        pub lax_1: String,
-    }
-}
