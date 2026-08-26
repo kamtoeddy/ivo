@@ -6,35 +6,12 @@ use data_schema::*;
 
 #[tokio::main]
 async fn main() {
-    let timer = Instant::now();
-
-    let created = DataModel
-        .create(PartialDataInput::new().with_lax("lol".into()), ())
-        .unwrap();
-
-    let data = created.data.clone();
-    println!("\ncreated: {:#?}", data);
-
-    println!("\nCreate duration: {:?}", timer.elapsed());
-
-    let _ = created.handle_success().await;
-
-    println!("\nCreate duration handle_success: {:?}", timer.elapsed());
-
-    let timer = Instant::now();
-
-    let updated = DataModel
-        .update(data, PartialDataInput::new().with_lax("lolol".into()), ())
-        .unwrap();
-    println!("\nupdate: {:#?}", updated.data);
-    println!("\nUpdate duration: {:?}", timer.elapsed());
-
-    let _ = updated.handle_success().await;
-
-    println!("\nUpdate duration handle_success: {:?}", timer.elapsed());
+    should_not_update_if_resolver_was_run_at_creation().await;
+    // should_reject_update_if_resolver_was_run_during_prior_update().await;
+    timed().await;
 }
 
-#[ivo_schema(input(DataInput), output(Data, derive(Debug)))]
+#[ivo_schema(input(DataInput), output(Data, derive(Debug, PartialEq)))]
 mod data_schema {
     #[allow(dead_code)]
     pub const DEFAULT_DEPENDENT: i32 = 1;
@@ -83,105 +60,126 @@ mod data_schema {
     }
 }
 
-// #[tokio::main]
-// async fn main() {
-//     should_not_update_if_resolver_was_run_at_creation().await;
-//     should_reject_update_if_resolver_was_run_during_prior_update().await;
-// }
+async fn timed() {
+    let timer = Instant::now();
 
-// async fn should_not_update_if_resolver_was_run_at_creation() {
-//     let lax_1 = "john-doe".to_string();
-//     let lax_1_input_value = Some(lax_1.clone());
+    let created = DataModel
+        .create(PartialDataInput::new().with_lax("lol".into()), ())
+        .unwrap();
 
-//     let (data, handle_success, _) = DataModel
-//         .create(
-//             PartialDataInput {
-//                 lax: None,
-//                 lax_1: lax_1_input_value,
-//             },
-//             (),
-//         )
-//         .ok()
-//         .unwrap();
+    let data = created.data.clone();
+    println!("\ncreated: {:#?}", data);
 
-//     println!("\ncreated: {:#?}", data);
+    println!("\nCreate duration: {:?}", timer.elapsed());
 
-//     assert_eq!(
-//         data,
-//         Data {
-//             dependent: DEFAULT_DEPENDENT,
-//             dependent_1: DEFAULT_DEPENDENT,
-//             lax: DEFAULT_LAX.to_string(),
-//             lax_1,
-//         }
-//     );
+    let _ = created.handle_success().await;
 
-//     handle_success().await;
+    println!("\nCreate duration handle_success: {:?}", timer.elapsed());
 
-//     let lax = "john-doe".to_string();
-//     let lax_input_value = Some(lax.clone());
+    let timer = Instant::now();
 
-//     let (data, handle_success, _) = DataModel
-//         .create(
-//             PartialDataInput {
-//                 lax: lax_input_value,
-//                 lax_1: None,
-//             },
-//             (),
-//         )
-//         // .await
-//         .ok()
-//         .unwrap();
+    let updated = DataModel
+        .update(data, PartialDataInput::new().with_lax("lolol".into()), ())
+        .unwrap();
+    println!("\nupdate: {:#?}", updated.data);
+    println!("\nUpdate duration: {:?}", timer.elapsed());
 
-//     println!("\ncreated: {:#?}", data);
+    let _ = updated.handle_success().await;
 
-//     let dependent = DEFAULT_DEPENDENT + 1;
+    println!("\nUpdate duration handle_success: {:?}", timer.elapsed());
+}
 
-//     assert_eq!(
-//         data,
-//         Data {
-//             dependent,
-//             dependent_1: dependent + 10,
-//             lax,
-//             lax_1: DEFAULT_LAX.to_string(),
-//         }
-//     );
+async fn should_not_update_if_resolver_was_run_at_creation() {
+    let lax_1 = "john-doe".to_string();
+    let lax_1_input_value = Some(lax_1.clone());
 
-//     handle_success().await;
+    let created = DataModel
+        .create(
+            PartialDataInput {
+                lax: None,
+                lax_1: lax_1_input_value,
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
 
-//     let lax = "john-doe".to_string();
-//     let lax_input_value = Some(lax.clone());
-//     let lax_1 = "jane-doe".to_string();
-//     let lax_1_input_value = Some(lax_1.clone());
+    println!("\ncreated: {:#?}", created.data);
 
-//     let (data, handle_success, _) = DataModel
-//         .create(
-//             PartialDataInput {
-//                 lax: lax_input_value,
-//                 lax_1: lax_1_input_value,
-//             },
-//             (),
-//         )
-//         // .await
-//         .ok()
-//         .unwrap();
+    assert_eq!(
+        created.data,
+        Data {
+            dependent: DEFAULT_DEPENDENT,
+            dependent_1: DEFAULT_DEPENDENT,
+            lax: DEFAULT_LAX.to_string(),
+            lax_1,
+        }
+    );
 
-//     println!("\ncreated: {:#?}", data);
+    created.handle_success().await;
 
-//     let dependent = DEFAULT_DEPENDENT + 1;
+    let lax = "john-doe".to_string();
+    let lax_input_value = Some(lax.clone());
 
-//     assert_eq!(
-//         data,
-//         Data {
-//             dependent,
-//             dependent_1: dependent + 10,
-//             lax,
-//             lax_1,
-//         }
-//     );
+    let created = DataModel
+        .create(
+            PartialDataInput {
+                lax: lax_input_value,
+                lax_1: None,
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
 
-//     handle_success().await;
-// }
+    println!("\ncreated: {:#?}", created.data);
+
+    let dependent = DEFAULT_DEPENDENT + 1;
+
+    assert_eq!(
+        created.data,
+        Data {
+            dependent,
+            dependent_1: dependent + 10,
+            lax,
+            lax_1: DEFAULT_LAX.to_string(),
+        }
+    );
+
+    created.handle_success().await;
+
+    let lax = "john-doe".to_string();
+    let lax_input_value = Some(lax.clone());
+    let lax_1 = "jane-doe".to_string();
+    let lax_1_input_value = Some(lax_1.clone());
+
+    let created = DataModel
+        .create(
+            PartialDataInput {
+                lax: lax_input_value,
+                lax_1: lax_1_input_value,
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    println!("\ncreated: {:#?}", created.data);
+
+    let dependent = DEFAULT_DEPENDENT + 1;
+
+    assert_eq!(
+        created.data,
+        Data {
+            dependent,
+            dependent_1: dependent + 10,
+            lax,
+            lax_1,
+        }
+    );
+
+    created.handle_success().await;
+}
 
 // async fn should_reject_update_if_resolver_was_run_during_prior_update() {
 //     let data = Data {
@@ -193,7 +191,7 @@ mod data_schema {
 
 //     let updated_lax = Some("jane-doe".to_string());
 
-//     let (updates, handle_success, _) = DataModel
+//     let updates = DataModel
 //         .update(
 //             data,
 //             PartialDataInput {
@@ -202,12 +200,11 @@ mod data_schema {
 //             },
 //             (),
 //         )
-//         // .await
 //         .ok()
 //         .unwrap();
 
 //     assert_eq!(
-//         updates,
+//         updates.data,
 //         PartialData {
 //             dependent: None,
 //             dependent_1: None,
@@ -216,32 +213,33 @@ mod data_schema {
 //         }
 //     );
 
-//     handle_success().await;
+//     let data = updates.data.clone();
 
-//     let data_1 = data.clone_with_updates(&updates);
+//     updates.handle_success().await;
 
-//     DataModel.delete(&data_1, ()).await;
+//     let data_1 = data.clone_with_updates(&data);
+
+//     DataModel.delete(&data_1, ());
 
 //     let updated_lax = Some("jane-doe".to_string());
 //     let updated_lax_1 = Some("james-doe".to_string());
 
-//     let (updates, handle_success, _) = DataModel
+//     let updates = DataModel
 //         .update(
-//             data,
+//             data_1,
 //             PartialDataInput {
 //                 lax: updated_lax.clone(),
 //                 lax_1: updated_lax_1.clone(),
 //             },
 //             (),
 //         )
-//         .await
 //         .ok()
 //         .unwrap();
 
 //     let dependent = Some(data.dependent + 1);
 
 //     assert_eq!(
-//         updates,
+//         updates.data,
 //         PartialData {
 //             dependent: dependent.clone(),
 //             dependent_1: dependent.map(|v| v + 10),
@@ -250,31 +248,32 @@ mod data_schema {
 //         }
 //     );
 
-//     handle_success().await;
+//     let data = updates.data.clone();
 
-//     let data_1 = data.clone_with_updates(&updates);
+//     updates.handle_success().await;
 
-//     DataModel.delete(&data_1, ()).await;
+//     let data_1 = data.clone_with_updates(&data);
+
+//     DataModel.delete(&data_1, ());
 
 //     let updated_lax = Some("jane-doe".to_string());
 
-//     let (updates, handle_success, _) = DataModel
+//     let updates = DataModel
 //         .update(
-//             data,
+//             data_1,
 //             PartialDataInput {
 //                 lax: updated_lax.clone(),
 //                 lax_1: None,
 //             },
 //             (),
 //         )
-//         .await
 //         .ok()
 //         .unwrap();
 
 //     let dependent = Some(data.dependent + 1);
 
 //     assert_eq!(
-//         updates,
+//         updates.data,
 //         PartialData {
 //             dependent: dependent.clone(),
 //             dependent_1: dependent.map(|v| v + 10),
@@ -283,9 +282,11 @@ mod data_schema {
 //         }
 //     );
 
-//     handle_success().await;
+//     let updated_data = updates.data.clone();
 
-//     let data = data.clone_with_updates(&updates);
+//     updates.handle_success().await;
 
-//     DataModel.delete(&data, ()).await;
+//     let data = data_1.clone_with_updates(&updated_data);
+
+//     DataModel.delete(&data, ());
 // }
