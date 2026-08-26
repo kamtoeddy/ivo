@@ -35,10 +35,7 @@ mod user_validation_schema {
         #[required]
         #[validate(async |name, _ctx, _opts| {
             if name.is_empty() {
-                Err(::ivo::FieldError {
-                    reason: String::from("name must not be empty"),
-                    metadata: None,
-                })
+                Err((String::from("name must not be empty"), None))
             } else {
                 Ok(Some(name))
             }
@@ -463,10 +460,7 @@ mod user_re_validate_schema {
         #[validate(async |name, _ctx, _opts| { Ok(Some(name)) })]
         #[re_validate(async |name, _ctx, _opts| {
             if name == "bad" {
-                Err(::ivo::FieldError {
-                    reason: String::from("name cannot be bad"),
-                    metadata: None,
-                })
+                Err((String::from("name cannot be bad"), None))
             } else {
                 Ok(Some(name))
             }
@@ -853,10 +847,7 @@ async fn smoke_model_on_failure_trigger() {
             #[required]
             #[validate(async |name, _ctx, _opts| {
                 if name.is_empty() {
-                    Err(::ivo::FieldError {
-                        reason: String::from("name must not be empty"),
-                        metadata: None,
-                    })
+                    Err((String::from("name must not be empty"), None))
                 } else {
                     Ok(Some(name))
                 }

@@ -43,9 +43,14 @@ pub async fn run_validator<T, Ctx, Opts, F, Metadata>(
 ) -> Result<Option<T>, FieldError<Metadata>>
 where
     Metadata: Clone,
-    F: AsyncFn(T, &Ctx, &Opts) -> Result<Option<T>, FieldError<Metadata>>,
+    F: AsyncFn(T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
 {
-    validator(value, ctx, opts).await
+    match validator(value, ctx, opts).await {
+        ::core::result::Result::Ok(v) => ::core::result::Result::Ok(v),
+        ::core::result::Result::Err((reason, metadata)) => {
+            ::core::result::Result::Err(FieldError { reason, metadata })
+        }
+    }
 }
 
 pub async fn run_boolean_resolver<Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, resolver: F) -> bool
@@ -97,9 +102,14 @@ pub fn run_validator_sync<T, Ctx, Opts, F, Metadata>(
 ) -> Result<Option<T>, FieldError<Metadata>>
 where
     Metadata: Clone,
-    F: FnOnce(T, &Ctx, &Opts) -> Result<Option<T>, FieldError<Metadata>>,
+    F: FnOnce(T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
 {
-    validator(value, ctx, opts)
+    match validator(value, ctx, opts) {
+        ::core::result::Result::Ok(v) => ::core::result::Result::Ok(v),
+        ::core::result::Result::Err((reason, metadata)) => {
+            ::core::result::Result::Err(FieldError { reason, metadata })
+        }
+    }
 }
 
 pub fn run_boolean_resolver_sync<Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, resolver: F) -> bool

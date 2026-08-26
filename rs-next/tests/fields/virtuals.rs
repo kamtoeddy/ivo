@@ -1355,10 +1355,7 @@ mod sync_primary_validation_schema {
         #[validate(|v, _, _| {
             let validated = v.trim();
             if validated.len() < 2 {
-                return Err(::ivo::FieldError {
-                    reason: "expected virtual_field to be at least 2 characters long".into(),
-                    metadata: None,
-                });
+                return Err(("expected virtual_field to be at least 2 characters long".into(), None));
             }
             Ok(Some(validated.into()))
         })]
@@ -1381,10 +1378,7 @@ mod async_primary_validation_schema {
         #[validate(async |v, _, _| {
             let validated = v.trim();
             if validated.len() < 2 {
-                return Err(::ivo::FieldError {
-                    reason: "expected virtual_field to be at least 2 characters long".into(),
-                    metadata: None,
-                });
+                return Err(("expected virtual_field to be at least 2 characters long".into(), None));
             }
             Ok(Some(validated.into()))
         })]
@@ -1546,10 +1540,7 @@ mod sync_on_failure_schema {
         #[ivo_virtual]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                return Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                });
+                return Err(("validation failed".into(), None));
             }
             Ok(None)
         })]
@@ -1577,10 +1568,7 @@ mod async_on_failure_schema {
         #[ivo_virtual]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                return Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                });
+                return Err(("validation failed".into(), None));
             }
             Ok(None)
         })]

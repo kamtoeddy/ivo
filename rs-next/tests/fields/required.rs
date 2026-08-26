@@ -2529,10 +2529,7 @@ mod sync_primary_validation_schema {
         #[validate(|v, _, _| {
             let validated = v.trim();
             if validated.len() < 2 {
-                Err(::ivo::FieldError {
-                    reason: "expected required to be at least 2 characters long".into(),
-                    metadata: None,
-                })
+                Err(("expected required to be at least 2 characters long".into(), None))
             } else {
                 Ok(Some(validated.into()))
             }
@@ -2548,10 +2545,7 @@ mod async_primary_validation_schema {
         #[validate(async |v, _, _| {
             let validated = v.trim();
             if validated.len() < 2 {
-                Err(::ivo::FieldError {
-                    reason: "expected required to be at least 2 characters long".into(),
-                    metadata: None,
-                })
+                Err(("expected required to be at least 2 characters long".into(), None))
             } else {
                 Ok(Some(validated.into()))
             }
@@ -2573,10 +2567,7 @@ mod sync_update_primary_validation_schema {
         #[validate(|v, _, _| {
             const REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 1..=5;
             if !REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(::ivo::FieldError {
-                    reason: "required must be between 1 & 5 inclusive".into(),
-                    metadata: None,
-                })
+                Err(("required must be between 1 & 5 inclusive".into(), None))
             } else {
                 Ok(None)
             }
@@ -2598,10 +2589,7 @@ mod async_update_primary_validation_schema {
         #[validate(async |v, _, _| {
             const REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 1..=5;
             if !REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(::ivo::FieldError {
-                    reason: "required must be between 1 & 5 inclusive".into(),
-                    metadata: None,
-                })
+                Err(("required must be between 1 & 5 inclusive".into(), None))
             } else {
                 Ok(None)
             }
@@ -2635,20 +2623,14 @@ mod sync_re_validation_schema {
         #[validate(|v, _, _| {
             let validated = v.trim();
             if validated.len() < 2 {
-                Err(::ivo::FieldError {
-                    reason: "expected required to be at least 2 characters long".into(),
-                    metadata: None,
-                })
+                Err(("expected required to be at least 2 characters long".into(), None))
             } else {
                 Ok(Some(validated.into()))
             }
         })]
         #[re_validate(|v, _, _| {
             if v.len() < 4 {
-                Err(::ivo::FieldError {
-                    reason: "expected required to be at least 4 characters long".into(),
-                    metadata: None,
-                })
+                Err(("expected required to be at least 4 characters long".into(), None))
             } else {
                 Ok(None)
             }
@@ -2664,20 +2646,14 @@ mod async_re_validation_schema {
         #[validate(async |v, _, _| {
             let validated = v.trim();
             if validated.len() < 2 {
-                Err(::ivo::FieldError {
-                    reason: "expected required to be at least 2 characters long".into(),
-                    metadata: None,
-                })
+                Err(("expected required to be at least 2 characters long".into(), None))
             } else {
                 Ok(Some(validated.into()))
             }
         })]
         #[re_validate(async |v, _, _| {
             if v.len() < 4 {
-                Err(::ivo::FieldError {
-                    reason: "expected required to be at least 4 characters long".into(),
-                    metadata: None,
-                })
+                Err(("expected required to be at least 4 characters long".into(), None))
             } else {
                 Ok(None)
             }
@@ -2699,10 +2675,7 @@ mod sync_update_re_validation_schema {
         #[validate(|v, _, _| {
             const REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 1..=50;
             if !REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(::ivo::FieldError {
-                    reason: "required must be between 1 & 50 inclusive".into(),
-                    metadata: None,
-                })
+                Err(("required must be between 1 & 50 inclusive".into(), None))
             } else {
                 Ok(None)
             }
@@ -2710,10 +2683,7 @@ mod sync_update_re_validation_schema {
         #[re_validate(|v, _, _| {
             const REVALIDATED_REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 10..=35;
             if !REVALIDATED_REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(::ivo::FieldError {
-                    reason: "revalidated required must be between 10 & 35 inclusive".into(),
-                    metadata: None,
-                })
+                Err(("revalidated required must be between 10 & 35 inclusive".into(), None))
             } else {
                 Ok(None)
             }
@@ -2735,10 +2705,7 @@ mod async_update_re_validation_schema {
         #[validate(async |v, _, _| {
             const REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 1..=50;
             if !REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(::ivo::FieldError {
-                    reason: "required must be between 1 & 50 inclusive".into(),
-                    metadata: None,
-                })
+                Err(("required must be between 1 & 50 inclusive".into(), None))
             } else {
                 Ok(None)
             }
@@ -2746,10 +2713,7 @@ mod async_update_re_validation_schema {
         #[re_validate(async |v, _, _| {
             const REVALIDATED_REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 10..=35;
             if !REVALIDATED_REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(::ivo::FieldError {
-                    reason: "revalidated required must be between 10 & 35 inclusive".into(),
-                    metadata: None,
-                })
+                Err(("revalidated required must be between 10 & 35 inclusive".into(), None))
             } else {
                 Ok(None)
             }
@@ -2920,10 +2884,7 @@ mod sync_on_failure_creation_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -2944,10 +2905,7 @@ mod async_on_failure_creation_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -2968,10 +2926,7 @@ mod sync_on_failure_update_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -2992,10 +2947,7 @@ mod async_on_failure_update_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3016,10 +2968,7 @@ mod sync_on_failure_ignored_update_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3036,10 +2985,7 @@ mod sync_on_failure_ignored_update_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3054,10 +3000,7 @@ mod async_on_failure_ignored_update_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3074,10 +3017,7 @@ mod async_on_failure_ignored_update_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3092,10 +3032,7 @@ mod sync_on_failure_readonly_update_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3112,10 +3049,7 @@ mod sync_on_failure_readonly_update_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3130,10 +3064,7 @@ mod async_on_failure_readonly_update_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3150,10 +3081,7 @@ mod async_on_failure_readonly_update_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3168,10 +3096,7 @@ mod sync_on_success_creation_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3187,10 +3112,7 @@ mod sync_on_success_creation_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3205,10 +3127,7 @@ mod async_on_success_creation_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3224,10 +3143,7 @@ mod async_on_success_creation_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3242,10 +3158,7 @@ mod sync_on_success_update_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3261,10 +3174,7 @@ mod sync_on_success_update_schema {
         #[required]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3279,10 +3189,7 @@ mod async_on_success_update_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }
@@ -3298,10 +3205,7 @@ mod async_on_success_update_schema {
         #[required]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
-                Err(::ivo::FieldError {
-                    reason: "validation failed".into(),
-                    metadata: None,
-                })
+                Err(("validation failed".into(), None))
             } else {
                 Ok(None)
             }

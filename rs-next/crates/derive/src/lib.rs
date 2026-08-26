@@ -2018,7 +2018,7 @@ fn generate_model(
         } else {
             (
                 false,
-                quote! { (#annotated)(#value_expr, #ctx_expr, #opts_expr) },
+                quote! { ::ivo::run_validator_sync(#value_expr, #ctx_expr, #opts_expr, #annotated) },
             )
         }
     };
@@ -2041,7 +2041,7 @@ fn generate_model(
         } else {
             (
                 false,
-                quote! { (#annotated)(#value_expr, #ctx_expr, #opts_expr) },
+                quote! { ::ivo::run_validator_sync(#value_expr, #ctx_expr, #opts_expr, #annotated) },
             )
         }
     };
