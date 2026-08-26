@@ -440,13 +440,15 @@ where
 /// this operation. If all captured handlers are synchronous (or there are none),
 /// `handle_success` is synchronous. If any captured handler is asynchronous,
 /// `handle_success` is asynchronous.
-pub struct IvoSuccessHandle<O, CtxOptions, const ASYNC: bool> {
+pub struct IvoSuccessHandle<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> {
     output: O,
     ctx_options: IvoCtxOptions<CtxOptions>,
     trigger: IvoTriggerFn,
 }
 
-impl<O, CtxOptions, const ASYNC: bool> IvoSuccessHandle<O, CtxOptions, ASYNC> {
+impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool>
+    IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
+{
     pub fn new(output: O, ctx_options: IvoCtxOptions<CtxOptions>, trigger: IvoTriggerFn) -> Self {
         Self {
             output,
@@ -483,7 +485,7 @@ impl<O, CtxOptions, const ASYNC: bool> IvoSuccessHandle<O, CtxOptions, ASYNC> {
     }
 }
 
-impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, false> {
+impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, false, true> {
     pub fn handle_success(self) {
         match self.trigger {
             IvoTriggerFn::Sync(f) => f(),
@@ -492,7 +494,7 @@ impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, false> {
     }
 }
 
-impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, true> {
+impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, true, true> {
     pub async fn handle_success(self) {
         match self.trigger {
             IvoTriggerFn::Async(t) => t.await,
@@ -501,7 +503,9 @@ impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, true> {
     }
 }
 
-impl<O, CtxOptions, const ASYNC: bool> std::ops::Deref for IvoSuccessHandle<O, CtxOptions, ASYNC> {
+impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> std::ops::Deref
+    for IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
+{
     type Target = O;
 
     fn deref(&self) -> &Self::Target {
@@ -509,16 +513,16 @@ impl<O, CtxOptions, const ASYNC: bool> std::ops::Deref for IvoSuccessHandle<O, C
     }
 }
 
-impl<O, CtxOptions, const ASYNC: bool> std::ops::DerefMut
-    for IvoSuccessHandle<O, CtxOptions, ASYNC>
+impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> std::ops::DerefMut
+    for IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.output
     }
 }
 
-impl<O: fmt::Debug, CtxOptions, const ASYNC: bool> fmt::Debug
-    for IvoSuccessHandle<O, CtxOptions, ASYNC>
+impl<O: fmt::Debug, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> fmt::Debug
+    for IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("IvoSuccessHandle")

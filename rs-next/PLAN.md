@@ -170,6 +170,7 @@ Generate only the phases needed for the schema:
 - Determine if `create`/`update` are sync or async based on directly-invoked handlers.
 - Generate `delete` only when at least one `on_delete` handler exists; determine if it is sync or async based on those handlers.
 - Determine trigger sync/async based on `on_success` / `on_failure` handlers.
+- Expose `handle_success` on `IvoSuccessHandle` only when `on_success` handlers exist; otherwise omit the method.
 - Expose `handle_failure` on `IvoFailureHandle` only when `on_failure` handlers exist; otherwise omit the method.
 
 ### 5.3 Handler triggers
@@ -179,6 +180,7 @@ Return `impl FnOnce()` triggers:
 - Sync trigger returns `()`.
 - Async trigger returns `impl Future<Output = ()>`.
 - No-op trigger when no handlers exist.
+- `IvoSuccessHandle` only provides `handle_success` when the schema has `on_success` handlers.
 - `IvoFailureHandle` only provides `handle_failure` when the schema has `on_failure` handlers.
 
 ### 5.4 Return types
