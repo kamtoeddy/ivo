@@ -13,7 +13,6 @@ async fn main() {
 
 #[ivo_schema(input(DataInput), output(Data, derive(Debug, PartialEq)))]
 mod data_schema {
-    #[allow(dead_code)]
     pub const DEFAULT_DEPENDENT: i32 = 1;
     pub const DEFAULT_LAX: &str = "default-lax";
 

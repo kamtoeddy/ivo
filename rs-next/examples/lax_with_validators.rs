@@ -4,13 +4,10 @@ const MIN_USERNAME_LEN: usize = 4;
 
 fn main() {
     let username = "n".repeat(MIN_USERNAME_LEN - 1);
-    let username_input_value = Some(username.clone());
 
     let failed = data_schema::DataModel
         .create(
-            data_schema::PartialData {
-                username: username_input_value,
-            },
+            data_schema::PartialData::new().with_username(username.clone()),
             (),
         )
         .err()

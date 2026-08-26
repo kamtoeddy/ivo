@@ -10,13 +10,10 @@ fn main() {
 
 fn should_not_update_if_resolver_was_run_at_creation() {
     let username = "john-doe".to_string();
-    let username_input_value = Some(username.clone());
 
     let created = data_schema::DataModel
         .create(
-            data_schema::PartialDataInput {
-                username: username_input_value,
-            },
+            data_schema::PartialDataInput::new().with_username(username.clone()),
             (),
         )
         .ok()
@@ -74,7 +71,7 @@ fn should_not_update_if_resolver_was_run_at_creation() {
 
 fn should_reject_update_if_resolver_was_run_during_prior_update() {
     let created = data_schema::DataModel
-        .create(data_schema::PartialDataInput { username: None }, ())
+        .create(data_schema::PartialDataInput::new(), ())
         .ok()
         .unwrap();
 

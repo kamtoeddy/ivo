@@ -17,7 +17,7 @@ macro_rules! should_properly_create_and_update {
 
         let username = "john-doe".to_string();
 
-        let created = $module::DataModel
+        let created = DataModel
             .create(
                 DataInput {
                     username: username.clone(),
@@ -32,18 +32,18 @@ macro_rules! should_properly_create_and_update {
             created.data,
             Data {
                 id: CONSTANT_VALUE,
-                username: username.clone(),
+                username,
             }
         );
 
         let data = created.data.clone();
         created.handle_success();
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
 
         let username = "jane-doe".to_string();
 
-        let updated = $module::DataModel
+        let updated = DataModel
             .update(
                 data.clone(),
                 PartialDataInput {
@@ -68,7 +68,7 @@ macro_rules! should_properly_create_and_update {
 
         let data = data.clone_with_updates(&updated_data);
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
     }};
 }
 

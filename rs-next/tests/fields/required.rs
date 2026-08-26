@@ -505,10 +505,6 @@ async_test_matrix!(should_properly_use_input_values_as_output_values_if_validato
 
 #[test]
 fn should_not_create_if_re_validation_fails() {
-    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
-    const MIN_REVALIDATION_LENGTH_ERROR: &str =
-        "expected required to be at least 4 characters long";
-
     let required_values = [
         String::from(" 111"),
         String::from(" 11 "),
@@ -527,7 +523,7 @@ fn should_not_create_if_re_validation_fails() {
         let errors = result.unwrap_err();
         assert_eq!(
             errors.errors.get("required").unwrap().reason,
-            MIN_REVALIDATION_LENGTH_ERROR
+            sync_re_validation_schema::MIN_REVALIDATION_LENGTH_ERROR
         );
     }
 
@@ -549,10 +545,6 @@ fn should_not_create_if_re_validation_fails() {
 }
 
 async fn should_not_create_if_re_validation_fails_async() {
-    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
-    const MIN_REVALIDATION_LENGTH_ERROR: &str =
-        "expected required to be at least 4 characters long";
-
     let required_values = [
         String::from(" 111"),
         String::from(" 11 "),
@@ -573,7 +565,7 @@ async fn should_not_create_if_re_validation_fails_async() {
         let errors = result.unwrap_err();
         assert_eq!(
             errors.errors.get("required").unwrap().reason,
-            MIN_REVALIDATION_LENGTH_ERROR
+            async_re_validation_schema::MIN_REVALIDATION_LENGTH_ERROR
         );
     }
 
@@ -599,16 +591,9 @@ async_test_matrix!(should_not_create_if_re_validation_fails_async);
 
 #[test]
 fn should_not_update_if_re_validation_fails() {
-    use std::ops::RangeInclusive;
+    use sync_update_re_validation_schema::*;
 
-    const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 50 inclusive";
-    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=50;
-
-    const REVALIDATED_OUT_OF_RANGE_ERROR: &str =
-        "revalidated required must be between 10 & 35 inclusive";
-    const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
-
-    let data = sync_update_re_validation_schema::Data {
+    let data = Data {
         id: 1,
         required: 20,
     };
@@ -619,11 +604,9 @@ fn should_not_update_if_re_validation_fails() {
     ];
 
     for required_value in required_values {
-        let result = sync_update_re_validation_schema::DataModel.update(
+        let result = DataModel.update(
             data.clone(),
-            sync_update_re_validation_schema::PartialDataInput {
-                required: Some(required_value),
-            },
+            PartialDataInput::new().with_required(required_value),
             (),
         );
 
@@ -645,12 +628,10 @@ fn should_not_update_if_re_validation_fails() {
             continue;
         }
 
-        let updated = sync_update_re_validation_schema::DataModel
+        let updated = DataModel
             .update(
                 data.clone(),
-                sync_update_re_validation_schema::PartialDataInput {
-                    required: Some(updated_value),
-                },
+                PartialDataInput::new().with_required(updated_value),
                 (),
             )
             .ok()
@@ -658,7 +639,7 @@ fn should_not_update_if_re_validation_fails() {
 
         assert_eq!(
             updated.data,
-            sync_update_re_validation_schema::PartialData {
+            PartialData {
                 id: None,
                 required: Some(updated_value),
             }
@@ -667,16 +648,9 @@ fn should_not_update_if_re_validation_fails() {
 }
 
 async fn should_not_update_if_re_validation_fails_async() {
-    use std::ops::RangeInclusive;
+    use async_update_re_validation_schema::*;
 
-    const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 50 inclusive";
-    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=50;
-
-    const REVALIDATED_OUT_OF_RANGE_ERROR: &str =
-        "revalidated required must be between 10 & 35 inclusive";
-    const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
-
-    let data = async_update_re_validation_schema::Data {
+    let data = Data {
         id: 1,
         required: 20,
     };
@@ -690,9 +664,7 @@ async fn should_not_update_if_re_validation_fails_async() {
         let result = async_update_re_validation_schema::DataModel
             .update(
                 data.clone(),
-                async_update_re_validation_schema::PartialDataInput {
-                    required: Some(required_value),
-                },
+                PartialDataInput::new().with_required(required_value),
                 (),
             )
             .await;
@@ -715,12 +687,10 @@ async fn should_not_update_if_re_validation_fails_async() {
             continue;
         }
 
-        let updated = async_update_re_validation_schema::DataModel
+        let updated = DataModel
             .update(
                 data.clone(),
-                async_update_re_validation_schema::PartialDataInput {
-                    required: Some(updated_value),
-                },
+                PartialDataInput::new().with_required(updated_value),
                 (),
             )
             .await
@@ -729,7 +699,7 @@ async fn should_not_update_if_re_validation_fails_async() {
 
         assert_eq!(
             updated.data,
-            async_update_re_validation_schema::PartialData {
+            PartialData {
                 id: None,
                 required: Some(updated_value),
             }
@@ -2750,19 +2720,23 @@ mod async_pass_through_validation_schema {
 
 #[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
 mod sync_re_validation_schema {
+    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
+    pub const MIN_REVALIDATION_LENGTH_ERROR: &str =
+        "expected required to be at least 4 characters long";
+
     struct Fields {
         #[required]
         #[validate(|v, _, _| {
             let validated = v.trim();
             if validated.len() < 2 {
-                Err(("expected required to be at least 2 characters long".into(), None))
+                Err((MIN_LENGTH_ERROR.into(), None))
             } else {
                 Ok(Some(validated.into()))
             }
         })]
         #[re_validate(|v, _, _| {
             if v.len() < 4 {
-                Err(("expected required to be at least 4 characters long".into(), None))
+                Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None))
             } else {
                 Ok(None)
             }
@@ -2773,19 +2747,23 @@ mod sync_re_validation_schema {
 
 #[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
 mod async_re_validation_schema {
+    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
+    pub const MIN_REVALIDATION_LENGTH_ERROR: &str =
+        "expected required to be at least 4 characters long";
+
     struct Fields {
         #[required]
         #[validate(async |v, _, _| {
             let validated = v.trim();
             if validated.len() < 2 {
-                Err(("expected required to be at least 2 characters long".into(), None))
+                Err((MIN_LENGTH_ERROR.into(), None))
             } else {
                 Ok(Some(validated.into()))
             }
         })]
         #[re_validate(async |v, _, _| {
             if v.len() < 4 {
-                Err(("expected required to be at least 4 characters long".into(), None))
+                Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None))
             } else {
                 Ok(None)
             }
@@ -2799,23 +2777,31 @@ mod async_re_validation_schema {
     output(Data, derive(Debug, Clone, PartialEq))
 )]
 mod sync_update_re_validation_schema {
+    use std::ops::RangeInclusive;
+
+    const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 50 inclusive";
+    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=50;
+
+    pub const REVALIDATED_OUT_OF_RANGE_ERROR: &str =
+        "revalidated required must be between 10 & 35 inclusive";
+    pub const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
+
     struct Fields {
         #[constant(1)]
         pub id: i32,
 
         #[required]
         #[validate(|v, _, _| {
-            const REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 1..=50;
+
             if !REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(("required must be between 1 & 50 inclusive".into(), None))
+                Err((OUT_OF_RANGE_ERROR.into(), None))
             } else {
                 Ok(None)
             }
         })]
         #[re_validate(|v, _, _| {
-            const REVALIDATED_REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 10..=35;
             if !REVALIDATED_REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(("revalidated required must be between 10 & 35 inclusive".into(), None))
+                Err((REVALIDATED_OUT_OF_RANGE_ERROR.into(), None))
             } else {
                 Ok(None)
             }
@@ -2829,23 +2815,30 @@ mod sync_update_re_validation_schema {
     output(Data, derive(Debug, Clone, PartialEq))
 )]
 mod async_update_re_validation_schema {
+    use std::ops::RangeInclusive;
+
+    const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 50 inclusive";
+    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=50;
+
+    pub const REVALIDATED_OUT_OF_RANGE_ERROR: &str =
+        "revalidated required must be between 10 & 35 inclusive";
+    pub const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
+
     struct Fields {
         #[constant(1)]
         pub id: i32,
 
         #[required]
         #[validate(async |v, _, _| {
-            const REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 1..=50;
             if !REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(("required must be between 1 & 50 inclusive".into(), None))
+                Err((OUT_OF_RANGE_ERROR.into(), None))
             } else {
                 Ok(None)
             }
         })]
         #[re_validate(async |v, _, _| {
-            const REVALIDATED_REQUIRED_VALUE_RANGE: std::ops::RangeInclusive<i32> = 10..=35;
             if !REVALIDATED_REQUIRED_VALUE_RANGE.contains(&v) {
-                Err(("revalidated required must be between 10 & 35 inclusive".into(), None))
+                Err((REVALIDATED_OUT_OF_RANGE_ERROR.into(), None))
             } else {
                 Ok(None)
             }

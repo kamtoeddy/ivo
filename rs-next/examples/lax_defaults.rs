@@ -6,10 +6,7 @@ macro_rules! should_properly_create_and_update {
     ($module:ident) => {{
         use $module::*;
 
-        let created = $module::DataModel
-            .create(PartialData { username: None }, ())
-            .ok()
-            .unwrap();
+        let created = DataModel.create(PartialData::new(), ()).ok().unwrap();
 
         println!("\ncreated: {:#?}", created.data);
 
@@ -23,11 +20,11 @@ macro_rules! should_properly_create_and_update {
         let data = created.data.clone();
         created.handle_success();
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
 
         let updated_username = Some("jane-doe".to_string());
 
-        let updated = $module::DataModel
+        let updated = DataModel
             .update(
                 data.clone(),
                 PartialData {
@@ -52,7 +49,7 @@ macro_rules! should_properly_create_and_update {
 
         let data = data.clone_with_updates(&updates_data);
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
     }};
 }
 

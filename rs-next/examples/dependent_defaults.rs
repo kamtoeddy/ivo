@@ -8,7 +8,7 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
     ($module:ident) => {{
         use $module::*;
 
-        let created = $module::DataModel
+        let created = DataModel
             .create(
                 PartialDataInput {
                     lax: None,
@@ -35,11 +35,11 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
         let data = created.data.clone();
         created.handle_success();
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
 
         let unrelated_lax = DEFAULT_LAX_VALUE + 1;
 
-        let created = $module::DataModel
+        let created = DataModel
             .create(
                 PartialDataInput {
                     lax: None,
@@ -66,11 +66,11 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
         let data = created.data.clone();
         created.handle_success();
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
 
         let lax = DEFAULT_LAX_VALUE + 1;
 
-        let created = $module::DataModel
+        let created = DataModel
             .create(
                 PartialDataInput {
                     lax: Some(lax),
@@ -97,11 +97,11 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
         let data = created.data.clone();
         created.handle_success();
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
 
         let username = "john-doe".to_string();
 
-        let created = $module::DataModel
+        let created = DataModel
             .create(
                 PartialDataInput {
                     lax: None,
@@ -128,13 +128,13 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
         let data = created.data.clone();
         created.handle_success();
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
 
         let lax = DEFAULT_LAX_VALUE + 1;
         let unrelated_lax = DEFAULT_LAX_VALUE + 100;
         let username = "john-doe".to_string();
 
-        let created = $module::DataModel
+        let created = DataModel
             .create(
                 PartialDataInput {
                     lax: Some(lax),
@@ -161,7 +161,7 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
         let data = created.data.clone();
         created.handle_success();
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
     }};
 }
 
@@ -178,7 +178,7 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_during_updates {
 
         let updated_username = Some("jane-doe".to_string());
 
-        let updates = $module::DataModel
+        let updates = DataModel
             .update(
                 data.clone(),
                 PartialDataInput {
@@ -208,7 +208,7 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_during_updates {
 
         let data = data.clone_with_updates(&updates_data);
 
-        $module::DataModel.delete(&data, ());
+        DataModel.delete(&data, ());
     }};
 }
 

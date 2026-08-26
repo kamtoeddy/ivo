@@ -4,7 +4,7 @@ const DEFAULT_USERNAME: &str = "DEFAULT_USERNAME";
 
 fn main() {
     let created = data_schema::DataModel
-        .create(data_schema::PartialData { username: None }, ())
+        .create(data_schema::PartialData::new(), ())
         .ok()
         .unwrap();
 
@@ -73,7 +73,6 @@ fn main() {
 mod data_schema {
     struct Fields {
         #[lax(crate::DEFAULT_USERNAME.to_string())]
-        #[validate(|_, _, _| Ok(None::<String>))]
         #[readonly]
         #[on_success(|ctx, _| {
             println!("\n[on_success]: username = {}", ctx.values().username);
