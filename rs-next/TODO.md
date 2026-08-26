@@ -30,9 +30,9 @@
 
 ## Other
 
-- [ ] Allow field-level `#[ignore]` and grouped `#[ignore([...], ...)]` to reference the same field.
-- [ ] Allow `#[ignore(...)]` + `#[required(...)]` on the same `lax` / `virtual` field; evaluate independently.
-- [ ] All hints are delivered as compile-error messages (no stable Rust warnings).
+- [x] Allow field-level `#[ignore]` and grouped `#[ignore([...], ...)]` to reference the same field.
+- [x] Allow `#[ignore(...)]` + `#[required(...)]` on the same `lax` / `virtual` field; evaluate independently.
+- [x] All hints are delivered as compile-error messages (no stable Rust warnings).
 
 # Recently completed
 

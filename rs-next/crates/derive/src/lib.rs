@@ -4491,6 +4491,47 @@ mod tests {
     }
 
     #[test]
+    fn accepts_ignore_with_required_on_lax_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[ignore(|_, _| false)]
+                        #[required(|_, _| None)]
+                        pub role: String,
+                    }
+                }
+                "#,
+        );
+        assert_no_compile_error(&out, "ignore with required on lax");
+    }
+
+    #[test]
+    fn accepts_field_level_ignore_with_grouped_ignore() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[lax(String::from("default"))]
+                        #[ignore(|_, _| false)]
+                        pub role: String,
+
+                        #[lax(String::from("default"))]
+                        pub other: String,
+                    }
+
+                    #[ignore(["role", "other"], |_, _| false)]
+                    const _: () = ();
+                }
+                "#,
+        );
+        assert_no_compile_error(&out, "field-level ignore with grouped ignore");
+    }
+
+    #[test]
     fn accepts_ignore_init_plus_resolved_ignore_update_on_lax_field() {
         let out = expand(
             "input(User)",
