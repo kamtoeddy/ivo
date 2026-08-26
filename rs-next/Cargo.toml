@@ -80,3 +80,11 @@ path = "examples/lax_required.rs"
 [[example]]
 name = "lax_with_ignore"
 path = "examples/lax_with_ignore.rs"
+
+[[example]]
+name = "lax_with_ignore_init"
+path = "examples/lax_with_ignore_init.rs"
+
+[[example]]
+name = "lax_with_ignore_update"
+path = "examples/lax_with_ignore_update.rs"

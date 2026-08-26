@@ -1,7 +1,19 @@
-- [x] Implement the “nothing to update” distinction for `Model.update`: update failures return `IvoFailureHandle<Option<Payload>, ...>` where `errors: Some(payload)` means validation failed and `errors: None` means the update would not change any output field.
-- [x] Fix the readonly/nothing-to-update bug: a provided update field that is blocked by `#[readonly]` now counts as an attempted update, so an update with no resulting output changes returns `errors: None` instead of `Ok(empty)`.
-- [x] Fix `#[ignore]` semantics: field-level and grouped `#[ignore]` now apply to both create and update (matching the old builder API). `#[ignore_init]` remains create-only and `#[ignore_update]` remains update-only.
-- [x] Update all test call sites that inspect update error payloads to work with `Option<Payload>`.
-- [x] Port `examples/lax_defaults.rs`, `examples/lax_with_validators.rs`, `examples/lax_readonly.rs`, `examples/lax_required.rs`, and `examples/lax_with_ignore.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
-- [x] Document the Ivo data-flow philosophy and update-failure semantics in `GOAL.md` and `PLAN.md`.
-- [x] Ensure all handlers expect `Fn` closures rather than `FnOnce` because they may be invoked multiple times.
+also add rules so that:
+
+- [ ] `ignore + (ignore_init/ignore_update)` should be rejected
+- [ ] `#[ignore_init] + #[ignore_update]` should be rejected
+- [ ] `#[ignore_init(||resolver)]` + `#[ignore_update]` or `#[ignore_init]` + `#[ignore_update(||resolver)]` should be allowed for lax and virtual fields.
+- [ ] `#[ignore_init(||resolver)]` + `#[ignore_update(||resolver)]` should warn and hint to use `#[ignore(||resolver)]` instead (is this feasible)?
+- [ ] Required fields:
+  - [ ] `[readonly]` is allowed to prevent any further updates to that required field
+  - [ ] `[ignore_update(||resolver)]` is allowed.
+  - [ ] `[readonly]` + `[ignore_update(||resolver)]` should be rejected.
+  - [ ] they cannot have `ignore`, `ignore_init` or `ignore_init(||resolver)` or `#[ignore_update]`;
+  - [ ] if `#[ignore_update]` is provided, reject and hint for `[readonly]` to be used instead (is this feasible)?
+
+recently completed:
+
+- [x] Port `examples/lax_with_ignore_init.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
+- [x] Port `examples/lax_with_ignore_update.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
+- [x] Reconcile `#[ignore]` / `#[ignore_update]` semantics: field-level `#[ignore]` (bare or with a resolver) applies to both create and update on `#[lax]` / `#[ivo_virtual]` fields; `#[ignore_init]` is create-only; `#[ignore_update]` is update-only. Bare `#[ignore]` / `#[ignore_update]` mean "always ignore"; resolver forms are evaluated at runtime.
+- [x] Fix unconditional ignore-update flag bug that treated every `#[ignore_update(...)]` field as bare/always-ignore.

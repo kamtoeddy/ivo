@@ -446,11 +446,11 @@ async fn smoke_model_field_ignore_update() {
     };
     let mut updates = user_field_ignore_update_schema::PartialUser::new();
     updates.set_role("user".to_string());
-    let updated = user_field_ignore_update_schema::UserModel
+    let failed = user_field_ignore_update_schema::UserModel
         .update(existing, updates, ())
+        .err()
         .unwrap();
-    assert!(updated.data.role.is_none());
-    assert!(updated.data.is_empty());
+    assert!(failed.errors.is_none());
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
@@ -643,11 +643,11 @@ async fn smoke_model_grouped_ignore_update() {
     };
     let mut updates = user_grouped_ignore_update_schema::PartialUser::new();
     updates.set_role("user".to_string());
-    let updated = user_grouped_ignore_update_schema::UserModel
+    let failed = user_grouped_ignore_update_schema::UserModel
         .update(existing, updates, ())
+        .err()
         .unwrap();
-    assert!(updated.data.role.is_none());
-    assert!(updated.data.is_empty());
+    assert!(failed.errors.is_none());
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq), derive_partial(Debug)))]

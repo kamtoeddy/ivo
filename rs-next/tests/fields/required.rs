@@ -923,7 +923,7 @@ fn should_respect_the_ignore_update_rule() {
 
     let required = required + 2;
 
-    let updated = sync_ignore_update_schema::DataModel
+    let failed = sync_ignore_update_schema::DataModel
         .update(
             created.data.clone(),
             sync_ignore_update_schema::PartialData {
@@ -932,16 +932,10 @@ fn should_respect_the_ignore_update_rule() {
             },
             (),
         )
-        .ok()
+        .err()
         .unwrap();
 
-    assert_eq!(
-        updated.data,
-        sync_ignore_update_schema::PartialData {
-            lax: None,
-            required: None
-        }
-    );
+    assert!(failed.errors.is_none());
 
     let data = sync_ignore_update_schema::Data {
         lax: "normal_lax_value".into(),
@@ -995,7 +989,7 @@ async fn should_respect_the_ignore_update_rule_async() {
 
     let required = required + 2;
 
-    let updated = async_ignore_update_schema::DataModel
+    let failed = async_ignore_update_schema::DataModel
         .update(
             created.data.clone(),
             async_ignore_update_schema::PartialData {
@@ -1005,16 +999,10 @@ async fn should_respect_the_ignore_update_rule_async() {
             (),
         )
         .await
-        .ok()
+        .err()
         .unwrap();
 
-    assert_eq!(
-        updated.data,
-        async_ignore_update_schema::PartialData {
-            lax: None,
-            required: None
-        }
-    );
+    assert!(failed.errors.is_none());
 
     let data = async_ignore_update_schema::Data {
         lax: "normal_lax_value".into(),

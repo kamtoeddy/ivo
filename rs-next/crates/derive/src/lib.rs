@@ -1927,6 +1927,36 @@ fn generate_model(
         })
         .collect();
 
+    // Bare `#[ignore]` / `#[ignore_update]` attributes (no resolver) mean "always ignore".
+    // Handled variants (`#[ignore(...)]` / `#[ignore_update(...)]`) are evaluated separately.
+    let bare_ignore_field_names: std::collections::HashSet<String> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. }))
+        .filter(|f| {
+            find_attr(&f.attrs, "ignore").is_some()
+                && attr_value_tokens(&f.attrs, "ignore").is_none()
+        })
+        .map(|f| f.name.to_string())
+        .collect();
+    let bare_ignore_update_field_names: std::collections::HashSet<String> = fields
+        .iter()
+        .filter(|f| {
+            matches!(
+                f.field_type,
+                FieldType::Required
+                    | FieldType::Lax
+                    | FieldType::Dependent
+                    | FieldType::CreatedAt
+                    | FieldType::UpdatedAt { .. }
+            )
+        })
+        .filter(|f| {
+            find_attr(&f.attrs, "ignore_update").is_some()
+                && attr_value_tokens(&f.attrs, "ignore_update").is_none()
+        })
+        .map(|f| f.name.to_string())
+        .collect();
+
     // Create method: sanitize/validate input fields, resolve dependents, and build output.
     // The create method accepts any type convertible to the partial input so that callers
     // may pass either the full input struct or a partial.
@@ -2122,6 +2152,9 @@ fn generate_model(
     for name in &field_ignore_init {
         ignore_field_names.insert(name.clone());
     }
+    for name in &bare_ignore_field_names {
+        ignore_field_names.insert(name.clone());
+    }
 
     let ignore_flag_decls = ignore_field_names.iter().map(|name| {
         let flag = format_ident!("ignore_{}", name);
@@ -2178,6 +2211,11 @@ fn generate_model(
     let field_ignore_evaluations = field_ignore_pairs.into_iter().map(|(_, stmt)| stmt);
 
     let ignore_init_assignments = field_ignore_init.iter().map(|name| {
+        let flag = format_ident!("ignore_{}", name);
+        quote! { #flag = true; }
+    });
+
+    let bare_ignore_assignments = bare_ignore_field_names.iter().map(|name| {
         let flag = format_ident!("ignore_{}", name);
         quote! { #flag = true; }
     });
@@ -2864,6 +2902,13 @@ fn generate_model(
             .iter()
             .map(|(f, _)| f.name.to_string())
             .collect();
+    // Bare `#[ignore_update]` and bare `#[ignore]` (on lax/virtual fields) apply to updates.
+    for name in &bare_ignore_update_field_names {
+        update_ignore_field_names.insert(name.clone());
+    }
+    for name in &bare_ignore_field_names {
+        update_ignore_field_names.insert(name.clone());
+    }
     // Grouped `#[ignore(...)]` applies to updates as well as creates.
     for opt in &grouped_ignore_options {
         for field in &opt.fields {
@@ -2938,6 +2983,17 @@ fn generate_model(
         .into_iter()
         .chain(grouped_ignore_update_pairs)
         .map(|(_, stmt)| stmt);
+
+    let bare_ignore_update_names: std::collections::HashSet<String> =
+        bare_ignore_update_field_names
+            .iter()
+            .chain(bare_ignore_field_names.iter())
+            .cloned()
+            .collect();
+    let bare_ignore_update_assignments = bare_ignore_update_names.iter().map(|name| {
+        let flag = format_ident!("ignore_update_{}", name);
+        quote! { #flag = true; }
+    });
 
     // Conditional required checks for update (mirrors create logic but uses `updates`).
     let update_grouped_required_pairs: Vec<_> = options
@@ -3087,23 +3143,21 @@ fn generate_model(
                     };
 
                     let stmt = quote! {
-                        if !#ignore_update_flag {
-                            if let ::core::option::Option::Some(v) = &updates.#input_name {
-                                __update_attempted = true;
-                                if #readonly_guard {
-                                    let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                                        updates.clone(),
-                                        output.clone(),
-                                        __changes.clone(),
-                                        true,
-                                    );
-                                    let mut __field_valid = true;
-                                    let mut value: #ty_tokens = v.clone();
-                                    #sanitizer_expr
-                                    #validator_assignment
-                                    if __field_valid && &value != &__original_output.#name {
-                                        output.#name = value;
-                                    }
+                        if let ::core::option::Option::Some(v) = &updates.#input_name {
+                            __update_attempted = true;
+                            if !#ignore_update_flag && #readonly_guard {
+                                let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                                    updates.clone(),
+                                    output.clone(),
+                                    __changes.clone(),
+                                    true,
+                                );
+                                let mut __field_valid = true;
+                                let mut value: #ty_tokens = v.clone();
+                                #sanitizer_expr
+                                #validator_assignment
+                                if __field_valid && &value != &__original_output.#name {
+                                    output.#name = value;
                                 }
                             }
                         }
@@ -3207,9 +3261,9 @@ fn generate_model(
                     None => (false, resolver.clone()),
                 };
                 let stmt = quote! {
-                    if !#ignore_update_flag && #parent_guard {
+                    if #parent_guard {
                         __update_attempted = true;
-                        if #readonly_guard {
+                        if !#ignore_update_flag && #readonly_guard {
                             let __new_value: #ty = #resolver_expr;
                             if &__new_value != &__original_output.#name {
                                 output.#name = __new_value.clone();
@@ -3734,6 +3788,7 @@ fn generate_model(
                 #(#ignore_evaluations)*
                 #(#field_ignore_evaluations)*
                 #(#ignore_init_assignments)*
+                #(#bare_ignore_assignments)*
                 #(#required_evaluations)*
                 #(#required_field_checks)*
 
@@ -3794,6 +3849,7 @@ fn generate_model(
 
                 #(#update_ignore_flag_decls)*
                 #(#update_ignore_evaluations)*
+                #(#bare_ignore_update_assignments)*
                 #(#update_required_evaluations)*
 
                 #(#update_assignments)*
