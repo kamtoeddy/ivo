@@ -230,7 +230,7 @@ fn main() {
 mod data_schema {
     struct Fields {
         #[depends_on(lax)]
-        // #[default(crate::DEFAULT_DEPENDENT)]
+        #[default(crate::DEFAULT_DEPENDENT)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         #[on_success(|ctx, _| {
             println!("\n[on_success]: dependent = {}", ctx.values().dependent);

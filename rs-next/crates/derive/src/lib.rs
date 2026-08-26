@@ -947,6 +947,20 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
             }
         }
 
+        if matches!(f.field_type, FieldType::Dependent) {
+            let has_default = f.attrs.iter().any(|a| a.path().is_ident("default"));
+            let has_resolver = f.attrs.iter().any(|a| a.path().is_ident("resolve"));
+            if !has_default || !has_resolver {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: dependent fields must have `#[depends_on(...)]`, `#[default(...)]`, and `#[resolve(...)]`",
+                        f.name
+                    ),
+                ));
+            }
+        }
+
         if matches!(f.field_type, FieldType::Lax) {
             let lax_attr = f
                 .attrs
@@ -1816,6 +1830,19 @@ fn generate_model(
         }
     };
 
+    let make_default_value_expr =
+        |tokens: &proc_macro2::TokenStream| -> (bool, proc_macro2::TokenStream) {
+            match closure_input_count(tokens) {
+                Some(0) => (false, quote! { (#tokens)() }),
+                Some(_) => {
+                    let ctx_expr = quote!(ctx.clone());
+                    let opts_expr = quote!(&_rw_ctx_options);
+                    make_resolver_call(tokens, &ctx_expr, &opts_expr)
+                }
+                None => (false, tokens.clone()),
+            }
+        };
+
     let make_sanitizer_call = |handler: &proc_macro2::TokenStream,
                                value_ty: &proc_macro2::TokenStream,
                                value_expr: &proc_macro2::TokenStream,
@@ -2102,35 +2129,31 @@ fn generate_model(
                 quote! { false }
             };
 
-            let lax_default_expr = match &f.field_type {
-                FieldType::Lax => attr_value_tokens(&f.attrs, "lax").map(|t| {
-                    if is_closure(&t) {
-                        quote! { (#t)() }
-                    } else {
-                        t
-                    }
-                }),
-                _ => None,
+            let (lax_default_is_async, lax_default_expr) = match &f.field_type {
+                FieldType::Lax => attr_value_tokens(&f.attrs, "lax")
+                    .map(|t| make_default_value_expr(&t))
+                    .unwrap_or((false, quote! { ::core::default::Default::default() })),
+                _ => (false, quote! { ::core::default::Default::default() }),
             };
-            let default_expr = lax_default_expr
-                .unwrap_or_else(|| quote! { ::core::default::Default::default() });
 
             let mut field_is_async = false;
+            field_is_async |= lax_default_is_async;
 
             let base_value = match &f.field_type {
                 FieldType::Required | FieldType::Lax => {
                     let input_name_tokens = input_field_name(f);
                     quote! {
                         {
-                            let __maybe: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
+                            let __provided: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
                                 ::core::option::Option::None
                             } else {
                                 input.#input_name_tokens.clone()
                             };
-                            __maybe.unwrap_or_else(|| {
-                                let __default: #ty_tokens = #default_expr;
-                                __default
-                            })
+                            if let ::core::option::Option::Some(__v) = __provided {
+                                __v
+                            } else {
+                                #lax_default_expr
+                            }
                         }
                     }
                 }
@@ -2157,22 +2180,17 @@ fn generate_model(
                     }
                 }
                 FieldType::Dependent => {
-                    if let Some(resolver) = resolver {
+                    if let Some(resolver) = &resolver {
                         let ctx_expr = quote!(ctx.clone());
                         let opts_expr = quote!(&_rw_ctx_options);
-                        let (is_async, call) = make_resolver_call(&resolver, &ctx_expr, &opts_expr);
+                        let (is_async, call) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
                         field_is_async |= is_async;
                         call
                     } else {
-                        let default_expr = attr_value_tokens(&f.attrs, "default").map(|t| {
-                            if is_closure(&t) {
-                                quote! { (#t)() }
-                            } else {
-                                t
-                            }
-                        });
-                        let default_expr = default_expr
-                            .unwrap_or_else(|| quote! { ::core::default::Default::default() });
+                        let (default_is_async, default_expr) = attr_value_tokens(&f.attrs, "default")
+                            .map(|t| make_default_value_expr(&t))
+                            .unwrap_or((false, quote! { ::core::default::Default::default() }));
+                        field_is_async |= default_is_async;
                         quote! {
                             {
                                 let __default: #ty = #default_expr;
@@ -3495,6 +3513,7 @@ mod tests {
                         pub last_name: String,
 
                         #[depends_on(first_name, last_name)]
+                        #[default(String::from(""))]
                         #[resolve(|ctx, _opts| async move {
                             format!("{} {}", ctx.values().first_name, ctx.values().last_name)
                         })]
@@ -3504,6 +3523,28 @@ mod tests {
                 "#,
         );
         assert_no_compile_error(&out, "valid dependency chain");
+    }
+
+    #[test]
+    fn rejects_dependent_without_default_and_resolve() {
+        let out = expand(
+            "input(UserInput), output(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        pub first_name: String,
+
+                        #[required]
+                        pub last_name: String,
+
+                        #[depends_on(first_name, last_name)]
+                        pub full_name: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "dependent fields must have");
     }
 
     #[test]

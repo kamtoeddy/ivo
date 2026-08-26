@@ -161,6 +161,7 @@ mod user_sanitization_schema {
         pub email: String,
 
         #[depends_on(email)]
+        #[default(String::from(""))]
         #[resolve(|ctx, _opts| async move { ctx.input().raw_email.clone().unwrap() })]
         pub raw_email: String,
     }
@@ -193,6 +194,7 @@ mod user_dependent_schema {
         pub last_name: String,
 
         #[depends_on(first_name, last_name)]
+        #[default(String::from(""))]
         #[resolve(|ctx, _opts| async move {
             format!("{} {}", ctx.values().first_name, ctx.values().last_name)
         })]
@@ -229,6 +231,7 @@ mod user_virtual_alias_schema {
         pub email: String,
 
         #[depends_on(email)]
+        #[default(String::from(""))]
         #[resolve(|ctx, _opts| async move { ctx.input().raw_email.clone().unwrap() })]
         pub raw_email: String,
     }
@@ -493,7 +496,8 @@ mod user_dependent_default_schema {
         pub name: String,
 
         #[depends_on(name)]
-        #[default(|| String::from("default-status"))]
+        #[default(|_ctx, _opts| String::from("default-status"))]
+        #[resolve(|_ctx, _opts| async move { String::from("default-status") })]
         pub status: String,
     }
 }
@@ -544,6 +548,7 @@ async fn smoke_model_dependent_default() {
     };
     let created = user_dependent_default_schema::UserModel
         .create(input, ())
+        .await
         .unwrap();
     assert_eq!(created.name, "test");
     assert_eq!(created.status, "default-status");
