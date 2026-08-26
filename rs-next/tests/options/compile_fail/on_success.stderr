@@ -1,0 +1,26 @@
+error: remove duplicates of `lax` in your grouped on_success config
+ --> tests/options/compile_fail/on_success.rs:4:1
+  |
+4 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: `invalid_field` does not exist in your schema
+  --> tests/options/compile_fail/on_success.rs:19:1
+   |
+19 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: `alias` does not exist in your schema
+  --> tests/options/compile_fail/on_success.rs:34:1
+   |
+34 | / #[ivo_schema(
+35 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+36 | |     output(Data, derive(Debug, Clone, PartialEq))
+37 | | )]
+   | |__^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)

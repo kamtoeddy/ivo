@@ -45,6 +45,7 @@ macro_rules! async_test_matrix {
 mod extras;
 mod field_configs;
 mod fields;
+mod options;
 mod smoke;
 
 use std::sync::atomic::AtomicUsize;

@@ -55,3 +55,10 @@
 - [x] Port `rs/tests/extras/ctx_options/mod.rs` and its submodules (`constants`, `dependents`, `lax`, `required`, `virtuals`) to `rs-next/tests/extras/ctx_options/`.
 - [x] Add `mod extras;` to the integration test root so the ported tests are included in the test suite.
 - [x] Skip `re_validate` on virtual fields and virtual-field `validate`/`sanitize` during updates in the ported `ctx_options/virtuals.rs` tests because the new macro processes virtual fields only at creation time.
+- [x] Add `trybuild` as a dev-dependency so compile-time macro validation tests can be expressed as compile-fail UI tests.
+- [x] Port `rs/tests/options/ignore.rs` validation tests to `rs-next/tests/options/compile_fail/ignore.rs` (compile-time errors via trybuild).
+- [x] Port `rs/tests/options/ignore_update.rs` validation tests to `rs-next/tests/options/compile_fail/ignore_update.rs`; port the runtime behavior tests to `rs-next/tests/options/ignore_update.rs`.
+- [x] Port `rs/tests/options/post_validate.rs` validation tests to `rs-next/tests/options/compile_fail/post_validate.rs`.
+- [x] Port `rs/tests/options/required.rs` validation tests to `rs-next/tests/options/compile_fail/required.rs`.
+- [x] Port `rs/tests/options/mod.rs` runtime tests (`ignore_update` behavior, `on_delete`, and `on_success` allow-list) to `rs-next/tests/options/mod.rs`; port the invalid `on_success` config tests to `rs-next/tests/options/compile_fail/on_success.rs`.
+- [x] Add `mod options;` to the integration test root so the ported option tests are included in the test suite.
