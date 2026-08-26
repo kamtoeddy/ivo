@@ -1,8 +1,7 @@
 use ivo::ivo_schema;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::Ordering;
 
-static ON_SUCCESS_COUNTER: AtomicUsize = AtomicUsize::new(0);
-static ON_FAILURE_COUNTER: AtomicUsize = AtomicUsize::new(0);
+use crate::{ON_FAILURE_COUNTER, ON_SUCCESS_COUNTER};
 
 #[ivo_schema(input(User))]
 mod user_schema {

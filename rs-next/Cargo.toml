@@ -11,6 +11,11 @@ readme.workspace = true
 repository.workspace = true
 version.workspace = true
 rust-version.workspace = true
+autotests = false
+
+[[test]]
+name = "mod"
+path = "tests/mod.rs"
 
 [workspace]
 members = ["crates/*", "examples/*"]
