@@ -4,9 +4,6 @@ use ivo::ivo_schema;
 
 use data_schema::*;
 
-const DEFAULT_DEPENDENT: i32 = 1;
-const DEFAULT_LAX: &str = "default-lax";
-
 // #[tokio::test]
 // async fn run() {}
 
@@ -228,9 +225,12 @@ fn main() {
 
 #[ivo_schema(input(DataInput), output(Data, derive(Debug)))]
 mod data_schema {
+    pub const DEFAULT_DEPENDENT: i32 = 1;
+    pub const DEFAULT_LAX: &str = "default-lax";
+
     struct Fields {
         #[depends_on(lax)]
-        #[default(crate::DEFAULT_DEPENDENT)]
+        #[default(DEFAULT_DEPENDENT)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         #[on_success(|ctx, _| {
             println!("\n[on_success]: dependent = {}", ctx.values().dependent);
@@ -241,7 +241,7 @@ mod data_schema {
         pub dependent: i32,
 
         #[depends_on(dependent)]
-        #[default(crate::DEFAULT_DEPENDENT)]
+        #[default(DEFAULT_DEPENDENT)]
         #[resolve(|ctx, _| ctx.values().dependent + 10)]
         #[on_success(|ctx, _| {
             println!("\n[on_success]: dependent_1 = {}", ctx.values().dependent_1);
@@ -251,7 +251,7 @@ mod data_schema {
         })]
         pub dependent_1: i32,
 
-        #[lax(String::from(crate::DEFAULT_LAX))]
+        #[lax(String::from(DEFAULT_LAX))]
         #[on_success(|ctx, _| {
             println!("\n[on_success]: lax = {}", ctx.values().lax);
         })]
@@ -260,7 +260,7 @@ mod data_schema {
         })]
         pub lax: String,
 
-        #[lax(crate::DEFAULT_LAX.to_string())]
+        #[lax(DEFAULT_LAX.to_string())]
         #[on_success(|ctx, _| {
             println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1);
         })]

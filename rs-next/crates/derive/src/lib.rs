@@ -3294,11 +3294,31 @@ fn ivo_schema_impl(
         return e.to_compile_error();
     }
 
+    let other_items: Vec<&syn::Item> = input_mod
+        .content
+        .as_ref()
+        .map(|(_, items)| {
+            items
+                .iter()
+                .filter(|item| {
+                    if let syn::Item::Struct(s) = item {
+                        s.ident != "Fields"
+                    } else if let syn::Item::Const(c) = item {
+                        !c.ident.to_string().starts_with('_')
+                    } else {
+                        true
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
     let struct_defs = generate_structs(&args, &fields);
     let model_defs = generate_model(&args, &fields, &options);
 
     quote! {
         #mod_vis mod #mod_name {
+            #(#other_items)*
             #struct_defs
             #model_defs
         }
