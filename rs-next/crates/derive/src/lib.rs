@@ -1246,6 +1246,56 @@ fn reachable_from(
     visited
 }
 
+fn dependency_order(fields: &[FieldDef]) -> Vec<String> {
+    let mut deps: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    for f in fields {
+        if let Ok(parents) = parse_depends_on(f) {
+            if !parents.is_empty() {
+                deps.insert(f.name.to_string(), parents);
+            }
+        }
+    }
+
+    let mut order = Vec::new();
+    let mut visited = std::collections::HashSet::new();
+    let mut stack = Vec::new();
+
+    fn visit(
+        node: &str,
+        deps: &std::collections::HashMap<String, Vec<String>>,
+        visited: &mut std::collections::HashSet<String>,
+        stack: &mut Vec<String>,
+        order: &mut Vec<String>,
+    ) {
+        if stack.iter().any(|n| n == node) {
+            return;
+        }
+        if !visited.insert(node.to_string()) {
+            return;
+        }
+        stack.push(node.to_string());
+        if let Some(parents) = deps.get(node) {
+            for parent in parents {
+                visit(parent, deps, visited, stack, order);
+            }
+        }
+        stack.pop();
+        order.push(node.to_string());
+    }
+
+    for f in fields {
+        visit(
+            &f.name.to_string(),
+            &deps,
+            &mut visited,
+            &mut stack,
+            &mut order,
+        );
+    }
+
+    order
+}
+
 fn parse_fields_struct(item_mod: &ItemMod) -> syn::Result<Vec<FieldDef>> {
     let content = item_mod
         .content
@@ -2120,7 +2170,6 @@ fn generate_model(
             let ty_tokens = quote!(#ty);
             let sanitizer = attr_value_tokens(&f.attrs, "sanitize");
             let validator = attr_value_tokens(&f.attrs, "validate");
-            let resolver = attr_value_tokens(&f.attrs, "resolve");
 
             let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
                 let flag = format_ident!("ignore_{}", name);
@@ -2180,22 +2229,14 @@ fn generate_model(
                     }
                 }
                 FieldType::Dependent => {
-                    if let Some(resolver) = &resolver {
-                        let ctx_expr = quote!(ctx.clone());
-                        let opts_expr = quote!(&_rw_ctx_options);
-                        let (is_async, call) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
-                        field_is_async |= is_async;
-                        call
-                    } else {
-                        let (default_is_async, default_expr) = attr_value_tokens(&f.attrs, "default")
-                            .map(|t| make_default_value_expr(&t))
-                            .unwrap_or((false, quote! { ::core::default::Default::default() }));
-                        field_is_async |= default_is_async;
-                        quote! {
-                            {
-                                let __default: #ty = #default_expr;
-                                __default
-                            }
+                    let default_tokens = attr_value_tokens(&f.attrs, "default")
+                        .expect("dependent fields must have a #[default(...)] value");
+                    let (default_is_async, default_expr) = make_default_value_expr(&default_tokens);
+                    field_is_async |= default_is_async;
+                    quote! {
+                        {
+                            let __default: #ty = #default_expr;
+                            __default
                         }
                     }
                 }
@@ -2738,7 +2779,81 @@ fn generate_model(
                     quote! {}
                 }
             }
-        });
+        })
+        .collect::<Vec<_>>();
+
+    let dependent_update_pairs: Vec<_> = {
+        let order = dependency_order(fields);
+        order
+            .into_iter()
+            .filter_map(|name| {
+                let name_ident = format_ident!("{}", name);
+                fields.iter().find(|f| f.name == name_ident)
+            })
+            .filter(|f| matches!(f.field_type, FieldType::Dependent))
+            .map(|f| {
+                let name = &f.name;
+                let name_str = name.to_string();
+                let ty = &f.ty;
+                let setter = format_ident!("set_{}", name);
+                let ignore_update_flag = if update_ignore_field_names.contains(&name_str) {
+                    let flag = format_ident!("ignore_update_{}", name);
+                    quote! { #flag }
+                } else {
+                    quote! { false }
+                };
+                let parents = parse_depends_on(f).unwrap_or_default();
+                let parent_checks: Vec<_> = parents
+                    .iter()
+                    .filter_map(|p| {
+                        let parent_ident = format_ident!("{}", p);
+                        let parent_def = fields.iter().find(|f| f.name == parent_ident)?;
+                        if matches!(parent_def.field_type, FieldType::Virtual { .. }) {
+                            let input_name = input_field_name(parent_def);
+                            Some(quote! { updates.#input_name.is_some() })
+                        } else {
+                            let parent = format_ident!("{}", p);
+                            Some(quote! { __original_output.#parent != output.#parent })
+                        }
+                    })
+                    .collect();
+                let parent_guard = if parent_checks.is_empty() {
+                    quote! { false }
+                } else {
+                    quote! { (#(#parent_checks)||*) }
+                };
+                let resolver = attr_value_tokens(&f.attrs, "resolve")
+                    .expect("dependent fields must have a #[resolve(...)] handler");
+                let (resolver_is_async, resolver_expr) = match closure_input_count(&resolver) {
+                    Some(0) => (false, quote! { (#resolver)() }),
+                    Some(_) => {
+                        let ctx_expr = quote!(ctx.clone());
+                        let opts_expr = quote!(&_rw_ctx_options);
+                        make_resolver_call(&resolver, &ctx_expr, &opts_expr)
+                    }
+                    None => (false, resolver.clone()),
+                };
+                let stmt = quote! {
+                    if !#ignore_update_flag && #parent_guard {
+                        let __new_value: #ty = #resolver_expr;
+                        if &__new_value != &__original_output.#name {
+                            output.#name = __new_value.clone();
+                            __changes.#setter(__new_value);
+                            ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                                updates.clone(),
+                                output.clone(),
+                                __changes.clone(),
+                                true,
+                            );
+                        }
+                    }
+                };
+                (resolver_is_async, stmt)
+            })
+            .collect()
+    };
+    update_has_async |= dependent_update_pairs.iter().any(|(a, _)| *a);
+    let dependent_update_assignments = dependent_update_pairs.into_iter().map(|(_, stmt)| stmt);
 
     let post_input_inits: Vec<_> = fields
         .iter()
@@ -3077,6 +3192,7 @@ fn generate_model(
                 let _ctx_options = _rw_ctx_options.read_only();
 
                 let mut output = existing;
+                let __original_output = output.clone();
                 let mut __changes: #partial_output_name = ::core::default::Default::default();
                 let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                     updates.clone(),
@@ -3089,6 +3205,14 @@ fn generate_model(
                 #(#update_ignore_evaluations)*
 
                 #(#update_assignments)*
+
+                let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                    updates.clone(),
+                    output.clone(),
+                    __changes.clone(),
+                    true,
+                );
+                #(#dependent_update_assignments)*
 
                 let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> =
                     ::std::collections::HashMap::new();
