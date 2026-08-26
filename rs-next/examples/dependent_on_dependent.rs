@@ -4,22 +4,25 @@ use ivo::ivo_schema;
 
 use data_schema::*;
 
-// #[tokio::test]
-// async fn run() {}
-
-fn main() {
+#[tokio::main]
+async fn main() {
     let timer = Instant::now();
 
     let data = DataModel
         .create(PartialDataInput::new().with_lax("lol".into()), ())
         .unwrap();
     println!("\ncreated: {:#?}", data.output());
-    let _ = data.handle_success();
+    let _ = data.handle_success().await;
 
     println!("\nCreate duration: {:?}", timer.elapsed());
 }
 
-// #[tokio::test]
+// #[tokio::main]
+// async fn main() {
+//     should_not_update_if_resolver_was_run_at_creation().await;
+//     should_reject_update_if_resolver_was_run_during_prior_update().await;
+// }
+
 // async fn should_not_update_if_resolver_was_run_at_creation() {
 //     let lax_1 = "john-doe".to_string();
 //     let lax_1_input_value = Some(lax_1.clone());
@@ -32,7 +35,6 @@ fn main() {
 //             },
 //             (),
 //         )
-//         .await
 //         .ok()
 //         .unwrap();
 
@@ -61,7 +63,7 @@ fn main() {
 //             },
 //             (),
 //         )
-//         .await
+//         // .await
 //         .ok()
 //         .unwrap();
 
@@ -94,7 +96,7 @@ fn main() {
 //             },
 //             (),
 //         )
-//         .await
+//         // .await
 //         .ok()
 //         .unwrap();
 
@@ -115,7 +117,6 @@ fn main() {
 //     handle_success().await;
 // }
 
-// #[tokio::test]
 // async fn should_reject_update_if_resolver_was_run_during_prior_update() {
 //     let data = Data {
 //         dependent: DEFAULT_DEPENDENT,
@@ -135,7 +136,7 @@ fn main() {
 //             },
 //             (),
 //         )
-//         .await
+//         // .await
 //         .ok()
 //         .unwrap();
 
@@ -232,7 +233,7 @@ mod data_schema {
         #[depends_on(lax)]
         #[default(DEFAULT_DEPENDENT)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
-        #[on_success(|ctx, _| {
+        #[on_success(|ctx, _| async move {
             println!("\n[on_success]: dependent = {}", ctx.values().dependent);
         })]
         #[on_delete(|data, _| {
