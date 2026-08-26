@@ -36,6 +36,8 @@
 
 # Recently completed
 
+- [x] Port `examples/main_demo/` to the `#[ivo_schema]` macro API (folder example with `validators` feature) and verify it builds and runs with `--features validators`.
+- [x] Support grouped `#[required([...], \|ctx, opts\| ...)]` returning `Option<{InputName}Errors>` for per-field custom error messages; invoke the handler only when none of the listed fields were provided.
 - [x] Port `examples/lax_with_ignore_init.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
 - [x] Port `examples/lax_with_ignore_update.rs` to the `#[ivo_schema]` macro API and verify assertions / example output.
 - [x] Reconcile `#[ignore]` / `#[ignore_update]` semantics: field-level `#[ignore]` (with a resolver) applies to both create and update on `#[lax]` / `#[ivo_virtual]` fields; `#[ignore_init]` is create-only; `#[ignore_update]` is update-only.

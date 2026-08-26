@@ -1715,6 +1715,24 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
         }
     });
 
+    let builder_setters = fields.iter().map(|f| {
+        let name = &f.name;
+        let setter = format_ident!("with_{}", name);
+        quote! {
+            pub fn #setter(
+                mut self,
+                reason: impl ::core::convert::Into<::std::string::String>,
+                metadata: ::core::option::Option<Metadata>,
+            ) -> Self {
+                self.#name = ::core::option::Option::Some(::ivo::FieldError {
+                    reason: reason.into(),
+                    metadata,
+                });
+                self
+            }
+        }
+    });
+
     let insertions = fields.iter().map(|f| {
         let name = &f.name;
         let name_str = name.to_string();
@@ -1741,6 +1759,8 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
             }
 
             #(#setters)*
+
+            #(#builder_setters)*
 
             pub fn into_payload(self) -> ::ivo::IvoErrorPayload<Metadata> {
                 let mut payload = ::ivo::IvoErrorPayload::new();
@@ -2083,6 +2103,28 @@ fn generate_model(
         }
     };
 
+    let make_grouped_required_call = |handler: &proc_macro2::TokenStream,
+                                      annotation_ctx_ty: &proc_macro2::TokenStream,
+                                      ctx_expr: &proc_macro2::TokenStream,
+                                      opts_expr: &proc_macro2::TokenStream|
+     -> (bool, proc_macro2::TokenStream) {
+        let annotated = type_annotate_handler(
+            handler.clone(),
+            &[annotation_ctx_ty.clone(), opts_ty.clone()],
+        );
+        if is_async_handler(handler) {
+            (
+                true,
+                quote! { ::ivo::run_grouped_required_resolver(#ctx_expr, #opts_expr, #annotated).await },
+            )
+        } else {
+            (
+                false,
+                quote! { ::ivo::run_grouped_required_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
+            )
+        }
+    };
+
     let make_resolver_call = |handler: &proc_macro2::TokenStream,
                               ctx_expr: &proc_macro2::TokenStream,
                               opts_expr: &proc_macro2::TokenStream|
@@ -2297,28 +2339,23 @@ fn generate_model(
         .map(|(i, o)| {
             let ctx_expr = quote!(&ctx);
             let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) = make_boolean_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
-            let opt_flag = format_ident!("__required_opt_{}", i);
-            let checks = o.fields.iter().map(|fname| {
-                let f = fields.iter().find(|f| f.name == fname).unwrap();
-                let input_tokens = input_field_name(f);
-                let name_str = fname.clone();
-                quote! {
-                    if input.#input_tokens.is_none() {
-                        errors.insert(
-                            ::std::string::String::from(#name_str),
-                            ::ivo::FieldError {
-                                reason: ::std::string::String::from("field is required"),
-                                metadata: ::core::option::Option::None,
-                            },
-                        );
-                    }
-                }
-            });
+            let (is_async, call) =
+                make_grouped_required_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
+            let opt_errors = format_ident!("__required_opt_errors_{}", i);
+            let missing_checks: Vec<_> = o
+                .fields
+                .iter()
+                .map(|fname| {
+                    let f = fields.iter().find(|f| f.name == *fname).unwrap();
+                    let input_tokens = input_field_name(f);
+                    quote! { input.#input_tokens.is_none() }
+                })
+                .collect();
             let stmt = quote! {
-                let #opt_flag: bool = #call;
-                if #opt_flag {
-                    #(#checks)*
+                if #(#missing_checks)&&* {
+                    if let ::core::option::Option::Some(#opt_errors) = #call {
+                        errors.extend(#opt_errors.into_payload());
+                    }
                 }
             };
             (is_async, stmt)
@@ -3074,28 +3111,22 @@ fn generate_model(
             let ctx_expr = quote!(&ctx);
             let opts_expr = quote!(&_rw_ctx_options);
             let (is_async, call) =
-                make_boolean_call(&o.handler, &update_ctx_ty, &ctx_expr, &opts_expr);
-            let opt_flag = format_ident!("__required_opt_{}", i);
-            let checks = o.fields.iter().map(|fname| {
-                let f = fields.iter().find(|f| f.name == fname).unwrap();
-                let input_tokens = input_field_name(f);
-                let name_str = fname.clone();
-                quote! {
-                    if updates.#input_tokens.is_none() {
-                        errors.insert(
-                            ::std::string::String::from(#name_str),
-                            ::ivo::FieldError {
-                                reason: ::std::string::String::from("field is required"),
-                                metadata: ::core::option::Option::None,
-                            },
-                        );
-                    }
-                }
-            });
+                make_grouped_required_call(&o.handler, &update_ctx_ty, &ctx_expr, &opts_expr);
+            let opt_errors = format_ident!("__required_opt_errors_{}", i);
+            let missing_checks: Vec<_> = o
+                .fields
+                .iter()
+                .map(|fname| {
+                    let f = fields.iter().find(|f| f.name == *fname).unwrap();
+                    let input_tokens = input_field_name(f);
+                    quote! { updates.#input_tokens.is_none() }
+                })
+                .collect();
             let stmt = quote! {
-                let #opt_flag: bool = #call;
-                if #opt_flag {
-                    #(#checks)*
+                if #(#missing_checks)&&* {
+                    if let ::core::option::Option::Some(#opt_errors) = #call {
+                        errors.extend(#opt_errors.into_payload());
+                    }
                 }
             };
             (is_async, stmt)
@@ -3399,7 +3430,11 @@ fn generate_model(
         .map(|f| {
             let input_name = input_field_name(f);
             if matches!(f.field_type, FieldType::Virtual { .. }) {
-                quote! { __post_input.#input_name = ::core::option::Option::None; }
+                quote! {
+                    if let ::core::option::Option::Some(v) = &updates.#input_name {
+                        __post_input.#input_name = ::core::option::Option::Some(v.clone());
+                    }
+                }
             } else {
                 quote! {
                     if let ::core::option::Option::Some(v) = &updates.#input_name {
@@ -3865,10 +3900,9 @@ fn generate_model(
                 #(#virtual_steps)*
                 #(#create_steps)*
                 let mut ctx = ctx;
+                #(#post_validate_create_steps)*
                 #dependent_create_block
                 #(#re_validate_steps)*
-                let mut ctx = ctx;
-                #(#post_validate_create_steps)*
 
                 if errors.is_empty() {
                     let __return_opts = _ctx_options.clone();
@@ -3924,8 +3958,21 @@ fn generate_model(
 
                 #(#update_assignments)*
 
+                let mut __post_input: #partial_input_name = ::core::default::Default::default();
+                #(#post_input_inits)*
+                {
+                    let mut input = __post_input.clone();
+                    let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                        input.clone(),
+                        output.clone(),
+                        __changes.clone(),
+                        true,
+                    );
+                    #(#post_validate_update_steps)*
+                    __post_input = input;
+                }
                 let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                    updates.clone(),
+                    __post_input.clone(),
                     output.clone(),
                     __changes.clone(),
                     true,
@@ -3934,25 +3981,12 @@ fn generate_model(
                 #(#timestamp_update_assignments)*
 
                 let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                    updates.clone(),
+                    __post_input.clone(),
                     output.clone(),
                     __changes.clone(),
                     true,
                 );
                 #(#re_validate_steps)*
-
-                let mut __post_input: #partial_input_name = ::core::default::Default::default();
-                #(#post_input_inits)*
-                {
-                    let mut input = __post_input;
-                    let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
-                        input.clone(),
-                        output.clone(),
-                        __changes.clone(),
-                        true,
-                    );
-                    #(#post_validate_update_steps)*
-                }
 
                 __changes = ::core::default::Default::default();
                 #(

@@ -718,10 +718,9 @@ mod required_async_schema {
     }
 }
 
-// SKIPPED: should_properly_handle_grouped_required_errors
-// Reason: The new macro's grouped `#[required([...], ...)]` only supports a
-// boolean resolver and always emits the default "field is required" message.
-// The old test relied on per-field custom error messages, which is not supported.
+// Grouped `#[required([...], handler)]` now supports an `Option<Errors>` resolver.
+// When the resolver returns `Some(errors)`, the errors payload is merged into the
+// schema's errors, allowing a custom error per field.
 
 // Section: validators
 

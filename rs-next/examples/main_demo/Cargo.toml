@@ -1,0 +1,20 @@
+[package]
+name = "main_demo"
+publish = false
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+license-file.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ivo = { path = "../..", features = ["validators"] }
+ivo-validators = { path = "../../crates/validators" }
+async-std.workspace = true
+chrono.workspace = true
+regex.workspace = true
+unicode-normalization.workspace = true

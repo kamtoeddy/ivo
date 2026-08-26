@@ -316,7 +316,12 @@ mod user_grouped_required_schema {
         pub b: String,
     }
 
-    #[required(["a", "b"], async |_ctx, _opts| { true })]
+    #[required(["a", "b"], async |_ctx, _opts| {
+        let mut errors = UserErrors::new();
+        errors.set_a("field is required", None);
+        errors.set_b("field is required", None);
+        Some(errors)
+    })]
     const _: () = ();
 }
 
@@ -346,14 +351,16 @@ async fn smoke_model_grouped_ignore() {
 
 #[tokio::test]
 async fn smoke_model_grouped_required() {
-    let mut input = user_grouped_required_schema::PartialUser::new();
-    input.set_b("b".to_string());
+    let input = user_grouped_required_schema::PartialUser::new();
     let result = user_grouped_required_schema::UserModel
         .create(input, ())
         .await;
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert!(errors.errors.contains_key("a"));
+    assert!(errors.errors.contains_key("b"));
+    assert_eq!(errors.errors.get("a").unwrap().reason, "field is required");
+    assert_eq!(errors.errors.get("b").unwrap().reason, "field is required");
 }
 
 #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]

@@ -71,6 +71,17 @@ where
     resolver(ctx, opts).await
 }
 
+pub async fn run_grouped_required_resolver<Ctx, Opts, E, F>(
+    ctx: &Ctx,
+    opts: &Opts,
+    resolver: F,
+) -> Option<E>
+where
+    F: AsyncFn(&Ctx, &Opts) -> Option<E>,
+{
+    resolver(ctx, opts).await
+}
+
 pub async fn run_hook<Ctx, Opts, F>(ctx: Ctx, opts: &Opts, handler: F)
 where
     F: AsyncFn(Ctx, &Opts),
@@ -126,6 +137,17 @@ pub fn run_required_resolver_sync<Ctx, Opts, F>(
 ) -> Option<String>
 where
     F: Fn(&Ctx, &Opts) -> Option<String>,
+{
+    resolver(ctx, opts)
+}
+
+pub fn run_grouped_required_resolver_sync<Ctx, Opts, E, F>(
+    ctx: &Ctx,
+    opts: &Opts,
+    resolver: F,
+) -> Option<E>
+where
+    F: Fn(&Ctx, &Opts) -> Option<E>,
 {
     resolver(ctx, opts)
 }
