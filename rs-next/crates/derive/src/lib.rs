@@ -1011,6 +1011,31 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
             }
         }
 
+        if matches!(f.field_type, FieldType::Required) {
+            let has_readonly = behavior_names.iter().any(|(n, _)| n == "readonly");
+            let has_ignore_update = behavior_names.iter().any(|(n, _)| n == "ignore_update");
+
+            if has_ignore_update && attr_value_tokens(&f.attrs, "ignore_update").is_none() {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: #[ignore_update] on a required field must be conditional; use #[readonly] to always ignore updates",
+                        f.name
+                    ),
+                ));
+            }
+
+            if has_readonly && has_ignore_update {
+                return Err(syn::Error::new_spanned(
+                    &f.name,
+                    format!(
+                        "field `{}`: #[readonly] and #[ignore_update] cannot both be used on a required field",
+                        f.name
+                    ),
+                ));
+            }
+        }
+
         if matches!(f.field_type, FieldType::Dependent) {
             let has_default = f.attrs.iter().any(|a| a.path().is_ident("default"));
             let has_resolver = f.attrs.iter().any(|a| a.path().is_ident("resolve"));
@@ -4303,6 +4328,58 @@ mod tests {
                 "#,
         );
         assert_compile_error(&out, "bare lax without default");
+    }
+
+    #[test]
+    fn rejects_bare_ignore_update_on_required_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        #[ignore_update]
+                        pub name: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "bare ignore_update on required");
+    }
+
+    #[test]
+    fn accepts_resolved_ignore_update_on_required_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        #[ignore_update(|_, _| false)]
+                        pub name: String,
+                    }
+                }
+                "#,
+        );
+        assert_no_compile_error(&out, "resolved ignore_update on required");
+    }
+
+    #[test]
+    fn rejects_readonly_with_ignore_update_on_required_field() {
+        let out = expand(
+            "input(User)",
+            r#"
+                mod s {
+                    struct Fields {
+                        #[required]
+                        #[readonly]
+                        #[ignore_update(|_, _| false)]
+                        pub name: String,
+                    }
+                }
+                "#,
+        );
+        assert_compile_error(&out, "readonly with ignore_update on required");
     }
 
     #[test]

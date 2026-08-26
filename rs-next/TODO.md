@@ -15,12 +15,12 @@
 
 ## Required-field rules
 
-- [ ] Allow `#[readonly]` on required fields.
-- [ ] Allow `#[ignore_update(||resolver)]` on required fields.
-- [ ] Reject bare `#[ignore_update]` on required fields.
+- [x] Allow `#[readonly]` on required fields.
+- [x] Allow `#[ignore_update(||resolver)]` on required fields.
+- [x] Reject bare `#[ignore_update]` on required fields.
   - Error: "#[ignore_update] on a required field must be conditional; use #[readonly] to always ignore updates".
-- [ ] Reject `#[readonly]` + `#[ignore_update]` on required fields.
-- [ ] Keep `#[ignore]` and `#[ignore_init]` disallowed on required fields.
+- [x] Reject `#[readonly]` + `#[ignore_update]` on required fields.
+- [x] Keep `#[ignore]` and `#[ignore_init]` disallowed on required fields.
 
 ## Lax-field rules
 
