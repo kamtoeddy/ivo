@@ -11,7 +11,7 @@ async fn main() {
     let data = DataModel
         .create(PartialDataInput::new().with_lax("lol".into()), ())
         .unwrap();
-    println!("\ncreated: {:#?}", data.output());
+    println!("\ncreated: {:#?}", data.data);
     let _ = data.handle_success().await;
 
     println!("\nCreate duration: {:?}", timer.elapsed());

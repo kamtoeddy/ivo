@@ -441,47 +441,20 @@ where
 /// `handle_success` is synchronous. If any captured handler is asynchronous,
 /// `handle_success` is asynchronous.
 pub struct IvoSuccessHandle<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> {
-    output: O,
-    ctx_options: IvoCtxOptions<CtxOptions>,
+    pub data: O,
+    pub ctx_options: IvoCtxOptions<CtxOptions>,
     trigger: IvoTriggerFn,
 }
 
 impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool>
     IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
 {
-    pub fn new(output: O, ctx_options: IvoCtxOptions<CtxOptions>, trigger: IvoTriggerFn) -> Self {
+    pub fn new(data: O, ctx_options: IvoCtxOptions<CtxOptions>, trigger: IvoTriggerFn) -> Self {
         Self {
-            output,
+            data,
             ctx_options,
             trigger,
         }
-    }
-
-    pub fn output(&self) -> &O {
-        &self.output
-    }
-
-    pub fn into_output(self) -> O {
-        self.output
-    }
-
-    /// Alias for `output`. The contained value is the full `Output` after
-    /// `create` and the `PartialOutput` of changed fields after `update`.
-    pub fn values(&self) -> &O {
-        &self.output
-    }
-
-    /// Alias for `into_output`.
-    pub fn into_values(self) -> O {
-        self.output
-    }
-
-    pub fn ctx_options(&self) -> &IvoCtxOptions<CtxOptions> {
-        &self.ctx_options
-    }
-
-    pub fn into_ctx_options(self) -> IvoCtxOptions<CtxOptions> {
-        self.ctx_options
     }
 }
 
@@ -509,7 +482,7 @@ impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> std::ops::Deref
     type Target = O;
 
     fn deref(&self) -> &Self::Target {
-        &self.output
+        &self.data
     }
 }
 
@@ -517,7 +490,7 @@ impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> std::ops::DerefM
     for IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.output
+        &mut self.data
     }
 }
 
@@ -526,7 +499,7 @@ impl<O: fmt::Debug, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> fmt:
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("IvoSuccessHandle")
-            .field("output", &self.output)
+            .field("data", &self.data)
             .finish()
     }
 }
