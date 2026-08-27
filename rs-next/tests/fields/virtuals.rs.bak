@@ -1085,13 +1085,515 @@ async fn should_return_empty_updates_when_no_value_has_changed_with_alias_async(
 
 async_test_matrix!(should_return_empty_updates_when_no_value_has_changed_with_alias_async);
 
+#[test]
+fn should_return_empty_updates_when_no_value_has_changed_with_alias_same_as_dependent() {
+    let value = 24;
+
+    let created = sync_no_change_alias_as_dependent_schema::DataModel
+        .create(
+            sync_no_change_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some(value),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_no_change_alias_as_dependent_schema::Data { dependent: value }
+    );
+
+    let failed = sync_no_change_alias_as_dependent_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_no_change_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some(value),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async fn should_return_empty_updates_when_no_value_has_changed_with_alias_same_as_dependent_async()
+{
+    let value = 24;
+
+    let created = async_no_change_alias_as_dependent_schema::DataModel
+        .create(
+            async_no_change_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some(value),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_no_change_alias_as_dependent_schema::Data { dependent: value }
+    );
+
+    let failed = async_no_change_alias_as_dependent_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_no_change_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some(value),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async_test_matrix!(
+    should_return_empty_updates_when_no_value_has_changed_with_alias_same_as_dependent_async
+);
+
 // -----------------------------------------------------------------------------
 // Grouped ignore rules
 // -----------------------------------------------------------------------------
 
+#[test]
+fn should_properly_handle_grouped_ignore_rule() {
+    const IGNORE: &str = "IGNORE";
+    let default_lax_value = "default_lax_value";
+    let default_lax_1_value = "default_lax_1_value";
+
+    let created = sync_grouped_ignore_virtual_schema::DataModel
+        .create(
+            sync_grouped_ignore_virtual_schema::PartialDataInput {
+                lax: Some(IGNORE.into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_virtual_schema::Data {
+            dependent: 1,
+            lax: default_lax_value.into(),
+            lax_1: "lax_1".into(),
+        }
+    );
+
+    let created = sync_grouped_ignore_virtual_schema::DataModel
+        .create(
+            sync_grouped_ignore_virtual_schema::PartialDataInput {
+                lax: Some("some lax value".into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_virtual_schema::Data {
+            dependent: 2,
+            lax: "some lax value".into(),
+            lax_1: "lax_1".into(),
+        }
+    );
+
+    let data = sync_grouped_ignore_virtual_schema::Data {
+        dependent: 1,
+        lax: default_lax_value.into(),
+        lax_1: default_lax_1_value.into(),
+    };
+
+    let updated = sync_grouped_ignore_virtual_schema::DataModel
+        .update(
+            data.clone(),
+            sync_grouped_ignore_virtual_schema::PartialDataInput {
+                lax: Some(IGNORE.into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_virtual_schema::PartialData {
+            dependent: None,
+            lax: None,
+            lax_1: Some("lax_1".into()),
+        }
+    );
+
+    let updated = sync_grouped_ignore_virtual_schema::DataModel
+        .update(
+            data,
+            sync_grouped_ignore_virtual_schema::PartialDataInput {
+                lax: Some("some lax value".into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_virtual_schema::PartialData {
+            dependent: Some(2),
+            lax: Some("some lax value".into()),
+            lax_1: Some("lax_1".into()),
+        }
+    );
+}
+
+async fn should_properly_handle_grouped_ignore_rule_async() {
+    const IGNORE: &str = "IGNORE";
+    let default_lax_value = "default_lax_value";
+    let default_lax_1_value = "default_lax_1_value";
+
+    let created = async_grouped_ignore_virtual_schema::DataModel
+        .create(
+            async_grouped_ignore_virtual_schema::PartialDataInput {
+                lax: Some(IGNORE.into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_grouped_ignore_virtual_schema::Data {
+            dependent: 1,
+            lax: default_lax_value.into(),
+            lax_1: "lax_1".into(),
+        }
+    );
+
+    let updated = async_grouped_ignore_virtual_schema::DataModel
+        .update(
+            async_grouped_ignore_virtual_schema::Data {
+                dependent: 1,
+                lax: default_lax_value.into(),
+                lax_1: default_lax_1_value.into(),
+            },
+            async_grouped_ignore_virtual_schema::PartialDataInput {
+                lax: Some("some lax value".into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_grouped_ignore_virtual_schema::PartialData {
+            dependent: Some(2),
+            lax: Some("some lax value".into()),
+            lax_1: Some("lax_1".into()),
+        }
+    );
+}
+
+async_test_matrix!(should_properly_handle_grouped_ignore_rule_async);
+
+// -----------------------------------------------------------------------------
+// Grouped ignore_update rules
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_properly_handle_grouped_ignore_update_rule() {
+    const IGNORE: &str = "IGNORE";
+    let default_lax_value = "default_lax_value";
+    let default_lax_1_value = "default_lax_1_value";
+
+    let created = sync_grouped_ignore_update_virtual_schema::DataModel
+        .create(
+            sync_grouped_ignore_update_virtual_schema::PartialDataInput {
+                lax: Some(IGNORE.into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("some value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_update_virtual_schema::Data {
+            dependent: 2,
+            lax: IGNORE.into(),
+            lax_1: "lax_1".into(),
+        }
+    );
+
+    let data = sync_grouped_ignore_update_virtual_schema::Data {
+        dependent: 1,
+        lax: default_lax_value.into(),
+        lax_1: default_lax_1_value.into(),
+    };
+
+    let updated = sync_grouped_ignore_update_virtual_schema::DataModel
+        .update(
+            data.clone(),
+            sync_grouped_ignore_update_virtual_schema::PartialDataInput {
+                lax: Some(IGNORE.into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("updated value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_update_virtual_schema::PartialData {
+            dependent: None,
+            lax: None,
+            lax_1: Some("lax_1".into()),
+        }
+    );
+
+    let updated = sync_grouped_ignore_update_virtual_schema::DataModel
+        .update(
+            data,
+            sync_grouped_ignore_update_virtual_schema::PartialDataInput {
+                lax: Some("some lax value".into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("updated value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_update_virtual_schema::PartialData {
+            dependent: Some(2),
+            lax: Some("some lax value".into()),
+            lax_1: Some("lax_1".into()),
+        }
+    );
+}
+
+async fn should_properly_handle_grouped_ignore_update_rule_async() {
+    const IGNORE: &str = "IGNORE";
+    let default_lax_value = "default_lax_value";
+
+    let updated = async_grouped_ignore_update_virtual_schema::DataModel
+        .update(
+            async_grouped_ignore_update_virtual_schema::Data {
+                dependent: 1,
+                lax: default_lax_value.into(),
+                lax_1: "default_lax_1_value".into(),
+            },
+            async_grouped_ignore_update_virtual_schema::PartialDataInput {
+                lax: Some(IGNORE.into()),
+                lax_1: Some("lax_1".into()),
+                virtual_field: Some("updated value".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_grouped_ignore_update_virtual_schema::PartialData {
+            dependent: None,
+            lax: None,
+            lax_1: Some("lax_1".into()),
+        }
+    );
+}
+
+async_test_matrix!(should_properly_handle_grouped_ignore_update_rule_async);
+
 // -----------------------------------------------------------------------------
 // Grouped required errors: alias variants
 // -----------------------------------------------------------------------------
+
+#[test]
+fn should_properly_handle_grouped_required_errors_with_alias() {
+    const EXPECTED_REQUIRED_ERROR: &str = "field is required";
+
+    let errors = sync_grouped_required_alias_schema::DataModel
+        .create(
+            sync_grouped_required_alias_schema::PartialDataInput {
+                virtual_alias: None,
+                lax_1: None,
+                lax_2: Some("any_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(errors.errors.get("lax_2").is_none());
+    assert_eq!(
+        errors.errors.get("virtual_alias").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+    assert_eq!(
+        errors.errors.get("lax_1").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+
+    let errors = sync_grouped_required_alias_schema::DataModel
+        .update(
+            sync_grouped_required_alias_schema::Data {
+                dependent: 1,
+                lax_1: "default_lax_1_value".into(),
+                lax_2: "default_lax_2_value".into(),
+            },
+            sync_grouped_required_alias_schema::PartialDataInput {
+                virtual_alias: None,
+                lax_1: None,
+                lax_2: Some("any_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_alias")
+            .unwrap()
+            .reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+    assert_eq!(
+        errors.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+}
+
+async fn should_properly_handle_grouped_required_errors_with_alias_async() {
+    const EXPECTED_REQUIRED_ERROR: &str = "field is required";
+
+    let errors = async_grouped_required_alias_schema::DataModel
+        .create(
+            async_grouped_required_alias_schema::PartialDataInput {
+                virtual_alias: None,
+                lax_1: None,
+                lax_2: Some("any_value".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(errors.errors.get("lax_2").is_none());
+    assert_eq!(
+        errors.errors.get("virtual_alias").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+    assert_eq!(
+        errors.errors.get("lax_1").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+}
+
+async_test_matrix!(should_properly_handle_grouped_required_errors_with_alias_async);
+
+#[test]
+fn should_properly_handle_grouped_required_errors_with_alias_same_as_dependent() {
+    const EXPECTED_REQUIRED_ERROR: &str = "field is required";
+
+    let errors = sync_grouped_required_alias_as_dependent_schema::DataModel
+        .create(
+            sync_grouped_required_alias_as_dependent_schema::PartialDataInput {
+                dependent: None,
+                lax_1: None,
+                lax_2: Some("any_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(errors.errors.get("lax_2").is_none());
+    assert_eq!(
+        errors.errors.get("dependent").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+    assert_eq!(
+        errors.errors.get("lax_1").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+}
+
+async fn should_properly_handle_grouped_required_errors_with_alias_same_as_dependent_async() {
+    const EXPECTED_REQUIRED_ERROR: &str = "field is required";
+
+    let errors = async_grouped_required_alias_as_dependent_schema::DataModel
+        .update(
+            async_grouped_required_alias_as_dependent_schema::Data {
+                dependent: 1,
+                lax_1: "default_lax_1_value".into(),
+                lax_2: "default_lax_2_value".into(),
+            },
+            async_grouped_required_alias_as_dependent_schema::PartialDataInput {
+                dependent: None,
+                lax_1: None,
+                lax_2: Some("any_value".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("dependent")
+            .unwrap()
+            .reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+    assert_eq!(
+        errors.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+}
+
+async_test_matrix!(
+    should_properly_handle_grouped_required_errors_with_alias_same_as_dependent_async
+);
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1225,40 +1727,6 @@ mod async_no_change_schema {
         #[depends_on(virtual_field)]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_field.unwrap())]
-        pub dependent: i32,
-    }
-}
-
-#[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
-)]
-mod sync_no_change_alias_schema {
-    struct Fields {
-        #[ivo_virtual(virtual_alias)]
-        #[validate(|_, _, _| Ok(None))]
-        pub virtual_field: i32,
-
-        #[depends_on(virtual_field)]
-        #[default(1)]
-        #[resolve(|ctx, _| ctx.input().virtual_alias.unwrap())]
-        pub dependent: i32,
-    }
-}
-
-#[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
-)]
-mod async_no_change_alias_schema {
-    struct Fields {
-        #[ivo_virtual(virtual_alias)]
-        #[validate(async |_, _, _| Ok(None))]
-        pub virtual_field: i32,
-
-        #[depends_on(virtual_field)]
-        #[default(1)]
-        #[resolve(async |ctx, _| ctx.input().virtual_alias.unwrap())]
         pub dependent: i32,
     }
 }

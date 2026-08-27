@@ -1783,10 +1783,206 @@ async_test_matrix!(
     should_trigger_on_success_handlers_during_updates_if_provided_async
 );
 
-// Field-level on_success handlers now only fire during updates when the field
-// actually changed (or, for virtual fields, when it was provided and not
-// ignored). The `lax` suite covers the `not provided` and `ignored` cases;
-// equivalent `required` tests can be added here when needed.
+#[test]
+fn should_not_trigger_on_success_handlers_during_updates_if_not_provided() {
+    let data = sync_on_success_update_schema::Data {
+        required2: "required2".to_string(),
+        required: "required_value".to_string(),
+    };
+
+    let updated_required2_value = "updated_required2_value".to_string();
+
+    let updated = sync_on_success_update_schema::DataModel
+        .update(
+            data,
+            sync_on_success_update_schema::PartialData {
+                required: None,
+                required2: Some(updated_required2_value.clone()),
+            },
+            (),
+        )
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_on_success_update_schema::PartialData {
+            required2: Some(updated_required2_value),
+            required: None,
+        }
+    );
+
+    updated.handle_success();
+}
+
+async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided_async() {
+    let data = async_on_success_update_schema::Data {
+        required2: "required2".to_string(),
+        required: "required_value".to_string(),
+    };
+
+    let updated_required2_value = "updated_required2_value".to_string();
+
+    let updated = async_on_success_update_schema::DataModel
+        .update(
+            data,
+            async_on_success_update_schema::PartialData {
+                required: None,
+                required2: Some(updated_required2_value.clone()),
+            },
+            (),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_on_success_update_schema::PartialData {
+            required2: Some(updated_required2_value),
+            required: None,
+        }
+    );
+
+    updated.handle_success().await;
+}
+
+async_test_matrix!(should_not_trigger_on_success_handlers_during_updates_if_not_provided_async);
+
+#[test]
+fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored() {
+    let data = sync_on_success_update_ignored_schema::Data {
+        required2: "required2".to_string(),
+        required: "required_value".to_string(),
+    };
+
+    let updated_required_value = "updated_required_value".to_string();
+    let updated_required2_value = "updated_required2_value".to_string();
+
+    let updated = sync_on_success_update_ignored_schema::DataModel
+        .update(
+            data,
+            sync_on_success_update_ignored_schema::PartialData {
+                required: Some(updated_required_value),
+                required2: Some(updated_required2_value.clone()),
+            },
+            (),
+        )
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_on_success_update_ignored_schema::PartialData {
+            required2: Some(updated_required2_value),
+            required: None,
+        }
+    );
+
+    updated.handle_success();
+}
+
+async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored_async() {
+    let data = async_on_success_update_ignored_schema::Data {
+        required2: "required2".to_string(),
+        required: "required_value".to_string(),
+    };
+
+    let updated_required_value = "updated_required_value".to_string();
+    let updated_required2_value = "updated_required2_value".to_string();
+
+    let updated = async_on_success_update_ignored_schema::DataModel
+        .update(
+            data,
+            async_on_success_update_ignored_schema::PartialData {
+                required: Some(updated_required_value),
+                required2: Some(updated_required2_value.clone()),
+            },
+            (),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_on_success_update_ignored_schema::PartialData {
+            required2: Some(updated_required2_value),
+            required: None,
+        }
+    );
+
+    updated.handle_success().await;
+}
+
+async_test_matrix!(
+    should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored_async
+);
+
+#[test]
+fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored_as_readonly() {
+    let data = sync_on_success_update_readonly_schema::Data {
+        required2: "required2".to_string(),
+        required: "required_value".to_string(),
+    };
+
+    let updated_required_value = "updated_required_value".to_string();
+    let updated_required2_value = "updated_required2_value".to_string();
+
+    let updated = sync_on_success_update_readonly_schema::DataModel
+        .update(
+            data,
+            sync_on_success_update_readonly_schema::PartialData {
+                required: Some(updated_required_value),
+                required2: Some(updated_required2_value.clone()),
+            },
+            (),
+        )
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_on_success_update_readonly_schema::PartialData {
+            required2: Some(updated_required2_value),
+            required: None,
+        }
+    );
+
+    updated.handle_success();
+}
+
+async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored_as_readonly_async(
+) {
+    let data = async_on_success_update_readonly_schema::Data {
+        required2: "required2".to_string(),
+        required: "required_value".to_string(),
+    };
+
+    let updated_required_value = "updated_required_value".to_string();
+    let updated_required2_value = "updated_required2_value".to_string();
+
+    let updated = async_on_success_update_readonly_schema::DataModel
+        .update(
+            data,
+            async_on_success_update_readonly_schema::PartialData {
+                required: Some(updated_required_value),
+                required2: Some(updated_required2_value.clone()),
+            },
+            (),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_on_success_update_readonly_schema::PartialData {
+            required2: Some(updated_required2_value),
+            required: None,
+        }
+    );
+
+    updated.handle_success().await;
+}
+
+async_test_matrix!(
+    should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored_as_readonly_async
+);
 
 // SKIPPED: tests using options.on_success with an empty fields array. The new
 // macro does not expose a grouped/empty-fields on_success option.
@@ -3589,4 +3785,132 @@ mod async_post_validate_updates_schema {
         }
     )]
     const _: () = ();
+}
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod sync_on_success_update_ignored_schema {
+    struct Fields {
+        #[required]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                Err(("validation failed".into(), None))
+            } else {
+                Ok(None)
+            }
+        })]
+        #[ignore_update(|_, _| true)]
+        #[on_success(|ctx, _| {
+            panic!(
+                "[required]: on_success triggered with value: {}",
+                ctx.values().required.as_str()
+            );
+        })]
+        pub required: String,
+
+        #[required]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                Err(("validation failed".into(), None))
+            } else {
+                Ok(None)
+            }
+        })]
+        pub required2: String,
+    }
+}
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod async_on_success_update_ignored_schema {
+    struct Fields {
+        #[required]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                Err(("validation failed".into(), None))
+            } else {
+                Ok(None)
+            }
+        })]
+        #[ignore_update(|_, _| true)]
+        #[on_success(async |ctx, _| {
+            panic!(
+                "[required]: on_success triggered with value: {}",
+                ctx.values().required.as_str()
+            );
+        })]
+        pub required: String,
+
+        #[required]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                Err(("validation failed".into(), None))
+            } else {
+                Ok(None)
+            }
+        })]
+        pub required2: String,
+    }
+}
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod sync_on_success_update_readonly_schema {
+    struct Fields {
+        #[required]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                Err(("validation failed".into(), None))
+            } else {
+                Ok(None)
+            }
+        })]
+        #[readonly]
+        #[on_success(|ctx, _| {
+            panic!(
+                "[required]: on_success triggered with value: {}",
+                ctx.values().required.as_str()
+            );
+        })]
+        pub required: String,
+
+        #[required]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                Err(("validation failed".into(), None))
+            } else {
+                Ok(None)
+            }
+        })]
+        pub required2: String,
+    }
+}
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod async_on_success_update_readonly_schema {
+    struct Fields {
+        #[required]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                Err(("validation failed".into(), None))
+            } else {
+                Ok(None)
+            }
+        })]
+        #[readonly]
+        #[on_success(async |ctx, _| {
+            panic!(
+                "[required]: on_success triggered with value: {}",
+                ctx.values().required.as_str()
+            );
+        })]
+        pub required: String,
+
+        #[required]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                Err(("validation failed".into(), None))
+            } else {
+                Ok(None)
+            }
+        })]
+        pub required2: String,
+    }
 }

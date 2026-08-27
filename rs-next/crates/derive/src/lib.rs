@@ -3642,8 +3642,45 @@ fn generate_model(
         })
         .collect();
 
-    let (create_success_is_async, create_success_stmts) =
-        make_trigger_stmts(&create_success_handlers, &hook_ctx_ty);
+    let (create_success_is_async, create_success_stmts) = {
+        let is_async = create_success_handlers
+            .iter()
+            .any(|(_, handler)| is_async_handler(handler));
+        let stmts: Vec<proc_macro2::TokenStream> = create_success_handlers
+            .iter()
+            .map(|(f, handler)| {
+                let annotated = type_annotate_handler(
+                    handler.clone(),
+                    &[hook_ctx_ty.clone(), hook_opts_ty.clone()],
+                );
+                let call = if is_async_handler(handler) {
+                    quote! { ::ivo::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+                } else {
+                    quote! { ::ivo::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                };
+                let name = &f.name;
+                let name_str = name.to_string();
+                let input_name = input_field_name(f);
+                let ignored = if ignore_field_names.contains(&name_str) {
+                    let flag = format_ident!("ignore_{}", f.name);
+                    quote! { #flag }
+                } else {
+                    quote! { false }
+                };
+                let condition = if matches!(f.field_type, FieldType::Virtual { .. }) {
+                    quote! { !#ignored && __trigger_input.#input_name.is_some() }
+                } else {
+                    quote! { true }
+                };
+                quote! {
+                    if #condition {
+                        #call
+                    }
+                }
+            })
+            .collect();
+        (is_async, stmts)
+    };
     let (create_failure_is_async, create_failure_stmts) =
         make_trigger_stmts(&create_failure_handlers, &hook_ctx_ty);
 
@@ -3895,7 +3932,7 @@ fn generate_model(
 
     let create_success_trigger = {
         let setup = quote! {
-            let __trigger_input = input.clone();
+            let __trigger_input = __original_input.clone();
             let __trigger_output = output.clone();
             #create_triggered_fields_init
             let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
@@ -3910,7 +3947,7 @@ fn generate_model(
 
     let create_failure_trigger = {
         let setup = quote! {
-            let __trigger_input = input.clone();
+            let __trigger_input = __original_input.clone();
             let __trigger_output = output.clone();
             let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
@@ -3997,6 +4034,7 @@ fn generate_model(
                 let _ctx_options = _rw_ctx_options.read_only();
 
                 let mut input: #partial_input_name = input.into();
+                let __original_input = input.clone();
                 let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> = ::std::collections::HashMap::new();
                 let mut output: #output_name = ::core::default::Default::default();
                 let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
