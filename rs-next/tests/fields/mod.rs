@@ -4,6 +4,3 @@ mod lax;
 mod required;
 mod timestamps;
 mod virtuals;
-mod virtuals_ignore;
-mod virtuals_on_failure;
-mod virtuals_on_success;
