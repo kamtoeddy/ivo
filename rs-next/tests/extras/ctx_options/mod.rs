@@ -31,23 +31,7 @@ struct ProductID(u64);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 struct SupplierID(u64);
 
-#[derive(Debug, Clone, PartialEq, Default)]
-pub struct Product {
-    id: ProductID,
-    name: String,
-    sku: String,
-    price: u32,
-    supplier: SupplierID,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct ProductInput {
-    name: String,
-    sku: String,
-    price: u32,
-    supplier: SupplierID,
-}
-
+#[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub enum SupplierStatus {
     Active,
@@ -55,6 +39,7 @@ pub enum SupplierStatus {
     Suspended,
 }
 
+#[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Supplier {
     id: SupplierID,
@@ -141,9 +126,9 @@ mod product_schema {
                     supplier.status,
                     SupplierStatus::PhaseOut | SupplierStatus::Suspended
                 ) {
-                    let n = id.0;
+                    let number = id.0;
                     ctx_options.add_warning(&format!(
-                        "warning: supplier {n} is not currently active!"
+                        "warning: supplier {number} is not currently active!"
                     ));
                 }
 

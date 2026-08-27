@@ -1,6 +1,5 @@
 use ivo::ivo_schema;
 
-
 #[derive(Clone)]
 struct CtxOptions {
     messages: Vec<String>,
@@ -20,13 +19,11 @@ impl CtxOptions {
 
 async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    const DEFAULT_VALUE: i32 = 1;
-    const MESSAGE: &str = "ctx_options updated in ignore resolver";
-    const REQUIRED_ERROR: &str = "virtual_field is missing!";
+    use required_create_schema::{DataModel, PartialDataInput, MESSAGE, REQUIRED_ERROR};
 
-    let failed = required_create_schema::DataModel
+    let failed = DataModel
         .create(
-            required_create_schema::PartialDataInput {
+            PartialDataInput {
                 virtual_field: None,
                 virtual_field_1: Some(1),
             },
@@ -55,17 +52,21 @@ async_test_matrix!(
 mod required_create_schema {
     use super::CtxOptions;
 
+    const DEFAULT_VALUE: i32 = 1;
+    pub const MESSAGE: &str = "ctx_options updated in ignore resolver";
+    pub const REQUIRED_ERROR: &str = "virtual_field is missing!";
+
     struct Fields {
         #[depends_on(virtual_field, virtual_field_1)]
-        #[default(1)]
+        #[default(DEFAULT_VALUE)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap_or(0) + 1)]
         pub dependent: i32,
 
         #[ivo_virtual]
         #[validate(|_, _, _| Ok(None))]
         #[required(async |_, opts| {
-            opts.write().await.add_message("ctx_options updated in ignore resolver");
-            Some("virtual_field is missing!".into())
+            opts.write().await.add_message(MESSAGE);
+            Some(REQUIRED_ERROR.into())
         })]
         pub virtual_field: i32,
 
@@ -79,16 +80,16 @@ mod required_create_schema {
 
 async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_during_updates(
 ) {
-    const DEFAULT_VALUE: i32 = 1;
-    const MESSAGE: &str = "ctx_options updated in ignore resolver";
-    const REQUIRED_ERROR: &str = "virtual_field is missing!";
+    use required_update_schema::{
+        Data, DataModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, REQUIRED_ERROR,
+    };
 
-    let failed = required_update_schema::DataModel
+    let failed = DataModel
         .update(
-            required_update_schema::Data {
+            Data {
                 dependent: DEFAULT_VALUE,
             },
-            required_update_schema::PartialDataInput {
+            PartialDataInput {
                 virtual_field: None,
                 virtual_field_1: Some(1),
             },
@@ -123,17 +124,21 @@ async_test_matrix!(
 mod required_update_schema {
     use super::CtxOptions;
 
+    pub const DEFAULT_VALUE: i32 = 1;
+    pub const MESSAGE: &str = "ctx_options updated in ignore resolver";
+    pub const REQUIRED_ERROR: &str = "virtual_field is missing!";
+
     struct Fields {
         #[depends_on(virtual_field, virtual_field_1)]
-        #[default(1)]
+        #[default(DEFAULT_VALUE)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap_or(0) + 1)]
         pub dependent: i32,
 
         #[ivo_virtual]
         #[validate(|_, _, _| Ok(None))]
         #[required(async |_, opts| {
-            opts.write().await.add_message("ctx_options updated in ignore resolver");
-            Some("virtual_field is missing!".into())
+            opts.write().await.add_message(MESSAGE);
+            Some(REQUIRED_ERROR.into())
         })]
         pub virtual_field: i32,
 
@@ -217,13 +222,11 @@ mod ignore_update_schema {
 
 async fn should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in validator";
-    const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
+    use validate_create_schema::{DataModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    let failed = validate_create_schema::DataModel
+    let failed = DataModel
         .create(
-            validate_create_schema::PartialDataInput {
+            PartialDataInput {
                 virtual_field: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -254,20 +257,24 @@ async_test_matrix!(
 mod validate_create_schema {
     use super::CtxOptions;
 
+    const DEFAULT_VALUE: &str = "default_value";
+    pub const MESSAGE: &str = "ctx_options updated in validator";
+    pub const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
+
     struct Fields {
         #[depends_on(virtual_field)]
-        #[default("default_value".into())]
+        #[default(DEFAULT_VALUE.into())]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
         pub dependent: String,
 
         #[ivo_virtual]
         #[validate(async |v: String, _, opts| {
-            opts.write().await.add_message("ctx_options updated in validator");
+            opts.write().await.add_message(MESSAGE);
 
             let validated = v.trim();
 
             if validated.len() < 2 {
-                return Err(("expected virtual_field to be at least 2 characters long".into(), None));
+                return Err((MIN_LENGTH_ERROR.into(), None));
             }
 
             Ok(Some(validated.into()))

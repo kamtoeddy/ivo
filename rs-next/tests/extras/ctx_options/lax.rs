@@ -1,6 +1,5 @@
 use ivo::ivo_schema;
 
-
 #[derive(Clone)]
 struct CtxOptions {
     messages: Vec<String>,
@@ -179,11 +178,9 @@ mod ignore_update_schema {
 
 async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    const DEFAULT_VALUE: i32 = 1;
-    const MESSAGE: &str = "ctx_options updated in ignore resolver";
-    const REQUIRED_ERROR: &str = "lax is missing!";
+    use required_create_schema::{DataInputModel, MESSAGE, REQUIRED_ERROR};
 
-    let failed = required_create_schema::DataInputModel
+    let failed = DataInputModel
         .create(
             required_create_schema::PartialDataInput { lax: None },
             CtxOptions::new(),
@@ -207,12 +204,15 @@ async_test_matrix!(
 mod required_create_schema {
     use super::CtxOptions;
 
+    const DEFAULT_VALUE: i32 = 1;
+    pub const MESSAGE: &str = "ctx_options updated in ignore resolver";
+    pub const REQUIRED_ERROR: &str = "lax is missing!";
+
     struct Fields {
-        #[lax(1)]
-        #[validate(|_, _, _| Ok(None))]
+        #[lax(DEFAULT_VALUE)]
         #[required(async |_, opts| {
-            opts.write().await.add_message("ctx_options updated in ignore resolver");
-            Some("lax is missing!".into())
+            opts.write().await.add_message(MESSAGE.into());
+            Some(REQUIRED_ERROR.into())
         })]
         pub lax: i32,
     }
@@ -222,17 +222,17 @@ mod required_create_schema {
 
 async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_during_updates(
 ) {
-    const DEFAULT_VALUE: i32 = 1;
-    const MESSAGE: &str = "ctx_options updated in ignore resolver";
-    const REQUIRED_ERROR: &str = "lax is missing!";
+    use required_update_schema::{
+        DataInput, DataInputModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, REQUIRED_ERROR,
+    };
 
-    let failed = required_update_schema::DataInputModel
+    let failed = DataInputModel
         .update(
-            required_update_schema::DataInput {
+            DataInput {
                 lax: DEFAULT_VALUE,
                 lax_1: DEFAULT_VALUE,
             },
-            required_update_schema::PartialDataInput {
+            PartialDataInput {
                 lax: None,
                 lax_1: Some(DEFAULT_VALUE + 1),
             },
@@ -260,17 +260,19 @@ async_test_matrix!(
 mod required_update_schema {
     use super::CtxOptions;
 
+    pub const DEFAULT_VALUE: i32 = 1;
+    pub const MESSAGE: &str = "ctx_options updated in ignore resolver";
+    pub const REQUIRED_ERROR: &str = "lax is missing!";
+
     struct Fields {
-        #[lax(1)]
-        #[validate(|_, _, _| Ok(None))]
+        #[lax(DEFAULT_VALUE)]
         #[required(async |_, opts| {
-            opts.write().await.add_message("ctx_options updated in ignore resolver");
-            Some("lax is missing!".into())
+            opts.write().await.add_message(MESSAGE);
+            Some(REQUIRED_ERROR.into())
         })]
         pub lax: i32,
 
-        #[lax(1)]
-        #[validate(|_, _, _| Ok(None))]
+        #[lax(DEFAULT_VALUE)]
         pub lax_1: i32,
     }
 }
@@ -279,13 +281,11 @@ mod required_update_schema {
 
 async fn should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in validator";
-    const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
+    use validate_create_schema::{DataInputModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    let failed = validate_create_schema::DataInputModel
+    let failed = DataInputModel
         .create(
-            validate_create_schema::PartialDataInput {
+            PartialDataInput {
                 lax: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -312,15 +312,19 @@ async_test_matrix!(
 mod validate_create_schema {
     use super::CtxOptions;
 
+    const DEFAULT_VALUE: &str = "default_value";
+    pub const MESSAGE: &str = "ctx_options updated in validator";
+    pub const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
+
     struct Fields {
-        #[lax("default_value".into())]
+        #[lax(DEFAULT_VALUE.into())]
         #[validate(async |v: String, _, opts| {
-            opts.write().await.add_message("ctx_options updated in validator");
+            opts.write().await.add_message(MESSAGE);
 
             let validated = v.trim();
 
             if validated.len() < 2 {
-                return Err(("expected lax to be at least 2 characters long".into(), None));
+                return Err((MIN_LENGTH_ERROR.into(), None));
             }
 
             Ok(Some(validated.into()))
@@ -403,13 +407,11 @@ mod validate_update_schema {
 
 async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in re_validator";
-    const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
+    use re_validate_create_schema::{DataInputModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    let failed = re_validate_create_schema::DataInputModel
+    let failed = DataInputModel
         .create(
-            re_validate_create_schema::PartialDataInput {
+            PartialDataInput {
                 lax: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -436,16 +438,20 @@ async_test_matrix!(
 mod re_validate_create_schema {
     use super::CtxOptions;
 
+    const DEFAULT_VALUE: &str = "default_value";
+    pub const MESSAGE: &str = "ctx_options updated in re_validator";
+    pub const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
+
     struct Fields {
-        #[lax("default_value".into())]
+        #[lax(DEFAULT_VALUE.into())]
         #[validate(|_, _, _| Ok(None))]
         #[re_validate(async |v: String, _, opts| {
-            opts.write().await.add_message("ctx_options updated in re_validator");
+            opts.write().await.add_message(MESSAGE);
 
             let validated = v.trim();
 
             if validated.len() < 2 {
-                return Err(("expected lax to be at least 2 characters long".into(), None));
+                return Err((MIN_LENGTH_ERROR.into(), None));
             }
 
             Ok(Some(validated.into()))
