@@ -1628,12 +1628,12 @@ fn generate_partial_and_impls(
 
     let input_impls = if is_input {
         quote! {
-            impl<Metadata: Send + Sync + Clone> ::ivo::WithPartialErrors<Metadata> for #name {
-                type PartialErrors = ::ivo::IvoErrorPayload<Metadata>;
+            impl<Metadata: Send + Sync + Clone> ::ivo::__ivo_internals::WithPartialErrors<Metadata> for #name {
+                type PartialErrors = ::ivo::__ivo_internals::IvoErrorPayload<Metadata>;
             }
 
-            impl<CtxOptions, ErrorSanitizer: ::ivo::IvoErrorSanitizer<CtxOptions>>
-                ::ivo::IvoInputStruct<CtxOptions, ErrorSanitizer> for #name
+            impl<CtxOptions, ErrorSanitizer: ::ivo::__ivo_internals::IvoErrorSanitizer<CtxOptions>>
+                ::ivo::__ivo_internals::IvoInputStruct<CtxOptions, ErrorSanitizer> for #name
             where
                 ErrorSanitizer::Metadata: Clone,
             {
@@ -1665,7 +1665,7 @@ fn generate_partial_and_impls(
             #(#setters)*
         }
 
-        impl ::ivo::PartialStructMethods for #partial_name {
+        impl ::ivo::__ivo_internals::PartialStructMethods for #partial_name {
             fn ivo_internal_fields_available(&self) -> ::std::vec::Vec<::std::string::String> {
                 let mut names = ::std::vec::Vec::new();
                 #(#available_fields)*
@@ -1679,7 +1679,7 @@ fn generate_partial_and_impls(
             }
         }
 
-        impl ::ivo::WithPartialStruct for #name {
+        impl ::ivo::__ivo_internals::WithPartialStruct for #name {
             type Partial = #partial_name;
         }
 
@@ -1691,13 +1691,13 @@ fn generate_partial_and_impls(
             }
         }
 
-        impl ::ivo::IvoStructMethods for #name {
+        impl ::ivo::__ivo_internals::IvoStructMethods for #name {
             fn ivo_internal_update_with(&mut self, updates: &Self::Partial) {
                 #(#update_fields)*
             }
         }
 
-        impl ::ivo::IvoStruct for #name {}
+        impl ::ivo::__ivo_internals::IvoStruct for #name {}
 
         impl ::core::convert::From<#name> for #partial_name {
             fn from(value: #name) -> Self {
@@ -1714,7 +1714,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
 
     let error_fields = fields.iter().map(|f| {
         let name = &f.name;
-        quote! { #name: ::core::option::Option<::ivo::FieldError<Metadata>> }
+        quote! { #name: ::core::option::Option<::ivo::__ivo_internals::FieldError<Metadata>> }
     });
 
     let error_defaults = fields.iter().map(|f| {
@@ -1736,7 +1736,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
                 reason: impl ::core::convert::Into<::std::string::String>,
                 metadata: ::core::option::Option<Metadata>,
             ) {
-                self.#name = ::core::option::Option::Some(::ivo::FieldError {
+                self.#name = ::core::option::Option::Some(::ivo::__ivo_internals::FieldError {
                     reason: reason.into(),
                     metadata,
                 });
@@ -1753,7 +1753,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
                 reason: impl ::core::convert::Into<::std::string::String>,
                 metadata: ::core::option::Option<Metadata>,
             ) -> Self {
-                self.#name = ::core::option::Option::Some(::ivo::FieldError {
+                self.#name = ::core::option::Option::Some(::ivo::__ivo_internals::FieldError {
                     reason: reason.into(),
                     metadata,
                 });
@@ -1774,7 +1774,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
 
     quote! {
         #[derive(::core::clone::Clone)]
-        pub struct #errors_name<Metadata: ::core::clone::Clone = ::ivo::DefaultFieldErrorMetadata> {
+        pub struct #errors_name<Metadata: ::core::clone::Clone = ::ivo::__ivo_internals::DefaultFieldErrorMetadata> {
             #(#error_fields,)*
         }
 
@@ -1791,8 +1791,8 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
 
             #(#builder_setters)*
 
-            pub fn into_payload(self) -> ::ivo::IvoErrorPayload<Metadata> {
-                let mut payload = ::ivo::IvoErrorPayload::new();
+            pub fn into_payload(self) -> ::ivo::__ivo_internals::IvoErrorPayload<Metadata> {
+                let mut payload = ::ivo::__ivo_internals::IvoErrorPayload::new();
                 #(#insertions)*
                 payload
             }
@@ -1805,7 +1805,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
         }
 
         impl<Metadata: ::core::clone::Clone> ::core::convert::From<#errors_name<Metadata>>
-            for ::ivo::IvoErrorPayload<Metadata>
+            for ::ivo::__ivo_internals::IvoErrorPayload<Metadata>
         {
             fn from(errors: #errors_name<Metadata>) -> Self {
                 errors.into_payload()
@@ -1961,12 +1961,12 @@ fn generate_model(
         .error_sanitizer
         .as_ref()
         .map(|t| quote!(#t))
-        .unwrap_or_else(|| quote!(::ivo::DefaultErrorSanitizer<()>));
+        .unwrap_or_else(|| quote!(::ivo::__ivo_internals::DefaultErrorSanitizer<()>));
     let payload_ty = quote!(
-        <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::Payload
+        <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::Payload
     );
     let metadata_ty = quote!(
-        <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::Metadata
+        <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::Metadata
     );
 
     let has_field_on_delete = fields.iter().any(|f| {
@@ -2081,12 +2081,14 @@ fn generate_model(
     // Create method: sanitize/validate input fields, resolve dependents, and build output.
     // The create method accepts any type convertible to the partial input so that callers
     // may pass either the full input struct or a partial.
-    let ctx_ty = quote!(&::ivo::IvoContext<#partial_input_name, #output_name>);
-    let resolver_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
-    let opts_ty = quote!(&::ivo::IvoRwCtxOptions<#ctx_options_ty>);
-    let hook_opts_ty = quote!(&::ivo::IvoCtxOptions<#ctx_options_ty>);
-    let post_validate_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
-    let post_validate_opts_ty = quote!(::ivo::IvoRwCtxOptions<#ctx_options_ty>);
+    let ctx_ty = quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
+    let resolver_ctx_ty =
+        quote!(::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
+    let opts_ty = quote!(&::ivo::__ivo_internals::IvoRwCtxOptions<#ctx_options_ty>);
+    let hook_opts_ty = quote!(&::ivo::__ivo_internals::IvoCtxOptions<#ctx_options_ty>);
+    let post_validate_ctx_ty =
+        quote!(::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
+    let post_validate_opts_ty = quote!(::ivo::__ivo_internals::IvoRwCtxOptions<#ctx_options_ty>);
     let raw_input_ty = quote!(&#partial_input_name);
 
     // Helpers to emit either a sync call or an awaited async runtime helper.
@@ -2102,12 +2104,12 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! { ::ivo::run_boolean_resolver(#ctx_expr, #opts_expr, #annotated).await },
+                quote! { ::ivo::__ivo_internals::run_boolean_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (
                 false,
-                quote! { ::ivo::run_boolean_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
+                quote! { ::ivo::__ivo_internals::run_boolean_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
             )
         }
     };
@@ -2124,12 +2126,12 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! { ::ivo::run_required_resolver(#ctx_expr, #opts_expr, #annotated).await },
+                quote! { ::ivo::__ivo_internals::run_required_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (
                 false,
-                quote! { ::ivo::run_required_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
+                quote! { ::ivo::__ivo_internals::run_required_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
             )
         }
     };
@@ -2146,12 +2148,12 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! { ::ivo::run_grouped_required_resolver(#ctx_expr, #opts_expr, #annotated).await },
+                quote! { ::ivo::__ivo_internals::run_grouped_required_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (
                 false,
-                quote! { ::ivo::run_grouped_required_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
+                quote! { ::ivo::__ivo_internals::run_grouped_required_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
             )
         }
     };
@@ -2165,12 +2167,12 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! { ::ivo::run_resolver(#ctx_expr, #opts_expr, #annotated).await },
+                quote! { ::ivo::__ivo_internals::run_resolver(#ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (
                 false,
-                quote! { ::ivo::run_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
+                quote! { ::ivo::__ivo_internals::run_resolver_sync(#ctx_expr, #opts_expr, #annotated) },
             )
         }
     };
@@ -2182,7 +2184,10 @@ fn generate_model(
                     if is_async_handler(tokens) {
                         (true, quote! { (#tokens)().await })
                     } else {
-                        (false, quote! { ::ivo::run_value_resolver_sync(#tokens) })
+                        (
+                            false,
+                            quote! { ::ivo::__ivo_internals::run_value_resolver_sync(#tokens) },
+                        )
                     }
                 }
                 Some(_) => {
@@ -2207,12 +2212,12 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! { ::ivo::run_sanitizer(#value_expr, #ctx_expr, #opts_expr, #annotated).await },
+                quote! { ::ivo::__ivo_internals::run_sanitizer(#value_expr, #ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (
                 false,
-                quote! { ::ivo::run_sanitizer_sync(#value_expr, #ctx_expr, #opts_expr, #annotated) },
+                quote! { ::ivo::__ivo_internals::run_sanitizer_sync(#value_expr, #ctx_expr, #opts_expr, #annotated) },
             )
         }
     };
@@ -2230,12 +2235,12 @@ fn generate_model(
         if is_async_handler(handler) {
             (
                 true,
-                quote! { ::ivo::run_validator(#value_expr, #ctx_expr, #opts_expr, #annotated).await },
+                quote! { ::ivo::__ivo_internals::run_validator(#value_expr, #ctx_expr, #opts_expr, #annotated).await },
             )
         } else {
             (
                 false,
-                quote! { ::ivo::run_validator_sync(#value_expr, #ctx_expr, #opts_expr, #annotated) },
+                quote! { ::ivo::__ivo_internals::run_validator_sync(#value_expr, #ctx_expr, #opts_expr, #annotated) },
             )
         }
     };
@@ -2252,7 +2257,7 @@ fn generate_model(
             (
                 true,
                 quote! {
-                    ::ivo::run_post_validator(
+                    ::ivo::__ivo_internals::run_post_validator(
                         #ctx_expr.clone(),
                         #opts_expr.clone(),
                         #annotated,
@@ -2264,7 +2269,7 @@ fn generate_model(
             (
                 false,
                 quote! {
-                    ::ivo::run_post_validator_sync(
+                    ::ivo::__ivo_internals::run_post_validator_sync(
                         #ctx_expr.clone(),
                         #opts_expr.clone(),
                         #annotated,
@@ -2409,7 +2414,7 @@ fn generate_model(
                     if input.#input_tokens.is_none() {
                         errors.insert(
                             ::std::string::String::from(#name_str),
-                            ::ivo::FieldError {
+                            ::ivo::__ivo_internals::FieldError {
                                 reason: __msg,
                                 metadata: ::core::option::Option::None,
                             },
@@ -2445,7 +2450,7 @@ fn generate_model(
                 if input.#input_tokens.is_none() {
                     errors.insert(
                         ::std::string::String::from(#name_str),
-                        ::ivo::FieldError {
+                        ::ivo::__ivo_internals::FieldError {
                             reason: #error_expr,
                             metadata: ::core::option::Option::None,
                         },
@@ -2502,7 +2507,7 @@ fn generate_model(
                 }
                 FieldType::CreatedAt | FieldType::UpdatedAt { optional: false } => {
                     if let Some(resolver) = &timestamps_resolver {
-                        quote! { ::ivo::run_value_resolver_sync(#resolver) }
+                        quote! { ::ivo::__ivo_internals::run_value_resolver_sync(#resolver) }
                     } else {
                         quote! { ::core::default::Default::default() }
                     }
@@ -2519,7 +2524,7 @@ fn generate_model(
                                 field_is_async = true;
                                 quote! { (#tokens)().await }
                             } else {
-                                quote! { ::ivo::run_value_resolver_sync(#tokens) }
+                                quote! { ::ivo::__ivo_internals::run_value_resolver_sync(#tokens) }
                             }
                         }
                         Some(_) => {
@@ -2595,7 +2600,7 @@ fn generate_model(
             let stmt = quote! {
                 let #name: #ty = #value_computation;
                 output.#name = #name.clone();
-                let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     output.clone(),
                     output.clone().into(),
@@ -2667,7 +2672,7 @@ fn generate_model(
                             output.#name = __new_value.clone();
                             __dependent_next_parents.insert(#name_str);
                         }
-                        ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                        ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                             input.clone(),
                             output.clone(),
                             output.clone().into(),
@@ -2786,7 +2791,7 @@ fn generate_model(
                 } else if __field_valid && __provided {
                     input.#input_name_tokens = ::core::option::Option::Some(#name.clone());
                 }
-                let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     output.clone(),
                     output.clone().into(),
@@ -2824,7 +2829,7 @@ fn generate_model(
                     let __value: #ty = output.#name.clone();
                     let __result: ::core::result::Result<
                         ::core::option::Option<#ty>,
-                        ::ivo::FieldError<#metadata_ty>,
+                        ::ivo::__ivo_internals::FieldError<#metadata_ty>,
                     > = #call;
                     match __result {
                         ::core::result::Result::Ok(::core::option::Option::Some(__new_value)) => {
@@ -2937,7 +2942,7 @@ fn generate_model(
                             ::core::option::Option::Some(__post_updates),
                         ) => {
                             #(#apply_updates)*
-                            ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                            ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                                 input.clone(),
                                 output.clone(),
                                 #changes_expr,
@@ -2946,7 +2951,7 @@ fn generate_model(
                         }
                         ::core::result::Result::Ok(::core::option::Option::None) => {}
                         ::core::result::Result::Err(__post_errors) => {
-                            let __post_payload: ::ivo::IvoErrorPayload<#metadata_ty> =
+                            let __post_payload: ::ivo::__ivo_internals::IvoErrorPayload<#metadata_ty> =
                                 __post_errors.into();
                             let __allowed: &[&str] = &#allowed_names_expr;
                             for (__field_name, __field_error) in __post_payload {
@@ -3011,7 +3016,8 @@ fn generate_model(
         .collect();
 
     // Update method: apply partial updates.
-    let update_ctx_ty = quote!(&::ivo::IvoContext<#partial_input_name, #output_name>);
+    let update_ctx_ty =
+        quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
 
     let updateable_fields: Vec<_> = fields
         .iter()
@@ -3182,7 +3188,7 @@ fn generate_model(
                     if updates.#input_tokens.is_none() {
                         errors.insert(
                             ::std::string::String::from(#name_str),
-                            ::ivo::FieldError {
+                            ::ivo::__ivo_internals::FieldError {
                                 reason: __msg,
                                 metadata: ::core::option::Option::None,
                             },
@@ -3280,7 +3286,7 @@ fn generate_model(
                         if let ::core::option::Option::Some(v) = &updates.#input_name {
                             __update_attempted = true;
                             if !#ignore_update_flag && #readonly_guard {
-                                let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                                let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                                     updates.clone(),
                                     output.clone(),
                                     __changes.clone(),
@@ -3433,7 +3439,7 @@ fn generate_model(
                             if &__new_value != &__original_output.#name {
                                 output.#name = __new_value.clone();
                                 __changes.#setter(__new_value);
-                                ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                                     updates.clone(),
                                     output.clone(),
                                     __changes.clone(),
@@ -3460,7 +3466,7 @@ fn generate_model(
             let setter = format_ident!("set_{}", name);
             let optional = matches!(f.field_type, FieldType::UpdatedAt { optional: true });
             let resolver_expr = if let Some(resolver) = &timestamps_resolver {
-                quote! { ::ivo::run_value_resolver_sync(#resolver) }
+                quote! { ::ivo::__ivo_internals::run_value_resolver_sync(#resolver) }
             } else {
                 quote! { ::core::default::Default::default() }
             };
@@ -3524,9 +3530,9 @@ fn generate_model(
                 );
                 let is_async = is_async_handler(&handler);
                 let call = if is_async {
-                    quote! { ::ivo::run_hook(data, &_ctx_options, #annotated).await; }
+                    quote! { ::ivo::__ivo_internals::run_hook(data, &_ctx_options, #annotated).await; }
                 } else {
-                    quote! { ::ivo::run_hook_sync(data, &_ctx_options, #annotated); }
+                    quote! { ::ivo::__ivo_internals::run_hook_sync(data, &_ctx_options, #annotated); }
                 };
                 (is_async, call)
             };
@@ -3577,7 +3583,7 @@ fn generate_model(
                 data: &#output_name,
                 _ctx_options: #ctx_options_ty,
             ) {
-                let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
+                let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
                 let _ctx_options = _rw_ctx_options.read_only();
 
                 #(#on_delete_hooks)*
@@ -3588,8 +3594,9 @@ fn generate_model(
     };
 
     // Success / failure triggers.
-    let hook_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
-    let update_hook_ctx_ty = quote!(::ivo::IvoContext<#partial_input_name, #output_name>);
+    let hook_ctx_ty = quote!(::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
+    let update_hook_ctx_ty =
+        quote!(::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
 
     let hook_field_filter = |f: &&FieldDef| {
         matches!(
@@ -3614,9 +3621,9 @@ fn generate_model(
                 let annotated =
                     type_annotate_handler(handler.clone(), &[ctx_ty.clone(), hook_opts_ty.clone()]);
                 if is_async_handler(handler) {
-                    quote! { ::ivo::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+                    quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
                 } else {
-                    quote! { ::ivo::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                    quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
                 }
             })
             .collect();
@@ -3654,9 +3661,9 @@ fn generate_model(
                     &[hook_ctx_ty.clone(), hook_opts_ty.clone()],
                 );
                 let call = if is_async_handler(handler) {
-                    quote! { ::ivo::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+                    quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
                 } else {
-                    quote! { ::ivo::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                    quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
                 };
                 let name = &f.name;
                 let name_str = name.to_string();
@@ -3719,9 +3726,9 @@ fn generate_model(
                     &[update_hook_ctx_ty.clone(), hook_opts_ty.clone()],
                 );
                 let call = if is_async_handler(handler) {
-                    quote! { ::ivo::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+                    quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
                 } else {
-                    quote! { ::ivo::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                    quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
                 };
                 let name = &f.name;
                 let name_str = name.to_string();
@@ -3783,15 +3790,15 @@ fn generate_model(
                         0 => quote! { (#annotated)().await },
                         1 => quote! { (#annotated)(ctx.clone()).await },
                         _ => {
-                            quote! { ::ivo::run_hook(ctx.clone(), &_ctx_options, #annotated).await }
+                            quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await }
                         }
                     }
                 } else {
                     match input_count {
-                        0 => quote! { ::ivo::run_callback_sync(#annotated) },
+                        0 => quote! { ::ivo::__ivo_internals::run_callback_sync(#annotated) },
                         1 => quote! { (#annotated)(ctx.clone()) },
                         _ => {
-                            quote! { ::ivo::run_hook_sync(ctx.clone(), &_ctx_options, #annotated) }
+                            quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated) }
                         }
                     }
                 };
@@ -3908,12 +3915,12 @@ fn generate_model(
                         setup: proc_macro2::TokenStream|
      -> proc_macro2::TokenStream {
         if stmts.is_empty() {
-            quote! { ::ivo::ivo_sync_trigger(|| {}) }
+            quote! { ::ivo::__ivo_internals::ivo_sync_trigger(|| {}) }
         } else if is_async {
             quote! {
                 {
                     #setup
-                    ::ivo::ivo_trigger(async move {
+                    ::ivo::__ivo_internals::ivo_trigger(async move {
                         #(#stmts)*
                     })
                 }
@@ -3922,7 +3929,7 @@ fn generate_model(
             quote! {
                 {
                     #setup
-                    ::ivo::ivo_sync_trigger(move || {
+                    ::ivo::__ivo_internals::ivo_sync_trigger(move || {
                         #(#stmts)*
                     })
                 }
@@ -3935,7 +3942,7 @@ fn generate_model(
             let __trigger_input = __original_input.clone();
             let __trigger_output = output.clone();
             #create_triggered_fields_init
-            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+            let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
                 __trigger_output.clone(),
                 __trigger_output.clone().into(),
@@ -3949,7 +3956,7 @@ fn generate_model(
         let setup = quote! {
             let __trigger_input = __original_input.clone();
             let __trigger_output = output.clone();
-            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+            let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
                 __trigger_output.clone(),
                 __trigger_output.clone().into(),
@@ -3964,7 +3971,7 @@ fn generate_model(
             let __trigger_updates = updates.clone();
             let __trigger_output = output.clone();
             #update_triggered_fields_init
-            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+            let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_updates.clone(),
                 __trigger_output.clone(),
                 __trigger_changes.clone(),
@@ -3978,7 +3985,7 @@ fn generate_model(
         let setup = quote! {
             let __trigger_updates = updates.clone();
             let __trigger_output = output.clone();
-            let ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+            let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_updates.clone(),
                 __trigger_output.clone(),
                 __trigger_changes.clone(),
@@ -4024,20 +4031,20 @@ fn generate_model(
                 input: I,
                 _ctx_options: #ctx_options_ty,
             ) -> ::core::result::Result<
-                ::ivo::IvoSuccessHandle<#output_name, #ctx_options_ty, #create_success_is_async, #has_success_handlers>,
-                ::ivo::IvoFailureHandle<#payload_ty, #ctx_options_ty, #create_failure_is_async, #has_failure_handlers>,
+                ::ivo::__ivo_internals::IvoSuccessHandle<#output_name, #ctx_options_ty, #create_success_is_async, #has_success_handlers>,
+                ::ivo::__ivo_internals::IvoFailureHandle<#payload_ty, #ctx_options_ty, #create_failure_is_async, #has_failure_handlers>,
             >
             where
                 I: ::core::convert::Into<#partial_input_name>,
             {
-                let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
+                let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
                 let _ctx_options = _rw_ctx_options.read_only();
 
                 let mut input: #partial_input_name = input.into();
                 let __original_input = input.clone();
-                let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> = ::std::collections::HashMap::new();
+                let mut errors: ::ivo::__ivo_internals::IvoErrorPayload<#metadata_ty> = ::std::collections::HashMap::new();
                 let mut output: #output_name = ::core::default::Default::default();
-                let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     output.clone(),
                     output.clone().into(),
@@ -4062,7 +4069,7 @@ fn generate_model(
                 if errors.is_empty() {
                     let __return_opts = _ctx_options.clone();
                     let __success_trigger = #create_success_trigger;
-                    ::core::result::Result::Ok(::ivo::IvoSuccessHandle::new(
+                    ::core::result::Result::Ok(::ivo::__ivo_internals::IvoSuccessHandle::new(
                         output,
                         __return_opts,
                         __success_trigger,
@@ -4070,8 +4077,8 @@ fn generate_model(
                 } else {
                     let __return_opts = _ctx_options.clone();
                     let __failure_trigger = #create_failure_trigger;
-                    ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
-                        <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                    ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
+                        <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
                             errors, &*#create_options_read,
                         ),
                         __return_opts,
@@ -4086,24 +4093,24 @@ fn generate_model(
                 updates: #partial_input_name,
                 _ctx_options: #ctx_options_ty,
             ) -> ::core::result::Result<
-                ::ivo::IvoSuccessHandle<#partial_output_name, #ctx_options_ty, #update_success_is_async, #has_success_handlers>,
-                ::ivo::IvoFailureHandle<::core::option::Option<#payload_ty>, #ctx_options_ty, #update_failure_is_async, #has_failure_handlers>,
+                ::ivo::__ivo_internals::IvoSuccessHandle<#partial_output_name, #ctx_options_ty, #update_success_is_async, #has_success_handlers>,
+                ::ivo::__ivo_internals::IvoFailureHandle<::core::option::Option<#payload_ty>, #ctx_options_ty, #update_failure_is_async, #has_failure_handlers>,
             > {
-                let _rw_ctx_options = ::ivo::IvoRwCtxOptions::new(_ctx_options);
+                let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
                 let _ctx_options = _rw_ctx_options.read_only();
 
                 let mut output = existing;
                 let __original_output = output.clone();
                 let mut __changes: #partial_output_name = ::core::default::Default::default();
                 let mut __update_attempted = false;
-                let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     updates.clone(),
                     output.clone(),
                     __changes.clone(),
                     true,
                 );
 
-                let mut errors: ::ivo::IvoErrorPayload<#metadata_ty> =
+                let mut errors: ::ivo::__ivo_internals::IvoErrorPayload<#metadata_ty> =
                     ::std::collections::HashMap::new();
 
                 #(#update_ignore_flag_decls)*
@@ -4118,7 +4125,7 @@ fn generate_model(
                 #(#post_input_inits)*
                 {
                     let mut input = __post_input.clone();
-                    let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                    let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                         input.clone(),
                         output.clone(),
                         __changes.clone(),
@@ -4127,7 +4134,7 @@ fn generate_model(
                     #(#post_validate_update_steps)*
                     __post_input = input;
                 }
-                let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     __post_input.clone(),
                     output.clone(),
                     __changes.clone(),
@@ -4136,7 +4143,7 @@ fn generate_model(
                 #(#dependent_update_assignments)*
                 #(#timestamp_update_assignments)*
 
-                let mut ctx = ::ivo::IvoContext::<#partial_input_name, #output_name>::new(
+                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     __post_input.clone(),
                     output.clone(),
                     __changes.clone(),
@@ -4155,9 +4162,9 @@ fn generate_model(
                     let __trigger_changes = __changes.clone();
                     let __return_opts = _ctx_options.clone();
                     let __failure_trigger = #update_failure_trigger;
-                    return ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
+                    return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
                         ::core::option::Option::Some(
-                            <#error_sanitizer_ty as ::ivo::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                            <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
                                 errors, &*#update_options_read,
                             ),
                         ),
@@ -4170,7 +4177,7 @@ fn generate_model(
                     let __trigger_changes = __changes.clone();
                     let __return_opts = _ctx_options.clone();
                     let __failure_trigger = #update_failure_trigger;
-                    return ::core::result::Result::Err(::ivo::IvoFailureHandle::new(
+                    return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
                         ::core::option::Option::None,
                         __return_opts,
                         __failure_trigger,
@@ -4180,7 +4187,7 @@ fn generate_model(
                 let __trigger_changes = __changes.clone();
                 let __return_opts = _ctx_options.clone();
                 let __success_trigger = #update_success_trigger;
-                ::core::result::Result::Ok(::ivo::IvoSuccessHandle::new(
+                ::core::result::Result::Ok(::ivo::__ivo_internals::IvoSuccessHandle::new(
                     __changes,
                     __return_opts,
                     __success_trigger,

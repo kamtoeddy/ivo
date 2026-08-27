@@ -13,7 +13,6 @@ rust-version.workspace = true
 
 [dependencies]
 ivo = { path = "../..", features = ["validators"] }
-ivo-validators = { path = "../../crates/validators" }
 async-std.workspace = true
 chrono.workspace = true
 regex.workspace = true

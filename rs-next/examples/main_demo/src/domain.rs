@@ -39,7 +39,7 @@ mod user_schema {
     use super::{SlugifiedString, Timestamp, UserCtxOptions};
     use crate::slugify::slugify;
     use chrono::Utc;
-    use ivo_validators::validate_email;
+    use ivo::validate_email;
 
     struct Fields {
         #[constant(1234)]

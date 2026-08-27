@@ -850,7 +850,6 @@ dependencies = [
  "async-std",
  "chrono",
  "ivo",
- "ivo-validators",
  "regex",
  "unicode-normalization",
 ]
