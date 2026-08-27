@@ -75,6 +75,12 @@ harness = false
 name = "memory"
 harness = false
 
+[[bench]]
+name = "main_demo"
+path = "benches/main_demo/mod.rs"
+harness = false
+required-features = ["validators"]
+
 [[example]]
 name = "constants"
 path = "examples/constants.rs"

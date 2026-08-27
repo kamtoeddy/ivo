@@ -9,9 +9,8 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 RS_DIR = ROOT / "rs"
@@ -35,21 +34,25 @@ MEMORY_BENCHES: List[str] = [
     "memory no-op update x1000",
 ]
 
+MAIN_DEMO_BENCHES: List[str] = [
+    "main_demo create",
+    "main_demo update",
+    "main_demo delete",
+]
 
-@dataclass(frozen=True)
-class BenchResult:
-    name: str
-    mean_ns: float
+
+def run_command(cmd: List[str], cwd: Path) -> None:
+    print(f"\n>>> Running {' '.join(cmd)} in {cwd.relative_to(ROOT)} ...")
+    subprocess.run(cmd, cwd=cwd, check=True, stdout=sys.stdout, stderr=sys.stderr)
 
 
-def run_cargo_bench(project_dir: Path) -> None:
-    print(f"\n>>> Running cargo bench in {project_dir.relative_to(ROOT)} ...")
-    subprocess.run(
-        ["cargo", "bench"],
-        cwd=project_dir,
-        check=True,
-        stdout=sys.stdout,
-        stderr=sys.stderr,
+def run_benchmarks(project_dir: Path) -> None:
+    # Standard throughput/memory benches.
+    run_command(["cargo", "bench"], project_dir)
+    # main_demo requires the validators feature.
+    run_command(
+        ["cargo", "bench", "--features", "validators", "--bench", "main_demo"],
+        project_dir,
     )
 
 
@@ -67,7 +70,7 @@ def parse_criterion_json(project_dir: Path, bench_name: str) -> Optional[float]:
 
 def collect_results(project_dir: Path) -> Dict[str, float]:
     results: Dict[str, float] = {}
-    for name in THROUGHPUT_BENCHES + MEMORY_BENCHES:
+    for name in THROUGHPUT_BENCHES + MEMORY_BENCHES + MAIN_DEMO_BENCHES:
         value = parse_criterion_json(project_dir, name)
         if value is not None:
             results[name] = value
@@ -101,6 +104,34 @@ def pct_change(old: float, new: float) -> str:
     return f"{sign}{change:.1f}%"
 
 
+def render_table(
+    lines: List[str],
+    title: str,
+    headers: str,
+    benches: List[str],
+    old_results: Dict[str, float],
+    new_results: Dict[str, float],
+    extra_col: bool = True,
+    per_op_divisor: Optional[int] = None,
+) -> None:
+    lines.extend(["", f"## {title}", "", headers, "| --- | --- | --- | --- | --- |"])
+    for name in benches:
+        old_ns = old_results.get(name)
+        new_ns = new_results.get(name)
+        if old_ns is None or new_ns is None:
+            lines.append(f"| {name} | - | - | - | - |")
+            continue
+        change = pct_change(old_ns, new_ns)
+        if per_op_divisor:
+            extra = format_time(new_ns / per_op_divisor)
+        else:
+            extra = f"~{throughput_ops_per_s(new_ns)}"
+        lines.append(
+            f"| {name} | {format_time(old_ns)} | {format_time(new_ns)} | "
+            f"{change} | {extra} |"
+        )
+
+
 def generate_markdown(
     old_results: Dict[str, float], new_results: Dict[str, float]
 ) -> str:
@@ -110,51 +141,40 @@ def generate_markdown(
         "# `ivo` `/rs` vs `/rs-next` Benchmark Comparison",
         "",
         f"**Date**: {date}",
-        "**Command**: `cargo bench` run first in `/rs`, then in `/rs-next`",
+        "**Command**: `cargo bench` and `cargo bench --features validators --bench main_demo` "
+        "run first in `/rs`, then in `/rs-next`",
         "**Runtime**: Criterion + Tokio multi-thread runtime (`Runtime::new()`)",
         "",
         "These are fresh, same-machine results for both implementations.",
-        "",
-        "## Throughput",
-        "",
-        "| Benchmark | Old (`/rs`) | New (`/rs-next`) | Change | New ops/s |",
-        "| --- | --- | --- | --- | --- |",
     ]
 
-    for name in THROUGHPUT_BENCHES:
-        old_ns = old_results.get(name)
-        new_ns = new_results.get(name)
-        if old_ns is None or new_ns is None:
-            lines.append(f"| {name} | - | - | - | - |")
-            continue
-        lines.append(
-            f"| {name} | {format_time(old_ns)} | {format_time(new_ns)} | "
-            f"{pct_change(old_ns, new_ns)} | ~{throughput_ops_per_s(new_ns)} |"
-        )
-
-    lines.extend(
-        [
-            "",
-            "## Memory Stress",
-            "",
-            "| Benchmark | Old (`/rs`) | New (`/rs-next`) | Change | New per-op |",
-            "| --- | --- | --- | --- | --- |",
-        ]
+    render_table(
+        lines,
+        "Throughput",
+        "| Benchmark | Old (`/rs`) | New (`/rs-next`) | Change | New ops/s |",
+        THROUGHPUT_BENCHES,
+        old_results,
+        new_results,
     )
 
-    for name in MEMORY_BENCHES:
-        old_ns = old_results.get(name)
-        new_ns = new_results.get(name)
-        if old_ns is None or new_ns is None:
-            lines.append(f"| {name} | - | - | - | - |")
-            continue
-        per_op_new = new_ns
-        # For x1000 benches, the per-operation time is the reported time / 1000.
-        per_op_new = new_ns / 1000
-        lines.append(
-            f"| {name} | {format_time(old_ns)} | {format_time(new_ns)} | "
-            f"{pct_change(old_ns, new_ns)} | {format_time(per_op_new)} |"
-        )
+    render_table(
+        lines,
+        "Memory Stress",
+        "| Benchmark | Old (`/rs`) | New (`/rs-next`) | Change | New per-op |",
+        MEMORY_BENCHES,
+        old_results,
+        new_results,
+        per_op_divisor=1000,
+    )
+
+    render_table(
+        lines,
+        "Main Demo",
+        "| Benchmark | Old (`/rs`) | New (`/rs-next`) | Change | New ops/s |",
+        MAIN_DEMO_BENCHES,
+        old_results,
+        new_results,
+    )
 
     lines.extend(
         [
@@ -166,6 +186,9 @@ def generate_markdown(
             "  harnesses clone the data each iteration. The old API borrowed the data.",
             "- Both projects use the same release-profile tuning (`lto = true`,",
             "  `codegen-units = 1`) and the same Tokio runtime.",
+            "- `main_demo` benchmarks exercise the same realistic schema (constants,",
+            "  lax/required/dependent/virtual fields, timestamps, grouped validation,",
+            "  post-validation, hooks) in both implementations.",
         ]
     )
 
@@ -173,8 +196,8 @@ def generate_markdown(
 
 
 def main() -> int:
-    run_cargo_bench(RS_DIR)
-    run_cargo_bench(RS_NEXT_DIR)
+    run_benchmarks(RS_DIR)
+    run_benchmarks(RS_NEXT_DIR)
 
     old_results = collect_results(RS_DIR)
     new_results = collect_results(RS_NEXT_DIR)
