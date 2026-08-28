@@ -2776,8 +2776,8 @@ fn generate_model(
                     let mut __field_valid = true;
                     let mut value: #ty = #base_value;
                     if !#ignore_flag_tokens {
-                        #sanitizer_expr
                         #validator_expr
+                        #sanitizer_expr
                     }
                     (value, __field_valid)
                 }
@@ -3294,8 +3294,8 @@ fn generate_model(
                                 );
                                 let mut __field_valid = true;
                                 let mut value: #ty_tokens = v.clone();
-                                #sanitizer_expr
                                 #validator_assignment
+                                #sanitizer_expr
                                 if __field_valid && &value != &__original_output.#name {
                                     output.#name = value;
                                 }
