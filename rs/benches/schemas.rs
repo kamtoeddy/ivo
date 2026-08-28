@@ -1,3 +1,5 @@
+#![expect(dead_code)]
+
 use ivo::{dependent_field, lax_field, required_field, IvoInputStruct, IvoModel, IvoStruct};
 use std::{future::ready, sync::LazyLock};
 

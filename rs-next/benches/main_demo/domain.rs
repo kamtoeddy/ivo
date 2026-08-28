@@ -88,7 +88,6 @@ mod user_schema {
         })]
         #[on_delete(|_, _| {})]
         #[on_delete(|_, _| {})]
-        #[on_failure(async |_, _| {})]
         pub username: String,
 
         #[depends_on(username)]

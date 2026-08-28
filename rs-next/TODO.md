@@ -1,0 +1,7 @@
+- [ ] the validation, re_validation, and sanitization of virtual fields does not happen unless a virtual field is provided and accepted (i.e: not ignored)
+- [ ] re_validation does not happen unless a field has a revalidator and was successfully validated
+- [ ] the sanitization of virtuals only happens after a successful post-validation
+- [ ] the ignore_update option should reject empty fields, and consider a closure without fields as an entity-level ignore update handler
+- [ ] find all `SKIPPED:` ports and make sure they are valid
+- [ ] manually go through all tests in "/rs" and make sure they have been ported correctly
+- [ ] update benchmarks, run benchmarks, compare results and improve performance

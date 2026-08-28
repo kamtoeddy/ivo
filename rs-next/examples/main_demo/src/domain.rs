@@ -65,7 +65,6 @@ mod user_schema {
         pub email: Option<String>,
 
         #[lax(None)]
-        #[validate(|_, _, _| Ok(None))]
         pub phone_number: Option<String>,
 
         #[required]
@@ -92,7 +91,6 @@ mod user_schema {
         #[on_delete(|_, _| {
             println!("[username]: on delete 2 handled");
         })]
-        #[on_failure(async |_, _| {})]
         pub username: String,
 
         #[depends_on(username)]
@@ -116,6 +114,7 @@ mod user_schema {
 
         #[ivo_virtual(slug_id)]
         #[validate(|value, _, _| {
+            println!("[slug_id]: validate: {:?}", value);
             let validated = value.trim();
             if validated.len() < 2 {
                 return Err((
@@ -145,7 +144,7 @@ mod user_schema {
     })]
     const _: () = ();
 
-    #[ignore_update(["username", "v_slug"], async |ctx, _| {
+    #[ignore_update(["username", "v_slug"], |ctx, _| {
         match ctx.values().username_last_updated_at {
             Some(dt) => (Utc::now() - dt).num_days() < 30,
             _ => false,
@@ -194,12 +193,12 @@ mod user_schema {
     })]
     const _: () = ();
 
-    #[on_success(["email"], async |_, _| {
+    #[on_success(["email"],  |_, _| {
         println!("[options.on_success]: [email]");
     })]
     const _: () = ();
 
-    #[on_success(["username", "v_slug"], async |_, _| {
+    #[on_success(["username", "v_slug"],  |_, _| {
         println!("[options.on_success]: [username, v_slug]");
     })]
     const _: () = ();

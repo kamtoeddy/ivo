@@ -8,30 +8,66 @@ use crate::domain::{PartialUserInput, User, UserCtxOptions, UserModel};
 
 #[async_std::main]
 async fn main() {
-    let input = PartialUserInput::new()
-        // .with_email(Some("1@1.com".into()))
-        // .with_phone_number(Some("123 4567 8910".into()))
-        // .with_slug_id("sloppy-slug-id".into())
-        .with_username("user-10".into());
+    // // required error (email or phone_number)
+    // let input = PartialUserInput::new().with_username("user-10".into());
 
-    let timer = Instant::now();
+    // // validation error (email, slug_id, username)
+    // let input = PartialUserInput::new()
+    //     .with_email(Some("1.com".into()))
+    //     .with_phone_number(Some("123 4567 8910".into()))
+    //     .with_slug_id("s".into())
+    //     .with_username("u".into());
 
-    let r = UserModel.create(input, UserCtxOptions::new()).await;
+    // // re_validation error "username taken"
+    // let input = PartialUserInput::new()
+    //     .with_email(Some("1@1.com".into()))
+    //     .with_username("user-1".into());
 
-    println!("\nCreate duration: {:?}", timer.elapsed());
+    // // post-validation error "slug taken"
+    // let input = PartialUserInput::new()
+    //     .with_email(Some("1@1.com".into()))
+    //     .with_username("user-10".into())
+    //     .with_slug_id("user-1".into());
 
-    match r {
-        Ok(handle) => {
-            println!("\n{:#?}\n", handle.data);
+    // // crate success: 2/4 inputs (a)
+    // let input = PartialUserInput::new()
+    //     .with_email(Some("1@1.com".into()))
+    //     .with_username("user-10".into());
 
-            handle.handle_success().await;
-        }
-        Err(handle) => {
-            println!("\nFailed to create: {:#?}", handle.errors);
+    // // crate success: 2/4 inputs (b)
+    // let input = PartialUserInput::new()
+    //     .with_phone_number(Some("123 4567 8910".into()))
+    //     .with_username("user-10".into());
 
-            handle.handle_failure().await;
-        }
-    };
+    // // crate success: 3/4 inputs
+    // let input = PartialUserInput::new()
+    //     .with_email(Some("1@1.com".into()))
+    //     .with_phone_number(Some("123 4567 8910".into()))
+    //     .with_username("user-10".into());
+
+    // // crate success: 4/4 inputs
+    // let input = PartialUserInput::new()
+    //     .with_email(Some("1@1.com".into()))
+    //     .with_phone_number(Some("123 4567 8910".into()))
+    //     .with_username("user-10".into())
+    //     .with_slug_id("sloppy-slug-id".into());
+
+    // let timer = Instant::now();
+
+    // let r = UserModel.create(input, UserCtxOptions::new()).await;
+
+    // println!("\nCreate duration: {:?}", timer.elapsed());
+
+    // match r {
+    //     Ok(handle) => {
+    //         println!("\n{:#?}\n", handle.data);
+
+    //         handle.handle_success();
+    //     }
+    //     Err(handle) => {
+    //         println!("\nFailed to create: {:#?}", handle.errors);
+    //     }
+    // };
 
     let (username, slug_id) = {
         let username = "John Doe";
@@ -79,15 +115,13 @@ async fn main() {
 
             updated_user = Some(merged_data);
 
-            handle.handle_success().await;
+            handle.handle_success();
         }
         Err(handle) => {
             match handle.errors.as_ref() {
                 Some(payload) => println!("\nFailed to update: {:#?}", payload),
                 None => println!("\nNothing to update"),
             };
-
-            handle.handle_failure().await;
         }
     };
 
@@ -117,15 +151,13 @@ async fn main() {
                 user.clone_with_updates(&handle.data)
             );
 
-            handle.handle_success().await;
+            handle.handle_success();
         }
         Err(handle) => {
             match handle.errors.as_ref() {
                 Some(payload) => println!("\nFailed to update: {:#?}\n", payload),
                 None => println!("\nNothing to update\n"),
             };
-
-            handle.handle_failure().await;
         }
     };
 
