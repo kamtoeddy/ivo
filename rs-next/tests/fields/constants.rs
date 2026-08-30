@@ -671,3 +671,44 @@ mod async_parallel_constants_schema {
         pub constant_b: u32,
     }
 }
+
+// -----------------------------------------------------------------------------
+// Ordering: constants are attached before timestamps
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_attach_constants_before_timestamps() {
+    // Per GOAL.md §17, constants (step 9) are attached before timestamps
+    // (step 10), so a constant's resolver observes the timestamp field still
+    // at its default (unset) value.
+    let created = constant_runs_before_timestamps_schema::DataModel
+        .create(
+            constant_runs_before_timestamps_schema::PartialDataInput { lax: Some(1) },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(created.data.constant, "constant-saw-created_at=0");
+    assert_eq!(created.data.created_at, 1234);
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod constant_runs_before_timestamps_schema {
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[constant(|ctx, _| format!("constant-saw-created_at={}", ctx.values().created_at))]
+        pub constant: String,
+
+        #[created_at]
+        pub created_at: u128,
+    }
+
+    #[timestamps(|| 1234)]
+    const _: () = ();
+}

@@ -2171,11 +2171,17 @@ fn generate_model(
         }
     });
 
-    // Whether `create` needs to resolve a shared timestamp value up front: true
-    // when the resolver is configured and at least one of `#[created_at]` /
-    // non-optional `#[updated_at]` is declared. Both fields then reuse the same
-    // resolved value instead of invoking the resolver once per field, so the
-    // timestamp resolver is called at most once per `create` call.
+    // Whether `create` needs to resolve a shared timestamp value: true when
+    // the resolver is configured and at least one of `#[created_at]` /
+    // non-optional `#[updated_at]` is declared. Both fields then reuse the
+    // same resolved value instead of invoking the resolver once per field, so
+    // the timestamp resolver is called at most once per `create` call.
+    // Per GOAL.md §17 (step 9 constants, step 10 timestamps), timestamps are
+    // attached *after* constants, so `create_timestamp_value_decl` and the
+    // per-field assignments below are spliced in after `create_constants_phase`,
+    // not alongside required/lax validation. The resolver is always
+    // synchronous (enforced at parse time), so no `emit_async_phase` batching
+    // is needed here -- these are plain, order-independent assignments.
     let create_needs_timestamp_value = timestamps_resolver.is_some()
         && fields.iter().any(|f| {
             matches!(
@@ -2190,6 +2196,22 @@ fn generate_model(
         }
     } else {
         quote! {}
+    };
+    let create_timestamp_assignments = fields.iter().filter_map(|f| {
+        let name = &f.name;
+        match f.field_type {
+            FieldType::CreatedAt | FieldType::UpdatedAt { optional: false } => Some(quote! {
+                output.#name = __ivo_timestamp_value.clone();
+            }),
+            FieldType::UpdatedAt { optional: true } => Some(quote! {
+                output.#name = ::core::default::Default::default();
+            }),
+            _ => None,
+        }
+    });
+    let create_timestamps_phase = quote! {
+        #create_timestamp_value_decl
+        #(#create_timestamp_assignments)*
     };
 
     // Field-level option handlers.
@@ -2695,16 +2717,7 @@ fn generate_model(
     // have already resolved.
     let create_early_items: Vec<AsyncPhaseItem> = fields
         .iter()
-        .filter(|f| {
-            matches!(
-                f.field_type,
-                FieldType::Required
-                    | FieldType::Lax
-                    | FieldType::CreatedAt
-                    | FieldType::UpdatedAt { .. }
-                    | FieldType::Dependent
-            )
-        })
+        .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax | FieldType::Dependent))
         .map(|f| {
             let name = &f.name;
             let name_str = name.to_string();
@@ -2746,19 +2759,6 @@ fn generate_model(
                         }
                     }
                 }
-                FieldType::CreatedAt | FieldType::UpdatedAt { optional: false } => {
-                    if timestamps_resolver.is_some() {
-                        // Resolved once per `create` call via `__ivo_timestamp_value`
-                        // (declared ahead of this loop) rather than invoking the
-                        // resolver again per timestamp field.
-                        quote! { __ivo_timestamp_value.clone() }
-                    } else {
-                        quote! { ::core::default::Default::default() }
-                    }
-                }
-                FieldType::UpdatedAt { optional: true } => {
-                    quote! { ::core::default::Default::default() }
-                }
                 FieldType::Dependent => {
                     let default_expr = attr_value_tokens(&f.attrs, "default")
                         .unwrap_or_else(|| quote!(::core::default::Default::default()));
@@ -2766,7 +2766,9 @@ fn generate_model(
                     item_is_async |= is_async;
                     expr
                 }
-                FieldType::Constant | FieldType::Virtual { .. } => unreachable!(),
+                FieldType::Constant | FieldType::CreatedAt | FieldType::UpdatedAt { .. } | FieldType::Virtual { .. } => {
+                    unreachable!()
+                }
             };
 
             // The value_expr must not mutate `errors` (or anything else)
@@ -4880,8 +4882,6 @@ fn generate_model(
                 #required_evaluations
                 #(#required_field_checks)*
 
-                #create_timestamp_value_decl
-
                 #create_validate_steps
 
                 #create_re_validate_steps
@@ -4927,6 +4927,7 @@ fn generate_model(
 
                 #create_constants_phase
 
+                #create_timestamps_phase
 
                 let __return_opts = _ctx_options.clone();
                 let __success_trigger = #create_success_trigger;
