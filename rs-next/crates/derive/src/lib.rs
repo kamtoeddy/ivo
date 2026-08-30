@@ -279,10 +279,33 @@ fn find_attr<'a>(attrs: &'a [Attribute], name: &str) -> Option<&'a Attribute> {
 /// `output` / `errors`, etc). Both are expected to be fully self-contained
 /// (no shared mutable state between items) so they can safely be evaluated
 /// out of declaration order.
+#[derive(Clone)]
 struct AsyncPhaseItem {
     is_async: bool,
     value_expr: proc_macro2::TokenStream,
     apply: proc_macro2::TokenStream,
+}
+
+/// Virtual fields' contribution to the validate / re-validate / sanitize
+/// phases, returned as raw items (not yet emitted) so the caller can merge
+/// them with the corresponding required/lax items and run each phase through
+/// a single `emit_async_phase` call -- one combined validate phase and one
+/// combined re-validate phase covering every field type together, rather
+/// than a virtual pass followed by a separate non-virtual pass.
+struct VirtualPipeline {
+    /// Provided-flag + ignore-clear statements; always run eagerly, before
+    /// the merged validate phase (which reads the provided flags).
+    setup: proc_macro2::TokenStream,
+    validate_items: Vec<AsyncPhaseItem>,
+    re_validate_items: Vec<AsyncPhaseItem>,
+    /// The `ctx` rebuild these fields would use as their own phase epilogue;
+    /// exposed so callers merging virtual items into a combined phase can
+    /// reuse the exact same rebuild as that phase's epilogue.
+    ctx_rebuild: proc_macro2::TokenStream,
+    /// Sanitize has no non-virtual counterpart to merge with, so it's
+    /// already fully assembled.
+    sanitize_phase: proc_macro2::TokenStream,
+    any_async: bool,
 }
 
 /// Emits a phase's items either sequentially (the default, and the only
@@ -304,7 +327,9 @@ fn emit_async_phase(
 
     if async_count < 2 {
         let stmts = items.into_iter().map(|item| {
-            let AsyncPhaseItem { value_expr, apply, .. } = item;
+            let AsyncPhaseItem {
+                value_expr, apply, ..
+            } = item;
             quote! {
                 let __phase_result = #value_expr;
                 #apply
@@ -2493,14 +2518,18 @@ fn generate_model(
             .map(|o| {
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
-                let (is_async, call) = make_boolean_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
+                let (is_async, call) =
+                    make_boolean_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
                 let field_flags: Vec<_> = o
                     .fields
                     .iter()
                     .filter(|name| {
                         fields.iter().any(|f| {
                             f.name == **name
-                                && matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. })
+                                && matches!(
+                                    f.field_type,
+                                    FieldType::Lax | FieldType::Virtual { .. }
+                                )
                         })
                     })
                     .map(|f| format_ident!("ignore_{}", f))
@@ -2510,7 +2539,11 @@ fn generate_model(
                         #(#field_flags = true;)*
                     }
                 };
-                AsyncPhaseItem { is_async, value_expr: call, apply }
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr: call,
+                    apply,
+                }
             })
             .collect();
         let field_level: Vec<AsyncPhaseItem> = field_ignore_handlers
@@ -2525,7 +2558,11 @@ fn generate_model(
                         #flag = true;
                     }
                 };
-                AsyncPhaseItem { is_async, value_expr: call, apply }
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr: call,
+                    apply,
+                }
             })
             .collect();
         grouped.into_iter().chain(field_level).collect()
@@ -2574,7 +2611,11 @@ fn generate_model(
                         errors.extend(__opt_errors.into_payload());
                     }
                 };
-                AsyncPhaseItem { is_async, value_expr, apply }
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr,
+                    apply,
+                }
             })
             .collect();
         let field_level: Vec<AsyncPhaseItem> = field_required_handlers
@@ -2598,7 +2639,11 @@ fn generate_model(
                         }
                     }
                 };
-                AsyncPhaseItem { is_async, value_expr: call, apply }
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr: call,
+                    apply,
+                }
             })
             .collect();
         grouped.into_iter().chain(field_level).collect()
@@ -2785,7 +2830,9 @@ fn generate_model(
             false,
         );
     };
-    let create_steps = emit_async_phase(create_early_items, &create_early_ctx_rebuild);
+    // Not emitted yet: merged with virtual fields' validate items below (see
+    // `build_virtual_pipeline`) so validate is one combined phase across
+    // every field type, not a virtual pass followed by a separate one.
 
     // Constants phase: attached after dependent resolution (see
     // `dependent_create_block` below), matching GOAL.md §17's ordering.
@@ -2821,7 +2868,11 @@ fn generate_model(
             let apply = quote! {
                 output.#name = __phase_result;
             };
-            AsyncPhaseItem { is_async, value_expr, apply }
+            AsyncPhaseItem {
+                is_async,
+                value_expr,
+                apply,
+            }
         })
         .collect();
     create_has_async |= create_constant_items.iter().any(|i| i.is_async);
@@ -2883,7 +2934,10 @@ fn generate_model(
             .map(|f| {
                 let name = f.name.clone();
                 let name_str = name.to_string();
-                let ty = { let ty = &f.ty; quote!(#ty) };
+                let ty = {
+                    let ty = &f.ty;
+                    quote!(#ty)
+                };
                 let parents = parse_depends_on(f).unwrap_or_default();
                 let parent_checks: Vec<_> = parents
                     .iter()
@@ -2969,7 +3023,12 @@ fn generate_model(
         let value_exprs: Vec<_> = dependent_infos
             .iter()
             .map(|d| {
-                let DependentInfo { ty, parent_guard, resolver, .. } = d;
+                let DependentInfo {
+                    ty,
+                    parent_guard,
+                    resolver,
+                    ..
+                } = d;
                 let ctx_expr = quote!(__round_ctx.clone());
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (_, resolver_expr) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
@@ -2987,7 +3046,8 @@ fn generate_model(
         let mut round_bindings = Vec::new();
         let mut async_exprs = Vec::new();
         let mut async_idents = Vec::new();
-        for ((d, ident), value_expr) in dependent_infos.iter().zip(&result_idents).zip(&value_exprs) {
+        for ((d, ident), value_expr) in dependent_infos.iter().zip(&result_idents).zip(&value_exprs)
+        {
             let ctx_expr = quote!(ctx.clone());
             let opts_expr = quote!(&_rw_ctx_options);
             let (is_async, _) = make_resolver_call(&d.resolver, &ctx_expr, &opts_expr);
@@ -3002,17 +3062,20 @@ fn generate_model(
             let (#(#async_idents),*) = ::futures_util::join!(#(#async_exprs),*);
         };
 
-        let applies = dependent_infos.iter().zip(&result_idents).map(|(d, ident)| {
-            let DependentInfo { name, name_str, .. } = d;
-            quote! {
-                if let ::core::option::Option::Some(__new_value) = #ident {
-                    if &__new_value != &output.#name {
-                        output.#name = __new_value.clone();
-                        __dependent_next_parents.insert(#name_str);
+        let applies = dependent_infos
+            .iter()
+            .zip(&result_idents)
+            .map(|(d, ident)| {
+                let DependentInfo { name, name_str, .. } = d;
+                quote! {
+                    if let ::core::option::Option::Some(__new_value) = #ident {
+                        if &__new_value != &output.#name {
+                            output.#name = __new_value.clone();
+                            __dependent_next_parents.insert(#name_str);
+                        }
                     }
                 }
-            }
-        });
+            });
 
         quote! {
             let mut __dependent_current_parents: ::std::collections::HashSet<&'static str> =
@@ -3050,15 +3113,12 @@ fn generate_model(
     // type `#partial_input_name` so the same generator can be reused for both
     // `create` (where `input` is the method's own parameter) and `update`
     // (where a local `input` shadow is derived from `updates`).
-    let build_virtual_pipeline = |ignore_flag_for: &dyn Fn(&FieldDef) -> proc_macro2::TokenStream,
-                                   changes_expr: &proc_macro2::TokenStream,
-                                   is_update_flag: bool|
-     -> (
-        proc_macro2::TokenStream,
-        proc_macro2::TokenStream,
-        proc_macro2::TokenStream,
-        bool,
-    ) {
+    let build_virtual_pipeline = |ignore_flag_for: &dyn Fn(
+        &FieldDef,
+    ) -> proc_macro2::TokenStream,
+                                  changes_expr: &proc_macro2::TokenStream,
+                                  is_update_flag: bool|
+     -> VirtualPipeline {
         struct VField<'a> {
             f: &'a FieldDef,
             name_str: String,
@@ -3074,7 +3134,10 @@ fn generate_model(
             .map(|f| VField {
                 f,
                 name_str: f.name.to_string(),
-                ty_tokens: { let ty = &f.ty; quote!(#ty) },
+                ty_tokens: {
+                    let ty = &f.ty;
+                    quote!(#ty)
+                },
                 input_name_tokens: input_field_name(f),
                 provided_flag: format_ident!("__virtual_provided_{}", f.name),
                 ignore_flag_tokens: ignore_flag_for(f),
@@ -3113,7 +3176,13 @@ fn generate_model(
             .iter()
             .filter_map(|v| {
                 let validator = attr_value_tokens(&v.f.attrs, "validate")?;
-                let VField { name_str, ty_tokens, input_name_tokens, provided_flag, .. } = v;
+                let VField {
+                    name_str,
+                    ty_tokens,
+                    input_name_tokens,
+                    provided_flag,
+                    ..
+                } = v;
                 let value_expr = quote!(__value.clone());
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
@@ -3141,21 +3210,35 @@ fn generate_model(
                         }
                     }
                 };
-                Some(AsyncPhaseItem { is_async, value_expr, apply })
+                Some(AsyncPhaseItem {
+                    is_async,
+                    value_expr,
+                    apply,
+                })
             })
             .collect();
-        let validate_phase = emit_async_phase(validate_items, &ctx_rebuild);
 
         let re_validate_items: Vec<AsyncPhaseItem> = vfields
             .iter()
             .filter_map(|v| {
                 let re_validator = attr_value_tokens(&v.f.attrs, "re_validate")?;
-                let VField { name_str, ty_tokens, input_name_tokens, provided_flag, .. } = v;
+                let VField {
+                    name_str,
+                    ty_tokens,
+                    input_name_tokens,
+                    provided_flag,
+                    ..
+                } = v;
                 let value_expr = quote!(__value.clone());
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
-                let (is_async, call) =
-                    make_validator_call(&re_validator, ty_tokens, &value_expr, &ctx_expr, &opts_expr);
+                let (is_async, call) = make_validator_call(
+                    &re_validator,
+                    ty_tokens,
+                    &value_expr,
+                    &ctx_expr,
+                    &opts_expr,
+                );
                 any_async |= is_async;
                 let value_expr = quote! {
                     if #provided_flag && !errors.contains_key(#name_str) {
@@ -3178,16 +3261,24 @@ fn generate_model(
                         }
                     }
                 };
-                Some(AsyncPhaseItem { is_async, value_expr, apply })
+                Some(AsyncPhaseItem {
+                    is_async,
+                    value_expr,
+                    apply,
+                })
             })
             .collect();
-        let re_validate_phase = emit_async_phase(re_validate_items, &ctx_rebuild);
 
         let sanitize_items: Vec<AsyncPhaseItem> = vfields
             .iter()
             .filter_map(|v| {
                 let sanitizer = attr_value_tokens(&v.f.attrs, "sanitize")?;
-                let VField { ty_tokens, input_name_tokens, provided_flag, .. } = v;
+                let VField {
+                    ty_tokens,
+                    input_name_tokens,
+                    provided_flag,
+                    ..
+                } = v;
                 let value_expr = quote!(__value.clone());
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
@@ -3207,19 +3298,25 @@ fn generate_model(
                         input.#input_name_tokens = ::core::option::Option::Some(__sanitized);
                     }
                 };
-                Some(AsyncPhaseItem { is_async, value_expr, apply })
+                Some(AsyncPhaseItem {
+                    is_async,
+                    value_expr,
+                    apply,
+                })
             })
             .collect();
         // Sanitize has no `ctx` reads left downstream of it within this pass
         // that aren't already rebuilt by the caller, so no epilogue needed.
         let sanitize_phase = emit_async_phase(sanitize_items, &quote! {});
 
-        (
-            quote! { #(#setup_stmts)* #validate_phase },
-            re_validate_phase,
+        VirtualPipeline {
+            setup: quote! { #(#setup_stmts)* },
+            validate_items,
+            re_validate_items,
+            ctx_rebuild,
             sanitize_phase,
             any_async,
-        )
+        }
     };
 
     let create_virtual_ignore_flag_for = |f: &FieldDef| -> proc_macro2::TokenStream {
@@ -3232,23 +3329,34 @@ fn generate_model(
         }
     };
 
-    let (
-        virtual_validate_create_steps,
-        virtual_re_validate_create_steps,
-        virtual_sanitize_create_steps,
-        virtual_create_any_async,
-    ) = build_virtual_pipeline(
+    let create_virtual = build_virtual_pipeline(
         &create_virtual_ignore_flag_for,
         &quote!(output.clone().into()),
         false,
     );
-    create_has_async |= virtual_create_any_async;
+    create_has_async |= create_virtual.any_async;
+
+    // Validate is one combined phase across every field type: required/lax
+    // (`create_early_items`, computed above) and virtual fields' validators
+    // are batched together, not run as two separate sequential passes.
+    let create_validate_steps = {
+        let items: Vec<AsyncPhaseItem> = create_virtual
+            .validate_items
+            .clone()
+            .into_iter()
+            .chain(create_early_items)
+            .collect();
+        let setup = &create_virtual.setup;
+        let phase = emit_async_phase(items, &create_early_ctx_rebuild);
+        quote! { #setup #phase }
+    };
 
     // Re-validation pass: run secondary validators over the built output.
     // Fields never see each other's re-validated value here (`ctx` isn't
     // rebuilt mid-phase), so they're already independent of one another and
     // safe to batch: 0/1 async handler stays sequential, 2+ are polled
-    // concurrently via `join!`.
+    // concurrently via `join!`. Required/lax and virtual fields' re-validators
+    // are batched together as one combined phase, same as validate above.
     let re_validate_items: Vec<AsyncPhaseItem> = fields
         .iter()
         .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
@@ -3289,13 +3397,26 @@ fn generate_model(
                     }
                 }
             };
-            Some(AsyncPhaseItem { is_async, value_expr, apply })
+            Some(AsyncPhaseItem {
+                is_async,
+                value_expr,
+                apply,
+            })
         })
         .collect();
     let re_validate_any_async = re_validate_items.iter().any(|i| i.is_async);
     create_has_async |= re_validate_any_async;
     update_has_async |= re_validate_any_async;
-    let re_validate_steps = emit_async_phase(re_validate_items, &quote! {});
+
+    let create_re_validate_steps = {
+        let items: Vec<AsyncPhaseItem> = re_validate_items
+            .clone()
+            .into_iter()
+            .chain(create_virtual.re_validate_items.clone())
+            .collect();
+        emit_async_phase(items, &create_virtual.ctx_rebuild)
+    };
+    let create_virtual_sanitize_steps = create_virtual.sanitize_phase.clone();
 
     let post_validate_options: Vec<_> = options
         .iter()
@@ -3391,12 +3512,13 @@ fn generate_model(
     // means a later group no longer implicitly observes an earlier group's
     // pre_validate/validate updates (previously each group ran fully,
     // including its own `ctx` rebuild, before the next one started).
-    let build_post_validate_phase = |handler_for: &dyn Fn(&PostValidateGroupInfo) -> Option<proc_macro2::TokenStream>,
-                                     apply_updates_for: &dyn Fn(&PostValidateGroupInfo) -> &[proc_macro2::TokenStream],
-                                     changes_expr: &proc_macro2::TokenStream,
-                                     is_update_flag: bool|
-     -> proc_macro2::TokenStream {
-        let items: Vec<AsyncPhaseItem> = post_validate_groups
+    let build_post_validate_phase =
+        |handler_for: &dyn Fn(&PostValidateGroupInfo) -> Option<proc_macro2::TokenStream>,
+         apply_updates_for: &dyn Fn(&PostValidateGroupInfo) -> &[proc_macro2::TokenStream],
+         changes_expr: &proc_macro2::TokenStream,
+         is_update_flag: bool|
+         -> proc_macro2::TokenStream {
+            let items: Vec<AsyncPhaseItem> = post_validate_groups
             .iter()
             .filter_map(|g| {
                 let handler = handler_for(g)?;
@@ -3437,16 +3559,16 @@ fn generate_model(
                 Some(AsyncPhaseItem { is_async, value_expr, apply })
             })
             .collect();
-        let ctx_rebuild = quote! {
-            ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                input.clone(),
-                output.clone(),
-                #changes_expr,
-                #is_update_flag,
-            );
+            let ctx_rebuild = quote! {
+                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    output.clone(),
+                    #changes_expr,
+                    #is_update_flag,
+                );
+            };
+            emit_async_phase(items, &ctx_rebuild)
         };
-        emit_async_phase(items, &ctx_rebuild)
-    };
 
     let post_validate_create_pre_phase = build_post_validate_phase(
         &|g| g.pre_validate.clone(),
@@ -3566,7 +3688,11 @@ fn generate_model(
                         #flag = true;
                     }
                 };
-                AsyncPhaseItem { is_async, value_expr: call, apply }
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr: call,
+                    apply,
+                }
             })
             .collect();
         let grouped: Vec<AsyncPhaseItem> = grouped_ignore_options
@@ -3593,7 +3719,11 @@ fn generate_model(
                         #(#flag_idents = true;)*
                     }
                 };
-                AsyncPhaseItem { is_async, value_expr: call, apply }
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr: call,
+                    apply,
+                }
             })
             .collect();
         field_level.into_iter().chain(grouped).collect()
@@ -3622,13 +3752,12 @@ fn generate_model(
         }
     };
 
-    let (
-        virtual_validate_update_steps,
-        virtual_re_validate_update_steps,
-        virtual_sanitize_update_steps,
-        virtual_update_any_async,
-    ) = build_virtual_pipeline(&update_virtual_ignore_flag_for, &quote!(__changes.clone()), true);
-    update_has_async |= virtual_update_any_async;
+    let update_virtual = build_virtual_pipeline(
+        &update_virtual_ignore_flag_for,
+        &quote!(__changes.clone()),
+        true,
+    );
+    update_has_async |= update_virtual.any_async;
 
     // Conditional required checks for update (mirrors create logic but uses
     // `updates`); same "one go" batching as create's required evaluation.
@@ -3665,7 +3794,11 @@ fn generate_model(
                         errors.extend(__opt_errors.into_payload());
                     }
                 };
-                AsyncPhaseItem { is_async, value_expr, apply }
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr,
+                    apply,
+                }
             })
             .collect();
         let field_level: Vec<AsyncPhaseItem> = field_required_handlers
@@ -3690,7 +3823,11 @@ fn generate_model(
                         }
                     }
                 };
-                AsyncPhaseItem { is_async, value_expr: call, apply }
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr: call,
+                    apply,
+                }
             })
             .collect();
         grouped.into_iter().chain(field_level).collect()
@@ -3801,7 +3938,33 @@ fn generate_model(
         .collect();
     let update_assignments_any_async = update_assignment_items.iter().any(|i| i.is_async);
     update_has_async |= update_assignments_any_async;
-    let update_assignments = emit_async_phase(update_assignment_items, &quote! {});
+    // Validate is one combined phase across every field type: required/lax
+    // (`update_assignment_items`) and virtual fields' validators are batched
+    // together, not run as two separate sequential passes.
+    let update_validate_steps = {
+        let items: Vec<AsyncPhaseItem> = update_virtual
+            .validate_items
+            .clone()
+            .into_iter()
+            .chain(update_assignment_items)
+            .collect();
+        let setup = &update_virtual.setup;
+        let phase = emit_async_phase(items, &update_virtual.ctx_rebuild);
+        quote! { #setup #phase }
+    };
+
+    // Re-validate: required/lax (`re_validate_items`, shared with create
+    // above) and virtual fields' re-validators, batched together as one
+    // combined phase, same as validate above.
+    let update_re_validate_steps = {
+        let items: Vec<AsyncPhaseItem> = re_validate_items
+            .clone()
+            .into_iter()
+            .chain(update_virtual.re_validate_items.clone())
+            .collect();
+        emit_async_phase(items, &update_virtual.ctx_rebuild)
+    };
+    let update_virtual_sanitize_steps = update_virtual.sanitize_phase.clone();
 
     // A virtual field that is ignored on update still counts as an attempted update,
     // so that an update consisting only of an ignored virtual field returns the
@@ -3931,7 +4094,10 @@ fn generate_model(
 
             let info = DependentUpdateInfo {
                 name: f.name.clone(),
-                ty: { let ty = &f.ty; quote!(#ty) },
+                ty: {
+                    let ty = &f.ty;
+                    quote!(#ty)
+                },
                 setter: format_ident!("set_{}", f.name),
                 ignore_update_flag,
                 parent_guard,
@@ -4565,32 +4731,33 @@ fn generate_model(
     // fields) are independent by design, so `emit_async_phase` batches them
     // the same way it batches independent field handlers elsewhere: 0/1
     // async hook stays sequential, 2+ are polled concurrently via `join!`.
-    let make_trigger = |items: Vec<AsyncPhaseItem>, setup: proc_macro2::TokenStream| -> proc_macro2::TokenStream {
-        if items.is_empty() {
-            return quote! { ::ivo::__ivo_internals::ivo_sync_trigger(|| {}) };
-        }
-        let is_async = items.iter().any(|i| i.is_async);
-        let body = emit_async_phase(items, &quote! {});
-        if is_async {
-            quote! {
-                {
-                    #setup
-                    ::ivo::__ivo_internals::ivo_trigger(async move {
-                        #body
-                    })
+    let make_trigger =
+        |items: Vec<AsyncPhaseItem>, setup: proc_macro2::TokenStream| -> proc_macro2::TokenStream {
+            if items.is_empty() {
+                return quote! { ::ivo::__ivo_internals::ivo_sync_trigger(|| {}) };
+            }
+            let is_async = items.iter().any(|i| i.is_async);
+            let body = emit_async_phase(items, &quote! {});
+            if is_async {
+                quote! {
+                    {
+                        #setup
+                        ::ivo::__ivo_internals::ivo_trigger(async move {
+                            #body
+                        })
+                    }
+                }
+            } else {
+                quote! {
+                    {
+                        #setup
+                        ::ivo::__ivo_internals::ivo_sync_trigger(move || {
+                            #body
+                        })
+                    }
                 }
             }
-        } else {
-            quote! {
-                {
-                    #setup
-                    ::ivo::__ivo_internals::ivo_sync_trigger(move || {
-                        #body
-                    })
-                }
-            }
-        }
-    };
+        };
 
     let create_success_trigger = {
         let setup = quote! {
@@ -4714,17 +4881,11 @@ fn generate_model(
                 #(#required_field_checks)*
 
                 #create_timestamp_value_decl
-                #virtual_validate_create_steps
-                #create_steps
-                let mut ctx = ctx;
-                #re_validate_steps
-                #virtual_re_validate_create_steps
-                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    output.clone(),
-                    output.clone().into(),
-                    false,
-                );
+
+                #create_validate_steps
+
+                #create_re_validate_steps
+
                 #post_validate_create_pre_phase
 
                 if !errors.is_empty() {
@@ -4753,7 +4914,8 @@ fn generate_model(
                     ))
                 }
 
-                #virtual_sanitize_create_steps
+                #create_virtual_sanitize_steps
+
                 let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     output.clone(),
@@ -4764,6 +4926,7 @@ fn generate_model(
                 #dependent_create_block
 
                 #create_constants_phase
+
 
                 let __return_opts = _ctx_options.clone();
                 let __success_trigger = #create_success_trigger;
@@ -4807,8 +4970,8 @@ fn generate_model(
 
                 #update_required_evaluations
 
-                #update_assignments
-                #virtual_validate_update_steps
+                #update_validate_steps
+
                 #(#virtual_ignore_update_attempts)*
 
                 if !errors.is_empty() {
@@ -4826,14 +4989,7 @@ fn generate_model(
                     ));
                 }
 
-                #re_validate_steps
-                #virtual_re_validate_update_steps
-                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    output.clone(),
-                    __changes.clone(),
-                    true,
-                );
+                #update_re_validate_steps
 
                 if !errors.is_empty() {
                     let __trigger_changes = __changes.clone();
@@ -4903,7 +5059,7 @@ fn generate_model(
                     ));
                 }
 
-                #virtual_sanitize_update_steps
+                #update_virtual_sanitize_steps
                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     output.clone(),

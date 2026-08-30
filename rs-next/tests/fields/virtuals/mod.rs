@@ -1799,3 +1799,111 @@ mod async_parallel_virtuals_schema {
         pub virtual_b: String,
     }
 }
+
+// -----------------------------------------------------------------------------
+// Validate/re-validate are one combined phase across field types, not a
+// virtual pass followed by a separate required/lax pass
+// -----------------------------------------------------------------------------
+
+#[tokio::test]
+async fn should_validate_required_and_virtual_fields_in_one_combined_phase() {
+    // A required field's validator and a virtual field's validator must be
+    // polled concurrently *together*, proving validate is one merged phase
+    // across field types rather than two sequential ones (virtual, then
+    // required/lax). Same for re-validate.
+    let created = async_merged_validate_schema::DataModel
+        .create(
+            async_merged_validate_schema::PartialDataInput {
+                name: Some("a".into()),
+                virtual_field: Some("b".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_merged_validate_schema::Data {
+            name: "revalidated-a".into(),
+            dependent: "revalidated-b".into(),
+        }
+    );
+
+    async_merged_validate_schema::VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+    async_merged_validate_schema::RE_VALIDATE_STARTED
+        .store(0, std::sync::atomic::Ordering::SeqCst);
+
+    let updated = async_merged_validate_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_merged_validate_schema::PartialDataInput {
+                name: Some("aa".into()),
+                virtual_field: Some("bb".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_merged_validate_schema::PartialData {
+            name: Some("revalidated-aa".into()),
+            dependent: Some("revalidated-bb".into()),
+        }
+    );
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_merged_validate_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static VALIDATE_STARTED: AtomicUsize = AtomicUsize::new(0);
+    pub static RE_VALIDATE_STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous(counter: &'static AtomicUsize, phase: &str) {
+        counter.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if counter.load(Ordering::SeqCst) >= 2 {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("required/lax and virtual {phase} handlers were not run in one combined phase");
+    }
+
+    struct Fields {
+        #[required]
+        #[validate(async |v: String, _, _| {
+            rendezvous(&VALIDATE_STARTED, "validate").await;
+            Ok(Some(v))
+        })]
+        #[re_validate(async |v: String, _, _| {
+            rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
+            Ok(Some(format!("revalidated-{v}")))
+        })]
+        pub name: String,
+
+        #[depends_on(virtual_field)]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(async |v: String, _, _| {
+            rendezvous(&VALIDATE_STARTED, "validate").await;
+            Ok(Some(v))
+        })]
+        #[re_validate(async |v: String, _, _| {
+            rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
+            Ok(Some(format!("revalidated-{v}")))
+        })]
+        pub virtual_field: String,
+    }
+}
