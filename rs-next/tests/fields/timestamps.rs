@@ -363,3 +363,64 @@ mod sync_optional_updated_at_custom_name_schema {
     #[timestamps(|| now())]
     const _: () = ();
 }
+
+// -----------------------------------------------------------------------------
+// Resolver call count
+// -----------------------------------------------------------------------------
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_created_and_updated_at_call_count_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+    fn now() -> u128 {
+        CALL_COUNT.fetch_add(1, Ordering::SeqCst);
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+    }
+
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[created_at]
+        pub created_at: u128,
+
+        #[updated_at]
+        pub updated_at: u128,
+    }
+
+    #[timestamps(|| now())]
+    const _: () = ();
+}
+
+#[test]
+fn should_call_the_timestamp_resolver_at_most_once_per_create_call() {
+    use std::sync::atomic::Ordering;
+
+    let before = sync_created_and_updated_at_call_count_schema::CALL_COUNT.load(Ordering::SeqCst);
+
+    let created = sync_created_and_updated_at_call_count_schema::DataModel
+        .create(
+            sync_created_and_updated_at_call_count_schema::PartialDataInput { lax: Some(1) },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    let after = sync_created_and_updated_at_call_count_schema::CALL_COUNT.load(Ordering::SeqCst);
+
+    assert_eq!(
+        after - before,
+        1,
+        "the timestamp resolver must be invoked exactly once per create call, even with both \
+         #[created_at] and #[updated_at] declared"
+    );
+    assert_eq!(created.data.created_at, created.data.updated_at);
+}

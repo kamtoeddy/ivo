@@ -539,9 +539,248 @@ async_test_matrix!(should_not_create_if_primary_validation_fails_async);
 // Re-validators
 // -----------------------------------------------------------------------------
 
-// SKIPPED: The new `#[ivo_schema]` macro ignores `#[re_validate]` on virtual
-// fields. Re-validation can only be applied to non-virtual output fields, so
-// the old virtual-field re-validation test is not portable.
+#[test]
+fn should_properly_use_re_validated_values() {
+    let value = 1;
+
+    let created = sync_re_validate_schema::DataModel
+        .create(
+            sync_re_validate_schema::PartialDataInput {
+                virtual_field: Some(value),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_re_validate_schema::Data { dependent: value + 1 }
+    );
+
+    let value = 2;
+
+    let updated = sync_re_validate_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_re_validate_schema::PartialDataInput {
+                virtual_field: Some(value),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_re_validate_schema::PartialData {
+            dependent: Some(value + 1),
+        }
+    );
+}
+
+async fn should_properly_use_re_validated_values_async() {
+    let value = 1;
+
+    let created = async_re_validate_schema::DataModel
+        .create(
+            async_re_validate_schema::PartialDataInput {
+                virtual_field: Some(value),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_re_validate_schema::Data { dependent: value + 1 }
+    );
+
+    let value = 2;
+
+    let updated = async_re_validate_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_re_validate_schema::PartialDataInput {
+                virtual_field: Some(value),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_re_validate_schema::PartialData {
+            dependent: Some(value + 1),
+        }
+    );
+}
+
+async_test_matrix!(should_properly_use_re_validated_values_async);
+
+#[test]
+fn should_not_re_validate_virtual_fields_that_were_not_provided_or_were_ignored() {
+    // re-validate must only run for a virtual field that was actually provided
+    // (and not ignored); a defaulted/absent virtual field should never reach
+    // the re-validator.
+    let created = sync_re_validate_not_provided_schema::DataModel
+        .create(sync_re_validate_not_provided_schema::PartialDataInput { virtual_field: None }, ())
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_re_validate_not_provided_schema::Data { dependent: 0 }
+    );
+}
+
+// -----------------------------------------------------------------------------
+// Sanitizers
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_sanitizers_if_provided() {
+    fn sanitize(value: &str) -> String {
+        format!("sanitized-{value}")
+    }
+
+    let virtual_value = "raw-value".to_string();
+
+    let created = sync_sanitize_schema::DataModel
+        .create(
+            sync_sanitize_schema::PartialDataInput {
+                virtual_field: Some(virtual_value.clone()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_sanitize_schema::Data {
+            dependent: sanitize(&virtual_value),
+        }
+    );
+
+    let updated_virtual_value = "updated-raw-value".to_string();
+
+    let updated = sync_sanitize_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_sanitize_schema::PartialDataInput {
+                virtual_field: Some(updated_virtual_value.clone()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_sanitize_schema::PartialData {
+            dependent: Some(sanitize(&updated_virtual_value)),
+        }
+    );
+}
+
+async fn should_respect_sanitizers_if_provided_async() {
+    fn sanitize(value: &str) -> String {
+        format!("sanitized-{value}")
+    }
+
+    let virtual_value = "raw-value".to_string();
+
+    let created = async_sanitize_schema::DataModel
+        .create(
+            async_sanitize_schema::PartialDataInput {
+                virtual_field: Some(virtual_value.clone()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_sanitize_schema::Data {
+            dependent: sanitize(&virtual_value),
+        }
+    );
+
+    let updated_virtual_value = "updated-raw-value".to_string();
+
+    let updated = async_sanitize_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_sanitize_schema::PartialDataInput {
+                virtual_field: Some(updated_virtual_value.clone()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_sanitize_schema::PartialData {
+            dependent: Some(sanitize(&updated_virtual_value)),
+        }
+    );
+}
+
+async_test_matrix!(should_respect_sanitizers_if_provided_async);
+
+#[test]
+fn should_only_sanitize_virtual_fields_that_were_provided() {
+    // A virtual field that was not provided (and thus never validated) must
+    // not be sanitized either; the resolver never sees a value for it.
+    let created = sync_sanitize_not_provided_schema::DataModel
+        .create(
+            sync_sanitize_not_provided_schema::PartialDataInput { virtual_field: None },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_sanitize_not_provided_schema::Data {
+            dependent: String::new(),
+        }
+    );
+}
+
+#[test]
+fn should_sanitize_virtual_fields_only_after_post_validate_succeeds() {
+    // `post_validate` handlers must observe the validated-but-not-yet-sanitized
+    // virtual value; only once post-validation succeeds does sanitize run and
+    // feed the sanitized value to dependent resolution.
+    let created = sync_sanitize_after_post_validate_schema::DataModel
+        .create(
+            sync_sanitize_after_post_validate_schema::PartialDataInput {
+                name: Some("name".into()),
+                virtual_field: Some("raw".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_sanitize_after_post_validate_schema::Data {
+            name: "name".into(),
+            dependent: "sanitized-raw".into(),
+        }
+    );
+}
 
 // -----------------------------------------------------------------------------
 // Pass-through validators
@@ -776,6 +1015,156 @@ async_test_matrix!(should_return_empty_updates_when_no_value_has_changed_with_al
 // -----------------------------------------------------------------------------
 // Grouped ignore rules
 // -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// Re-validators: schemas
+// -----------------------------------------------------------------------------
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_re_validate_schema {
+    struct Fields {
+        #[depends_on(virtual_field)]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(|_: i32, _, _| Ok(None))]
+        #[re_validate(|v: i32, _, _| Ok(Some(v + 1)))]
+        pub virtual_field: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_re_validate_schema {
+    struct Fields {
+        #[depends_on(virtual_field)]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(async |_: i32, _, _| Ok(None))]
+        #[re_validate(async |v: i32, _, _| Ok(Some(v + 1)))]
+        pub virtual_field: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_re_validate_not_provided_schema {
+    struct Fields {
+        #[depends_on(virtual_field)]
+        #[default(0)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(|v: i32, _, _| Ok(Some(v)))]
+        #[re_validate(|_: i32, _, _| panic!("re_validate must not run for a field that was not provided"))]
+        pub virtual_field: i32,
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Sanitizers: schemas
+// -----------------------------------------------------------------------------
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_sanitize_schema {
+    struct Fields {
+        #[depends_on(virtual_field)]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[sanitize(|v: String, _, _| format!("sanitized-{v}"))]
+        pub virtual_field: String,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_sanitize_schema {
+    struct Fields {
+        #[depends_on(virtual_field)]
+        #[default(String::new())]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(async |v: String, _, _| Ok(Some(v)))]
+        #[sanitize(async |v: String, _, _| format!("sanitized-{v}"))]
+        pub virtual_field: String,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_sanitize_not_provided_schema {
+    struct Fields {
+        #[depends_on(virtual_field)]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[sanitize(|_: String, _, _| panic!("sanitize must not run for a field that was not provided"))]
+        pub virtual_field: String,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_sanitize_after_post_validate_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[depends_on(virtual_field)]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[sanitize(|v: String, _, _| format!("sanitized-{v}"))]
+        pub virtual_field: String,
+    }
+
+    #[post_validate(
+        ["name", "virtual_field"],
+        validate = |ctx, _| {
+            assert_eq!(
+                ctx.input().virtual_field.clone().unwrap(),
+                "raw",
+                "post_validate must see the validated-but-not-yet-sanitized virtual value"
+            );
+            Ok(None)
+        },
+    )]
+    const _: () = ();
+}
 
 // -----------------------------------------------------------------------------
 // Grouped required errors: alias variants

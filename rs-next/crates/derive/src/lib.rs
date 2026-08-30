@@ -2069,6 +2069,27 @@ fn generate_model(
         }
     });
 
+    // Whether `create` needs to resolve a shared timestamp value up front: true
+    // when the resolver is configured and at least one of `#[created_at]` /
+    // non-optional `#[updated_at]` is declared. Both fields then reuse the same
+    // resolved value instead of invoking the resolver once per field, so the
+    // timestamp resolver is called at most once per `create` call.
+    let create_needs_timestamp_value = timestamps_resolver.is_some()
+        && fields.iter().any(|f| {
+            matches!(
+                f.field_type,
+                FieldType::CreatedAt | FieldType::UpdatedAt { optional: false }
+            )
+        });
+    let create_timestamp_value_decl = if create_needs_timestamp_value {
+        let resolver = timestamps_resolver.as_ref().unwrap();
+        quote! {
+            let __ivo_timestamp_value = ::ivo::__ivo_internals::run_value_resolver_sync(#resolver);
+        }
+    } else {
+        quote! {}
+    };
+
     // Field-level option handlers.
     let field_is_lax_or_virtual =
         |f: &&FieldDef| matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. });
@@ -2575,8 +2596,11 @@ fn generate_model(
                     }
                 }
                 FieldType::CreatedAt | FieldType::UpdatedAt { optional: false } => {
-                    if let Some(resolver) = &timestamps_resolver {
-                        quote! { ::ivo::__ivo_internals::run_value_resolver_sync(#resolver) }
+                    if timestamps_resolver.is_some() {
+                        // Resolved once per `create` call via `__ivo_timestamp_value`
+                        // (declared ahead of this loop) rather than invoking the
+                        // resolver again per timestamp field.
+                        quote! { __ivo_timestamp_value.clone() }
                     } else {
                         quote! { ::core::default::Default::default() }
                     }
@@ -2771,107 +2795,177 @@ fn generate_model(
         }
     };
 
-    // Virtual-field processing pass: sanitize/validate virtual input values and
-    // update the partial input so that dependent resolvers see the final values.
-    let virtual_step_pairs: Vec<_> = fields
-        .iter()
-        .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
-        .map(|f| {
+    // Virtual-field pipeline: validate -> re-validate -> (sanitize is deferred
+    // until after post_validate; see `build_virtual_pipeline` below). Every stage
+    // only runs for a virtual field that was provided in input and not ignored;
+    // re-validate additionally requires the field's own validator to have
+    // succeeded, and sanitize only runs once the whole validate/re-validate/
+    // post-validate phase has succeeded (i.e. after the errors check).
+    //
+    // The generated statements operate on a local, mutable `input` binding of
+    // type `#partial_input_name` so the same generator can be reused for both
+    // `create` (where `input` is the method's own parameter) and `update`
+    // (where a local `input` shadow is derived from `updates`).
+    let build_virtual_pipeline = |ignore_flag_for: &dyn Fn(&FieldDef) -> proc_macro2::TokenStream,
+                                   changes_expr: &proc_macro2::TokenStream,
+                                   is_update_flag: bool|
+     -> (
+        Vec<(bool, proc_macro2::TokenStream)>,
+        Vec<(bool, proc_macro2::TokenStream)>,
+        Vec<(bool, proc_macro2::TokenStream)>,
+    ) {
+        let mut validate_pairs = Vec::new();
+        let mut re_validate_pairs = Vec::new();
+        let mut sanitize_pairs = Vec::new();
+
+        for f in fields
+            .iter()
+            .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
+        {
             let name = &f.name;
             let name_str = name.to_string();
             let ty = &f.ty;
             let ty_tokens = quote!(#ty);
             let input_name_tokens = input_field_name(f);
-            let sanitizer = attr_value_tokens(&f.attrs, "sanitize");
+            let provided_flag = format_ident!("__virtual_provided_{}", name);
+            let ignore_flag_tokens = ignore_flag_for(f);
             let validator = attr_value_tokens(&f.attrs, "validate");
+            let re_validator = attr_value_tokens(&f.attrs, "re_validate");
+            let sanitizer = attr_value_tokens(&f.attrs, "sanitize");
 
-            let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
-                let flag = format_ident!("ignore_{}", name);
-                quote! { #flag }
-            } else {
-                quote! { false }
+            // `let mut` (not a bare `ctx = ...`) so this compiles regardless of
+            // whether `ctx` is already in scope as `mut` at the call site; later
+            // code in the same function body may still do a plain `ctx = ...`
+            // reassignment against this freshly-shadowed, always-`mut` binding.
+            let ctx_rebuild = quote! {
+                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    output.clone(),
+                    #changes_expr,
+                    #is_update_flag,
+                );
             };
 
-            let base_value = quote! {
-                {
-                    let __maybe: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
-                        ::core::option::Option::None
-                    } else {
-                        input.#input_name_tokens.clone()
-                    };
-                    __maybe.unwrap_or_default()
+            let mut validate_is_async = false;
+            let validate_call = validator
+                .as_ref()
+                .map(|validator| {
+                    let value_expr = quote!(__value.clone());
+                    let ctx_expr = quote!(&ctx);
+                    let opts_expr = quote!(&_rw_ctx_options);
+                    let (is_async, call) = make_validator_call(
+                        validator,
+                        &ty_tokens,
+                        &value_expr,
+                        &ctx_expr,
+                        &opts_expr,
+                    );
+                    validate_is_async |= is_async;
+                    quote! {
+                        match #call {
+                            ::core::result::Result::Ok(::core::option::Option::Some(__v)) => {
+                                input.#input_name_tokens = ::core::option::Option::Some(__v);
+                            }
+                            ::core::result::Result::Ok(::core::option::Option::None) => {}
+                            ::core::result::Result::Err(e) => {
+                                errors.insert(::std::string::String::from(#name_str), e);
+                            }
+                        }
+                    }
+                })
+                .unwrap_or_else(|| quote! {});
+
+            let validate_stmt = quote! {
+                let #provided_flag: bool = !#ignore_flag_tokens && input.#input_name_tokens.is_some();
+                if #ignore_flag_tokens {
+                    input.#input_name_tokens = ::core::option::Option::None;
+                } else if #provided_flag {
+                    let __value: #ty_tokens = input.#input_name_tokens.clone().unwrap();
+                    #validate_call
                 }
+                #ctx_rebuild
             };
+            validate_pairs.push((validate_is_async, validate_stmt));
 
-            let mut field_is_async = false;
+            if let Some(re_validator) = re_validator {
+                let value_expr = quote!(__value.clone());
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) = make_validator_call(
+                    &re_validator,
+                    &ty_tokens,
+                    &value_expr,
+                    &ctx_expr,
+                    &opts_expr,
+                );
+                let stmt = quote! {
+                    if #provided_flag && !errors.contains_key(#name_str) {
+                        let __value: #ty_tokens = input.#input_name_tokens.clone().unwrap();
+                        match #call {
+                            ::core::result::Result::Ok(::core::option::Option::Some(__v)) => {
+                                input.#input_name_tokens = ::core::option::Option::Some(__v);
+                            }
+                            ::core::result::Result::Ok(::core::option::Option::None) => {}
+                            ::core::result::Result::Err(e) => {
+                                errors.insert(::std::string::String::from(#name_str), e);
+                            }
+                        }
+                    }
+                    #ctx_rebuild
+                };
+                re_validate_pairs.push((is_async, stmt));
+            }
 
-            let sanitizer_expr = if let Some(sanitizer) = sanitizer {
-                let value_expr = quote!(value);
+            if let Some(sanitizer) = sanitizer {
+                let value_expr = quote!(__value.clone());
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) =
                     make_sanitizer_call(&sanitizer, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
-                field_is_async |= is_async;
-                quote! { value = #call; }
-            } else {
-                quote! {}
-            };
-
-            let validator_expr = if let Some(ref validator) = validator {
-                let value_expr = quote!(value.clone());
-                let ctx_expr = quote!(&ctx);
-                let opts_expr = quote!(&_rw_ctx_options);
-                let (is_async, call) =
-                    make_validator_call(validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
-                field_is_async |= is_async;
-                quote! {
-                    match #call {
-                        ::core::result::Result::Ok(::core::option::Option::Some(v)) => {
-                            value = v;
-                        }
-                        ::core::result::Result::Ok(::core::option::Option::None) => {}
-                        ::core::result::Result::Err(e) => {
-                            errors.insert(::std::string::String::from(#name_str), e);
-                            __field_valid = false;
-                        }
+                let stmt = quote! {
+                    if #provided_flag {
+                        let __value: #ty_tokens = input.#input_name_tokens.clone().unwrap();
+                        let __sanitized: #ty_tokens = #call;
+                        input.#input_name_tokens = ::core::option::Option::Some(__sanitized);
                     }
-                }
-            } else {
-                quote! {}
-            };
+                };
+                sanitize_pairs.push((is_async, stmt));
+            }
+        }
 
-            let value_computation = quote! {
-                {
-                    let mut __field_valid = true;
-                    let mut value: #ty = #base_value;
-                    if !#ignore_flag_tokens {
-                        #validator_expr
-                        #sanitizer_expr
-                    }
-                    (value, __field_valid)
-                }
-            };
+        (validate_pairs, re_validate_pairs, sanitize_pairs)
+    };
 
-            let stmt = quote! {
-                let __provided = input.#input_name_tokens.is_some();
-                let (#name, __field_valid): (#ty, bool) = #value_computation;
-                if #ignore_flag_tokens {
-                    input.#input_name_tokens = ::core::option::Option::None;
-                } else if __field_valid && __provided {
-                    input.#input_name_tokens = ::core::option::Option::Some(#name.clone());
-                }
-                let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    output.clone(),
-                    output.clone().into(),
-                    false,
-                );
-            };
-            (field_is_async, stmt)
-        })
+    let create_virtual_ignore_flag_for = |f: &FieldDef| -> proc_macro2::TokenStream {
+        let name_str = f.name.to_string();
+        if ignore_field_names.contains(&name_str) {
+            let flag = format_ident!("ignore_{}", f.name);
+            quote! { #flag }
+        } else {
+            quote! { false }
+        }
+    };
+
+    let (virtual_validate_create_pairs, virtual_re_validate_create_pairs, virtual_sanitize_create_pairs) =
+        build_virtual_pipeline(
+            &create_virtual_ignore_flag_for,
+            &quote!(output.clone().into()),
+            false,
+        );
+    create_has_async |= virtual_validate_create_pairs.iter().any(|(a, _)| *a);
+    create_has_async |= virtual_re_validate_create_pairs.iter().any(|(a, _)| *a);
+    create_has_async |= virtual_sanitize_create_pairs.iter().any(|(a, _)| *a);
+    let virtual_validate_create_steps = virtual_validate_create_pairs
+        .into_iter()
+        .map(|(_, stmt)| stmt);
+    let virtual_re_validate_create_steps: Vec<_> = virtual_re_validate_create_pairs
+        .into_iter()
+        .map(|(_, stmt)| stmt)
         .collect();
-    create_has_async |= virtual_step_pairs.iter().any(|(a, _)| *a);
-    let virtual_steps = virtual_step_pairs.into_iter().map(|(_, stmt)| stmt);
+    let virtual_sanitize_create_steps: Vec<_> = virtual_sanitize_create_pairs
+        .into_iter()
+        .map(|(_, stmt)| stmt)
+        .collect();
 
     // Re-validation pass: run secondary validators over the built output.
     let re_validate_pairs: Vec<_> = fields
@@ -3210,6 +3304,37 @@ fn generate_model(
         quote! { #flag = true; }
     });
 
+    let update_virtual_ignore_flag_for = |f: &FieldDef| -> proc_macro2::TokenStream {
+        let name_str = f.name.to_string();
+        if update_ignore_field_names.contains(&name_str) {
+            let flag = format_ident!("ignore_update_{}", f.name);
+            quote! { #flag }
+        } else {
+            quote! { false }
+        }
+    };
+
+    let (virtual_validate_update_pairs, virtual_re_validate_update_pairs, virtual_sanitize_update_pairs) =
+        build_virtual_pipeline(
+            &update_virtual_ignore_flag_for,
+            &quote!(__changes.clone()),
+            true,
+        );
+    update_has_async |= virtual_validate_update_pairs.iter().any(|(a, _)| *a);
+    update_has_async |= virtual_re_validate_update_pairs.iter().any(|(a, _)| *a);
+    update_has_async |= virtual_sanitize_update_pairs.iter().any(|(a, _)| *a);
+    let virtual_validate_update_steps = virtual_validate_update_pairs
+        .into_iter()
+        .map(|(_, stmt)| stmt);
+    let virtual_re_validate_update_steps: Vec<_> = virtual_re_validate_update_pairs
+        .into_iter()
+        .map(|(_, stmt)| stmt)
+        .collect();
+    let virtual_sanitize_update_steps: Vec<_> = virtual_sanitize_update_pairs
+        .into_iter()
+        .map(|(_, stmt)| stmt)
+        .collect();
+
     // Conditional required checks for update (mirrors create logic but uses `updates`).
     let update_grouped_required_pairs: Vec<_> = options
         .iter()
@@ -3452,7 +3577,7 @@ fn generate_model(
                         };
                         if matches!(parent_def.field_type, FieldType::Virtual { .. }) {
                             let input_name = input_field_name(parent_def);
-                            Some(quote! { !#parent_ignored && updates.#input_name.is_some() })
+                            Some(quote! { !#parent_ignored && input.#input_name.is_some() })
                         } else if matches!(
                             parent_def.field_type,
                             FieldType::Required | FieldType::Lax
@@ -3508,7 +3633,7 @@ fn generate_model(
                                 output.#name = __new_value.clone();
                                 __changes.#setter(__new_value);
                                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                                    updates.clone(),
+                                    input.clone(),
                                     output.clone(),
                                     __changes.clone(),
                                     true,
@@ -3569,7 +3694,7 @@ fn generate_model(
             let input_name = input_field_name(f);
             if matches!(f.field_type, FieldType::Virtual { .. }) {
                 quote! {
-                    if let ::core::option::Option::Some(v) = &updates.#input_name {
+                    if let ::core::option::Option::Some(v) = &input.#input_name {
                         __post_input.#input_name = ::core::option::Option::Some(v.clone());
                     }
                 }
@@ -4127,10 +4252,18 @@ fn generate_model(
                 #(#required_evaluations)*
                 #(#required_field_checks)*
 
-                #(#virtual_steps)*
+                #create_timestamp_value_decl
+                #(#virtual_validate_create_steps)*
                 #(#create_steps)*
                 let mut ctx = ctx;
                 #(#re_validate_steps)*
+                #(#virtual_re_validate_create_steps)*
+                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    output.clone(),
+                    output.clone().into(),
+                    false,
+                );
                 #(#post_validate_create_steps)*
 
                 if !errors.is_empty() {
@@ -4144,6 +4277,14 @@ fn generate_model(
                         __failure_trigger,
                     ))
                 }
+
+                #(#virtual_sanitize_create_steps)*
+                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    output.clone(),
+                    output.clone().into(),
+                    false,
+                );
 
                 #dependent_create_block
 
@@ -4172,8 +4313,9 @@ fn generate_model(
                 let __original_output = output.clone();
                 let mut __changes: #partial_output_name = ::core::default::Default::default();
                 let mut __update_attempted = false;
+                let mut input: #partial_input_name = updates.clone();
                 let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    updates.clone(),
+                    input.clone(),
                     output.clone(),
                     __changes.clone(),
                     true,
@@ -4189,6 +4331,7 @@ fn generate_model(
                 #(#update_required_evaluations)*
 
                 #(#update_assignments)*
+                #(#virtual_validate_update_steps)*
                 #(#virtual_ignore_update_attempts)*
 
                 if !errors.is_empty() {
@@ -4207,6 +4350,13 @@ fn generate_model(
                 }
 
                 #(#re_validate_steps)*
+                #(#virtual_re_validate_update_steps)*
+                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    output.clone(),
+                    __changes.clone(),
+                    true,
+                );
 
                 if !errors.is_empty() {
                     let __trigger_changes = __changes.clone();
@@ -4258,6 +4408,14 @@ fn generate_model(
                         __failure_trigger,
                     ));
                 }
+
+                #(#virtual_sanitize_update_steps)*
+                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    output.clone(),
+                    __changes.clone(),
+                    true,
+                );
 
                 #(#dependent_update_assignments)*
 
