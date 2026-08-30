@@ -325,8 +325,8 @@ fn partial_passthrough_attrs(attrs: &[Attribute], target: &str) -> Vec<proc_macr
 #[derive(Clone)]
 enum GroupedOptionKind {
     Ignore,
-    Required,
     IgnoreUpdate,
+    Required,
     OnDelete,
     OnSuccess,
     Timestamps,
@@ -372,52 +372,34 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
     };
 
     match kind {
-        GroupedOptionKind::Timestamps => {
-            if let Ok(closure) = syn::parse2::<syn::ExprClosure>(list.tokens.clone()) {
-                if closure.asyncness.is_some() {
-                    return Err(syn::Error::new_spanned(
-                        attr,
-                        "async timestamp resolvers are not supported; use a synchronous closure `|| now()` or a sync function path `now`",
-                    ));
-                }
-            }
-            let async_leading = list.tokens.clone().into_iter().next().is_some_and(|tt| {
-                if let proc_macro2::TokenTree::Ident(ident) = tt {
-                    ident == "async"
-                } else {
-                    false
-                }
-            });
-            if async_leading {
-                return Err(syn::Error::new_spanned(
-                    attr,
-                    "async timestamp resolvers are not supported; use a synchronous closure `|| now()` or a sync function path `now`",
-                ));
-            }
-            Ok(Some(GroupedOption {
-                kind,
-                fields: Vec::new(),
-                handler: list.tokens.clone(),
-                pre_validate: None,
-            }))
-        }
         GroupedOptionKind::OnDelete => Ok(Some(GroupedOption {
             kind,
             fields: Vec::new(),
             handler: list.tokens.clone(),
             pre_validate: None,
         })),
-        GroupedOptionKind::OnSuccess => {
+        GroupedOptionKind::IgnoreUpdate => {
             let mut exprs = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated
                 .parse2(list.tokens.clone())?;
-            if exprs.len() == 2 {
+
+            let num_exprs = exprs.len();
+
+            if num_exprs != 1 && num_exprs != 2 {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    "expected `#[ignore_update(handler)]` or `#[ignore_update([...], handler)]`",
+                ));
+            }
+
+            if num_exprs == 2 {
                 if let Some(syn::Expr::Array(fields_expr)) = exprs.first() {
                     if fields_expr.elems.is_empty() {
                         return Err(syn::Error::new_spanned(
                             attr,
-                            "grouped `#[on_success([...], handler)]` expects at least one field",
+                            "grouped `#[ignore_update([...], handler)]` expects at least one field",
                         ));
                     }
+
                     let mut fields = Vec::new();
                     for expr in &fields_expr.elems {
                         let syn::Expr::Lit(syn::ExprLit {
@@ -432,15 +414,70 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
                         };
                         fields.push(s.value());
                     }
-                    let handler = exprs.pop().unwrap().into_value().into_token_stream();
+
                     return Ok(Some(GroupedOption {
                         kind,
                         fields,
-                        handler,
+                        handler: exprs.pop().unwrap().into_value().into_token_stream(),
                         pre_validate: None,
                     }));
                 }
             }
+
+            // Entity-level ignore_update handler: `#[ignore_update(|| { ... })]`.
+            Ok(Some(GroupedOption {
+                kind,
+                fields: Vec::new(),
+                handler: exprs.pop().unwrap().into_value().into_token_stream(),
+                pre_validate: None,
+            }))
+        }
+        GroupedOptionKind::OnSuccess => {
+            let mut exprs = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated
+                .parse2(list.tokens.clone())?;
+
+            let num_exprs = exprs.len();
+
+            if num_exprs != 1 && num_exprs != 2 {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    "expected `#[on_success(handler)]` or `#[on_success([...], handler)]`",
+                ));
+            }
+
+            if num_exprs == 2 {
+                if let Some(syn::Expr::Array(fields_expr)) = exprs.first() {
+                    if fields_expr.elems.is_empty() {
+                        return Err(syn::Error::new_spanned(
+                            attr,
+                            "grouped `#[on_success([...], handler)]` expects at least one field",
+                        ));
+                    }
+
+                    let mut fields = Vec::new();
+                    for expr in &fields_expr.elems {
+                        let syn::Expr::Lit(syn::ExprLit {
+                            lit: syn::Lit::Str(s),
+                            ..
+                        }) = expr
+                        else {
+                            return Err(syn::Error::new_spanned(
+                                expr,
+                                "field list must contain string literals",
+                            ));
+                        };
+                        fields.push(s.value());
+                    }
+
+                    return Ok(Some(GroupedOption {
+                        kind,
+                        fields,
+                        handler: exprs.pop().unwrap().into_value().into_token_stream(),
+                        pre_validate: None,
+                    }));
+                }
+            }
+
             // Entity-level success handler: `#[on_success(|| { ... })]`.
             Ok(Some(GroupedOption {
                 kind,
@@ -452,7 +489,9 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         GroupedOptionKind::PostValidate => {
             let exprs = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated
                 .parse2(list.tokens.clone())?;
+
             let mut expr_iter = exprs.into_iter();
+
             let fields_expr = match expr_iter.next() {
                 Some(syn::Expr::Array(a)) => a,
                 Some(other) => {
@@ -486,6 +525,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
 
             let mut pre_validate: Option<proc_macro2::TokenStream> = None;
             let mut validate: Option<proc_macro2::TokenStream> = None;
+
             for expr in expr_iter {
                 let syn::Expr::Assign(assign) = expr else {
                     return Err(syn::Error::new_spanned(
@@ -524,18 +564,51 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
                 pre_validate,
             }))
         }
+        GroupedOptionKind::Timestamps => {
+            if let Ok(closure) = syn::parse2::<syn::ExprClosure>(list.tokens.clone()) {
+                if closure.asyncness.is_some() {
+                    return Err(syn::Error::new_spanned(
+                        attr,
+                        "async timestamp resolvers are not supported; use a synchronous closure `|| now()` or a sync function path `now`",
+                    ));
+                }
+            }
+
+            let async_leading = list.tokens.clone().into_iter().next().is_some_and(|tt| {
+                if let proc_macro2::TokenTree::Ident(ident) = tt {
+                    ident == "async"
+                } else {
+                    false
+                }
+            });
+
+            if async_leading {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    "async timestamp resolvers are not supported; use a synchronous closure `|| now()` or a sync function path `now`",
+                ));
+            }
+
+            Ok(Some(GroupedOption {
+                kind,
+                fields: Vec::new(),
+                handler: list.tokens.clone(),
+                pre_validate: None,
+            }))
+        }
         _ => {
             let mut exprs = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated
                 .parse2(list.tokens.clone())?;
+
             if exprs.len() != 2 {
                 return Err(syn::Error::new_spanned(
                     attr,
-                    "expected `#[ignore([...], handler)]`, `#[required([...], handler)]`, or `#[ignore_update([...], handler)]`",
+                    "expected `#[ignore([...], handler)]` or `#[required([...], handler)]`",
                 ));
             }
-            let handler = exprs.pop().unwrap().into_value().into_token_stream();
-            let fields_expr = match exprs.pop().unwrap().into_value() {
-                syn::Expr::Array(a) => a,
+
+            let fields_expr = match exprs.first() {
+                Some(syn::Expr::Array(a)) => a,
                 other => {
                     return Err(syn::Error::new_spanned(
                         other,
@@ -556,13 +629,14 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
                         "field list must contain string literals",
                     ));
                 };
+
                 fields.push(s.value());
             }
 
             Ok(Some(GroupedOption {
                 kind,
                 fields,
-                handler,
+                handler: exprs.pop().unwrap().into_value().into_token_stream(),
                 pre_validate: None,
             }))
         }
@@ -582,6 +656,7 @@ fn parse_grouped_options(item_mod: &ItemMod) -> syn::Result<Vec<GroupedOption>> 
         let syn::Item::Const(c) = item else {
             continue;
         };
+
         // Match anonymous const _: () = ()
         if !c.ident.to_string().starts_with('_') {
             continue;
@@ -1318,6 +1393,7 @@ fn validate_dependencies(fields: &[FieldDef]) -> syn::Result<()> {
         if visited.contains(name) {
             continue;
         }
+
         if let Some(cycle) = find_dependency_cycle(name, &deps, &mut stack, &mut visited) {
             return Err(syn::Error::new(
                 proc_macro2::Span::call_site(),
@@ -1337,6 +1413,7 @@ fn validate_dependencies(fields: &[FieldDef]) -> syn::Result<()> {
                         .find(|f| f.name == *name)
                         .map(|f| &f.name)
                         .unwrap();
+
                     return Err(syn::Error::new_spanned(
                         field_ident,
                         format!(
@@ -1352,9 +1429,8 @@ fn validate_dependencies(fields: &[FieldDef]) -> syn::Result<()> {
     // Virtual fields must be referenced by at least one dependent.
     for f in fields {
         if let FieldType::Virtual { .. } = &f.field_type {
-            let name = f.name.to_string();
-            let referenced = deps.values().any(|parents| parents.contains(&name));
-            if !referenced {
+            let name = &f.name.to_string();
+            if !deps.values().any(|parents| parents.contains(name)) {
                 return Err(syn::Error::new_spanned(
                     &f.name,
                     format!(
@@ -1379,10 +1455,13 @@ fn find_dependency_cycle(
         let cycle = stack[pos..].to_vec();
         return Some(cycle);
     }
+
     if !visited.insert(node.to_string()) {
         return None;
     }
+
     stack.push(node.to_string());
+
     if let Some(parents) = deps.get(node) {
         for parent in parents {
             if let Some(cycle) = find_dependency_cycle(parent, deps, stack, visited) {
@@ -1390,7 +1469,9 @@ fn find_dependency_cycle(
             }
         }
     }
+
     stack.pop();
+
     None
 }
 
@@ -1400,6 +1481,7 @@ fn reachable_from(
 ) -> std::collections::HashSet<String> {
     let mut visited = std::collections::HashSet::new();
     let mut stack = vec![start];
+
     while let Some(node) = stack.pop() {
         if let Some(parents) = deps.get(node) {
             for parent in parents {
@@ -1409,11 +1491,13 @@ fn reachable_from(
             }
         }
     }
+
     visited
 }
 
 fn dependency_order(fields: &[FieldDef]) -> Vec<String> {
     let mut deps: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+
     for f in fields {
         if let Ok(parents) = parse_depends_on(f) {
             if !parents.is_empty() {
@@ -1433,18 +1517,18 @@ fn dependency_order(fields: &[FieldDef]) -> Vec<String> {
         stack: &mut Vec<String>,
         order: &mut Vec<String>,
     ) {
-        if stack.iter().any(|n| n == node) {
+        if stack.iter().any(|n| n == node) || !visited.insert(node.to_string()) {
             return;
         }
-        if !visited.insert(node.to_string()) {
-            return;
-        }
+
         stack.push(node.to_string());
+
         if let Some(parents) = deps.get(node) {
             for parent in parents {
                 visit(parent, deps, visited, stack, order);
             }
         }
+
         stack.pop();
         order.push(node.to_string());
     }
@@ -1572,7 +1656,7 @@ fn generate_partial_and_impls(
         })
         .collect();
 
-    let clone_update_fields: Vec<_> = fields
+    let clone_struct_with_updates: Vec<_> = fields
         .iter()
         .map(|f| {
             let name = &f.name;
@@ -1584,7 +1668,7 @@ fn generate_partial_and_impls(
         })
         .collect();
 
-    let clone_with_updates_fields = fields.iter().map(|f| {
+    let clone_partial_struct_with_updates = fields.iter().map(|f| {
         let name = &f.name;
         quote! { #name: updates.#name.clone().or_else(|| self.#name.clone()) }
     });
@@ -1594,22 +1678,13 @@ fn generate_partial_and_impls(
         quote! { #name: ::core::option::Option::Some(value.#name) }
     });
 
-    let available_fields = fields.iter().map(|f| {
-        let name = &f.name;
-        let name_str = name.to_string();
-        quote! {
-            if self.#name.is_some() {
-                names.push(::std::string::String::from(#name_str));
-            }
-        }
-    });
-
     let setters = fields.iter().map(|f| {
         let name = &f.name;
         let ty = &f.ty;
         let setter = format_ident!("set_{}", name);
         let wither = format_ident!("with_{}", name);
         let unsetter = format_ident!("unset_{}", name);
+
         quote! {
             pub fn #setter(&mut self, value: #ty) {
                 self.#name = ::core::option::Option::Some(value);
@@ -1659,18 +1734,10 @@ fn generate_partial_and_impls(
             }
 
             pub fn clone_with_updates(&self, updates: &Self) -> Self {
-                Self { #(#clone_with_updates_fields,)* }
+                Self { #(#clone_partial_struct_with_updates,)* }
             }
 
             #(#setters)*
-        }
-
-        impl ::ivo::__ivo_internals::PartialStructMethods for #partial_name {
-            fn ivo_internal_fields_available(&self) -> ::std::vec::Vec<::std::string::String> {
-                let mut names = ::std::vec::Vec::new();
-                #(#available_fields)*
-                names
-            }
         }
 
         impl ::core::default::Default for #name {
@@ -1686,18 +1753,16 @@ fn generate_partial_and_impls(
         impl #name {
             pub fn clone_with_updates(&self, updates: &#partial_name) -> Self {
                 let mut clone = self.clone();
-                #(#clone_update_fields)*
+                #(#clone_struct_with_updates)*
                 clone
             }
         }
 
-        impl ::ivo::__ivo_internals::IvoStructMethods for #name {
-            fn ivo_internal_update_with(&mut self, updates: &Self::Partial) {
+        impl ::ivo::__ivo_internals::IvoStruct for #name {
+            fn append_updates(&mut self, updates: &Self::Partial) {
                 #(#update_fields)*
             }
         }
-
-        impl ::ivo::__ivo_internals::IvoStruct for #name {}
 
         impl ::core::convert::From<#name> for #partial_name {
             fn from(value: #name) -> Self {
@@ -1730,6 +1795,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
     let setters = fields.iter().map(|f| {
         let name = &f.name;
         let setter = format_ident!("set_{}", name);
+
         quote! {
             pub fn #setter(
                 &mut self,
@@ -1747,6 +1813,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
     let builder_setters = fields.iter().map(|f| {
         let name = &f.name;
         let setter = format_ident!("with_{}", name);
+
         quote! {
             pub fn #setter(
                 mut self,
@@ -1765,6 +1832,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
     let insertions = fields.iter().map(|f| {
         let name = &f.name;
         let name_str = name.to_string();
+
         quote! {
             if let ::core::option::Option::Some(e) = self.#name {
                 payload.insert(::std::string::String::from(#name_str), e);
@@ -1836,19 +1904,22 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
             let vis = &f.vis;
             let ty = &f.ty;
             let original_name = &f.name;
+
             let name = match &f.field_type {
                 FieldType::Virtual { alias: Some(alias) } => {
                     Ident::new(alias, original_name.span())
                 }
                 _ => original_name.clone(),
             };
-            let input_attrs = passthrough_attrs(&f.attrs, "input");
-            let partial_attrs = partial_passthrough_attrs(&f.attrs, "input");
+
             input_partial_fields.push(PartialFieldInfo {
                 name: name.clone(),
                 ty: ty.clone(),
-                attrs: partial_attrs,
+                attrs: partial_passthrough_attrs(&f.attrs, "input"),
             });
+
+            let input_attrs = passthrough_attrs(&f.attrs, "input");
+
             quote! { #(#input_attrs)* #vis #name: #ty }
         });
 
@@ -1884,13 +1955,15 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
                 let vis = &f.vis;
                 let name = &f.name;
                 let ty = &f.ty;
-                let output_attrs = passthrough_attrs(&f.attrs, "output");
-                let partial_attrs = partial_passthrough_attrs(&f.attrs, "output");
+
                 output_partial_fields.push(PartialFieldInfo {
                     name: name.clone(),
                     ty: ty.clone(),
-                    attrs: partial_attrs,
+                    attrs: partial_passthrough_attrs(&f.attrs, "output"),
                 });
+
+                let output_attrs = passthrough_attrs(&f.attrs, "output");
+
                 quote! { #(#output_attrs)* #vis #name: #ty }
             });
 
@@ -2058,6 +2131,7 @@ fn generate_model(
         })
         .map(|f| f.name.to_string())
         .collect();
+
     let bare_ignore_update_field_names: std::collections::HashSet<String> = fields
         .iter()
         .filter(|f| {

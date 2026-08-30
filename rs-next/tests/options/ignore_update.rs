@@ -7,7 +7,7 @@ mod empty_grouped_ignore_update_schema {
         pub lax: String,
     }
 
-    #[ignore_update([], |ctx, _| {
+    #[ignore_update(|ctx, _| {
         ctx.input()
             .lax
             .as_ref()

@@ -193,7 +193,7 @@ mod user_schema {
     })]
     const _: () = ();
 
-    #[on_success(["email"],  |_, _| {
+    #[on_success(["email"], |_, _| {
         println!("[options.on_success]: [email]");
     })]
     const _: () = ();

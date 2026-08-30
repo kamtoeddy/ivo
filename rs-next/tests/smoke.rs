@@ -605,7 +605,7 @@ mod user_grouped_ignore_update_schema {
         pub role: String,
     }
 
-    #[ignore_update([], |_ctx, _opts| true)]
+    #[ignore_update(|_ctx, _opts| true)]
     const _: () = ();
 }
 

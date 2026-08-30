@@ -220,32 +220,20 @@ impl<CtxOptions, Metadata: Clone + Send + Sync> IvoErrorSanitizer<CtxOptions>
 // Struct traits (filled in by derive macros)
 
 pub trait WithPartialStruct {
-    type Partial: PartialStructMethods + Default + Clone + Send + Sync + 'static;
+    type Partial: Default + Clone + Send + Sync + 'static;
 }
 
 pub trait WithPartialErrors<Metadata: Send + Sync> {
     type PartialErrors: PartialErrorsMethods<Metadata> + Send + Sync;
 }
 
-pub trait IvoStructMethods: WithPartialStruct + Clone + Send + Sync + 'static {
-    fn ivo_internal_update_with(&mut self, updates: &Self::Partial);
-}
-
-pub trait IvoStruct:
-    IvoStructMethods + WithPartialStruct + Into<Self::Partial> + Send + Sync + 'static
-{
-    fn append_updates(&mut self, updates: &Self::Partial) {
-        self.ivo_internal_update_with(updates);
-    }
+pub trait IvoStruct: WithPartialStruct + Into<Self::Partial> + Send + Sync + 'static {
+    fn append_updates(&mut self, updates: &Self::Partial);
 }
 
 pub trait IvoInputStruct<CtxOptions, ErrorSanitizer: IvoErrorSanitizer<CtxOptions>>:
     IvoStruct + WithPartialErrors<ErrorSanitizer::Metadata>
 {
-}
-
-pub trait PartialStructMethods: Clone + Default + Send + Sync + 'static {
-    fn ivo_internal_fields_available(&self) -> Vec<String>;
 }
 
 pub trait PartialErrorsMethods<Metadata: Send + Sync> {
