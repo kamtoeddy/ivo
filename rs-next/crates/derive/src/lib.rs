@@ -2481,121 +2481,130 @@ fn generate_model(
         quote! { let mut #flag = false; }
     });
 
-    let grouped_ignore_pairs: Vec<_> = options
-        .iter()
-        .filter(|o| matches!(o.kind, GroupedOptionKind::Ignore))
-        .enumerate()
-        .map(|(i, o)| {
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) = make_boolean_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
-            let opt_flag = format_ident!("__ignore_opt_{}", i);
-            let field_flags = o
-                .fields
-                .iter()
-                .filter(|name| {
-                    fields.iter().any(|f| {
-                        f.name == **name
-                            && matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. })
+    // Ignore evaluation: every applicable resolver (grouped `#[ignore(...)]`
+    // and field-level `#[ignore(...)]` alike, regardless of field type) is
+    // batched into a single phase, matching `rs/`'s `filter_input_fields_allowed`
+    // which resolves all of these "in one go" via a single `join_all`, rather
+    // than treating grouped and field-level ignore as separate passes.
+    let create_ignore_items: Vec<AsyncPhaseItem> = {
+        let grouped: Vec<AsyncPhaseItem> = options
+            .iter()
+            .filter(|o| matches!(o.kind, GroupedOptionKind::Ignore))
+            .map(|o| {
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) = make_boolean_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
+                let field_flags: Vec<_> = o
+                    .fields
+                    .iter()
+                    .filter(|name| {
+                        fields.iter().any(|f| {
+                            f.name == **name
+                                && matches!(f.field_type, FieldType::Lax | FieldType::Virtual { .. })
+                        })
                     })
-                })
-                .map(|f| format_ident!("ignore_{}", f));
-            let stmt = quote! {
-                let #opt_flag: bool = #call;
-                if #opt_flag {
-                    #(#field_flags = true;)*
-                }
-            };
-            (is_async, stmt)
-        })
-        .collect();
-    create_has_async |= grouped_ignore_pairs.iter().any(|(a, _)| *a);
-    let ignore_evaluations = grouped_ignore_pairs.into_iter().map(|(_, stmt)| stmt);
-
-    let field_ignore_pairs: Vec<_> = field_ignore_handlers
-        .iter()
-        .map(|(f, handler)| {
-            let flag = format_ident!("ignore_{}", f.name);
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) = make_boolean_call(handler, &ctx_ty, &ctx_expr, &opts_expr);
-            let stmt = quote! {
-                if (#call) {
-                    #flag = true;
-                }
-            };
-            (is_async, stmt)
-        })
-        .collect();
-    create_has_async |= field_ignore_pairs.iter().any(|(a, _)| *a);
-    let field_ignore_evaluations = field_ignore_pairs.into_iter().map(|(_, stmt)| stmt);
+                    .map(|f| format_ident!("ignore_{}", f))
+                    .collect();
+                let apply = quote! {
+                    if __phase_result {
+                        #(#field_flags = true;)*
+                    }
+                };
+                AsyncPhaseItem { is_async, value_expr: call, apply }
+            })
+            .collect();
+        let field_level: Vec<AsyncPhaseItem> = field_ignore_handlers
+            .iter()
+            .map(|(f, handler)| {
+                let flag = format_ident!("ignore_{}", f.name);
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) = make_boolean_call(handler, &ctx_ty, &ctx_expr, &opts_expr);
+                let apply = quote! {
+                    if __phase_result {
+                        #flag = true;
+                    }
+                };
+                AsyncPhaseItem { is_async, value_expr: call, apply }
+            })
+            .collect();
+        grouped.into_iter().chain(field_level).collect()
+    };
+    create_has_async |= create_ignore_items.iter().any(|i| i.is_async);
+    let ignore_evaluations = emit_async_phase(create_ignore_items, &quote! {});
 
     let ignore_init_assignments = field_ignore_init.iter().map(|name| {
         let flag = format_ident!("ignore_{}", name);
         quote! { #flag = true; }
     });
 
-    let grouped_required_pairs: Vec<_> = options
-        .iter()
-        .filter(|o| matches!(o.kind, GroupedOptionKind::Required))
-        .enumerate()
-        .map(|(i, o)| {
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) =
-                make_grouped_required_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
-            let opt_errors = format_ident!("__required_opt_errors_{}", i);
-            let missing_checks: Vec<_> = o
-                .fields
-                .iter()
-                .map(|fname| {
-                    let f = fields.iter().find(|f| f.name == *fname).unwrap();
-                    let input_tokens = input_field_name(f);
-                    quote! { input.#input_tokens.is_none() }
-                })
-                .collect();
-            let stmt = quote! {
-                if #(#missing_checks)&&* {
-                    if let ::core::option::Option::Some(#opt_errors) = #call {
-                        errors.extend(#opt_errors.into_payload());
+    // Required evaluation: same "one go" batching as ignore, for grouped
+    // `#[required(...)]` and field-level `#[required(...)]` together.
+    let create_required_items: Vec<AsyncPhaseItem> = {
+        let grouped: Vec<AsyncPhaseItem> = options
+            .iter()
+            .filter(|o| matches!(o.kind, GroupedOptionKind::Required))
+            .map(|o| {
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) =
+                    make_grouped_required_call(&o.handler, &ctx_ty, &ctx_expr, &opts_expr);
+                let missing_checks: Vec<_> = o
+                    .fields
+                    .iter()
+                    .map(|fname| {
+                        let f = fields.iter().find(|f| f.name == *fname).unwrap();
+                        let input_tokens = input_field_name(f);
+                        quote! { input.#input_tokens.is_none() }
+                    })
+                    .collect();
+                // The resolver is only invoked when every field in the group
+                // is missing, same as before; that guard is part of the
+                // value_expr (not the apply step) so an async resolver that
+                // doesn't need to run isn't wrapped into the `join!` batch.
+                let value_expr = quote! {
+                    if #(#missing_checks)&&* {
+                        #call
+                    } else {
+                        ::core::option::Option::None
                     }
-                }
-            };
-            (is_async, stmt)
-        })
-        .collect();
-    create_has_async |= grouped_required_pairs.iter().any(|(a, _)| *a);
-    let grouped_required_evaluations = grouped_required_pairs.into_iter().map(|(_, stmt)| stmt);
-
-    let field_required_pairs: Vec<_> = field_required_handlers
-        .iter()
-        .map(|(f, handler)| {
-            let input_tokens = input_field_name(f);
-            let name_str = f.name.to_string();
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) = make_required_call(handler, &ctx_ty, &ctx_expr, &opts_expr);
-            let stmt = quote! {
-                let __required_msg: ::core::option::Option<::std::string::String> = #call;
-                if let Some(__msg) = __required_msg {
-                    if input.#input_tokens.is_none() {
-                        errors.insert(
-                            ::std::string::String::from(#name_str),
-                            ::ivo::__ivo_internals::FieldError {
-                                reason: __msg,
-                                metadata: ::core::option::Option::None,
-                            },
-                        );
+                };
+                let apply = quote! {
+                    if let ::core::option::Option::Some(__opt_errors) = __phase_result {
+                        errors.extend(__opt_errors.into_payload());
                     }
-                }
-            };
-            (is_async, stmt)
-        })
-        .collect();
-    create_has_async |= field_required_pairs.iter().any(|(a, _)| *a);
-    let field_required_evaluations = field_required_pairs.into_iter().map(|(_, stmt)| stmt);
-
-    let required_evaluations = grouped_required_evaluations.chain(field_required_evaluations);
+                };
+                AsyncPhaseItem { is_async, value_expr, apply }
+            })
+            .collect();
+        let field_level: Vec<AsyncPhaseItem> = field_required_handlers
+            .iter()
+            .map(|(f, handler)| {
+                let input_tokens = input_field_name(f);
+                let name_str = f.name.to_string();
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) = make_required_call(handler, &ctx_ty, &ctx_expr, &opts_expr);
+                let apply = quote! {
+                    if let ::core::option::Option::Some(__msg) = __phase_result {
+                        if input.#input_tokens.is_none() {
+                            errors.insert(
+                                ::std::string::String::from(#name_str),
+                                ::ivo::__ivo_internals::FieldError {
+                                    reason: __msg,
+                                    metadata: ::core::option::Option::None,
+                                },
+                            );
+                        }
+                    }
+                };
+                AsyncPhaseItem { is_async, value_expr: call, apply }
+            })
+            .collect();
+        grouped.into_iter().chain(field_level).collect()
+    };
+    create_has_async |= create_required_items.iter().any(|i| i.is_async);
+    let required_evaluations = emit_async_phase(create_required_items, &quote! {});
 
     // Missing-required checks for fields marked with the `#[required]` field type.
     let required_field_checks = fields
@@ -3540,57 +3549,57 @@ fn generate_model(
         quote! { let mut #flag = false; }
     });
 
-    let field_ignore_update_pairs: Vec<_> = field_ignore_update_handlers
-        .iter()
-        .map(|(f, handler)| {
-            let flag = format_ident!("ignore_update_{}", f.name);
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) =
-                make_boolean_call(handler, &update_ctx_ty, &ctx_expr, &opts_expr);
-            let stmt = quote! {
-                if (#call) {
-                    #flag = true;
-                }
-            };
-            (is_async, stmt)
-        })
-        .collect();
-    update_has_async |= field_ignore_update_pairs.iter().any(|(a, _)| *a);
-
-    let grouped_ignore_update_pairs: Vec<_> = grouped_ignore_options
-        .iter()
-        .chain(grouped_ignore_update_options.iter())
-        .map(|opt| {
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) =
-                make_boolean_call(&opt.handler, &update_ctx_ty, &ctx_expr, &opts_expr);
-            let flag_idents: Vec<_> = if opt.fields.is_empty() {
-                updateable_fields
-                    .iter()
-                    .map(|f| format_ident!("ignore_update_{}", f.name))
-                    .collect()
-            } else {
-                opt.fields
-                    .iter()
-                    .map(|f| format_ident!("ignore_update_{}", f))
-                    .collect()
-            };
-            let stmt = quote! {
-                if (#call) {
-                    #(#flag_idents = true;)*
-                }
-            };
-            (is_async, stmt)
-        })
-        .collect();
-    update_has_async |= grouped_ignore_update_pairs.iter().any(|(a, _)| *a);
-
-    let update_ignore_evaluations = field_ignore_update_pairs
-        .into_iter()
-        .chain(grouped_ignore_update_pairs)
-        .map(|(_, stmt)| stmt);
+    // Same "one go" batching as create's ignore evaluation (see above), for
+    // field-level `#[ignore_update(...)]`/`#[ignore(...)]` and grouped
+    // `#[ignore(...)]`/`#[ignore_update(...)]` together.
+    let update_ignore_items: Vec<AsyncPhaseItem> = {
+        let field_level: Vec<AsyncPhaseItem> = field_ignore_update_handlers
+            .iter()
+            .map(|(f, handler)| {
+                let flag = format_ident!("ignore_update_{}", f.name);
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) =
+                    make_boolean_call(handler, &update_ctx_ty, &ctx_expr, &opts_expr);
+                let apply = quote! {
+                    if __phase_result {
+                        #flag = true;
+                    }
+                };
+                AsyncPhaseItem { is_async, value_expr: call, apply }
+            })
+            .collect();
+        let grouped: Vec<AsyncPhaseItem> = grouped_ignore_options
+            .iter()
+            .chain(grouped_ignore_update_options.iter())
+            .map(|opt| {
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) =
+                    make_boolean_call(&opt.handler, &update_ctx_ty, &ctx_expr, &opts_expr);
+                let flag_idents: Vec<_> = if opt.fields.is_empty() {
+                    updateable_fields
+                        .iter()
+                        .map(|f| format_ident!("ignore_update_{}", f.name))
+                        .collect()
+                } else {
+                    opt.fields
+                        .iter()
+                        .map(|f| format_ident!("ignore_update_{}", f))
+                        .collect()
+                };
+                let apply = quote! {
+                    if __phase_result {
+                        #(#flag_idents = true;)*
+                    }
+                };
+                AsyncPhaseItem { is_async, value_expr: call, apply }
+            })
+            .collect();
+        field_level.into_iter().chain(grouped).collect()
+    };
+    update_has_async |= update_ignore_items.iter().any(|i| i.is_async);
+    let update_ignore_evaluations = emit_async_phase(update_ignore_items, &quote! {});
 
     let bare_ignore_update_names: std::collections::HashSet<String> =
         bare_ignore_update_field_names
@@ -3621,70 +3630,73 @@ fn generate_model(
     ) = build_virtual_pipeline(&update_virtual_ignore_flag_for, &quote!(__changes.clone()), true);
     update_has_async |= virtual_update_any_async;
 
-    // Conditional required checks for update (mirrors create logic but uses `updates`).
-    let update_grouped_required_pairs: Vec<_> = options
-        .iter()
-        .filter(|o| matches!(o.kind, GroupedOptionKind::Required))
-        .enumerate()
-        .map(|(i, o)| {
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) =
-                make_grouped_required_call(&o.handler, &update_ctx_ty, &ctx_expr, &opts_expr);
-            let opt_errors = format_ident!("__required_opt_errors_{}", i);
-            let missing_checks: Vec<_> = o
-                .fields
-                .iter()
-                .map(|fname| {
-                    let f = fields.iter().find(|f| f.name == *fname).unwrap();
-                    let input_tokens = input_field_name(f);
-                    quote! { updates.#input_tokens.is_none() }
-                })
-                .collect();
-            let stmt = quote! {
-                if #(#missing_checks)&&* {
-                    if let ::core::option::Option::Some(#opt_errors) = #call {
-                        errors.extend(#opt_errors.into_payload());
+    // Conditional required checks for update (mirrors create logic but uses
+    // `updates`); same "one go" batching as create's required evaluation.
+    // Note only *conditional* required rules apply on update (via `#[required(...)]`
+    // on lax/virtual fields, and grouped `#[required(...)]`) -- the bare
+    // `#[required]` field type is only enforced at creation.
+    let update_required_items: Vec<AsyncPhaseItem> = {
+        let grouped: Vec<AsyncPhaseItem> = options
+            .iter()
+            .filter(|o| matches!(o.kind, GroupedOptionKind::Required))
+            .map(|o| {
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) =
+                    make_grouped_required_call(&o.handler, &update_ctx_ty, &ctx_expr, &opts_expr);
+                let missing_checks: Vec<_> = o
+                    .fields
+                    .iter()
+                    .map(|fname| {
+                        let f = fields.iter().find(|f| f.name == *fname).unwrap();
+                        let input_tokens = input_field_name(f);
+                        quote! { updates.#input_tokens.is_none() }
+                    })
+                    .collect();
+                let value_expr = quote! {
+                    if #(#missing_checks)&&* {
+                        #call
+                    } else {
+                        ::core::option::Option::None
                     }
-                }
-            };
-            (is_async, stmt)
-        })
-        .collect();
-    update_has_async |= update_grouped_required_pairs.iter().any(|(a, _)| *a);
-
-    let update_field_required_pairs: Vec<_> = field_required_handlers
-        .iter()
-        .map(|(f, handler)| {
-            let input_tokens = input_field_name(f);
-            let name_str = f.name.to_string();
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) =
-                make_required_call(handler, &update_ctx_ty, &ctx_expr, &opts_expr);
-            let stmt = quote! {
-                let __required_msg: ::core::option::Option<::std::string::String> = #call;
-                if let Some(__msg) = __required_msg {
-                    if updates.#input_tokens.is_none() {
-                        errors.insert(
-                            ::std::string::String::from(#name_str),
-                            ::ivo::__ivo_internals::FieldError {
-                                reason: __msg,
-                                metadata: ::core::option::Option::None,
-                            },
-                        );
+                };
+                let apply = quote! {
+                    if let ::core::option::Option::Some(__opt_errors) = __phase_result {
+                        errors.extend(__opt_errors.into_payload());
                     }
-                }
-            };
-            (is_async, stmt)
-        })
-        .collect();
-    update_has_async |= update_field_required_pairs.iter().any(|(a, _)| *a);
-
-    let update_required_evaluations = update_grouped_required_pairs
-        .into_iter()
-        .chain(update_field_required_pairs)
-        .map(|(_, stmt)| stmt);
+                };
+                AsyncPhaseItem { is_async, value_expr, apply }
+            })
+            .collect();
+        let field_level: Vec<AsyncPhaseItem> = field_required_handlers
+            .iter()
+            .map(|(f, handler)| {
+                let input_tokens = input_field_name(f);
+                let name_str = f.name.to_string();
+                let ctx_expr = quote!(&ctx);
+                let opts_expr = quote!(&_rw_ctx_options);
+                let (is_async, call) =
+                    make_required_call(handler, &update_ctx_ty, &ctx_expr, &opts_expr);
+                let apply = quote! {
+                    if let ::core::option::Option::Some(__msg) = __phase_result {
+                        if updates.#input_tokens.is_none() {
+                            errors.insert(
+                                ::std::string::String::from(#name_str),
+                                ::ivo::__ivo_internals::FieldError {
+                                    reason: __msg,
+                                    metadata: ::core::option::Option::None,
+                                },
+                            );
+                        }
+                    }
+                };
+                AsyncPhaseItem { is_async, value_expr: call, apply }
+            })
+            .collect();
+        grouped.into_iter().chain(field_level).collect()
+    };
+    update_has_async |= update_required_items.iter().any(|i| i.is_async);
+    let update_required_evaluations = emit_async_phase(update_required_items, &quote! {});
 
     // Validate pass for updated required/lax fields. `#[sanitize]` is rejected
     // by the field-attribute whitelist on both field types, so it never
@@ -4695,11 +4707,10 @@ fn generate_model(
                 );
 
                 #(#ignore_flag_decls)*
-                #(#ignore_evaluations)*
-                #(#field_ignore_evaluations)*
+                #ignore_evaluations
                 #(#ignore_init_assignments)*
 
-                #(#required_evaluations)*
+                #required_evaluations
                 #(#required_field_checks)*
 
                 #create_timestamp_value_decl
@@ -4791,10 +4802,10 @@ fn generate_model(
                     ::std::collections::HashMap::new();
 
                 #(#update_ignore_flag_decls)*
-                #(#update_ignore_evaluations)*
+                #update_ignore_evaluations
                 #(#bare_ignore_update_assignments)*
 
-                #(#update_required_evaluations)*
+                #update_required_evaluations
 
                 #update_assignments
                 #virtual_validate_update_steps
