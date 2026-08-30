@@ -193,7 +193,6 @@ async fn should_return_empty_updates_when_no_value_has_changed_async() {
 
 async_test_matrix!(should_return_empty_updates_when_no_value_has_changed_async);
 
-
 // -----------------------------------------------------------------------------
 // Required rules
 // -----------------------------------------------------------------------------
@@ -555,7 +554,9 @@ fn should_properly_use_re_validated_values() {
 
     assert_eq!(
         created.data,
-        sync_re_validate_schema::Data { dependent: value + 1 }
+        sync_re_validate_schema::Data {
+            dependent: value + 1
+        }
     );
 
     let value = 2;
@@ -595,7 +596,9 @@ async fn should_properly_use_re_validated_values_async() {
 
     assert_eq!(
         created.data,
-        async_re_validate_schema::Data { dependent: value + 1 }
+        async_re_validate_schema::Data {
+            dependent: value + 1
+        }
     );
 
     let value = 2;
@@ -628,7 +631,12 @@ fn should_not_re_validate_virtual_fields_that_were_not_provided_or_were_ignored(
     // (and not ignored); a defaulted/absent virtual field should never reach
     // the re-validator.
     let created = sync_re_validate_not_provided_schema::DataModel
-        .create(sync_re_validate_not_provided_schema::PartialDataInput { virtual_field: None }, ())
+        .create(
+            sync_re_validate_not_provided_schema::PartialDataInput {
+                virtual_field: None,
+            },
+            (),
+        )
         .ok()
         .unwrap();
 
@@ -743,7 +751,9 @@ fn should_only_sanitize_virtual_fields_that_were_provided() {
     // not be sanitized either; the resolver never sees a value for it.
     let created = sync_sanitize_not_provided_schema::DataModel
         .create(
-            sync_sanitize_not_provided_schema::PartialDataInput { virtual_field: None },
+            sync_sanitize_not_provided_schema::PartialDataInput {
+                virtual_field: None,
+            },
             (),
         )
         .ok()
@@ -1026,7 +1036,7 @@ async_test_matrix!(should_return_empty_updates_when_no_value_has_changed_with_al
 )]
 mod sync_re_validate_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
         pub dependent: i32,
@@ -1044,7 +1054,7 @@ mod sync_re_validate_schema {
 )]
 mod async_re_validate_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_field.unwrap())]
         pub dependent: i32,
@@ -1062,7 +1072,7 @@ mod async_re_validate_schema {
 )]
 mod sync_re_validate_not_provided_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(0)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
         pub dependent: i32,
@@ -1084,7 +1094,7 @@ mod sync_re_validate_not_provided_schema {
 )]
 mod sync_sanitize_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(String::new())]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
         pub dependent: String,
@@ -1102,7 +1112,7 @@ mod sync_sanitize_schema {
 )]
 mod async_sanitize_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(String::new())]
         #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap())]
         pub dependent: String,
@@ -1120,7 +1130,7 @@ mod async_sanitize_schema {
 )]
 mod sync_sanitize_not_provided_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(String::new())]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
         pub dependent: String,
@@ -1141,7 +1151,7 @@ mod sync_sanitize_after_post_validate_schema {
         #[required]
         pub name: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(String::new())]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
         pub dependent: String,
@@ -1180,7 +1190,7 @@ mod sync_no_alias_schema {
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap().parse::<i32>().unwrap() + 1)]
         pub dependent: i32,
@@ -1197,7 +1207,7 @@ mod async_no_alias_schema {
         #[validate(async |v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap().parse::<i32>().unwrap() + 1)]
         pub dependent: i32,
@@ -1210,11 +1220,11 @@ mod async_no_alias_schema {
 )]
 mod sync_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_alias.clone().unwrap().parse::<i32>().unwrap() + 1)]
         pub dependent: i32,
@@ -1227,11 +1237,11 @@ mod sync_alias_schema {
 )]
 mod async_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_alias.clone().unwrap().parse::<i32>().unwrap() + 1)]
         pub dependent: i32,
@@ -1244,11 +1254,11 @@ mod async_alias_schema {
 )]
 mod sync_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().dependent.clone().unwrap().parse::<i32>().unwrap() + 1)]
         pub dependent: i32,
@@ -1261,11 +1271,11 @@ mod sync_alias_as_dependent_schema {
 )]
 mod async_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().dependent.clone().unwrap().parse::<i32>().unwrap() + 1)]
         pub dependent: i32,
@@ -1282,7 +1292,7 @@ mod sync_no_change_schema {
         #[validate(|_, _, _| Ok(None))]
         pub virtual_field: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
         pub dependent: i32,
@@ -1299,7 +1309,7 @@ mod async_no_change_schema {
         #[validate(async |_, _, _| Ok(None))]
         pub virtual_field: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_field.unwrap())]
         pub dependent: i32,
@@ -1312,11 +1322,11 @@ mod async_no_change_schema {
 )]
 mod sync_no_change_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         pub virtual_field: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_alias.unwrap())]
         pub dependent: i32,
@@ -1329,21 +1339,16 @@ mod sync_no_change_alias_schema {
 )]
 mod async_no_change_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         pub virtual_field: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_alias.unwrap())]
         pub dependent: i32,
     }
 }
-
-#[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
-)]
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1371,7 +1376,7 @@ mod sync_required_schema {
         })]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
         pub dependent: i32,
@@ -1404,7 +1409,7 @@ mod async_required_schema {
         })]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
         pub dependent: i32,
@@ -1427,7 +1432,7 @@ mod sync_grouped_required_schema {
         #[lax("default_lax_2_value".to_string())]
         pub lax_2: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
         pub dependent: i32,
@@ -1462,7 +1467,7 @@ mod async_grouped_required_schema {
         #[lax(async |_, _| "default_lax_2_value".to_string())]
         pub lax_2: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
         pub dependent: i32,
@@ -1502,7 +1507,7 @@ mod sync_primary_validation_schema {
         })]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
         pub dependent: i32,
@@ -1525,7 +1530,7 @@ mod async_primary_validation_schema {
         })]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
         pub dependent: i32,
@@ -1542,7 +1547,7 @@ mod sync_pass_through_schema {
         #[validate(|_, _, _| Ok(None))]
         pub virtual_field: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
         pub dependent: i32,
@@ -1559,7 +1564,7 @@ mod async_pass_through_schema {
         #[validate(async |_, _, _| Ok(None))]
         pub virtual_field: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.input().virtual_field.unwrap())]
         pub dependent: i32,
@@ -1587,7 +1592,7 @@ mod sync_post_validate_schema {
         #[validate(|_, _, _| Ok(None))]
         pub virtual_field_2: String,
 
-        #[depends_on(virtual_field, virtual_field_1, virtual_field_2)]
+        #[depends_on("virtual_field", "virtual_field_1", "virtual_field_2")]
         #[default(1)]
         #[resolve(|ctx, _| {
             ctx.input().virtual_field.clone().unwrap().len() as i32
@@ -1640,7 +1645,7 @@ mod async_post_validate_schema {
         #[validate(async |_, _, _| Ok(None))]
         pub virtual_field_2: String,
 
-        #[depends_on(virtual_field, virtual_field_1, virtual_field_2)]
+        #[depends_on("virtual_field", "virtual_field_1", "virtual_field_2")]
         #[default(1)]
         #[resolve(async |ctx, _| {
             ctx.input().virtual_field.clone().unwrap().len() as i32
@@ -1671,7 +1676,6 @@ mod async_post_validate_schema {
     )]
     const _: () = ();
 }
-
 
 // -----------------------------------------------------------------------------
 // Parallel validate/re-validate/sanitize of independent virtual fields
@@ -1758,12 +1762,12 @@ mod async_parallel_virtuals_schema {
     }
 
     struct Fields {
-        #[depends_on(virtual_a)]
+        #[depends_on("virtual_a")]
         #[default(String::new())]
         #[resolve(|ctx, _| ctx.input().virtual_a.clone().unwrap())]
         pub dependent_a: String,
 
-        #[depends_on(virtual_b)]
+        #[depends_on("virtual_b")]
         #[default(String::new())]
         #[resolve(|ctx, _| ctx.input().virtual_b.clone().unwrap())]
         pub dependent_b: String,
@@ -1832,8 +1836,7 @@ async fn should_validate_required_and_virtual_fields_in_one_combined_phase() {
     );
 
     async_merged_validate_schema::VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
-    async_merged_validate_schema::RE_VALIDATE_STARTED
-        .store(0, std::sync::atomic::Ordering::SeqCst);
+    async_merged_validate_schema::RE_VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
     let updated = async_merged_validate_schema::DataModel
         .update(
@@ -1890,7 +1893,7 @@ mod async_merged_validate_schema {
         })]
         pub name: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(String::new())]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
         pub dependent: String,

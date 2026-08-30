@@ -210,12 +210,12 @@ fn parse_virtual_alias(attr: &Attribute) -> syn::Result<Option<String>> {
     match &attr.meta {
         syn::Meta::Path(_) => Ok(None),
         syn::Meta::List(list) => {
-            let alias: syn::Ident = list.parse_args()?;
-            Ok(Some(alias.to_string()))
+            let alias: syn::LitStr = list.parse_args()?;
+            Ok(Some(alias.value()))
         }
         _ => Err(syn::Error::new_spanned(
             attr,
-            "expected `#[ivo_virtual]` or `#[ivo_virtual(alias_name)]`",
+            "expected `#[ivo_virtual]` or `#[ivo_virtual(\"alias_name\")]`",
         )),
     }
 }
@@ -1373,9 +1373,9 @@ fn validate_field_names(fields: &[FieldDef]) -> syn::Result<()> {
             timestamp_names.push(f.name.to_string());
         }
         if let Some(parent_tokens) = attr_value_tokens(&f.attrs, "depends_on") {
-            let parents = syn::punctuated::Punctuated::<Ident, Token![,]>::parse_terminated
+            let parents = syn::punctuated::Punctuated::<syn::LitStr, Token![,]>::parse_terminated
                 .parse2(parent_tokens)
-                .map(|p| p.into_iter().map(|i| i.to_string()).collect())
+                .map(|p| p.into_iter().map(|lit| lit.value()).collect())
                 .unwrap_or_default();
             deps.insert(f.name.to_string(), parents);
         }
@@ -1442,9 +1442,9 @@ fn parse_depends_on(f: &FieldDef) -> syn::Result<Vec<String>> {
     let Some(tokens) = attr_value_tokens(&f.attrs, "depends_on") else {
         return Ok(Vec::new());
     };
-    syn::punctuated::Punctuated::<Ident, Token![,]>::parse_terminated
+    syn::punctuated::Punctuated::<syn::LitStr, Token![,]>::parse_terminated
         .parse2(tokens)
-        .map(|p| p.into_iter().map(|i| i.to_string()).collect())
+        .map(|p| p.into_iter().map(|lit| lit.value()).collect())
         .map_err(|e| {
             syn::Error::new_spanned(&f.name, format!("invalid `#[depends_on(...)]`: {}", e))
         })
@@ -5445,7 +5445,7 @@ mod tests {
                         #[constant(|| String::from("id"))]
                         pub id: String,
 
-                        #[depends_on(id)]
+                        #[depends_on("id")]
                         #[default(|| String::from("x"))]
                         pub label: String,
                     }
@@ -5465,11 +5465,11 @@ mod tests {
                         #[required]
                         pub a: String,
 
-                        #[depends_on(c)]
+                        #[depends_on("c")]
                         #[default(|| String::from("b"))]
                         pub b: String,
 
-                        #[depends_on(b)]
+                        #[depends_on("b")]
                         #[default(|| String::from("c"))]
                         pub c: String,
                     }
@@ -5492,11 +5492,11 @@ mod tests {
                         #[required]
                         pub b: String,
 
-                        #[depends_on(b, c)]
+                        #[depends_on("b", "c")]
                         #[default(|| String::from("c"))]
                         pub c: String,
 
-                        #[depends_on(a, b, c)]
+                        #[depends_on("a", "b", "c")]
                         #[default(|| String::from("d"))]
                         pub d: String,
                     }
@@ -5827,7 +5827,7 @@ mod tests {
                         #[required]
                         pub last_name: String,
 
-                        #[depends_on(first_name, last_name)]
+                        #[depends_on("first_name", "last_name")]
                         #[default(String::from(""))]
                         #[resolve(async |ctx, _opts| {
                             format!("{} {}", ctx.values().first_name, ctx.values().last_name)
@@ -5853,7 +5853,7 @@ mod tests {
                         #[required]
                         pub last_name: String,
 
-                        #[depends_on(first_name, last_name)]
+                        #[depends_on("first_name", "last_name")]
                         pub full_name: String,
                     }
                 }
@@ -5982,7 +5982,7 @@ mod tests {
                     #[required]
                     pub a: String,
 
-                    #[depends_on(a)]
+                    #[depends_on("a")]
                     #[default(|| 1)]
                     pub b: i32,
                 }
@@ -6027,11 +6027,11 @@ mod tests {
                     #[required]
                     pub name: String,
 
-                    #[ivo_virtual(email)]
+                    #[ivo_virtual("email")]
                     #[validate(async |v, _ctx, _opts| { Ok(Some(v)) })]
                     pub raw_email: String,
 
-                    #[depends_on(raw_email)]
+                    #[depends_on("raw_email")]
                     #[default(|| String::from("x"))]
                     pub email: String,
                 }

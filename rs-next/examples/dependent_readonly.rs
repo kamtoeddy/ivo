@@ -157,7 +157,7 @@ fn should_reject_update_if_resolver_was_run_during_prior_update() {
 )]
 mod data_schema {
     struct Fields {
-        #[depends_on(username)]
+        #[depends_on("username")]
         #[default(crate::DEFAULT_DEPENDENT)]
         #[readonly]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]

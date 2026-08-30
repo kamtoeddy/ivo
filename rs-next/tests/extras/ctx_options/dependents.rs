@@ -60,7 +60,7 @@ mod default_fn_schema {
     use super::CtxOptions;
 
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(async |_, opts| {
             opts.write().await.add_message("ctx_options updated in default value resolver");
             1
@@ -125,7 +125,7 @@ mod resolver_create_schema {
     use super::CtxOptions;
 
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(async |_, _| 1)]
         #[resolve(async |ctx, opts| {
             opts.write().await.add_message("ctx_options updated in value resolver");
@@ -196,7 +196,7 @@ mod resolver_update_schema {
     use super::CtxOptions;
 
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(async |_, _| 1)]
         #[resolve(async |ctx, opts| {
             opts.write().await.add_message("ctx_options updated in value resolver");

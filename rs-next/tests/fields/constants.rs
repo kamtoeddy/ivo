@@ -606,7 +606,7 @@ mod constant_reads_dependent_schema {
         #[required]
         pub name: String,
 
-        #[depends_on(name)]
+        #[depends_on("name")]
         #[default(String::new())]
         #[resolve(|ctx, _| ctx.input().name.clone().unwrap())]
         pub dependent: String,

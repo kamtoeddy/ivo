@@ -57,7 +57,7 @@ mod required_create_schema {
     pub const REQUIRED_ERROR: &str = "virtual_field is missing!";
 
     struct Fields {
-        #[depends_on(virtual_field, virtual_field_1)]
+        #[depends_on("virtual_field", "virtual_field_1")]
         #[default(DEFAULT_VALUE)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap_or(0) + 1)]
         pub dependent: i32,
@@ -129,7 +129,7 @@ mod required_update_schema {
     pub const REQUIRED_ERROR: &str = "virtual_field is missing!";
 
     struct Fields {
-        #[depends_on(virtual_field, virtual_field_1)]
+        #[depends_on("virtual_field", "virtual_field_1")]
         #[default(DEFAULT_VALUE)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap_or(0) + 1)]
         pub dependent: i32,
@@ -198,7 +198,7 @@ mod ignore_update_schema {
     use super::CtxOptions;
 
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap() + 1)]
         pub dependent: i32,
@@ -262,7 +262,7 @@ mod validate_create_schema {
     pub const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(DEFAULT_VALUE.into())]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
         pub dependent: String,
@@ -343,7 +343,7 @@ mod sanitize_create_schema {
     use super::CtxOptions;
 
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default("default_dependent_value".into())]
         #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
         pub dependent: String,
@@ -407,7 +407,7 @@ mod post_validate_create_schema {
     use super::CtxOptions;
 
     struct Fields {
-        #[depends_on(virtual_field, virtual_field_1)]
+        #[depends_on("virtual_field", "virtual_field_1")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
         pub dependent: i32,
@@ -480,7 +480,7 @@ mod post_validate_update_schema {
     use super::CtxOptions;
 
     struct Fields {
-        #[depends_on(virtual_field, virtual_field_1)]
+        #[depends_on("virtual_field", "virtual_field_1")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
         pub dependent: i32,

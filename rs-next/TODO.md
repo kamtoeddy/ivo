@@ -33,3 +33,4 @@
 - [ ] limit allocations as much as possible
   - [ ] use static strs instead of `String` for schema fields
   - [ ] use arrays instead of `Vec` for schema fields
+- [x] API design change: `#[depends_on(...)]` and `#[ivo_virtual(...)]` now require string literals (`#[depends_on("age")]`, `#[ivo_virtual("raw_email")]`) instead of bare identifiers — the only accepted form now. Changed `parse_depends_on` and `parse_virtual_alias` in `crates/derive/src/lib.rs` to parse `syn::LitStr` (there was a second, independent `Punctuated<Ident,...>` parse of `depends_on` inside `validate_dependencies` that needed the same fix). Updated every test/example across the repo (33 files) and GOAL.md's documentation/examples to match. Added `tests/field_configs/compile_fail/dependents.rs` pinning that the old bare-ident form is now rejected at compile time for both attributes.

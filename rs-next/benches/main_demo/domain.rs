@@ -90,7 +90,7 @@ mod user_schema {
         #[on_delete(|_, _| {})]
         pub username: String,
 
-        #[depends_on(username)]
+        #[depends_on("username")]
         #[default(None)]
         #[resolve(|ctx, _| {
             if ctx.is_update() {
@@ -101,7 +101,7 @@ mod user_schema {
         })]
         pub username_last_updated_at: Option<Timestamp>,
 
-        #[depends_on(username, v_slug)]
+        #[depends_on("username", "v_slug")]
         #[default(SlugifiedString::from(""))]
         #[resolve(async |_, o| { o.read().await.slug_id.clone().unwrap() })]
         #[on_delete(|data, _| {
@@ -109,7 +109,7 @@ mod user_schema {
         })]
         pub slug_id: SlugifiedString,
 
-        #[ivo_virtual(slug_id)]
+        #[ivo_virtual("slug_id")]
         #[validate(|value, _, _| {
             let validated = value.trim();
             if validated.len() < 2 {

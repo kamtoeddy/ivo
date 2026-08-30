@@ -80,7 +80,7 @@ mod allow_constant_and_dependents_on_success_schema {
         #[lax(5678)]
         pub lax: i32,
 
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.input().lax.unwrap_or(0) + 1)]
         pub dependent: i32,

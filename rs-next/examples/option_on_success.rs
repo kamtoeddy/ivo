@@ -168,7 +168,7 @@ mod data_schema {
         })]
         pub lax: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(crate::DEFAULT_DEPENDENT_VALUE.to_string())]
         #[resolve(async |ctx, _| {
             ctx.input().virtual_field.clone().unwrap()

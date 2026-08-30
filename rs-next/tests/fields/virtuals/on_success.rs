@@ -2982,7 +2982,7 @@ mod sync_creation_provided_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3010,7 +3010,7 @@ mod async_creation_provided_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3038,7 +3038,7 @@ mod sync_update_provided_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3066,7 +3066,7 @@ mod async_update_provided_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3094,7 +3094,7 @@ mod sync_creation_not_provided_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3122,7 +3122,7 @@ mod async_creation_not_provided_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3150,7 +3150,7 @@ mod sync_update_not_provided_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3178,7 +3178,7 @@ mod async_update_not_provided_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3206,7 +3206,7 @@ mod sync_creation_ignored_by_ignore_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3234,7 +3234,7 @@ mod async_creation_ignored_by_ignore_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3262,7 +3262,7 @@ mod sync_update_ignored_by_ignore_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3290,7 +3290,7 @@ mod async_update_ignored_by_ignore_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3319,7 +3319,7 @@ mod sync_creation_ignored_by_ignore_init_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3348,7 +3348,7 @@ mod async_creation_ignored_by_ignore_init_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3376,7 +3376,7 @@ mod sync_update_ignored_by_ignore_update_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3404,7 +3404,7 @@ mod async_update_ignored_by_ignore_update_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3418,7 +3418,7 @@ mod async_update_ignored_by_ignore_update_schema {
 )]
 mod sync_creation_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         
         #[on_success(|ctx, _| {
@@ -3432,7 +3432,7 @@ mod sync_creation_provided_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3446,7 +3446,7 @@ mod sync_creation_provided_alias_schema {
 )]
 mod async_creation_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         
         #[on_success(async |ctx, _| {
@@ -3460,7 +3460,7 @@ mod async_creation_provided_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3474,7 +3474,7 @@ mod async_creation_provided_alias_schema {
 )]
 mod sync_update_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         
         #[on_success(|ctx, _| {
@@ -3488,7 +3488,7 @@ mod sync_update_provided_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3502,7 +3502,7 @@ mod sync_update_provided_alias_schema {
 )]
 mod async_update_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         
         #[on_success(async |ctx, _| {
@@ -3516,7 +3516,7 @@ mod async_update_provided_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3530,7 +3530,7 @@ mod async_update_provided_alias_schema {
 )]
 mod sync_creation_not_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         
         #[on_success(|ctx, _| {
@@ -3544,7 +3544,7 @@ mod sync_creation_not_provided_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3558,7 +3558,7 @@ mod sync_creation_not_provided_alias_schema {
 )]
 mod async_creation_not_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         
         #[on_success(async |ctx, _| {
@@ -3572,7 +3572,7 @@ mod async_creation_not_provided_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3586,7 +3586,7 @@ mod async_creation_not_provided_alias_schema {
 )]
 mod sync_update_not_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         
         #[on_success(|ctx, _| {
@@ -3600,7 +3600,7 @@ mod sync_update_not_provided_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3614,7 +3614,7 @@ mod sync_update_not_provided_alias_schema {
 )]
 mod async_update_not_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         
         #[on_success(async |ctx, _| {
@@ -3628,7 +3628,7 @@ mod async_update_not_provided_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3642,7 +3642,7 @@ mod async_update_not_provided_alias_schema {
 )]
 mod sync_creation_ignored_by_ignore_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore(|_, _| true)]
         #[on_success(|ctx, _| {
@@ -3656,7 +3656,7 @@ mod sync_creation_ignored_by_ignore_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3670,7 +3670,7 @@ mod sync_creation_ignored_by_ignore_alias_schema {
 )]
 mod async_creation_ignored_by_ignore_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore(async |_, _| true)]
         #[on_success(async |ctx, _| {
@@ -3684,7 +3684,7 @@ mod async_creation_ignored_by_ignore_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3698,7 +3698,7 @@ mod async_creation_ignored_by_ignore_alias_schema {
 )]
 mod sync_update_ignored_by_ignore_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore(|_, _| true)]
         #[on_success(|ctx, _| {
@@ -3712,7 +3712,7 @@ mod sync_update_ignored_by_ignore_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3726,7 +3726,7 @@ mod sync_update_ignored_by_ignore_alias_schema {
 )]
 mod async_update_ignored_by_ignore_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore(async |_, _| true)]
         #[on_success(async |ctx, _| {
@@ -3740,7 +3740,7 @@ mod async_update_ignored_by_ignore_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3754,7 +3754,7 @@ mod async_update_ignored_by_ignore_alias_schema {
 )]
 mod sync_creation_ignored_by_ignore_init_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore_init]
         #[ignore_update(|_, _| false)]
@@ -3769,7 +3769,7 @@ mod sync_creation_ignored_by_ignore_init_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3783,7 +3783,7 @@ mod sync_creation_ignored_by_ignore_init_alias_schema {
 )]
 mod async_creation_ignored_by_ignore_init_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore_init]
         #[ignore_update(async |_, _| false)]
@@ -3798,7 +3798,7 @@ mod async_creation_ignored_by_ignore_init_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3812,7 +3812,7 @@ mod async_creation_ignored_by_ignore_init_alias_schema {
 )]
 mod sync_update_ignored_by_ignore_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore_update(|_, _| true)]
         #[on_success(|ctx, _| {
@@ -3826,7 +3826,7 @@ mod sync_update_ignored_by_ignore_update_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3840,7 +3840,7 @@ mod sync_update_ignored_by_ignore_update_alias_schema {
 )]
 mod async_update_ignored_by_ignore_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore_update(async |_, _| true)]
         #[on_success(async |ctx, _| {
@@ -3854,7 +3854,7 @@ mod async_update_ignored_by_ignore_update_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3868,7 +3868,7 @@ mod async_update_ignored_by_ignore_update_alias_schema {
 )]
 mod sync_creation_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         
         #[on_success(|ctx, _| {
@@ -3882,7 +3882,7 @@ mod sync_creation_provided_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3896,7 +3896,7 @@ mod sync_creation_provided_alias_as_dependent_schema {
 )]
 mod async_creation_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         
         #[on_success(async |ctx, _| {
@@ -3910,7 +3910,7 @@ mod async_creation_provided_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3924,7 +3924,7 @@ mod async_creation_provided_alias_as_dependent_schema {
 )]
 mod sync_update_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         
         #[on_success(|ctx, _| {
@@ -3938,7 +3938,7 @@ mod sync_update_provided_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3952,7 +3952,7 @@ mod sync_update_provided_alias_as_dependent_schema {
 )]
 mod async_update_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         
         #[on_success(async |ctx, _| {
@@ -3966,7 +3966,7 @@ mod async_update_provided_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -3980,7 +3980,7 @@ mod async_update_provided_alias_as_dependent_schema {
 )]
 mod sync_creation_not_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         
         #[on_success(|ctx, _| {
@@ -3994,7 +3994,7 @@ mod sync_creation_not_provided_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4008,7 +4008,7 @@ mod sync_creation_not_provided_alias_as_dependent_schema {
 )]
 mod async_creation_not_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         
         #[on_success(async |ctx, _| {
@@ -4022,7 +4022,7 @@ mod async_creation_not_provided_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4036,7 +4036,7 @@ mod async_creation_not_provided_alias_as_dependent_schema {
 )]
 mod sync_update_not_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         
         #[on_success(|ctx, _| {
@@ -4050,7 +4050,7 @@ mod sync_update_not_provided_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4064,7 +4064,7 @@ mod sync_update_not_provided_alias_as_dependent_schema {
 )]
 mod async_update_not_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         
         #[on_success(async |ctx, _| {
@@ -4078,7 +4078,7 @@ mod async_update_not_provided_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4092,7 +4092,7 @@ mod async_update_not_provided_alias_as_dependent_schema {
 )]
 mod sync_creation_ignored_by_ignore_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore(|_, _| true)]
         #[on_success(|ctx, _| {
@@ -4106,7 +4106,7 @@ mod sync_creation_ignored_by_ignore_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4120,7 +4120,7 @@ mod sync_creation_ignored_by_ignore_alias_as_dependent_schema {
 )]
 mod async_creation_ignored_by_ignore_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore(async |_, _| true)]
         #[on_success(async |ctx, _| {
@@ -4134,7 +4134,7 @@ mod async_creation_ignored_by_ignore_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4148,7 +4148,7 @@ mod async_creation_ignored_by_ignore_alias_as_dependent_schema {
 )]
 mod sync_update_ignored_by_ignore_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore(|_, _| true)]
         #[on_success(|ctx, _| {
@@ -4162,7 +4162,7 @@ mod sync_update_ignored_by_ignore_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4176,7 +4176,7 @@ mod sync_update_ignored_by_ignore_alias_as_dependent_schema {
 )]
 mod async_update_ignored_by_ignore_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore(async |_, _| true)]
         #[on_success(async |ctx, _| {
@@ -4190,7 +4190,7 @@ mod async_update_ignored_by_ignore_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4204,7 +4204,7 @@ mod async_update_ignored_by_ignore_alias_as_dependent_schema {
 )]
 mod sync_creation_ignored_by_ignore_init_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore_init]
         #[ignore_update(|_, _| false)]
@@ -4219,7 +4219,7 @@ mod sync_creation_ignored_by_ignore_init_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4233,7 +4233,7 @@ mod sync_creation_ignored_by_ignore_init_alias_as_dependent_schema {
 )]
 mod async_creation_ignored_by_ignore_init_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore_init]
         #[ignore_update(async |_, _| false)]
@@ -4248,7 +4248,7 @@ mod async_creation_ignored_by_ignore_init_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4262,7 +4262,7 @@ mod async_creation_ignored_by_ignore_init_alias_as_dependent_schema {
 )]
 mod sync_update_ignored_by_ignore_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore_update(|_, _| true)]
         #[on_success(|ctx, _| {
@@ -4276,7 +4276,7 @@ mod sync_update_ignored_by_ignore_update_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4290,7 +4290,7 @@ mod sync_update_ignored_by_ignore_update_alias_as_dependent_schema {
 )]
 mod async_update_ignored_by_ignore_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore_update(async |_, _| true)]
         #[on_success(async |ctx, _| {
@@ -4304,7 +4304,7 @@ mod async_update_ignored_by_ignore_update_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4326,7 +4326,7 @@ mod sync_grouped_creation_provided_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4352,7 +4352,7 @@ mod async_grouped_creation_provided_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4378,7 +4378,7 @@ mod sync_grouped_update_provided_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4404,7 +4404,7 @@ mod async_grouped_update_provided_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4430,7 +4430,7 @@ mod sync_grouped_creation_not_provided_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4456,7 +4456,7 @@ mod async_grouped_creation_not_provided_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4482,7 +4482,7 @@ mod sync_grouped_update_not_provided_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4508,7 +4508,7 @@ mod async_grouped_update_not_provided_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4534,7 +4534,7 @@ mod sync_grouped_creation_ignored_by_ignore_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4560,7 +4560,7 @@ mod async_grouped_creation_ignored_by_ignore_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4586,7 +4586,7 @@ mod sync_grouped_update_ignored_by_ignore_update_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4612,7 +4612,7 @@ mod async_grouped_update_ignored_by_ignore_update_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4639,7 +4639,7 @@ mod sync_grouped_creation_ignored_by_ignore_init_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4666,7 +4666,7 @@ mod async_grouped_creation_ignored_by_ignore_init_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4684,7 +4684,7 @@ mod async_grouped_creation_ignored_by_ignore_init_schema {
 )]
 mod sync_grouped_creation_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -4692,7 +4692,7 @@ mod sync_grouped_creation_provided_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4710,7 +4710,7 @@ mod sync_grouped_creation_provided_alias_schema {
 )]
 mod async_grouped_creation_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -4718,7 +4718,7 @@ mod async_grouped_creation_provided_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4736,7 +4736,7 @@ mod async_grouped_creation_provided_alias_schema {
 )]
 mod sync_grouped_update_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -4744,7 +4744,7 @@ mod sync_grouped_update_provided_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4762,7 +4762,7 @@ mod sync_grouped_update_provided_alias_schema {
 )]
 mod async_grouped_update_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -4770,7 +4770,7 @@ mod async_grouped_update_provided_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4788,7 +4788,7 @@ mod async_grouped_update_provided_alias_schema {
 )]
 mod sync_grouped_creation_not_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -4796,7 +4796,7 @@ mod sync_grouped_creation_not_provided_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4814,7 +4814,7 @@ mod sync_grouped_creation_not_provided_alias_schema {
 )]
 mod async_grouped_creation_not_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -4822,7 +4822,7 @@ mod async_grouped_creation_not_provided_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4840,7 +4840,7 @@ mod async_grouped_creation_not_provided_alias_schema {
 )]
 mod sync_grouped_update_not_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -4848,7 +4848,7 @@ mod sync_grouped_update_not_provided_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4866,7 +4866,7 @@ mod sync_grouped_update_not_provided_alias_schema {
 )]
 mod async_grouped_update_not_provided_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -4874,7 +4874,7 @@ mod async_grouped_update_not_provided_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4892,7 +4892,7 @@ mod async_grouped_update_not_provided_alias_schema {
 )]
 mod sync_grouped_creation_ignored_by_ignore_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore(|_, _| true)]
         pub virtual_field: String,
@@ -4900,7 +4900,7 @@ mod sync_grouped_creation_ignored_by_ignore_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4918,7 +4918,7 @@ mod sync_grouped_creation_ignored_by_ignore_alias_schema {
 )]
 mod async_grouped_creation_ignored_by_ignore_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore(async |_, _| true)]
         pub virtual_field: String,
@@ -4926,7 +4926,7 @@ mod async_grouped_creation_ignored_by_ignore_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4944,7 +4944,7 @@ mod async_grouped_creation_ignored_by_ignore_alias_schema {
 )]
 mod sync_grouped_update_ignored_by_ignore_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore_update(|_, _| true)]
         pub virtual_field: String,
@@ -4952,7 +4952,7 @@ mod sync_grouped_update_ignored_by_ignore_update_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4970,7 +4970,7 @@ mod sync_grouped_update_ignored_by_ignore_update_alias_schema {
 )]
 mod async_grouped_update_ignored_by_ignore_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore_update(async |_, _| true)]
         pub virtual_field: String,
@@ -4978,7 +4978,7 @@ mod async_grouped_update_ignored_by_ignore_update_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -4996,7 +4996,7 @@ mod async_grouped_update_ignored_by_ignore_update_alias_schema {
 )]
 mod sync_grouped_creation_ignored_by_ignore_init_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore_init]
         #[ignore_update(|_, _| false)]
@@ -5005,7 +5005,7 @@ mod sync_grouped_creation_ignored_by_ignore_init_alias_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5023,7 +5023,7 @@ mod sync_grouped_creation_ignored_by_ignore_init_alias_schema {
 )]
 mod async_grouped_creation_ignored_by_ignore_init_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore_init]
         #[ignore_update(async |_, _| false)]
@@ -5032,7 +5032,7 @@ mod async_grouped_creation_ignored_by_ignore_init_alias_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5050,7 +5050,7 @@ mod async_grouped_creation_ignored_by_ignore_init_alias_schema {
 )]
 mod sync_grouped_creation_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -5058,7 +5058,7 @@ mod sync_grouped_creation_provided_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5076,7 +5076,7 @@ mod sync_grouped_creation_provided_alias_as_dependent_schema {
 )]
 mod async_grouped_creation_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -5084,7 +5084,7 @@ mod async_grouped_creation_provided_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5102,7 +5102,7 @@ mod async_grouped_creation_provided_alias_as_dependent_schema {
 )]
 mod sync_grouped_update_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -5110,7 +5110,7 @@ mod sync_grouped_update_provided_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5128,7 +5128,7 @@ mod sync_grouped_update_provided_alias_as_dependent_schema {
 )]
 mod async_grouped_update_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -5136,7 +5136,7 @@ mod async_grouped_update_provided_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5154,7 +5154,7 @@ mod async_grouped_update_provided_alias_as_dependent_schema {
 )]
 mod sync_grouped_creation_not_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -5162,7 +5162,7 @@ mod sync_grouped_creation_not_provided_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5180,7 +5180,7 @@ mod sync_grouped_creation_not_provided_alias_as_dependent_schema {
 )]
 mod async_grouped_creation_not_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -5188,7 +5188,7 @@ mod async_grouped_creation_not_provided_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5206,7 +5206,7 @@ mod async_grouped_creation_not_provided_alias_as_dependent_schema {
 )]
 mod sync_grouped_update_not_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -5214,7 +5214,7 @@ mod sync_grouped_update_not_provided_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5232,7 +5232,7 @@ mod sync_grouped_update_not_provided_alias_as_dependent_schema {
 )]
 mod async_grouped_update_not_provided_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         
         pub virtual_field: String,
@@ -5240,7 +5240,7 @@ mod async_grouped_update_not_provided_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5258,7 +5258,7 @@ mod async_grouped_update_not_provided_alias_as_dependent_schema {
 )]
 mod sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore(|_, _| true)]
         pub virtual_field: String,
@@ -5266,7 +5266,7 @@ mod sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5284,7 +5284,7 @@ mod sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema {
 )]
 mod async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore(async |_, _| true)]
         pub virtual_field: String,
@@ -5292,7 +5292,7 @@ mod async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5310,7 +5310,7 @@ mod async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema {
 )]
 mod sync_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore_update(|_, _| true)]
         pub virtual_field: String,
@@ -5318,7 +5318,7 @@ mod sync_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5336,7 +5336,7 @@ mod sync_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema {
 )]
 mod async_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore_update(async |_, _| true)]
         pub virtual_field: String,
@@ -5344,7 +5344,7 @@ mod async_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5362,7 +5362,7 @@ mod async_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema {
 )]
 mod sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         #[ignore_init]
         #[ignore_update(|_, _| false)]
@@ -5371,7 +5371,7 @@ mod sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -5389,7 +5389,7 @@ mod sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema {
 )]
 mod async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |_, _, _| Ok(None))]
         #[ignore_init]
         #[ignore_update(async |_, _| false)]
@@ -5398,7 +5398,7 @@ mod async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,

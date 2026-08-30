@@ -69,7 +69,7 @@ async fn should_resolve_async_resolver_for_dependent_field() {
 )]
 mod dependent_on_lax_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
@@ -95,7 +95,7 @@ mod dependent_on_lax_schema {
 )]
 mod dependent_on_required_schema {
     struct Fields {
-        #[depends_on(required)]
+        #[depends_on("required")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
@@ -121,7 +121,7 @@ mod dependent_on_required_schema {
 )]
 mod dependent_on_both_schema {
     struct Fields {
-        #[depends_on(lax, required)]
+        #[depends_on("lax", "required")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
@@ -147,12 +147,12 @@ mod dependent_on_both_schema {
 )]
 mod dependent_on_dependent_schema {
     struct Fields {
-        #[depends_on(dependent1)]
+        #[depends_on("dependent1")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
 
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent1: i32,
@@ -178,12 +178,12 @@ mod dependent_on_dependent_schema {
 )]
 mod dependent_on_dependent_and_required_schema {
     struct Fields {
-        #[depends_on(dependent1, required)]
+        #[depends_on("dependent1", "required")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
 
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent1: i32,
@@ -209,12 +209,12 @@ mod dependent_on_dependent_and_required_schema {
 )]
 mod dependent_on_virtual_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
 
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent1: i32,
@@ -244,12 +244,12 @@ mod dependent_on_virtual_schema {
 )]
 mod dependent_on_virtual_and_required_schema {
     struct Fields {
-        #[depends_on(required, virtual_field)]
+        #[depends_on("required", "virtual_field")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
 
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent1: i32,
@@ -279,12 +279,12 @@ mod dependent_on_virtual_and_required_schema {
 )]
 mod dependent_on_dependent_and_virtual_schema {
     struct Fields {
-        #[depends_on(dependent1, virtual_field)]
+        #[depends_on("dependent1", "virtual_field")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
 
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent1: i32,
@@ -314,12 +314,12 @@ mod dependent_on_dependent_and_virtual_schema {
 )]
 mod chained_dependent_on_virtual_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
 
-        #[depends_on(lax, virtual_field)]
+        #[depends_on("lax", "virtual_field")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent1: i32,
@@ -349,7 +349,7 @@ mod chained_dependent_on_virtual_schema {
 )]
 mod virtual_alias_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
@@ -361,7 +361,7 @@ mod virtual_alias_schema {
         #[validate(|v, _, _| Ok(Some(v)))]
         pub required: String,
 
-        #[ivo_virtual(alias_name)]
+        #[ivo_virtual("alias_name")]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
@@ -379,7 +379,7 @@ mod virtual_alias_schema {
 )]
 mod virtual_alias_matching_dependent_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(2)]
         #[resolve(|_, _| 4)]
         pub dependent: i32,
@@ -391,7 +391,7 @@ mod virtual_alias_matching_dependent_schema {
         #[validate(|v, _, _| Ok(Some(v)))]
         pub required: String,
 
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
@@ -409,7 +409,7 @@ mod virtual_alias_matching_dependent_schema {
 )]
 mod async_dynamic_default_dependent_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(async |_, _| 1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -434,7 +434,7 @@ mod async_dynamic_default_dependent_schema {
 )]
 mod async_resolve_dependent_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -528,7 +528,7 @@ mod async_parallel_dependents_schema {
         #[required]
         pub name: String,
 
-        #[depends_on(name)]
+        #[depends_on("name")]
         #[default(0)]
         #[resolve(async |ctx, _| {
             rendezvous().await;
@@ -536,7 +536,7 @@ mod async_parallel_dependents_schema {
         })]
         pub dependent_a: i32,
 
-        #[depends_on(name)]
+        #[depends_on("name")]
         #[default(0)]
         #[resolve(async |ctx, _| {
             rendezvous().await;

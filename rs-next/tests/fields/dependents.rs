@@ -1166,7 +1166,7 @@ async_test_matrix!(
 )]
 mod grouped_on_success_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1189,7 +1189,7 @@ mod grouped_on_success_schema {
 )]
 mod grouped_on_success_readonly_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         #[readonly]
@@ -1213,7 +1213,7 @@ mod grouped_on_success_readonly_schema {
 )]
 mod grouped_on_success_unrelated_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1239,7 +1239,7 @@ mod grouped_on_success_unrelated_schema {
 )]
 mod sync_static_default_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1255,7 +1255,7 @@ mod sync_static_default_schema {
 )]
 mod async_static_default_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1271,7 +1271,7 @@ mod async_static_default_schema {
 )]
 mod sync_computed_default_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(|_, _| 1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1287,7 +1287,7 @@ mod sync_computed_default_schema {
 )]
 mod async_computed_default_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(async |_, _| 1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1303,7 +1303,7 @@ mod async_computed_default_schema {
 )]
 mod sync_resolver_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1319,7 +1319,7 @@ mod sync_resolver_schema {
 )]
 mod async_resolver_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1335,7 +1335,7 @@ mod async_resolver_schema {
 )]
 mod sync_multiple_parents_schema {
     struct Fields {
-        #[depends_on(lax, lax_1)]
+        #[depends_on("lax", "lax_1")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1354,7 +1354,7 @@ mod sync_multiple_parents_schema {
 )]
 mod async_multiple_parents_schema {
     struct Fields {
-        #[depends_on(lax, lax_1)]
+        #[depends_on("lax", "lax_1")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1373,12 +1373,12 @@ mod async_multiple_parents_schema {
 )]
 mod sync_dependent_on_dependent_schema {
     struct Fields {
-        #[depends_on(lax, lax_1)]
+        #[depends_on("lax", "lax_1")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
 
-        #[depends_on(dependent)]
+        #[depends_on("dependent")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 10)]
         pub dependent_1: i32,
@@ -1397,12 +1397,12 @@ mod sync_dependent_on_dependent_schema {
 )]
 mod async_dependent_on_dependent_schema {
     struct Fields {
-        #[depends_on(lax, lax_1)]
+        #[depends_on("lax", "lax_1")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
 
-        #[depends_on(dependent)]
+        #[depends_on("dependent")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 10)]
         pub dependent_1: i32,
@@ -1421,7 +1421,7 @@ mod async_dependent_on_dependent_schema {
 )]
 mod sync_readonly_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[readonly]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
@@ -1438,7 +1438,7 @@ mod sync_readonly_schema {
 )]
 mod async_readonly_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[readonly]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
@@ -1455,7 +1455,7 @@ mod async_readonly_schema {
 )]
 mod sync_on_delete_static_default_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         #[on_delete(|data, _| {
@@ -1474,7 +1474,7 @@ mod sync_on_delete_static_default_schema {
 )]
 mod async_on_delete_static_default_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         #[on_delete(async |data, _| {
@@ -1493,7 +1493,7 @@ mod async_on_delete_static_default_schema {
 )]
 mod sync_on_delete_computed_default_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         #[on_delete(|data, _| {
@@ -1513,7 +1513,7 @@ mod sync_on_delete_computed_default_schema {
 )]
 mod async_on_delete_computed_default_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         #[on_delete(async |data, _| {
@@ -1533,7 +1533,7 @@ mod async_on_delete_computed_default_schema {
 )]
 mod sync_on_success_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         #[on_success(|ctx, _| {
@@ -1555,7 +1555,7 @@ mod sync_on_success_schema {
 )]
 mod async_on_success_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         #[on_success(async |ctx, _| {
@@ -1577,7 +1577,7 @@ mod async_on_success_schema {
 )]
 mod sync_on_success_multiple_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         #[on_success(|ctx, _| {
@@ -1600,7 +1600,7 @@ mod sync_on_success_multiple_schema {
 )]
 mod async_on_success_multiple_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         #[on_success(async |ctx, _| {
@@ -1623,7 +1623,7 @@ mod async_on_success_multiple_schema {
 )]
 mod entity_level_on_success_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1668,7 +1668,7 @@ fn should_trigger_sync_entity_level_on_success_with_no_args() {
 )]
 mod entity_level_on_success_no_args_schema {
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(1234)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,

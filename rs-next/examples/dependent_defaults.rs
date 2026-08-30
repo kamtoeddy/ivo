@@ -233,7 +233,7 @@ async fn main() {
 )]
 mod dynamic_defaults_schema {
     struct Fields {
-        #[depends_on(lax, username)]
+        #[depends_on("lax", "username")]
         #[default(|_, _| crate::DEFAULT_DEPENDENT)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         #[on_success(|ctx, _| {
@@ -273,7 +273,7 @@ mod dynamic_defaults_schema {
 )]
 mod static_defaults_schema {
     struct Fields {
-        #[depends_on(lax, username)]
+        #[depends_on("lax", "username")]
         #[default(crate::DEFAULT_DEPENDENT)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         #[on_success(|ctx, _| {

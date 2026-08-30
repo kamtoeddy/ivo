@@ -427,7 +427,7 @@ mod sync_ignore_update_schema {
         #[ignore_update(|_, _| true)]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -448,7 +448,7 @@ mod async_ignore_update_schema {
         #[ignore_update(|_, _| true)]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -468,7 +468,7 @@ mod sync_grouped_ignore_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -497,7 +497,7 @@ mod async_grouped_ignore_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -526,7 +526,7 @@ mod sync_grouped_ignore_update_schema {
         #[lax(10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -555,7 +555,7 @@ mod async_grouped_ignore_update_schema {
         #[lax(async |_, _| 10)]
         pub lax: i32,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,

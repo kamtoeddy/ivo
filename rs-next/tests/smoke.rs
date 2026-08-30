@@ -153,11 +153,11 @@ mod user_sanitization_schema {
         #[required]
         pub name: String,
 
-        #[ivo_virtual(raw_email)]
+        #[ivo_virtual("raw_email")]
         #[sanitize(async |email, _ctx, _opts| { email.to_lowercase() })]
         pub email: String,
 
-        #[depends_on(email)]
+        #[depends_on("email")]
         #[default(|ctx, _opts| ctx.input().raw_email.clone().unwrap())]
         #[resolve(async |ctx, _opts| { ctx.input().raw_email.clone().unwrap() })]
         pub raw_email: String,
@@ -190,7 +190,7 @@ mod user_dependent_schema {
         #[required]
         pub last_name: String,
 
-        #[depends_on(first_name, last_name)]
+        #[depends_on("first_name", "last_name")]
         #[default(|ctx, _opts| {
             format!("{} {}", ctx.values().first_name, ctx.values().last_name)
         })]
@@ -225,11 +225,11 @@ mod user_virtual_alias_schema {
         #[required]
         pub name: String,
 
-        #[ivo_virtual(raw_email)]
+        #[ivo_virtual("raw_email")]
         #[sanitize(async |email, _ctx, _opts| { email.to_lowercase() })]
         pub email: String,
 
-        #[depends_on(email)]
+        #[depends_on("email")]
         #[default(|ctx, _opts| ctx.input().raw_email.clone().unwrap())]
         #[resolve(async |ctx, _opts| { ctx.input().raw_email.clone().unwrap() })]
         pub raw_email: String,
@@ -498,7 +498,7 @@ mod user_dependent_default_schema {
         #[required]
         pub name: String,
 
-        #[depends_on(name)]
+        #[depends_on("name")]
         #[default(|_ctx, _opts| String::from("default-status"))]
         #[resolve(async |_ctx, _opts| { String::from("default-status") })]
         pub status: String,

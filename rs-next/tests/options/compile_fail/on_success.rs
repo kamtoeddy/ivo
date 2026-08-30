@@ -43,12 +43,12 @@ mod on_success_alias_foreign_name {
         #[lax(5678)]
         pub lax_1: i32,
 
-        #[depends_on(lax, virtual_field)]
+        #[depends_on("lax", "virtual_field")]
         #[default(1)]
         #[resolve(|_, _| 2)]
         pub dependent: i32,
 
-        #[ivo_virtual(alias)]
+        #[ivo_virtual("alias")]
         #[validate(|_, _, _| Ok(None))]
         pub virtual_field: i32,
     }

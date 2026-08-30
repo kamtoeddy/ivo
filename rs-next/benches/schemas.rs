@@ -119,47 +119,47 @@ mod chain_10 {
         #[validate(async |_, _, _| Ok(None))]
         pub field_0: i32,
 
-        #[depends_on(field_0)]
+        #[depends_on("field_0")]
         #[default(0)]
         #[resolve(async |ctx, _| ctx.values().field_0 + 1)]
         pub field_1: i32,
 
-        #[depends_on(field_1)]
+        #[depends_on("field_1")]
         #[default(0)]
         #[resolve(async |ctx, _| ctx.values().field_1 + 1)]
         pub field_2: i32,
 
-        #[depends_on(field_2)]
+        #[depends_on("field_2")]
         #[default(0)]
         #[resolve(async |ctx, _| ctx.values().field_2 + 1)]
         pub field_3: i32,
 
-        #[depends_on(field_3)]
+        #[depends_on("field_3")]
         #[default(0)]
         #[resolve(async |ctx, _| ctx.values().field_3 + 1)]
         pub field_4: i32,
 
-        #[depends_on(field_4)]
+        #[depends_on("field_4")]
         #[default(0)]
         #[resolve(async |ctx, _| ctx.values().field_4 + 1)]
         pub field_5: i32,
 
-        #[depends_on(field_5)]
+        #[depends_on("field_5")]
         #[default(0)]
         #[resolve(async |ctx, _| ctx.values().field_5 + 1)]
         pub field_6: i32,
 
-        #[depends_on(field_6)]
+        #[depends_on("field_6")]
         #[default(0)]
         #[resolve(async |ctx, _| ctx.values().field_6 + 1)]
         pub field_7: i32,
 
-        #[depends_on(field_7)]
+        #[depends_on("field_7")]
         #[default(0)]
         #[resolve(async |ctx, _| ctx.values().field_7 + 1)]
         pub field_8: i32,
 
-        #[depends_on(field_8)]
+        #[depends_on("field_8")]
         #[default(0)]
         #[resolve(async |ctx, _| ctx.values().field_8 + 1)]
         pub field_9: i32,

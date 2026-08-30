@@ -4105,7 +4105,7 @@ mod nothing_to_update_checkpoint2_schema {
         #[validate(|_v: String, _, _| Ok(Some("original".to_string())))]
         pub field_a: String,
 
-        #[depends_on(field_a)]
+        #[depends_on("field_a")]
         #[default(0)]
         #[resolve(|_ctx, _| {
             panic!("dependent resolution must not run once nothing was left to update");

@@ -18,7 +18,7 @@ mod data_schema {
     pub const DEFAULT_LAX: &str = "default-lax";
 
     struct Fields {
-        #[depends_on(lax)]
+        #[depends_on("lax")]
         #[default(DEFAULT_DEPENDENT)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         #[on_success(|ctx, _| {
@@ -29,7 +29,7 @@ mod data_schema {
         })]
         pub dependent: i32,
 
-        #[depends_on(dependent)]
+        #[depends_on("dependent")]
         #[default(DEFAULT_DEPENDENT)]
         #[resolve(|ctx, _| {ctx.values().dependent + 10})]
         #[on_success(|ctx, _| {

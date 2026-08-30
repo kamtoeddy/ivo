@@ -79,7 +79,7 @@ mod ignore_update_dependent {
         #[lax(5678)]
         pub lax_1: i32,
 
-        #[depends_on(lax, lax_1)]
+        #[depends_on("lax", "lax_1")]
         #[default(1)]
         #[resolve(|_, _| 2)]
         pub dependent: i32,
@@ -102,12 +102,12 @@ mod ignore_update_alias_similar_to_dependent {
         #[lax(5678)]
         pub lax_1: i32,
 
-        #[depends_on(lax, virtual_field)]
+        #[depends_on("lax", "virtual_field")]
         #[default(1)]
         #[resolve(|_, _| 2)]
         pub dependent: i32,
 
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|_, _, _| Ok(None))]
         pub virtual_field: i32,
     }
@@ -129,12 +129,12 @@ mod ignore_update_alias_foreign_name {
         #[lax(5678)]
         pub lax_1: i32,
 
-        #[depends_on(lax, virtual_field)]
+        #[depends_on("lax", "virtual_field")]
         #[default(1)]
         #[resolve(|_, _| 2)]
         pub dependent: i32,
 
-        #[ivo_virtual(alias)]
+        #[ivo_virtual("alias")]
         #[validate(|_, _, _| Ok(None))]
         pub virtual_field: i32,
     }

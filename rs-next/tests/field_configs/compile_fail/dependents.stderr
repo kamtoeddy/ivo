@@ -1,0 +1,11 @@
+error: invalid `#[depends_on(...)]`: expected string literal
+  --> tests/field_configs/compile_fail/dependents.rs:15:13
+   |
+15 |         pub dependent: String,
+   |             ^^^^^^^^^
+
+error: expected string literal
+  --> tests/field_configs/compile_fail/dependents.rs:25:23
+   |
+25 |         #[ivo_virtual(alias)]
+   |                       ^^^^^

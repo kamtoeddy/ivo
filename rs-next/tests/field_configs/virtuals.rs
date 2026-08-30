@@ -19,7 +19,7 @@ mod virtual_without_alias_schema {
         #[ivo_virtual]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|_, _| 2)]
         pub dependent: i32,
@@ -35,10 +35,10 @@ mod virtual_with_alias_schema {
         #[required]
         pub name: String,
 
-        #[ivo_virtual(alias_name)]
+        #[ivo_virtual("alias_name")]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|_, _| 2)]
         pub dependent: i32,
@@ -54,10 +54,10 @@ mod virtual_alias_as_dependent_name_schema {
         #[required]
         pub name: String,
 
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         pub virtual_field: String,
 
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(1)]
         #[resolve(|_, _| 2)]
         pub dependent: i32,

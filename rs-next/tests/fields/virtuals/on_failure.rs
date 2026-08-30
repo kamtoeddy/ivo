@@ -902,7 +902,7 @@ mod sync_on_failure_creation_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -941,7 +941,7 @@ mod async_on_failure_creation_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -980,7 +980,7 @@ mod sync_on_failure_update_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1019,7 +1019,7 @@ mod async_on_failure_update_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1033,7 +1033,7 @@ mod async_on_failure_update_schema {
 )]
 mod sync_on_failure_creation_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1058,7 +1058,7 @@ mod sync_on_failure_creation_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1072,7 +1072,7 @@ mod sync_on_failure_creation_alias_schema {
 )]
 mod async_on_failure_creation_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1097,7 +1097,7 @@ mod async_on_failure_creation_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1111,7 +1111,7 @@ mod async_on_failure_creation_alias_schema {
 )]
 mod sync_on_failure_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1136,7 +1136,7 @@ mod sync_on_failure_update_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1150,7 +1150,7 @@ mod sync_on_failure_update_alias_schema {
 )]
 mod async_on_failure_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1175,7 +1175,7 @@ mod async_on_failure_update_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1189,7 +1189,7 @@ mod async_on_failure_update_alias_schema {
 )]
 mod sync_on_failure_creation_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1214,7 +1214,7 @@ mod sync_on_failure_creation_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1228,7 +1228,7 @@ mod sync_on_failure_creation_alias_as_dependent_schema {
 )]
 mod async_on_failure_creation_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1253,7 +1253,7 @@ mod async_on_failure_creation_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1267,7 +1267,7 @@ mod async_on_failure_creation_alias_as_dependent_schema {
 )]
 mod sync_on_failure_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1292,7 +1292,7 @@ mod sync_on_failure_update_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1306,7 +1306,7 @@ mod sync_on_failure_update_alias_as_dependent_schema {
 )]
 mod async_on_failure_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1331,7 +1331,7 @@ mod async_on_failure_update_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1370,7 +1370,7 @@ mod sync_on_failure_ignore_at_creation_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1409,7 +1409,7 @@ mod async_on_failure_ignore_at_creation_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1448,7 +1448,7 @@ mod sync_on_failure_ignore_during_update_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1487,7 +1487,7 @@ mod async_on_failure_ignore_during_update_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1527,7 +1527,7 @@ mod sync_on_failure_ignore_init_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1567,7 +1567,7 @@ mod async_on_failure_ignore_init_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1606,7 +1606,7 @@ mod sync_on_failure_ignore_update_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1645,7 +1645,7 @@ mod async_on_failure_ignore_update_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1659,7 +1659,7 @@ mod async_on_failure_ignore_update_schema {
 )]
 mod sync_on_failure_ignore_at_creation_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1684,7 +1684,7 @@ mod sync_on_failure_ignore_at_creation_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1698,7 +1698,7 @@ mod sync_on_failure_ignore_at_creation_alias_schema {
 )]
 mod async_on_failure_ignore_at_creation_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1723,7 +1723,7 @@ mod async_on_failure_ignore_at_creation_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1737,7 +1737,7 @@ mod async_on_failure_ignore_at_creation_alias_schema {
 )]
 mod sync_on_failure_ignore_during_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1762,7 +1762,7 @@ mod sync_on_failure_ignore_during_update_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1776,7 +1776,7 @@ mod sync_on_failure_ignore_during_update_alias_schema {
 )]
 mod async_on_failure_ignore_during_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1801,7 +1801,7 @@ mod async_on_failure_ignore_during_update_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1815,7 +1815,7 @@ mod async_on_failure_ignore_during_update_alias_schema {
 )]
 mod sync_on_failure_ignore_init_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1841,7 +1841,7 @@ mod sync_on_failure_ignore_init_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1855,7 +1855,7 @@ mod sync_on_failure_ignore_init_alias_schema {
 )]
 mod async_on_failure_ignore_init_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1881,7 +1881,7 @@ mod async_on_failure_ignore_init_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1895,7 +1895,7 @@ mod async_on_failure_ignore_init_alias_schema {
 )]
 mod sync_on_failure_ignore_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1920,7 +1920,7 @@ mod sync_on_failure_ignore_update_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1934,7 +1934,7 @@ mod sync_on_failure_ignore_update_alias_schema {
 )]
 mod async_on_failure_ignore_update_alias_schema {
     struct Fields {
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1959,7 +1959,7 @@ mod async_on_failure_ignore_update_alias_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -1973,7 +1973,7 @@ mod async_on_failure_ignore_update_alias_schema {
 )]
 mod sync_on_failure_ignore_at_creation_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -1998,7 +1998,7 @@ mod sync_on_failure_ignore_at_creation_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -2012,7 +2012,7 @@ mod sync_on_failure_ignore_at_creation_alias_as_dependent_schema {
 )]
 mod async_on_failure_ignore_at_creation_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -2037,7 +2037,7 @@ mod async_on_failure_ignore_at_creation_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -2051,7 +2051,7 @@ mod async_on_failure_ignore_at_creation_alias_as_dependent_schema {
 )]
 mod sync_on_failure_ignore_during_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -2076,7 +2076,7 @@ mod sync_on_failure_ignore_during_update_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -2090,7 +2090,7 @@ mod sync_on_failure_ignore_during_update_alias_as_dependent_schema {
 )]
 mod async_on_failure_ignore_during_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -2115,7 +2115,7 @@ mod async_on_failure_ignore_during_update_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -2129,7 +2129,7 @@ mod async_on_failure_ignore_during_update_alias_as_dependent_schema {
 )]
 mod sync_on_failure_ignore_init_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -2155,7 +2155,7 @@ mod sync_on_failure_ignore_init_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -2169,7 +2169,7 @@ mod sync_on_failure_ignore_init_alias_as_dependent_schema {
 )]
 mod async_on_failure_ignore_init_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -2195,7 +2195,7 @@ mod async_on_failure_ignore_init_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -2209,7 +2209,7 @@ mod async_on_failure_ignore_init_alias_as_dependent_schema {
 )]
 mod sync_on_failure_ignore_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(|v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -2234,7 +2234,7 @@ mod sync_on_failure_ignore_update_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(|ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,
@@ -2248,7 +2248,7 @@ mod sync_on_failure_ignore_update_alias_as_dependent_schema {
 )]
 mod async_on_failure_ignore_update_alias_as_dependent_schema {
     struct Fields {
-        #[ivo_virtual(dependent)]
+        #[ivo_virtual("dependent")]
         #[validate(async |v, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
@@ -2273,7 +2273,7 @@ mod async_on_failure_ignore_update_alias_as_dependent_schema {
         })]
         pub lax_field: String,
 
-        #[depends_on(virtual_field, lax_field)]
+        #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
         #[resolve(async |ctx, _| ctx.values().dependent + 1)]
         pub dependent: i32,

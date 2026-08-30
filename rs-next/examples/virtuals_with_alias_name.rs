@@ -88,7 +88,7 @@ fn main() {
 )]
 mod data_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(crate::DEFAULT_DEPENDENT_VALUE.to_string())]
         #[resolve(|ctx, _| {
             ctx.input()
@@ -104,7 +104,7 @@ mod data_schema {
         })]
         pub dependent: String,
 
-        #[ivo_virtual(virtual_alias)]
+        #[ivo_virtual("virtual_alias")]
         #[validate(|_, _, _| Ok(None))]
         #[on_success(|ctx, _| {
             println!(

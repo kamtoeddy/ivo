@@ -94,7 +94,7 @@ fn virtual_with_validator() {
 )]
 mod data_schema {
     struct Fields {
-        #[depends_on(virtual_field)]
+        #[depends_on("virtual_field")]
         #[default(crate::DEFAULT_DEPENDENT_VALUE.to_string())]
         #[resolve(|ctx, _| {
             ctx.input()
