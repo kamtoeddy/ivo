@@ -2127,6 +2127,17 @@ fn input_field_name(f: &FieldDef) -> proc_macro2::TokenStream {
     }
 }
 
+/// The field name as it appears externally: in the generated `{Input}Errors`
+/// struct (and therefore in the `IvoErrorPayload` keys produced by
+/// `into_payload`/`.into()`), and in the partial input struct. For an
+/// aliased virtual field this is the alias, not the internal field name.
+fn external_field_name(f: &FieldDef) -> String {
+    match &f.field_type {
+        FieldType::Virtual { alias: Some(alias) } => alias.clone(),
+        _ => f.name.to_string(),
+    }
+}
+
 fn generate_model(
     args: &SchemaArgs,
     fields: &[FieldDef],
@@ -3455,7 +3466,11 @@ fn generate_model(
                 .map(|name| {
                     let f = fields.iter().find(|f| f.name == *name).unwrap();
                     let input_name = input_field_name(f);
-                    let name_str = name.clone();
+                    // Errors coming back from the handler are keyed by the
+                    // external/alias name (see `generate_errors_struct`'s
+                    // `into_payload`), so the allow-list used to filter them
+                    // below must match that, not the internal field name.
+                    let name_str = external_field_name(f);
                     let is_virtual = matches!(f.field_type, FieldType::Virtual { .. });
                     let create_output_update = if is_virtual {
                         quote! {}

@@ -950,6 +950,71 @@ async fn should_respect_post_validation_config_async() {
 async_test_matrix!(should_respect_post_validation_config_async);
 
 // -----------------------------------------------------------------------------
+// A `#[post_validate(...)]` main `validate` error on an *aliased* virtual
+// field must actually surface, not get silently dropped. The handler's
+// `DataInputErrors::set_...` uses the field's external/alias name, so the
+// generated `IvoErrorPayload` this produces is keyed by the alias -- the
+// allow-list used to filter that payload back into `errors` must match the
+// alias too, not the field's internal (schema-only) name. Previously it used
+// the internal name, so the check `__allowed.contains(&__field_name)` always
+// failed for an aliased field, the error was dropped, and the pipeline
+// proceeded past `create`/`update` as if nothing had gone wrong -- surfaced
+// by a real panic in `examples/main_demo` (a later dependent-field resolver
+// unwrapping state that only gets set when `post_validate` actually succeeds).
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_surface_post_validate_errors_on_an_aliased_virtual_field() {
+    let errors = post_validate_aliased_virtual_schema::DataModel
+        .create(
+            post_validate_aliased_virtual_schema::PartialDataInput {
+                field_a: Some("a".into()),
+                aliased: Some("reject-me".into()),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        errors.errors.get("aliased").unwrap().reason,
+        "aliased field rejected"
+    );
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod post_validate_aliased_virtual_schema {
+    struct Fields {
+        #[required]
+        pub field_a: String,
+
+        #[ivo_virtual("aliased")]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub v_field: String,
+
+        #[depends_on("v_field")]
+        #[default(String::new())]
+        #[resolve(|_, _| "derived".to_string())]
+        pub derived: String,
+    }
+
+    #[post_validate(
+        ["field_a", "v_field"],
+        validate = |ctx, _| {
+            if ctx.input().aliased.as_deref() == Some("reject-me") {
+                let mut errors = DataInputErrors::new();
+                errors.set_aliased("aliased field rejected", None);
+                return Err(errors);
+            }
+            Ok(None)
+        },
+    )]
+    const _: () = ();
+}
+
+// -----------------------------------------------------------------------------
 // No-change updates: alias variants
 // -----------------------------------------------------------------------------
 
