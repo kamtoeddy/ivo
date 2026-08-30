@@ -586,7 +586,7 @@ fn should_respect_the_required_rule() {
             created.data.clone(),
             required_sync_schema::PartialDataInput {
                 lax: None,
-                other: None,
+                other: Some("some update".into()),
             },
             (),
         )
@@ -646,7 +646,7 @@ async fn should_respect_the_required_rule_async() {
             created.data.clone(),
             required_async_schema::PartialDataInput {
                 lax: None,
-                other: None,
+                other: Some("some update".into()),
             },
             (),
         )

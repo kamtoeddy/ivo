@@ -3914,3 +3914,202 @@ mod async_on_success_update_readonly_schema {
         pub required2: String,
     }
 }
+
+// -----------------------------------------------------------------------------
+// Fail fast: errors from one phase stop later phases from running
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_not_run_validate_once_missing_required_fields_have_already_failed() {
+    let errors = fail_fast_required_then_validate_schema::DataInputModel
+        .create(
+            fail_fast_required_then_validate_schema::PartialDataInput { field_a: None },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(errors.errors.get("field_a").unwrap().reason, "field is required");
+}
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod fail_fast_required_then_validate_schema {
+    struct Fields {
+        #[required]
+        #[validate(|_v: String, _, _| {
+            panic!("validate must not run once a required field is already missing");
+        })]
+        pub field_a: String,
+    }
+}
+
+#[test]
+fn should_not_run_re_validate_once_validate_has_already_failed() {
+    let errors = fail_fast_validate_then_re_validate_schema::DataInputModel
+        .create(
+            fail_fast_validate_then_re_validate_schema::PartialDataInput {
+                field_a: Some("bad".into()),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(errors.errors.get("field_a").unwrap().reason, "invalid");
+}
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod fail_fast_validate_then_re_validate_schema {
+    struct Fields {
+        #[required]
+        #[validate(|v: String, _, _| {
+            if v == "bad" {
+                Err(("invalid".into(), None))
+            } else {
+                Ok(None)
+            }
+        })]
+        #[re_validate(|_v: String, _, _| {
+            panic!("re_validate must not run once validate has already failed");
+        })]
+        pub field_a: String,
+    }
+}
+
+#[test]
+fn should_not_run_validate_once_missing_required_fields_have_already_failed_on_update() {
+    // `field_a` is provided (and would normally be validated on update), but
+    // `field_b`'s conditional-required check fails first; fail-fast must stop
+    // the pipeline before `field_a`'s validator -- which panics if called --
+    // ever runs.
+    let existing = fail_fast_update_required_then_validate_schema::DataInput {
+        field_a: "a".into(),
+        field_b: "b".into(),
+    };
+
+    let errors = fail_fast_update_required_then_validate_schema::DataInputModel
+        .update(
+            existing,
+            fail_fast_update_required_then_validate_schema::PartialDataInput {
+                field_a: Some("aa".into()),
+                field_b: None,
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        errors.errors.unwrap().get("field_b").unwrap().reason,
+        "field_b is required for this update"
+    );
+}
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod fail_fast_update_required_then_validate_schema {
+    struct Fields {
+        #[lax(String::new())]
+        #[validate(|_v: String, _, _| {
+            panic!("validate must not run once a conditionally-required field is already missing");
+        })]
+        pub field_a: String,
+
+        #[lax(String::new())]
+        #[required(|ctx, _| {
+            if ctx.is_update() {
+                Some("field_b is required for this update".to_string())
+            } else {
+                None
+            }
+        })]
+        pub field_b: String,
+    }
+}
+
+// -----------------------------------------------------------------------------
+// "Nothing to update" checkpoints (matching rs/'s update() early returns)
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_return_nothing_to_update_early_when_all_provided_fields_are_ignored() {
+    // `field_a` is provided but always ignored on update, and `field_b` isn't
+    // provided at all; nothing relevant survives, so this must fail with
+    // "nothing to update" *before* even reaching the required-fields check
+    // (whose resolver panics if called).
+    let existing = nothing_to_update_checkpoint1_schema::DataInput {
+        field_a: "a".into(),
+        field_b: "b".into(),
+    };
+
+    let err = nothing_to_update_checkpoint1_schema::DataInputModel
+        .update(
+            existing,
+            nothing_to_update_checkpoint1_schema::PartialDataInput {
+                field_a: Some("aa".into()),
+                field_b: None,
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(err.errors.is_none());
+}
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod nothing_to_update_checkpoint1_schema {
+    struct Fields {
+        #[lax(String::new())]
+        #[ignore_update]
+        pub field_a: String,
+
+        #[lax(String::new())]
+        #[required(|_ctx, _| {
+            panic!("required check must not run once nothing was relevantly provided");
+        })]
+        pub field_b: String,
+    }
+}
+
+#[test]
+fn should_return_nothing_to_update_before_dependent_resolution_when_validate_reverts_the_only_change(
+) {
+    // `field_a`'s validator always reverts the value back to "original", so
+    // after validate/re-validate/post-validate there's no actual change left
+    // -- and no virtual field was provided either -- so this must fail with
+    // "nothing to update" *before* dependent resolution runs (whose resolver
+    // panics if called), not after.
+    let existing = nothing_to_update_checkpoint2_schema::Data {
+        field_a: "original".into(),
+        dependent: 0,
+    };
+
+    let err = nothing_to_update_checkpoint2_schema::DataModel
+        .update(
+            existing,
+            nothing_to_update_checkpoint2_schema::PartialDataInput {
+                field_a: Some("changed".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(err.errors.is_none());
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod nothing_to_update_checkpoint2_schema {
+    struct Fields {
+        #[lax(String::new())]
+        #[validate(|_v: String, _, _| Ok(Some("original".to_string())))]
+        pub field_a: String,
+
+        #[depends_on(field_a)]
+        #[default(0)]
+        #[resolve(|_ctx, _| {
+            panic!("dependent resolution must not run once nothing was left to update");
+        })]
+        pub dependent: i32,
+    }
+}

@@ -3744,6 +3744,48 @@ fn generate_model(
         quote! { #flag = true; }
     });
 
+    // Whether a given Required/Lax/Virtual field, as provided in `updates`,
+    // is still "relevant" once ignore/`#[readonly]` are accounted for --
+    // shared by the early "nothing to update" checkpoint below and (for
+    // required/lax) `update_assignment_items` above.
+    let update_field_relevant_check = |f: &FieldDef| -> proc_macro2::TokenStream {
+        let name = &f.name;
+        let name_str = name.to_string();
+        let input_name = input_field_name(f);
+        let ignore_update_flag = if update_ignore_field_names.contains(&name_str) {
+            let flag = format_ident!("ignore_update_{}", name);
+            quote! { #flag }
+        } else {
+            quote! { false }
+        };
+        let is_readonly = find_attr(&f.attrs, "readonly").is_some();
+        let readonly_guard = if is_readonly {
+            match &f.field_type {
+                FieldType::Lax => {
+                    let default_expr = attr_value_tokens(&f.attrs, "lax")
+                        .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                    quote! { output.#name == #default_expr }
+                }
+                // Required fields can't be readonly-updated at all; virtual
+                // fields can't be `#[readonly]` in the first place.
+                _ => quote! { false },
+            }
+        } else {
+            quote! { true }
+        };
+        quote! { (updates.#input_name.is_some() && !#ignore_update_flag && #readonly_guard) }
+    };
+    let update_relevant_field_checks: Vec<proc_macro2::TokenStream> = fields
+        .iter()
+        .filter(|f| {
+            matches!(
+                f.field_type,
+                FieldType::Required | FieldType::Lax | FieldType::Virtual { .. }
+            )
+        })
+        .map(update_field_relevant_check)
+        .collect();
+
     let update_virtual_ignore_flag_for = |f: &FieldDef| -> proc_macro2::TokenStream {
         let name_str = f.name.to_string();
         if update_ignore_field_names.contains(&name_str) {
@@ -4843,6 +4885,90 @@ fn generate_model(
         quote! { _rw_ctx_options.read_sync() }
     };
 
+    // Fail fast: errors from any single phase (missing-required, validate,
+    // re-validate, post-validate) must stop the pipeline immediately rather
+    // than let later phases run against already-invalid data, matching `rs/`'s
+    // reference implementation (which checks `error_tool.has_errors()` right
+    // after every one of those phases).
+    let create_error_check = quote! {
+        if !errors.is_empty() {
+            let __return_opts = _ctx_options.clone();
+            let __failure_trigger = #create_failure_trigger;
+            return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
+                <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                    errors, &*#create_options_read,
+                ),
+                __return_opts,
+                __failure_trigger,
+            ))
+        }
+    };
+    let update_error_check = quote! {
+        if !errors.is_empty() {
+            let __trigger_changes = __changes.clone();
+            let __return_opts = _ctx_options.clone();
+            let __failure_trigger = #update_failure_trigger;
+            return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
+                ::core::option::Option::Some(
+                    <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                        errors, &*#update_options_read,
+                    ),
+                ),
+                __return_opts,
+                __failure_trigger,
+            ));
+        }
+    };
+    let update_nothing_to_update_return = quote! {
+        let __trigger_changes = __changes.clone();
+        let __return_opts = _ctx_options.clone();
+        let __failure_trigger = #update_failure_trigger;
+        return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
+            ::core::option::Option::None,
+            __return_opts,
+            __failure_trigger,
+        ));
+    };
+
+    // Checkpoint 1 (matches `rs/`'s `filter_input_fields_allowed`): if every
+    // field actually present in `updates` ends up ignored/readonly-blocked,
+    // there's nothing to evaluate at all -- fail with "nothing to update"
+    // before even checking for missing required fields, rather than running
+    // the whole pipeline against an effectively-empty update.
+    let update_early_nothing_to_update_check = quote! {
+        if !(#(#update_relevant_field_checks)||*) {
+            #update_nothing_to_update_return
+        }
+    };
+
+    // Checkpoint 2 (matches `rs/`'s `evaluate_update_validity`, called right
+    // after post_validate): once unchanged fields are stripped out of
+    // `__changes`, there's nothing left to apply *unless* a virtual field
+    // was provided and accepted -- its dependent(s) haven't resolved yet at
+    // this point, so it may still produce a change later. Without accounting
+    // for that, a virtual-only update would be incorrectly rejected here
+    // before dependent resolution ever gets a chance to run.
+    let update_mid_pipeline_nothing_to_update_check = {
+        let virtual_provided_checks: Vec<_> = fields
+            .iter()
+            .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
+            .map(|f| {
+                let provided_flag = format_ident!("__virtual_provided_{}", f.name);
+                quote! { #provided_flag }
+            })
+            .collect();
+        let virtual_still_relevant = if virtual_provided_checks.is_empty() {
+            quote! { false }
+        } else {
+            quote! { (#(#virtual_provided_checks)||*) }
+        };
+        quote! {
+            if __changes.is_empty() && !(#virtual_still_relevant) {
+                #update_nothing_to_update_return
+            }
+        }
+    };
+
     quote! {
         pub struct #model_type_name;
 
@@ -4882,37 +5008,23 @@ fn generate_model(
                 #required_evaluations
                 #(#required_field_checks)*
 
+                #create_error_check
+
                 #create_validate_steps
+
+                #create_error_check
 
                 #create_re_validate_steps
 
+                #create_error_check
+
                 #post_validate_create_pre_phase
 
-                if !errors.is_empty() {
-                    let __return_opts = _ctx_options.clone();
-                    let __failure_trigger = #create_failure_trigger;
-                    return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-                        <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                            errors, &*#create_options_read,
-                        ),
-                        __return_opts,
-                        __failure_trigger,
-                    ))
-                }
+                #create_error_check
 
                 #post_validate_create_main_phase
 
-                if !errors.is_empty() {
-                    let __return_opts = _ctx_options.clone();
-                    let __failure_trigger = #create_failure_trigger;
-                    return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-                        <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                            errors, &*#create_options_read,
-                        ),
-                        __return_opts,
-                        __failure_trigger,
-                    ))
-                }
+                #create_error_check
 
                 #create_virtual_sanitize_steps
 
@@ -4969,43 +5081,21 @@ fn generate_model(
                 #update_ignore_evaluations
                 #(#bare_ignore_update_assignments)*
 
+                #update_early_nothing_to_update_check
+
                 #update_required_evaluations
+
+                #update_error_check
 
                 #update_validate_steps
 
                 #(#virtual_ignore_update_attempts)*
 
-                if !errors.is_empty() {
-                    let __trigger_changes = __changes.clone();
-                    let __return_opts = _ctx_options.clone();
-                    let __failure_trigger = #update_failure_trigger;
-                    return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-                        ::core::option::Option::Some(
-                            <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                                errors, &*#update_options_read,
-                            ),
-                        ),
-                        __return_opts,
-                        __failure_trigger,
-                    ));
-                }
+                #update_error_check
 
                 #update_re_validate_steps
 
-                if !errors.is_empty() {
-                    let __trigger_changes = __changes.clone();
-                    let __return_opts = _ctx_options.clone();
-                    let __failure_trigger = #update_failure_trigger;
-                    return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-                        ::core::option::Option::Some(
-                            <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                                errors, &*#update_options_read,
-                            ),
-                        ),
-                        __return_opts,
-                        __failure_trigger,
-                    ));
-                }
+                #update_error_check
 
                 let mut __post_input: #partial_input_name = ::core::default::Default::default();
                 #(#post_input_inits)*
@@ -5019,20 +5109,7 @@ fn generate_model(
                     );
                     #post_validate_update_pre_phase
 
-                    if !errors.is_empty() {
-                        let __trigger_changes = __changes.clone();
-                        let __return_opts = _ctx_options.clone();
-                        let __failure_trigger = #update_failure_trigger;
-                        return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-                            ::core::option::Option::Some(
-                                <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                                    errors, &*#update_options_read,
-                                ),
-                            ),
-                            __return_opts,
-                            __failure_trigger,
-                        ));
-                    }
+                    #update_error_check
 
                     #post_validate_update_main_phase
                     __post_input = input;
@@ -5045,20 +5122,9 @@ fn generate_model(
                     }
                 )*
 
-                if !errors.is_empty() {
-                    let __trigger_changes = __changes.clone();
-                    let __return_opts = _ctx_options.clone();
-                    let __failure_trigger = #update_failure_trigger;
-                    return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-                        ::core::option::Option::Some(
-                            <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                                errors, &*#update_options_read,
-                            ),
-                        ),
-                        __return_opts,
-                        __failure_trigger,
-                    ));
-                }
+                #update_error_check
+
+                #update_mid_pipeline_nothing_to_update_check
 
                 #update_virtual_sanitize_steps
                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
@@ -5071,14 +5137,7 @@ fn generate_model(
                 #(#dependent_update_assignments)*
 
                 if __update_attempted && __changes.is_empty() {
-                    let __trigger_changes = __changes.clone();
-                    let __return_opts = _ctx_options.clone();
-                    let __failure_trigger = #update_failure_trigger;
-                    return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-                        ::core::option::Option::None,
-                        __return_opts,
-                        __failure_trigger,
-                    ));
+                    #update_nothing_to_update_return
                 }
 
                 #(#timestamp_update_assignments)*
