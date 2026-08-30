@@ -444,6 +444,22 @@ struct GroupedOption {
     pre_validate: Option<proc_macro2::TokenStream>,
 }
 
+/// Whether `attr` is one of the grouped-option attribute names recognized on
+/// a schema-module const anchor (`#[ignore(...)]`, `#[required(...)]`, etc).
+/// Shared by `parse_grouped_options` (which reads the option out of it) and
+/// the anchor-stripping pass in `ivo_schema_impl` (which must not re-emit an
+/// anchor const's now-macro-only attributes verbatim, or rustc will try to
+/// resolve them as real attributes).
+fn is_grouped_option_attr(attr: &Attribute) -> bool {
+    attr.path().is_ident("ignore")
+        || attr.path().is_ident("required")
+        || attr.path().is_ident("ignore_update")
+        || attr.path().is_ident("on_delete")
+        || attr.path().is_ident("on_success")
+        || attr.path().is_ident("timestamps")
+        || attr.path().is_ident("post_validate")
+}
+
 fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
     let kind = if attr.path().is_ident("ignore") {
         GroupedOptionKind::Ignore
@@ -759,10 +775,13 @@ fn parse_grouped_options(item_mod: &ItemMod) -> syn::Result<Vec<GroupedOption>> 
             continue;
         };
 
-        // Match anonymous const _: () = ()
-        if !c.ident.to_string().starts_with('_') {
-            continue;
-        }
+        // Per GOAL.md §3/§10, any const item inside the schema module is a
+        // valid option anchor -- anonymous (`const _: () = ();`, the default)
+        // or named (e.g. `const NAME_EMAIL_REQUIRED: () = ();`, used when a
+        // stable identifier is useful for error messages/debug output). The
+        // macro only looks at the attributes; the const's name/type/body are
+        // ignored either way, so named consts without a recognized attribute
+        // simply contribute nothing (`parse_option_attr` returns `Ok(None)`).
         for attr in &c.attrs {
             if let Some(opt) = parse_option_attr(attr)? {
                 options.push(opt);
@@ -5196,7 +5215,14 @@ fn ivo_schema_impl(
                     if let syn::Item::Struct(s) = item {
                         s.ident != "Fields"
                     } else if let syn::Item::Const(c) = item {
-                        !c.ident.to_string().starts_with('_')
+                        // Option-anchor consts (anonymous `const _: () = ();`
+                        // or named, per GOAL.md §10) are macro-only
+                        // directives and must not be re-emitted -- their
+                        // attributes (`#[required(...)]`, etc.) aren't real
+                        // Rust attributes. A const without a recognized
+                        // grouped-option attribute is a plain user const and
+                        // stays in the module untouched.
+                        !c.attrs.iter().any(is_grouped_option_attr)
                     } else {
                         true
                     }

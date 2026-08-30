@@ -101,3 +101,61 @@ async fn should_allow_constant_and_dependents_in_fields_array() {
     assert_eq!(created.data.id, 1234);
     assert_eq!(created.data.dependent, 5679);
 }
+
+// -----------------------------------------------------------------------------
+// Named const anchors for grouped options (GOAL.md §10)
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_allow_named_consts_as_grouped_option_anchors() {
+    // A named const (used here for its own stable identifier, matching
+    // GOAL.md §10's `NAME_EMAIL_REQUIRED` example) must work exactly like the
+    // anonymous `const _: () = ();` default.
+    let errors = named_const_option_schema::DataInputModel
+        .create(
+            named_const_option_schema::PartialDataInput {
+                email: None,
+                phone_number: None,
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert!(errors.errors.get("email").is_some());
+    assert!(errors.errors.get("phone_number").is_some());
+
+    let created = named_const_option_schema::DataInputModel
+        .create(
+            named_const_option_schema::PartialDataInput {
+                email: Some(Some("a@b.com".to_string())),
+                phone_number: None,
+            },
+            (),
+        )
+        .unwrap();
+
+    assert_eq!(created.data.email.as_deref(), Some("a@b.com"));
+}
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod named_const_option_schema {
+    struct Fields {
+        #[lax(None)]
+        pub email: Option<String>,
+
+        #[lax(None)]
+        pub phone_number: Option<String>,
+    }
+
+    #[required(["email", "phone_number"], |ctx, _| {
+        if ctx.input().email.is_some() || ctx.input().phone_number.is_some() {
+            return None;
+        }
+
+        let mut errors = DataInputErrors::new();
+        errors.set_email("either \"email\" or \"phone_number\" is required", None);
+        errors.set_phone_number("either \"email\" or \"phone_number\" is required", None);
+        Some(errors)
+    })]
+    const NAME_EMAIL_REQUIRED: () = ();
+}
