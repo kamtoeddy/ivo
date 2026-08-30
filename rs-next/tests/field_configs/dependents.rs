@@ -452,3 +452,96 @@ mod async_resolve_dependent_schema {
     #[timestamps(|| String::from("timestamp"))]
     const _: () = ();
 }
+
+// -----------------------------------------------------------------------------
+// Parallel resolution of independent dependents within the same round
+// -----------------------------------------------------------------------------
+
+#[tokio::test]
+async fn should_resolve_independent_async_dependents_of_the_same_round_concurrently() {
+    // Two dependents that both become ready in the same round (both depend
+    // only on `name`, and neither depends on the other) must be polled
+    // concurrently, not one `.await` at a time. `rendezvous()` only returns
+    // once *both* resolvers have started, which can only happen if they are
+    // in flight at the same time.
+    let created = async_parallel_dependents_schema::DataModel
+        .create(
+            async_parallel_dependents_schema::PartialDataInput {
+                name: Some("abc".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(created.data.dependent_a, 3);
+    assert_eq!(created.data.dependent_b, 4);
+
+    async_parallel_dependents_schema::STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+
+    let updated = async_parallel_dependents_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_parallel_dependents_schema::PartialDataInput {
+                name: Some("abcde".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_parallel_dependents_schema::PartialData {
+            name: Some("abcde".into()),
+            dependent_a: Some(5),
+            dependent_b: Some(6),
+        }
+    );
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_parallel_dependents_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous() {
+        STARTED.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if STARTED.load(Ordering::SeqCst) >= 2 {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!(
+            "dependent resolvers were not resolved concurrently: only one of them ever started"
+        );
+    }
+
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[depends_on(name)]
+        #[default(0)]
+        #[resolve(async |ctx, _| {
+            rendezvous().await;
+            ctx.values().name.len() as i32
+        })]
+        pub dependent_a: i32,
+
+        #[depends_on(name)]
+        #[default(0)]
+        #[resolve(async |ctx, _| {
+            rendezvous().await;
+            ctx.values().name.len() as i32 + 1
+        })]
+        pub dependent_b: i32,
+    }
+}

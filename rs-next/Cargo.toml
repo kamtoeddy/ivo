@@ -46,6 +46,10 @@ unicode-normalization = "0.1"
 
 [dependencies]
 async-lock.workspace = true
+# `join!` only (no executor/reactor/io): used by generated `create`/`update`
+# bodies to poll independent async field handlers within a phase concurrently
+# instead of sequentially, without pulling in a runtime.
+futures-util = { version = "0.3", default-features = false, features = ["std", "async-await", "async-await-macro"] }
 ivo-derive = { path = "./crates/derive", version = "0.5.0" }
 ivo-validators = { path = "./crates/validators", version = "0.5.0", optional = true}
 

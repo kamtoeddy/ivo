@@ -1672,3 +1672,130 @@ mod async_post_validate_schema {
     const _: () = ();
 }
 
+
+// -----------------------------------------------------------------------------
+// Parallel validate/re-validate/sanitize of independent virtual fields
+// -----------------------------------------------------------------------------
+
+#[tokio::test]
+async fn should_validate_re_validate_and_sanitize_independent_virtual_fields_concurrently() {
+    // Two virtual fields with no relationship to one another must have their
+    // validate/re-validate/sanitize handlers polled concurrently within each
+    // phase, not one `.await` at a time. Each `rendezvous()` only returns once
+    // *both* fields' handlers for that phase have started.
+    async_parallel_virtuals_schema::VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+    async_parallel_virtuals_schema::RE_VALIDATE_STARTED
+        .store(0, std::sync::atomic::Ordering::SeqCst);
+    async_parallel_virtuals_schema::SANITIZE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+
+    let created = async_parallel_virtuals_schema::DataModel
+        .create(
+            async_parallel_virtuals_schema::PartialDataInput {
+                virtual_a: Some("a".into()),
+                virtual_b: Some("b".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_parallel_virtuals_schema::Data {
+            dependent_a: "sanitized-a".into(),
+            dependent_b: "sanitized-b".into(),
+        }
+    );
+
+    async_parallel_virtuals_schema::VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+    async_parallel_virtuals_schema::RE_VALIDATE_STARTED
+        .store(0, std::sync::atomic::Ordering::SeqCst);
+    async_parallel_virtuals_schema::SANITIZE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+
+    let updated = async_parallel_virtuals_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_parallel_virtuals_schema::PartialDataInput {
+                virtual_a: Some("aa".into()),
+                virtual_b: Some("bb".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_parallel_virtuals_schema::PartialData {
+            dependent_a: Some("sanitized-aa".into()),
+            dependent_b: Some("sanitized-bb".into()),
+        }
+    );
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_parallel_virtuals_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static VALIDATE_STARTED: AtomicUsize = AtomicUsize::new(0);
+    pub static RE_VALIDATE_STARTED: AtomicUsize = AtomicUsize::new(0);
+    pub static SANITIZE_STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous(counter: &'static AtomicUsize, phase: &str) {
+        counter.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if counter.load(Ordering::SeqCst) >= 2 {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("virtual {phase} handlers were not run concurrently");
+    }
+
+    struct Fields {
+        #[depends_on(virtual_a)]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_a.clone().unwrap())]
+        pub dependent_a: String,
+
+        #[depends_on(virtual_b)]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_b.clone().unwrap())]
+        pub dependent_b: String,
+
+        #[ivo_virtual]
+        #[validate(async |v: String, _, _| {
+            rendezvous(&VALIDATE_STARTED, "validate").await;
+            Ok(Some(v))
+        })]
+        #[re_validate(async |v: String, _, _| {
+            rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
+            Ok(Some(v))
+        })]
+        #[sanitize(async |v: String, _, _| {
+            rendezvous(&SANITIZE_STARTED, "sanitize").await;
+            format!("sanitized-{v}")
+        })]
+        pub virtual_a: String,
+
+        #[ivo_virtual]
+        #[validate(async |v: String, _, _| {
+            rendezvous(&VALIDATE_STARTED, "validate").await;
+            Ok(Some(v))
+        })]
+        #[re_validate(async |v: String, _, _| {
+            rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
+            Ok(Some(v))
+        })]
+        #[sanitize(async |v: String, _, _| {
+            rendezvous(&SANITIZE_STARTED, "sanitize").await;
+            format!("sanitized-{v}")
+        })]
+        pub virtual_b: String,
+    }
+}
