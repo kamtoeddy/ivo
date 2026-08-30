@@ -2626,15 +2626,36 @@ fn generate_model(
             }
         });
 
-    let create_step_pairs: Vec<_> = fields
+    // Early create phase: required/lax base-value + validate, timestamps
+    // (already deduped to a single resolver call above), and dependent-field
+    // defaults. None of these handlers can read a sibling's output (lax/
+    // dependent defaults only get `IvoDefaultCtx<I>`, which exposes just
+    // input/raw_input; required/lax validators get the full `IvoContext`, but
+    // -- matching the reference implementation -- every item in this phase is
+    // evaluated against the *same* pre-phase `ctx` snapshot, not one another's
+    // results), so the whole phase is safe to batch: sequential when 0/1
+    // handlers are async, `join!`-concurrent when 2+ are. `#[constant]`
+    // fields are handled separately, in their own phase after dependent
+    // resolution (see below), since their ctx *does* expose `ctx.values()`
+    // and per GOAL.md §17 they're only meant to be attached once dependents
+    // have already resolved.
+    let create_early_items: Vec<AsyncPhaseItem> = fields
         .iter()
-        .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
+        .filter(|f| {
+            matches!(
+                f.field_type,
+                FieldType::Required
+                    | FieldType::Lax
+                    | FieldType::CreatedAt
+                    | FieldType::UpdatedAt { .. }
+                    | FieldType::Dependent
+            )
+        })
         .map(|f| {
             let name = &f.name;
             let name_str = name.to_string();
             let ty = &f.ty;
             let ty_tokens = quote!(#ty);
-            let sanitizer = attr_value_tokens(&f.attrs, "sanitize");
             let validator = attr_value_tokens(&f.attrs, "validate");
 
             let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
@@ -2651,8 +2672,7 @@ fn generate_model(
                 _ => (false, quote! { ::core::default::Default::default() }),
             };
 
-            let mut field_is_async = false;
-            field_is_async |= lax_default_is_async;
+            let mut item_is_async = lax_default_is_async;
 
             let base_value = match &f.field_type {
                 FieldType::Required | FieldType::Lax => {
@@ -2685,103 +2705,127 @@ fn generate_model(
                 FieldType::UpdatedAt { optional: true } => {
                     quote! { ::core::default::Default::default() }
                 }
-                FieldType::Constant => {
-                    let tokens = attr_value_tokens(&f.attrs, "constant")
-                        .unwrap_or_else(|| quote!(::core::default::Default::default()));
-                    match closure_input_count(&tokens) {
-                        Some(0) => {
-                            if is_async_handler(&tokens) {
-                                field_is_async = true;
-                                quote! { (#tokens)().await }
-                            } else {
-                                quote! { ::ivo::__ivo_internals::run_value_resolver_sync(#tokens) }
-                            }
-                        }
-                        Some(_) => {
-                            let ctx_expr = quote!(ctx.clone());
-                            let opts_expr = quote!(&_rw_ctx_options);
-                            let (is_async, call) = make_resolver_call(&tokens, &ctx_expr, &opts_expr);
-                            field_is_async |= is_async;
-                            call
-                        }
-                        None => quote! { #tokens },
-                    }
-                }
                 FieldType::Dependent => {
                     let default_expr = attr_value_tokens(&f.attrs, "default")
                         .unwrap_or_else(|| quote!(::core::default::Default::default()));
                     let (is_async, expr) = make_default_value_expr(&default_expr);
-                    field_is_async |= is_async;
+                    item_is_async |= is_async;
                     expr
                 }
-                FieldType::Virtual { .. } => unreachable!(),
+                FieldType::Constant | FieldType::Virtual { .. } => unreachable!(),
             };
 
-            let sanitizer_expr = if let Some(sanitizer) = sanitizer {
-                let value_expr = quote!(value);
-                let ctx_expr = quote!(&ctx);
-                let opts_expr = quote!(&_rw_ctx_options);
-                let (is_async, call) =
-                    make_sanitizer_call(&sanitizer, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
-                field_is_async |= is_async;
-                quote! { value = #call; }
-            } else {
-                quote! {}
-            };
-
-            let validator_expr = if let Some(ref validator) = validator {
+            // The value_expr must not mutate `errors` (or anything else)
+            // directly: when 2+ items in this phase are async, each becomes
+            // its own `async { ... }` block polled concurrently by the same
+            // `join!`, and two such blocks both capturing `&mut errors` would
+            // not borrow-check. So validation failure is threaded out as a
+            // `Result` instead, and only the (always-sequential) `apply` step
+            // -- which runs after the join! completes -- touches `errors`.
+            let validator_assignment = if let Some(ref validator) = validator {
                 let value_expr = quote!(value.clone());
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) =
                     make_validator_call(validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
-                field_is_async |= is_async;
+                item_is_async |= is_async;
                 quote! {
                     match #call {
-                        ::core::result::Result::Ok(::core::option::Option::Some(v)) => v,
-                        ::core::result::Result::Ok(::core::option::Option::None) => value,
-                        ::core::result::Result::Err(e) => {
-                            errors.insert(::std::string::String::from(#name_str), e);
-                            ::core::default::Default::default()
+                        ::core::result::Result::Ok(::core::option::Option::Some(v)) => {
+                            ::core::result::Result::Ok(v)
                         }
+                        ::core::result::Result::Ok(::core::option::Option::None) => {
+                            ::core::result::Result::Ok(value)
+                        }
+                        ::core::result::Result::Err(e) => ::core::result::Result::Err(e),
                     }
                 }
             } else {
-                quote! { value }
+                quote! { ::core::result::Result::Ok(value) }
             };
 
-            let validator_assignment = if validator.is_some() {
-                quote! { value = #validator_expr; }
-            } else {
-                quote! {}
-            };
-
-            let value_computation = quote! {
+            let value_expr = quote! {
                 {
-                    let mut value: #ty = #base_value;
+                    let value: #ty = #base_value;
                     if !#ignore_flag_tokens {
-                        #sanitizer_expr
                         #validator_assignment
+                    } else {
+                        ::core::result::Result::Ok(value)
                     }
-                    value
                 }
             };
-
-            let stmt = quote! {
-                let #name: #ty = #value_computation;
-                output.#name = #name.clone();
-                let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    output.clone(),
-                    output.clone().into(),
-                    false,
-                );
+            let apply = quote! {
+                match __phase_result {
+                    ::core::result::Result::Ok(__value) => {
+                        output.#name = __value;
+                    }
+                    ::core::result::Result::Err(e) => {
+                        errors.insert(::std::string::String::from(#name_str), e);
+                    }
+                }
             };
-            (field_is_async, stmt)
+            AsyncPhaseItem { is_async: item_is_async, value_expr, apply }
         })
         .collect();
-    create_has_async |= create_step_pairs.iter().any(|(a, _)| *a);
-    let create_steps = create_step_pairs.into_iter().map(|(_, stmt)| stmt);
+    create_has_async |= create_early_items.iter().any(|i| i.is_async);
+    let create_early_ctx_rebuild = quote! {
+        let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+            input.clone(),
+            output.clone(),
+            output.clone().into(),
+            false,
+        );
+    };
+    let create_steps = emit_async_phase(create_early_items, &create_early_ctx_rebuild);
+
+    // Constants phase: attached after dependent resolution (see
+    // `dependent_create_block` below), matching GOAL.md §17's ordering.
+    // Constants can read sibling output via `ctx.values()`, but -- same as
+    // every other phase -- all constants in this phase see the same
+    // post-dependent-resolution snapshot rather than one another's values,
+    // so they're safe to batch the same way.
+    let create_constant_items: Vec<AsyncPhaseItem> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Constant))
+        .map(|f| {
+            let name = &f.name;
+            let tokens = attr_value_tokens(&f.attrs, "constant")
+                .unwrap_or_else(|| quote!(::core::default::Default::default()));
+            let (is_async, value_expr) = match closure_input_count(&tokens) {
+                Some(0) => {
+                    if is_async_handler(&tokens) {
+                        (true, quote! { (#tokens)().await })
+                    } else {
+                        (
+                            false,
+                            quote! { ::ivo::__ivo_internals::run_value_resolver_sync(#tokens) },
+                        )
+                    }
+                }
+                Some(_) => {
+                    let ctx_expr = quote!(ctx.clone());
+                    let opts_expr = quote!(&_rw_ctx_options);
+                    make_resolver_call(&tokens, &ctx_expr, &opts_expr)
+                }
+                None => (false, quote! { #tokens }),
+            };
+            let apply = quote! {
+                output.#name = __phase_result;
+            };
+            AsyncPhaseItem { is_async, value_expr, apply }
+        })
+        .collect();
+    create_has_async |= create_constant_items.iter().any(|i| i.is_async);
+    let create_constants_ctx_rebuild = quote! {
+        let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+            input.clone(),
+            output.clone(),
+            output.clone().into(),
+            false,
+        );
+    };
+    let create_constants_phase =
+        emit_async_phase(create_constant_items, &create_constants_ctx_rebuild);
 
     // Dependent-field resolution pass for create: only resolve a dependent when
     // at least one of its parents was provided in the input or was resolved in
@@ -3249,12 +3293,18 @@ fn generate_model(
         .filter(|o| matches!(o.kind, GroupedOptionKind::PostValidate))
         .collect();
 
-    let post_validate_pairs: Vec<_> = post_validate_options
+    // Each `#[post_validate(...)]` group's per-field merge statements and
+    // handlers, independent of create/update mode.
+    struct PostValidateGroupInfo {
+        allowed_names: Vec<String>,
+        create_apply_updates: Vec<proc_macro2::TokenStream>,
+        update_apply_updates: Vec<proc_macro2::TokenStream>,
+        pre_validate: Option<proc_macro2::TokenStream>,
+        handler: proc_macro2::TokenStream,
+    }
+    let post_validate_groups: Vec<PostValidateGroupInfo> = post_validate_options
         .iter()
         .map(|o| {
-            let ctx_expr = quote!(ctx);
-            let opts_expr = quote!(_rw_ctx_options);
-
             let field_infos: Vec<_> = o
                 .fields
                 .iter()
@@ -3305,41 +3355,62 @@ fn generate_model(
                 })
                 .collect();
 
-            let allowed_names: Vec<_> = field_infos.iter().map(|(n, _, _)| n.clone()).collect();
-            let create_apply_updates: Vec<_> = field_infos
-                .iter()
-                .map(|(_, create_stmt, _)| create_stmt.clone())
-                .collect();
-            let update_apply_updates: Vec<_> = field_infos
-                .iter()
-                .map(|(_, _, update_stmt)| update_stmt.clone())
-                .collect();
+            PostValidateGroupInfo {
+                allowed_names: field_infos.iter().map(|(n, _, _)| n.clone()).collect(),
+                create_apply_updates: field_infos
+                    .iter()
+                    .map(|(_, create_stmt, _)| create_stmt.clone())
+                    .collect(),
+                update_apply_updates: field_infos
+                    .iter()
+                    .map(|(_, _, update_stmt)| update_stmt.clone())
+                    .collect(),
+                pre_validate: o.pre_validate.clone(),
+                handler: o.handler.clone(),
+            }
+        })
+        .collect();
 
-            let allowed_names_expr = quote! {
-                [#(#allowed_names),*]
-            };
+    // `post_validate` runs in two phases across *all* groups combined,
+    // matching the reference implementation (`rs/`): every group's
+    // `pre_validate` is batched together and applied first (each group still
+    // only merges/filters against its own field list), then every group's
+    // main `validate` is batched together the same way. Groups are
+    // independent of one another (nothing declares an ordering between
+    // separate `#[post_validate(...)]` blocks), so within a phase this is
+    // safe to run via `emit_async_phase` like every other phase; it also
+    // means a later group no longer implicitly observes an earlier group's
+    // pre_validate/validate updates (previously each group ran fully,
+    // including its own `ctx` rebuild, before the next one started).
+    let build_post_validate_phase = |handler_for: &dyn Fn(&PostValidateGroupInfo) -> Option<proc_macro2::TokenStream>,
+                                     apply_updates_for: &dyn Fn(&PostValidateGroupInfo) -> &[proc_macro2::TokenStream],
+                                     changes_expr: &proc_macro2::TokenStream,
+                                     is_update_flag: bool|
+     -> proc_macro2::TokenStream {
+        let items: Vec<AsyncPhaseItem> = post_validate_groups
+            .iter()
+            .filter_map(|g| {
+                let handler = handler_for(g)?;
+                let apply_updates = apply_updates_for(g);
+                let allowed_names = &g.allowed_names;
+                let allowed_names_expr = quote! { [#(#allowed_names),*] };
 
-            let make_validator_block = |handler: &proc_macro2::TokenStream,
-                                        apply_updates: &[proc_macro2::TokenStream],
-                                        changes_expr: &proc_macro2::TokenStream|
-             -> (bool, proc_macro2::TokenStream) {
-                let (is_async, call) = make_post_validate_call(handler, &ctx_expr, &opts_expr);
-                let block = quote! {
-                    let __post_result: ::core::result::Result<
-                        ::core::option::Option<#partial_input_name>,
-                        #input_errors_name<#metadata_ty>,
-                    > = #call;
-                    match __post_result {
-                        ::core::result::Result::Ok(
-                            ::core::option::Option::Some(__post_updates),
-                        ) => {
+                let ctx_expr = quote!(ctx);
+                let opts_expr = quote!(_rw_ctx_options);
+                let (is_async, call) = make_post_validate_call(&handler, &ctx_expr, &opts_expr);
+                let value_expr = quote! {
+                    {
+                        let __post_result: ::core::result::Result<
+                            ::core::option::Option<#partial_input_name>,
+                            #input_errors_name<#metadata_ty>,
+                        > = #call;
+                        __post_result
+                    }
+                };
+                let apply = quote! {
+                    match __phase_result {
+                        ::core::result::Result::Ok(::core::option::Option::Some(__post_updates)) => {
                             #(#apply_updates)*
-                            ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                                input.clone(),
-                                output.clone(),
-                                #changes_expr,
-                                false,
-                            );
                         }
                         ::core::result::Result::Ok(::core::option::Option::None) => {}
                         ::core::result::Result::Err(__post_errors) => {
@@ -3354,58 +3425,57 @@ fn generate_model(
                         }
                     }
                 };
-                (is_async, block)
-            };
-
-            let mut is_async = false;
-            let mut create_stmts: Vec<proc_macro2::TokenStream> = Vec::new();
-            let mut update_stmts: Vec<proc_macro2::TokenStream> = Vec::new();
-
-            if let Some(pre_handler) = &o.pre_validate {
-                let (a, create_block) = make_validator_block(
-                    pre_handler,
-                    &create_apply_updates,
-                    &quote!(output.clone().into()),
-                );
-                let (b, update_block) = make_validator_block(
-                    pre_handler,
-                    &update_apply_updates,
-                    &quote!(__changes.clone()),
-                );
-                is_async |= a | b;
-                create_stmts.push(create_block);
-                update_stmts.push(update_block);
-            }
-
-            let (a, create_block) = make_validator_block(
-                &o.handler,
-                &create_apply_updates,
-                &quote!(output.clone().into()),
+                Some(AsyncPhaseItem { is_async, value_expr, apply })
+            })
+            .collect();
+        let ctx_rebuild = quote! {
+            ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                input.clone(),
+                output.clone(),
+                #changes_expr,
+                #is_update_flag,
             );
-            let (b, update_block) = make_validator_block(
-                &o.handler,
-                &update_apply_updates,
-                &quote!(__changes.clone()),
-            );
-            is_async |= a | b;
-            create_stmts.push(create_block);
-            update_stmts.push(update_block);
+        };
+        emit_async_phase(items, &ctx_rebuild)
+    };
 
-            let create_stmt = quote! { #(#create_stmts)* };
-            let update_stmt = quote! { #(#update_stmts)* };
-            (is_async, create_stmt, update_stmt)
-        })
-        .collect();
-    create_has_async |= post_validate_pairs.iter().any(|(a, _, _)| *a);
-    update_has_async |= post_validate_pairs.iter().any(|(a, _, _)| *a);
-    let post_validate_create_steps: Vec<_> = post_validate_pairs
-        .iter()
-        .map(|(_, create_stmt, _)| create_stmt.clone())
-        .collect();
-    let post_validate_update_steps: Vec<_> = post_validate_pairs
-        .iter()
-        .map(|(_, _, update_stmt)| update_stmt.clone())
-        .collect();
+    let post_validate_create_pre_phase = build_post_validate_phase(
+        &|g| g.pre_validate.clone(),
+        &|g| &g.create_apply_updates,
+        &quote!(output.clone().into()),
+        false,
+    );
+    let post_validate_create_main_phase = build_post_validate_phase(
+        &|g| Some(g.handler.clone()),
+        &|g| &g.create_apply_updates,
+        &quote!(output.clone().into()),
+        false,
+    );
+    let post_validate_update_pre_phase = build_post_validate_phase(
+        &|g| g.pre_validate.clone(),
+        &|g| &g.update_apply_updates,
+        &quote!(__changes.clone()),
+        true,
+    );
+    let post_validate_update_main_phase = build_post_validate_phase(
+        &|g| Some(g.handler.clone()),
+        &|g| &g.update_apply_updates,
+        &quote!(__changes.clone()),
+        true,
+    );
+
+    let post_validate_any_async = post_validate_groups.iter().any(|g| {
+        let ctx_expr = quote!(ctx);
+        let opts_expr = quote!(_rw_ctx_options);
+        let main_async = make_post_validate_call(&g.handler, &ctx_expr, &opts_expr).0;
+        let pre_async = g
+            .pre_validate
+            .as_ref()
+            .is_some_and(|h| make_post_validate_call(h, &ctx_expr, &opts_expr).0);
+        main_async || pre_async
+    });
+    create_has_async |= post_validate_any_async;
+    update_has_async |= post_validate_any_async;
 
     // Update method: apply partial updates.
     let update_ctx_ty =
@@ -4077,22 +4147,28 @@ fn generate_model(
     let delete_method = if has_on_delete {
         let data_ref_ty = quote!(&#output_name);
 
-        let make_on_delete_call =
-            |handler: proc_macro2::TokenStream| -> (bool, proc_macro2::TokenStream) {
-                let annotated = type_annotate_handler(
-                    handler.clone(),
-                    &[data_ref_ty.clone(), hook_opts_ty.clone()],
-                );
-                let is_async = is_async_handler(&handler);
-                let call = if is_async {
-                    quote! { ::ivo::__ivo_internals::run_hook(data, &_ctx_options, #annotated).await; }
-                } else {
-                    quote! { ::ivo::__ivo_internals::run_hook_sync(data, &_ctx_options, #annotated); }
-                };
-                (is_async, call)
+        // `on_delete` hooks are independent of one another (same as the
+        // success/failure triggers below), so batch them the same way:
+        // sequential when 0/1 are async, `join!`-concurrent when 2+ are.
+        let make_on_delete_item = |handler: proc_macro2::TokenStream| -> AsyncPhaseItem {
+            let annotated = type_annotate_handler(
+                handler.clone(),
+                &[data_ref_ty.clone(), hook_opts_ty.clone()],
+            );
+            let is_async = is_async_handler(&handler);
+            let value_expr = if is_async {
+                quote! { ::ivo::__ivo_internals::run_hook(data, &_ctx_options, #annotated).await; }
+            } else {
+                quote! { ::ivo::__ivo_internals::run_hook_sync(data, &_ctx_options, #annotated); }
             };
+            AsyncPhaseItem {
+                is_async,
+                value_expr,
+                apply: quote! { let _ = __phase_result; },
+            }
+        };
 
-        let field_on_delete_hook_pairs: Vec<_> = fields
+        let field_on_delete_items: Vec<AsyncPhaseItem> = fields
             .iter()
             .filter(|f| {
                 matches!(
@@ -4106,25 +4182,23 @@ fn generate_model(
             .flat_map(|f| {
                 attr_values_tokens(&f.attrs, "on_delete")
                     .into_iter()
-                    .map(&make_on_delete_call)
+                    .map(&make_on_delete_item)
             })
             .collect();
 
-        let grouped_on_delete_hook_pairs: Vec<_> = options
+        let grouped_on_delete_items: Vec<AsyncPhaseItem> = options
             .iter()
             .filter(|o| matches!(o.kind, GroupedOptionKind::OnDelete))
-            .map(|o| make_on_delete_call(o.handler.clone()))
+            .map(|o| make_on_delete_item(o.handler.clone()))
             .collect();
 
-        let delete_is_async = field_on_delete_hook_pairs
-            .iter()
-            .chain(&grouped_on_delete_hook_pairs)
-            .any(|(is_async, _)| *is_async);
-
-        let on_delete_hooks = field_on_delete_hook_pairs
+        let on_delete_items: Vec<AsyncPhaseItem> = field_on_delete_items
             .into_iter()
-            .chain(grouped_on_delete_hook_pairs)
-            .map(|(_, call)| call);
+            .chain(grouped_on_delete_items)
+            .collect();
+
+        let delete_is_async = on_delete_items.iter().any(|i| i.is_async);
+        let on_delete_body = emit_async_phase(on_delete_items, &quote! {});
 
         let delete_sig = if delete_is_async {
             quote! { pub async fn delete }
@@ -4141,7 +4215,7 @@ fn generate_model(
                 let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
                 let _ctx_options = _rw_ctx_options.read_only();
 
-                #(#on_delete_hooks)*
+                #on_delete_body
             }
         }
     } else {
@@ -4164,25 +4238,32 @@ fn generate_model(
         )
     };
 
-    let make_trigger_stmts = |handlers: &[(&FieldDef, proc_macro2::TokenStream)],
+    // Every hook (field-level `on_success`/`on_failure`/`on_delete`, and
+    // grouped `on_success`) is documented as independent of its siblings --
+    // there's no ordering contract between multiple hooks of the same kind --
+    // so they're always safe to batch via `emit_async_phase` (sequential
+    // when 0/1 are async, `join!`-concurrent when 2+ are).
+    let make_trigger_items = |handlers: &[(&FieldDef, proc_macro2::TokenStream)],
                               ctx_ty: &proc_macro2::TokenStream|
-     -> (bool, Vec<proc_macro2::TokenStream>) {
-        let is_async = handlers
-            .iter()
-            .any(|(_, handler)| is_async_handler(handler));
-        let stmts = handlers
+     -> Vec<AsyncPhaseItem> {
+        handlers
             .iter()
             .map(|(_f, handler)| {
                 let annotated =
                     type_annotate_handler(handler.clone(), &[ctx_ty.clone(), hook_opts_ty.clone()]);
-                if is_async_handler(handler) {
+                let is_async = is_async_handler(handler);
+                let value_expr = if is_async {
                     quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
                 } else {
                     quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                };
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr,
+                    apply: quote! { let _ = __phase_result; },
                 }
             })
-            .collect();
-        (is_async, stmts)
+            .collect()
     };
 
     let create_success_handlers: Vec<_> = fields
@@ -4204,47 +4285,43 @@ fn generate_model(
         })
         .collect();
 
-    let (create_success_is_async, create_success_stmts) = {
-        let is_async = create_success_handlers
-            .iter()
-            .any(|(_, handler)| is_async_handler(handler));
-        let stmts: Vec<proc_macro2::TokenStream> = create_success_handlers
-            .iter()
-            .map(|(f, handler)| {
-                let annotated = type_annotate_handler(
-                    handler.clone(),
-                    &[hook_ctx_ty.clone(), hook_opts_ty.clone()],
-                );
-                let call = if is_async_handler(handler) {
-                    quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
-                } else {
-                    quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
-                };
-                let name = &f.name;
-                let name_str = name.to_string();
-                let input_name = input_field_name(f);
-                let ignored = if ignore_field_names.contains(&name_str) {
-                    let flag = format_ident!("ignore_{}", f.name);
-                    quote! { #flag }
-                } else {
-                    quote! { false }
-                };
-                let condition = if matches!(f.field_type, FieldType::Virtual { .. }) {
-                    quote! { !#ignored && __trigger_input.#input_name.is_some() }
-                } else {
-                    quote! { true }
-                };
-                quote! {
-                    if #condition {
-                        #call
-                    }
+    let create_success_items: Vec<AsyncPhaseItem> = create_success_handlers
+        .iter()
+        .map(|(f, handler)| {
+            let annotated =
+                type_annotate_handler(handler.clone(), &[hook_ctx_ty.clone(), hook_opts_ty.clone()]);
+            let is_async = is_async_handler(handler);
+            let call = if is_async {
+                quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+            } else {
+                quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+            };
+            let name_str = f.name.to_string();
+            let input_name = input_field_name(f);
+            let ignored = if ignore_field_names.contains(&name_str) {
+                let flag = format_ident!("ignore_{}", f.name);
+                quote! { #flag }
+            } else {
+                quote! { false }
+            };
+            let condition = if matches!(f.field_type, FieldType::Virtual { .. }) {
+                quote! { !#ignored && __trigger_input.#input_name.is_some() }
+            } else {
+                quote! { true }
+            };
+            let value_expr = quote! {
+                if #condition {
+                    #call
                 }
-            })
-            .collect();
-        (is_async, stmts)
-    };
-    let (create_failure_is_async, create_failure_stmts) =
-        make_trigger_stmts(&create_failure_handlers, &hook_ctx_ty);
+            };
+            AsyncPhaseItem {
+                is_async,
+                value_expr,
+                apply: quote! { let _ = __phase_result; },
+            }
+        })
+        .collect();
+    let create_failure_items = make_trigger_items(&create_failure_handlers, &hook_ctx_ty);
 
     let update_success_handlers: Vec<_> = fields
         .iter()
@@ -4269,61 +4346,58 @@ fn generate_model(
     // actually participated in the update (i.e. the resulting change is present).
     // Non-virtual fields are checked against `__trigger_changes`; virtual fields
     // are checked against the raw update input, respecting `ignore_update` flags.
-    let (update_success_is_async, update_success_stmts) = {
-        let is_async = update_success_handlers
-            .iter()
-            .any(|(_, handler)| is_async_handler(handler));
-        let stmts: Vec<proc_macro2::TokenStream> = update_success_handlers
-            .iter()
-            .map(|(f, handler)| {
-                let annotated = type_annotate_handler(
-                    handler.clone(),
-                    &[update_hook_ctx_ty.clone(), hook_opts_ty.clone()],
-                );
-                let call = if is_async_handler(handler) {
-                    quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+    let update_success_items: Vec<AsyncPhaseItem> = update_success_handlers
+        .iter()
+        .map(|(f, handler)| {
+            let annotated = type_annotate_handler(
+                handler.clone(),
+                &[update_hook_ctx_ty.clone(), hook_opts_ty.clone()],
+            );
+            let is_async = is_async_handler(handler);
+            let call = if is_async {
+                quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+            } else {
+                quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+            };
+            let name = &f.name;
+            let name_str = name.to_string();
+            let condition = if matches!(f.field_type, FieldType::Virtual { .. }) {
+                let input_name = input_field_name(f);
+                let ignored = if update_ignore_field_names.contains(&name_str) {
+                    let flag = format_ident!("ignore_update_{}", f.name);
+                    quote! { #flag }
                 } else {
-                    quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                    quote! { false }
                 };
-                let name = &f.name;
-                let name_str = name.to_string();
-                let condition = if matches!(f.field_type, FieldType::Virtual { .. }) {
-                    let input_name = input_field_name(f);
-                    let ignored = if update_ignore_field_names.contains(&name_str) {
-                        let flag = format_ident!("ignore_update_{}", f.name);
-                        quote! { #flag }
-                    } else {
-                        quote! { false }
-                    };
-                    quote! { !#ignored && __trigger_updates.#input_name.is_some() }
-                } else {
-                    quote! { __trigger_changes.#name.is_some() }
-                };
-                quote! {
-                    if #condition {
-                        #call
-                    }
+                quote! { !#ignored && __trigger_updates.#input_name.is_some() }
+            } else {
+                quote! { __trigger_changes.#name.is_some() }
+            };
+            let value_expr = quote! {
+                if #condition {
+                    #call
                 }
-            })
-            .collect();
-        (is_async, stmts)
-    };
+            };
+            AsyncPhaseItem {
+                is_async,
+                value_expr,
+                apply: quote! { let _ = __phase_result; },
+            }
+        })
+        .collect();
 
     let grouped_on_success_options: Vec<_> = options
         .iter()
         .filter(|o| matches!(o.kind, GroupedOptionKind::OnSuccess))
         .collect();
 
-    let make_grouped_on_success_stmts = |opts: &[&GroupedOption],
+    let make_grouped_on_success_items = |opts: &[&GroupedOption],
                                          ctx_ty: &proc_macro2::TokenStream|
-     -> (bool, Vec<proc_macro2::TokenStream>) {
-        let mut any_async = false;
-        let stmts = opts
-            .iter()
+     -> Vec<AsyncPhaseItem> {
+        opts.iter()
             .map(|o| {
                 let handler = &o.handler;
-                let handler_is_async = is_async_handler(handler);
-                any_async |= handler_is_async;
+                let is_async = is_async_handler(handler);
                 let input_count = closure_input_count(handler).unwrap_or(0);
                 let param_types: Vec<_> = match input_count {
                     0 => vec![],
@@ -4340,7 +4414,7 @@ fn generate_model(
                         .map(|f| quote! { __triggered_fields.contains(#f) });
                     quote! { (#(#checks)||*) }
                 };
-                let call = if handler_is_async {
+                let call = if is_async {
                     match input_count {
                         0 => quote! { (#annotated)().await },
                         1 => quote! { (#annotated)(ctx.clone()).await },
@@ -4357,39 +4431,49 @@ fn generate_model(
                         }
                     }
                 };
-                quote! {
+                let value_expr = quote! {
                     if #condition {
                         #call;
                     }
+                };
+                AsyncPhaseItem {
+                    is_async,
+                    value_expr,
+                    apply: quote! { let _ = __phase_result; },
                 }
             })
-            .collect();
-        (any_async, stmts)
+            .collect()
     };
 
-    let (create_grouped_on_success_is_async, create_grouped_on_success_stmts) =
-        make_grouped_on_success_stmts(&grouped_on_success_options, &hook_ctx_ty);
-    let (update_grouped_on_success_is_async, update_grouped_on_success_stmts) =
-        make_grouped_on_success_stmts(&grouped_on_success_options, &update_hook_ctx_ty);
+    let create_grouped_on_success_items =
+        make_grouped_on_success_items(&grouped_on_success_options, &hook_ctx_ty);
+    let update_grouped_on_success_items =
+        make_grouped_on_success_items(&grouped_on_success_options, &update_hook_ctx_ty);
 
-    let create_success_stmts: Vec<_> = create_success_stmts
+    let create_success_items: Vec<AsyncPhaseItem> = create_success_items
         .into_iter()
-        .chain(create_grouped_on_success_stmts)
+        .chain(create_grouped_on_success_items)
         .collect();
-    let create_success_is_async = create_success_is_async || create_grouped_on_success_is_async;
 
-    let update_success_stmts: Vec<_> = update_success_stmts
+    let update_success_items: Vec<AsyncPhaseItem> = update_success_items
         .into_iter()
-        .chain(update_grouped_on_success_stmts)
+        .chain(update_grouped_on_success_items)
         .collect();
-    let update_success_is_async = update_success_is_async || update_grouped_on_success_is_async;
 
     let has_failure_handlers =
         !create_failure_handlers.is_empty() || !update_failure_handlers.is_empty();
-    let has_success_handlers = !create_success_stmts.is_empty() || !update_success_stmts.is_empty();
+    let has_success_handlers = !create_success_items.is_empty() || !update_success_items.is_empty();
 
-    let (update_failure_is_async, update_failure_stmts) =
-        make_trigger_stmts(&update_failure_handlers, &update_hook_ctx_ty);
+    // The trigger's own sync/async nature (used in the `IvoSuccessHandle` /
+    // `IvoFailureHandle` const-generic signature) is "any handler in it is
+    // async", independent of whether `emit_async_phase` ends up batching them
+    // via `join!` or running them sequentially.
+    let create_success_is_async = create_success_items.iter().any(|i| i.is_async);
+    let update_success_is_async = update_success_items.iter().any(|i| i.is_async);
+
+    let update_failure_items = make_trigger_items(&update_failure_handlers, &update_hook_ctx_ty);
+    let create_failure_is_async = create_failure_items.iter().any(|i| i.is_async);
+    let update_failure_is_async = update_failure_items.iter().any(|i| i.is_async);
 
     let create_triggered_fields_init = if grouped_on_success_options.is_empty() {
         quote! {}
@@ -4465,18 +4549,22 @@ fn generate_model(
         }
     };
 
-    let make_trigger = |stmts: &[proc_macro2::TokenStream],
-                        is_async: bool,
-                        setup: proc_macro2::TokenStream|
-     -> proc_macro2::TokenStream {
-        if stmts.is_empty() {
-            quote! { ::ivo::__ivo_internals::ivo_sync_trigger(|| {}) }
-        } else if is_async {
+    // Multiple hooks of the same kind (e.g. two `#[on_success]` on different
+    // fields) are independent by design, so `emit_async_phase` batches them
+    // the same way it batches independent field handlers elsewhere: 0/1
+    // async hook stays sequential, 2+ are polled concurrently via `join!`.
+    let make_trigger = |items: Vec<AsyncPhaseItem>, setup: proc_macro2::TokenStream| -> proc_macro2::TokenStream {
+        if items.is_empty() {
+            return quote! { ::ivo::__ivo_internals::ivo_sync_trigger(|| {}) };
+        }
+        let is_async = items.iter().any(|i| i.is_async);
+        let body = emit_async_phase(items, &quote! {});
+        if is_async {
             quote! {
                 {
                     #setup
                     ::ivo::__ivo_internals::ivo_trigger(async move {
-                        #(#stmts)*
+                        #body
                     })
                 }
             }
@@ -4485,7 +4573,7 @@ fn generate_model(
                 {
                     #setup
                     ::ivo::__ivo_internals::ivo_sync_trigger(move || {
-                        #(#stmts)*
+                        #body
                     })
                 }
             }
@@ -4504,7 +4592,7 @@ fn generate_model(
                 false,
             );
         };
-        make_trigger(&create_success_stmts, create_success_is_async, setup)
+        make_trigger(create_success_items, setup)
     };
 
     let create_failure_trigger = {
@@ -4518,7 +4606,7 @@ fn generate_model(
                 false,
             );
         };
-        make_trigger(&create_failure_stmts, create_failure_is_async, setup)
+        make_trigger(create_failure_items, setup)
     };
 
     let update_success_trigger = {
@@ -4533,7 +4621,7 @@ fn generate_model(
                 true,
             );
         };
-        make_trigger(&update_success_stmts, update_success_is_async, setup)
+        make_trigger(update_success_items, setup)
     };
 
     let update_failure_trigger = {
@@ -4547,7 +4635,7 @@ fn generate_model(
                 true,
             );
         };
-        make_trigger(&update_failure_stmts, update_failure_is_async, setup)
+        make_trigger(update_failure_items, setup)
     };
 
     let create_sig = if create_has_async {
@@ -4616,7 +4704,7 @@ fn generate_model(
 
                 #create_timestamp_value_decl
                 #virtual_validate_create_steps
-                #(#create_steps)*
+                #create_steps
                 let mut ctx = ctx;
                 #re_validate_steps
                 #virtual_re_validate_create_steps
@@ -4626,7 +4714,21 @@ fn generate_model(
                     output.clone().into(),
                     false,
                 );
-                #(#post_validate_create_steps)*
+                #post_validate_create_pre_phase
+
+                if !errors.is_empty() {
+                    let __return_opts = _ctx_options.clone();
+                    let __failure_trigger = #create_failure_trigger;
+                    return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
+                        <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                            errors, &*#create_options_read,
+                        ),
+                        __return_opts,
+                        __failure_trigger,
+                    ))
+                }
+
+                #post_validate_create_main_phase
 
                 if !errors.is_empty() {
                     let __return_opts = _ctx_options.clone();
@@ -4649,6 +4751,8 @@ fn generate_model(
                 );
 
                 #dependent_create_block
+
+                #create_constants_phase
 
                 let __return_opts = _ctx_options.clone();
                 let __success_trigger = #create_success_trigger;
@@ -4745,7 +4849,24 @@ fn generate_model(
                         __changes.clone(),
                         true,
                     );
-                    #(#post_validate_update_steps)*
+                    #post_validate_update_pre_phase
+
+                    if !errors.is_empty() {
+                        let __trigger_changes = __changes.clone();
+                        let __return_opts = _ctx_options.clone();
+                        let __failure_trigger = #update_failure_trigger;
+                        return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
+                            ::core::option::Option::Some(
+                                <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                                    errors, &*#update_options_read,
+                                ),
+                            ),
+                            __return_opts,
+                            __failure_trigger,
+                        ));
+                    }
+
+                    #post_validate_update_main_phase
                     __post_input = input;
                 }
 

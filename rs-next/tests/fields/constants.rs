@@ -575,3 +575,99 @@ mod async_dynamic_on_success_schema {
         pub lax: i32,
     }
 }
+
+// -----------------------------------------------------------------------------
+// Ordering: constants are attached after dependents resolve
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_attach_constants_after_dependents_have_resolved() {
+    // Per GOAL.md §17, constants (step 9) are attached after dependents
+    // resolve (step 8), so a constant's resolver may read an already-resolved
+    // dependent's value via `ctx.values()`.
+    let created = constant_reads_dependent_schema::DataModel
+        .create(
+            constant_reads_dependent_schema::PartialDataInput { name: Some("abc".into()) },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(created.data.dependent, "abc");
+    assert_eq!(created.data.constant, "constant-saw-abc".to_string());
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod constant_reads_dependent_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[depends_on(name)]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().name.clone().unwrap())]
+        pub dependent: String,
+
+        #[constant(|ctx, _| format!("constant-saw-{}", ctx.values().dependent))]
+        pub constant: String,
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Parallel resolution of independent constants
+// -----------------------------------------------------------------------------
+
+#[tokio::test]
+async fn should_resolve_independent_constants_concurrently() {
+    // Two constants' resolvers must be polled concurrently (not one `.await`
+    // at a time). `rendezvous()` only returns once *both* have started.
+    let created = async_parallel_constants_schema::DataModel
+        .create(async_parallel_constants_schema::PartialDataInput { lax: Some(1) }, ())
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(created.data.constant_a, 1234);
+    assert_eq!(created.data.constant_b, 5678);
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_parallel_constants_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous() {
+        STARTED.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if STARTED.load(Ordering::SeqCst) >= 2 {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("constant resolvers were not run concurrently");
+    }
+
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[constant(async |_, _| {
+            rendezvous().await;
+            1234
+        })]
+        pub constant_a: u32,
+
+        #[constant(async |_, _| {
+            rendezvous().await;
+            5678
+        })]
+        pub constant_b: u32,
+    }
+}

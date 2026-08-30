@@ -160,3 +160,69 @@ mod async_parallel_update_validate_schema {
         pub field_b: String,
     }
 }
+
+// -----------------------------------------------------------------------------
+// Parallel validation of independent fields during create
+// -----------------------------------------------------------------------------
+
+#[tokio::test]
+async fn should_validate_independent_fields_concurrently_on_create() {
+    // Two required fields' primary validators must be polled concurrently
+    // during `create` (not one `.await` at a time). `rendezvous()` only
+    // returns once *both* have started.
+    async_parallel_create_validate_schema::STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+
+    let created = async_parallel_create_validate_schema::DataInputModel
+        .create(
+            async_parallel_create_validate_schema::PartialDataInput {
+                field_a: Some("a".into()),
+                field_b: Some("b".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_parallel_create_validate_schema::DataInput {
+            field_a: "validated-a".into(),
+            field_b: "validated-b".into(),
+        }
+    );
+}
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod async_parallel_create_validate_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous() {
+        STARTED.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if STARTED.load(Ordering::SeqCst) >= 2 {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("create validate handlers were not run concurrently");
+    }
+
+    struct Fields {
+        #[required]
+        #[validate(async |v: String, _, _| {
+            rendezvous().await;
+            Ok(Some(format!("validated-{v}")))
+        })]
+        pub field_a: String,
+
+        #[required]
+        #[validate(async |v: String, _, _| {
+            rendezvous().await;
+            Ok(Some(format!("validated-{v}")))
+        })]
+        pub field_b: String,
+    }
+}

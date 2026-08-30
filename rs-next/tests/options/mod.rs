@@ -1,6 +1,7 @@
 mod compile_fail;
 mod ignore;
 mod ignore_update;
+mod parallel_hooks;
 mod post_validate;
 mod required;
 
