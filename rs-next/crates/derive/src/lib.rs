@@ -511,10 +511,10 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
 
             if num_exprs == 2 {
                 if let Some(syn::Expr::Array(fields_expr)) = exprs.first() {
-                    if fields_expr.elems.is_empty() {
+                    if fields_expr.elems.len() < 2 {
                         return Err(syn::Error::new_spanned(
                             attr,
-                            "grouped `#[ignore_update([...], handler)]` expects at least one field",
+                            "grouped `#[ignore_update([...], handler)]` expects 0 or at least 2 fields",
                         ));
                     }
 
@@ -568,7 +568,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
                     if fields_expr.elems.is_empty() {
                         return Err(syn::Error::new_spanned(
                             attr,
-                            "grouped `#[on_success([...], handler)]` expects at least one field",
+                            "grouped `#[on_success([...], handler)]` expects at least one field; use `#[on_success(handler)]` (no array) to always fire on success",
                         ));
                     }
 
@@ -844,13 +844,6 @@ fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> s
                 }
             }
             GroupedOptionKind::IgnoreUpdate => {
-                if opt.fields.len() == 1 {
-                    return Err(syn::Error::new(
-                        proc_macro2::Span::call_site(),
-                        "grouped `#[ignore_update([...], handler)]` expects 0 or at least 2 fields",
-                    ));
-                }
-
                 let mut seen = std::collections::HashSet::new();
                 for field in &opt.fields {
                     if !seen.insert(field) {

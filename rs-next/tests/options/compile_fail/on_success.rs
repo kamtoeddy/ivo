@@ -57,4 +57,18 @@ mod on_success_alias_foreign_name {
     const _: () = ();
 }
 
+// should_reject_an_empty_fields_array: `#[on_success([...], handler)]` still
+// requires at least one field; "always fire" is spelled only via the bare,
+// arrayless `#[on_success(handler)]` entity-level form.
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod on_success_empty_fields_array {
+    struct Fields {
+        #[lax(1234)]
+        pub lax: i32,
+    }
+
+    #[on_success([], |_ctx, _opts| {})]
+    const _: () = ();
+}
+
 fn main() {}

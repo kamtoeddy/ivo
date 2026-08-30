@@ -1504,9 +1504,75 @@ async_test_matrix!(
     should_trigger_on_failure_handlers_during_updates_async
 );
 
-// SKIPPED: should_trigger_on_failure_handlers_during_updates_with_unchanged_values
-// The old API treated "no values changed" as a failure; the new API returns a
-// successful update with an empty partial, so there is no failure hook to run.
+#[should_panic(expected = "[required]: on_failure triggered for a no-op update")]
+#[test]
+fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
+    let data = sync_on_failure_no_change_schema::Data {
+        required: "some_value".into(),
+    };
+
+    let result = sync_on_failure_no_change_schema::DataModel.update(
+        data,
+        sync_on_failure_no_change_schema::PartialData {
+            required: Some("some_value".into()),
+        },
+        (),
+    );
+
+    let errors = result.unwrap_err();
+    assert!(errors.errors.is_none());
+    errors.handle_failure();
+}
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod sync_on_failure_no_change_schema {
+    struct Fields {
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        #[on_failure(|_ctx, _| {
+            panic!("[required]: on_failure triggered for a no-op update");
+        })]
+        pub required: String,
+    }
+}
+
+#[should_panic(expected = "[required]: on_failure triggered for a no-op update")]
+async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values_async() {
+    let data = async_on_failure_no_change_schema::Data {
+        required: "some_value".into(),
+    };
+
+    let result = async_on_failure_no_change_schema::DataModel
+        .update(
+            data,
+            async_on_failure_no_change_schema::PartialData {
+                required: Some("some_value".into()),
+            },
+            (),
+        )
+        .await;
+
+    let errors = result.unwrap_err();
+    assert!(errors.errors.is_none());
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[required]: on_failure triggered for a no-op update",
+    should_trigger_on_failure_handlers_during_updates_with_unchanged_values_async
+);
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod async_on_failure_no_change_schema {
+    struct Fields {
+        #[required]
+        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[on_failure(async |_ctx, _| {
+            panic!("[required]: on_failure triggered for a no-op update");
+        })]
+        pub required: String,
+    }
+}
 
 #[should_panic(expected = "[required]: on_failure triggered with value: update to be ignored")]
 #[test]
@@ -1984,8 +2050,100 @@ async_test_matrix!(
     should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored_as_readonly_async
 );
 
-// SKIPPED: tests using options.on_success with an empty fields array. The new
-// macro does not expose a grouped/empty-fields on_success option.
+#[should_panic(expected = "[options.on_success]: entity-level on_success triggered at creation")]
+#[test]
+fn should_trigger_entity_level_success_handlers_each_time_creation_is_successful() {
+    let required_value = "required_value".to_string();
+    let required_1_value = "required_1_value".to_string();
+
+    let created = sync_on_success_entity_level_schema::DataModel
+        .create(
+            sync_on_success_entity_level_schema::PartialData {
+                required: Some(required_value.clone()),
+                required_1: Some(required_1_value.clone()),
+            },
+            (),
+        )
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_on_success_entity_level_schema::Data {
+            required: required_value,
+            required_1: required_1_value,
+        }
+    );
+
+    created.handle_success();
+}
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod sync_on_success_entity_level_schema {
+    struct Fields {
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required_1: String,
+    }
+
+    #[on_success(|_ctx, _opts| {
+        panic!("[options.on_success]: entity-level on_success triggered at creation");
+    })]
+    const _: () = ();
+}
+
+#[should_panic(expected = "[options.on_success]: entity-level on_success triggered at update")]
+#[test]
+fn should_trigger_entity_level_success_handlers_each_time_update_is_successful() {
+    let data = sync_on_success_entity_level_update_schema::Data {
+        required: "required_value".to_string(),
+        required_1: "required_1_value".to_string(),
+    };
+
+    let updated_value = "updated_value".to_string();
+
+    let updated = sync_on_success_entity_level_update_schema::DataModel
+        .update(
+            data,
+            sync_on_success_entity_level_update_schema::PartialData {
+                required: Some(updated_value.clone()),
+                required_1: None,
+            },
+            (),
+        )
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_on_success_entity_level_update_schema::PartialData {
+            required: Some(updated_value),
+            required_1: None,
+        }
+    );
+
+    updated.handle_success();
+}
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod sync_on_success_entity_level_update_schema {
+    struct Fields {
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required_1: String,
+    }
+
+    #[on_success(|_ctx, _opts| {
+        panic!("[options.on_success]: entity-level on_success triggered at update");
+    })]
+    const _: () = ();
+}
 
 // -----------------------------------------------------------------------------
 // Post-validation
@@ -3928,7 +4086,10 @@ fn should_not_run_validate_once_missing_required_fields_have_already_failed() {
         )
         .unwrap_err();
 
-    assert_eq!(errors.errors.get("field_a").unwrap().reason, "field is required");
+    assert_eq!(
+        errors.errors.get("field_a").unwrap().reason,
+        "field is required"
+    );
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]

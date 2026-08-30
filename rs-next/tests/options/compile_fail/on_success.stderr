@@ -24,3 +24,9 @@ error: `alias` does not exist in your schema
    | |__^
    |
    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: grouped `#[on_success([...], handler)]` expects at least one field; use `#[on_success(handler)]` (no array) to always fire on success
+  --> tests/options/compile_fail/on_success.rs:70:5
+   |
+70 |     #[on_success([], |_ctx, _opts| {})]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,10 +1,8 @@
 error: grouped `#[ignore_update([...], handler)]` expects 0 or at least 2 fields
- --> tests/options/compile_fail/ignore_update.rs:4:1
-  |
-4 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+  --> tests/options/compile_fail/ignore_update.rs:14:5
+   |
+14 |     #[ignore_update(["lax"], |_ctx, _opts| false)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: remove duplicates of `lax` in your grouped ignore_update config
   --> tests/options/compile_fail/ignore_update.rs:19:1
