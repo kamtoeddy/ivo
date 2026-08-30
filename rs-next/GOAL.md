@@ -609,30 +609,57 @@ When a schema has no `on_success` handlers, `handle_success` is not present on `
 
 `create` and `update` execute the following phases in order. The macro omits any phase that does not apply to the schema, which eliminates runtime branches and dead code for simple schemas.
 
-1. Filter input fields (`ignore`, `ignore_init`, `ignore_update`, `readonly`).
+### Create
+
+1. Filter input fields (`ignore`, `ignore_init`).
 2. Attach defaults for `#[lax]` / `#[dependent]` fields.
-3. Evaluate missing required fields (`#[required]` fields and conditional `#[required]` on `#[lax]` / `#[ivo_virtual]`).
+3. Evaluate missing required fields (`#[required]` fields and conditional `#[required]` on `#[lax]` / `#[ivo_virtual]` and options).
 4. Validate fields (`#[validate]`).
 5. Re-validate fields (`#[re_validate]`).
 6. Post-validate (`#[post_validate]` validators).
 7. Sanitize virtual fields (`#[sanitize]`).
 8. Resolve dependent fields (`#[resolve]`), looping until no new changes.
 9. Attach constants (`#[value]`).
+<!--9. Attach constants (`#[value]`), defaults for `#[lax]` fields not provided or ignored, and `#[dependent]` fields whose values were not resolved. (all in parallel)-->
 10. Attach timestamps (`#[created_at]` / `#[updated_at]`).
-11. Evaluate update validity (strip unchanged fields for `update`).
-12. Prepare success / failure triggers.
+11. Prepare success / failure triggers.
+
+### Update
+
+1. Filter input fields (`ignore`, `ignore_update`, `readonly`).
+   1. Filter
+   2. Evaluate update validity (strip unchanged fields).
+2. Evaluate missing required fields (conditional `#[required]` on `#[lax]` / `#[ivo_virtual]`, and options).
+3. Validate fields (`#[validate]`).
+   1. Validate
+   2. Evaluate update validity (strip unchanged fields).
+4. Re-validate fields (`#[re_validate]`).
+   1. Re-Validate
+   2. Evaluate update validity (strip unchanged fields).
+5. Post-validate (`#[post_validate]` validators).
+   1. Post-Validate
+   2. Evaluate update validity (strip unchanged fields).
+6. Sanitize virtual fields (`#[sanitize]`).
+   1. Sanitize
+   2. Evaluate update validity (strip unchanged fields).
+7. Resolve dependent fields (`#[resolve]`), looping until no new changes.
+8. Attach timestamps (`#[updated_at]`).
+9. Prepare success / failure triggers.
 
 ### Dynamic pipeline generation
 
 Because the macro has full knowledge of the schema, it generates only the code paths that are actually needed. For example:
 
-- A schema with no `#[dependent]` fields does not generate the dependent-resolution loop.
-- A schema with no `#[validate]` attributes does not generate validation logic.
-- A schema with no `#[ivo_virtual]` fields does not generate sanitization logic.
 - A schema with no `#[constant]` fields does not generate constant attachment.
+- A schema with no `#[default]` attributes (i.e. no dependent and no lax fields) does not generate step to resolve default values.
+- A schema with no `#[depends_on]` fields does not generate the dependent-resolution loop.
+- A schema with no `#[validate]` attributes does not generate validation logic.
+- A schema with no `#[re_validate]` attributes does not generate re-validation logic.
+- A schema with no `#[sanitize]` attributes (i.e. no virtual with `#[sanitize]`) does not generate sanitization logic.
+- A schema with no required fields and no conditional required fields or grouped required options does not generate logic to evaluate missing required fields.
+- A schema with no `ignore`, `ignore_init`, `ignore_update` on either fields or options should not generate the logic for those checks.
+- A schema with no `post_validate` option should not generate the logic for those checks.
 - A schema with no timestamps does not generate timestamp attachment.
-- A schema with no `readonly` fields does not generate readonly filtering.
-- A schema with no grouped options (`ignore`, `required`, `post_validate`, etc.) does not generate those checks.
 
 This is a key performance advantage of the macro-driven design: the generated `create`/`update` methods are specialized to the schema rather than being generic interpreters.
 

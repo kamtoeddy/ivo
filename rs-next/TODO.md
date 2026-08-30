@@ -1,8 +1,10 @@
-- [ ] the validation, re_validation, and sanitization of virtual fields does not happen unless a virtual field is provided and accepted (i.e: not ignored)
-- [ ] re_validation does not happen unless a field has a revalidator and was successfully validated
-- [ ] the sanitization of virtuals only happens after a successful post-validation
-- [ ] make sure every major operation in Model.create and Model.update should happen in parallel
-- [ ] for every Model.create/Model.update call, the timestamp resolver should be called at most once.
+- [ ] fix `## 17. Execution pipeline` in GOAL.md
+  - [ ] the validation, re_validation, and sanitization of virtual fields does not happen unless a virtual field is provided and accepted (i.e: not ignored)
+  - [ ] re_validation does not happen unless a field has a revalidator and was successfully validated
+  - [ ] the sanitization of virtuals only happens after a successful post-validation
+  - [ ] make sure every major operation in Model.create and Model.update should happen in parallel
+  - [ ] for every Model.create/Model.update call, the timestamp resolver should be called at most once.
+- [x] Bare `#[ignore]` is not a valid config and all associated logic should be removed
 - [ ] find all `SKIPPED:` ports and make sure they are valid
 - [ ] manually go through all tests in "/rs" and make sure they have been ported correctly
 - [ ] update benchmarks, run benchmarks, compare results and improve performance
