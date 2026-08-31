@@ -64,6 +64,13 @@ MAIN_DEMO_BENCHES: List[str] = [
     "main_demo delete",
 ]
 
+MAIN_DEMO_MEMORY_BENCHES: List[str] = [
+    "memory main_demo create x1000",
+    "memory main_demo update x1000",
+    "memory main_demo nothing to update x1000",
+    "memory main_demo delete x1000",
+]
+
 
 def run_command(cmd: List[str], cwd: Path) -> None:
     print(f"\n>>> Running {' '.join(cmd)} in {cwd.relative_to(ROOT)} ...")
@@ -114,7 +121,9 @@ def parse_criterion_json(project_dir: Path, bench_name: str) -> Optional[float]:
 
 def collect_results(project_dir: Path) -> Dict[str, float]:
     results: Dict[str, float] = {}
-    for name in THROUGHPUT_BENCHES + MEMORY_BENCHES + MAIN_DEMO_BENCHES:
+    for name in (
+        THROUGHPUT_BENCHES + MEMORY_BENCHES + MAIN_DEMO_BENCHES + MAIN_DEMO_MEMORY_BENCHES
+    ):
         value = parse_criterion_json(project_dir, name)
         if value is not None:
             results[name] = value
@@ -226,7 +235,19 @@ def generate_markdown(
         new_results,
     )
 
-    all_benches = THROUGHPUT_BENCHES + MEMORY_BENCHES + MAIN_DEMO_BENCHES
+    render_table(
+        lines,
+        "Main Demo Memory Stress",
+        "| Benchmark | Old (`/rs`) | New (`/rs-next`) | Change | New per-op |",
+        MAIN_DEMO_MEMORY_BENCHES,
+        old_results,
+        new_results,
+        per_op_divisor=1000,
+    )
+
+    all_benches = (
+        THROUGHPUT_BENCHES + MEMORY_BENCHES + MAIN_DEMO_BENCHES + MAIN_DEMO_MEMORY_BENCHES
+    )
     changes = [
         c
         for name in all_benches
@@ -263,6 +284,12 @@ def generate_markdown(
             "  (required/validation/re-validation/post-validation), each success shape",
             "  (partial vs. full input), every `update [fail: nothing to update: ...]`",
             "  no-op-resubmission case, and `delete`.",
+            "- `Main Demo Memory Stress` applies the same x1000-per-sample shape as",
+            "  `Memory Stress` (above) to `main_demo`'s realistic schema instead of",
+            "  the synthetic ones: full-input `create`, full-input `update`, an",
+            "  all-unchanged `update` (the no-op/\"nothing to update\" fast path), and",
+            "  `delete`, each looped 1000x per sample so `New per-op` isolates",
+            "  steady-state cost from one-off benchmark-harness overhead.",
             "- Criterion sanitizes benchmark names into directory names under",
             "  `target/criterion/` (replacing filesystem-unsafe characters with `_` and",
             "  truncating to 64 characters); `criterion_dir_name()` in this script",

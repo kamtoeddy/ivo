@@ -381,6 +381,76 @@ fn bench_main_demo(c: &mut Criterion) {
             UserModel.delete(&user, UserCtxOptions::new());
         });
     });
+
+    // Same shape as `benches/memory.rs`'s x1000 stress benches, applied to
+    // `main_demo`'s realistic schema instead of the synthetic ones: 1000
+    // back-to-back calls per sample, so per-op cost is `New per-op` in
+    // `RESULTS.md` (total / 1000) rather than a single call dominated by
+    // benchmark-harness overhead.
+    c.bench_function("memory main_demo create x1000", |b| {
+        b.to_async(rt).iter(|| async {
+            for _ in 0..1000 {
+                let input = PartialUserInput::new()
+                    .with_email(Some("1@1.com".into()))
+                    .with_phone_number(Some("123 4567 8910".into()))
+                    .with_username("user-10".into())
+                    .with_slug_id("sloppy-slug-id".into());
+
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
+            }
+        });
+    });
+
+    c.bench_function("memory main_demo update x1000", |b| {
+        b.to_async(rt).iter(|| async {
+            for _ in 0..1000 {
+                let updates = PartialUserInput::new()
+                    .with_email(Some("1@1.com".into()))
+                    .with_phone_number(Some("123 4567 8910".into()))
+                    .with_slug_id("updated-slug-id: Lol".into())
+                    .with_username("new_username".into());
+
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
+                    .await;
+            }
+        });
+    });
+
+    c.bench_function("memory main_demo nothing to update x1000", |b| {
+        b.to_async(rt).iter(|| async {
+            for _ in 0..1000 {
+                let updates = PartialUserInput::new()
+                    .with_email(user.email.clone())
+                    .with_phone_number(user.phone_number.clone())
+                    .with_username(user.username.clone())
+                    .with_slug_id(user.slug_id.to_string().clone());
+
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
+                    .await;
+            }
+        });
+    });
+
+    c.bench_function("memory main_demo delete x1000", |b| {
+        let user = rt.block_on(async {
+            let input = PartialUserInput::new()
+                .with_email(Some("1@1.com".into()))
+                .with_username("user-10".into());
+
+            match UserModel.create(input, UserCtxOptions::new()).await {
+                Ok(handle) => handle.data,
+                Err(_) => panic!("main_demo create failed"),
+            }
+        });
+
+        b.to_async(rt).iter(|| async {
+            for _ in 0..1000 {
+                UserModel.delete(&user, UserCtxOptions::new());
+            }
+        });
+    });
 }
 
 criterion_group!(benches, bench_main_demo);
