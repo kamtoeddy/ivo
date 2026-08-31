@@ -196,8 +196,8 @@ pub static USER_MODEL: LazyLock<IvoModel<UserInput, User, UserCtxOptions, Timest
 
                         let input = ctx.input();
 
-                        let is_valid = input.email.as_ref().map_or(false, |e| e.is_some())
-                            || input.phone_number.as_ref().map_or(false, |p| p.is_some());
+                        let is_valid = input.email.as_ref().is_some_and(|e| e.is_some())
+                            || input.phone_number.as_ref().is_some_and(|p| p.is_some());
 
                         if is_valid {
                             return Ok(None);
