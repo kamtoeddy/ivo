@@ -1504,7 +1504,9 @@ async_test_matrix!(
     should_trigger_on_failure_handlers_during_updates_async
 );
 
-#[should_panic(expected = "[required]: on_failure triggered for a no-op update")]
+#[should_panic(
+    expected = "[required]: on_failure triggered with value: (some_value, None)"
+)]
 #[test]
 fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
     let data = sync_on_failure_no_change_schema::Data {
@@ -1529,14 +1531,20 @@ mod sync_on_failure_no_change_schema {
     struct Fields {
         #[required]
         #[validate(|v, _, _| Ok(Some(v)))]
-        #[on_failure(|_ctx, _| {
-            panic!("[required]: on_failure triggered for a no-op update");
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[required]: on_failure triggered with value: ({}, {:?})",
+                ctx.raw_input().required.as_ref().unwrap().as_str(),
+                ctx.input().required
+            );
         })]
         pub required: String,
     }
 }
 
-#[should_panic(expected = "[required]: on_failure triggered for a no-op update")]
+#[should_panic(
+    expected = "[required]: on_failure triggered with value: (some_value, None)"
+)]
 async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values_async() {
     let data = async_on_failure_no_change_schema::Data {
         required: "some_value".into(),
@@ -1558,7 +1566,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
 }
 
 async_test_matrix!(
-    "[required]: on_failure triggered for a no-op update",
+    "[required]: on_failure triggered with value: (some_value, None)",
     should_trigger_on_failure_handlers_during_updates_with_unchanged_values_async
 );
 
@@ -1567,8 +1575,12 @@ mod async_on_failure_no_change_schema {
     struct Fields {
         #[required]
         #[validate(async |v, _, _| Ok(Some(v)))]
-        #[on_failure(async |_ctx, _| {
-            panic!("[required]: on_failure triggered for a no-op update");
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[required]: on_failure triggered with value: ({}, {:?})",
+                ctx.raw_input().required.as_ref().unwrap().as_str(),
+                ctx.input().required
+            );
         })]
         pub required: String,
     }

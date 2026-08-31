@@ -3427,9 +3427,7 @@ mod lax_on_failure_update_unchanged_schema {
     }
 }
 
-#[should_panic(
-    expected = "[lax]: on_failure triggered with value: (some_value, Some(\"some_value\"))"
-)]
+#[should_panic(expected = "[lax]: on_failure triggered with value: (some_value, None)")]
 #[test]
 fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
     let lax_value = "some_value".to_string();

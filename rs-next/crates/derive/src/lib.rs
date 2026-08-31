@@ -4093,6 +4093,25 @@ fn generate_model(
         .iter()
         .map(|f| format_ident!("set_{}", f.name));
 
+    // Matches `rs/`'s `evaluate_update_validity`: once a required/lax field's
+    // *value* turns out unchanged from what's already stored (recomputed
+    // above into `__changes`), `input()` must stop reporting it as provided
+    // too, not just `changes()` -- `raw_input()` still shows exactly what
+    // the caller submitted. Only required/lax fields have a corresponding
+    // `PartialInput` slot to unset here; dependent/constant/timestamp fields
+    // (also non-virtual) aren't part of the input at all. Virtual fields are
+    // deliberately excluded (matching `rs/`'s `is_virtual` skip): a virtual
+    // field's dependent(s) haven't resolved yet at this point in the
+    // pipeline, so whether it "actually changed" can't be determined until
+    // dependent resolution runs.
+    let input_strip_unchanged_fields: Vec<_> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax))
+        .collect();
+    let input_strip_unchanged_output_names = input_strip_unchanged_fields.iter().map(|f| &f.name);
+    let input_strip_unchanged_input_names =
+        input_strip_unchanged_fields.iter().map(|f| input_field_name(f));
+
     // Same per-field pieces as before, but grouped into dependency levels: level
     // 0 depends only on non-dependent fields (already fully resolved before
     // dependent processing starts); level N+1 depends on at least one level-N
@@ -5194,6 +5213,13 @@ fn generate_model(
                 #(
                     if &__original_output.#change_field_names != &output.#change_field_names {
                         __changes.#change_field_setters(output.#change_field_names.clone());
+                    }
+                )*
+                #(
+                    if &__original_output.#input_strip_unchanged_output_names
+                        == &output.#input_strip_unchanged_output_names
+                    {
+                        input.#input_strip_unchanged_input_names = ::core::option::Option::None;
                     }
                 )*
 
