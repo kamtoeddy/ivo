@@ -769,6 +769,8 @@ Handlers receive different context/options types depending on their role.
 
 Both options wrappers are backed by `async-lock::RwLock` so guards can safely be held across `.await` points. Async handlers use `.read().await` / `.write().await`; sync handlers use `.read_sync()` / `.write_sync()`.
 
+Mixing sync and async ctx_options access within one `create`/`update` call is safe by construction, not by accident: every phase is batched by `emit_async_phase` (`crates/derive/src/lib.rs`), which always runs every *sync* handler in a phase to completion first, sequentially, before the `join!` for that phase's *async* handlers even begins polling (this holds regardless of how many of each kind are present, and applies to lifecycle-hook triggers too, since `make_trigger` reuses the same function). So a sync handler's `.read_sync()`/`.write_sync()` and an async handler's `.read().await`/`.write().await` are never actually in flight at the same instant -- the sync call always runs against an uncontended lock. This guarantee only covers concurrency ivo itself orchestrates; if a handler spawns its own independent task (e.g. `tokio::spawn` without awaiting it) that touches the same options handle, that task is no longer sequenced by `emit_async_phase`, and mixing a blocking `.read_sync()`/`.write_sync()` call with such a task reintroduces the usual async-Rust hazard of blocking an executor thread another task needs freed to make progress -- a general async-Rust footgun, not specific to ivo, and on the caller to avoid.
+
 ### `IvoContext<I, O>` accessors
 
 - `input()` — current partial input.
