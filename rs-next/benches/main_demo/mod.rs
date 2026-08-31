@@ -12,31 +12,108 @@ static TOKIO_RT: LazyLock<tokio::runtime::Runtime> =
 fn bench_main_demo(c: &mut Criterion) {
     let rt: &tokio::runtime::Runtime = &TOKIO_RT;
 
-    c.bench_function("main_demo create (fail: required errors)", |b| {
-        b.to_async(rt).iter(|| async {
-            let input = PartialUserInput::new().with_username("user-10".into());
+    c.bench_function(
+        "main_demo create [fail: required errors (email or phone_number)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let input = PartialUserInput::new().with_username("user-10".into());
 
-            let _ = UserModel.create(input, UserCtxOptions::new()).await;
-        });
-    });
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
+            });
+        },
+    );
 
-    c.bench_function("main_demo create (fail: validation errors)", |b| {
-        b.to_async(rt).iter(|| async {
-            let input = PartialUserInput::new()
-                .with_email(Some("1.com".into()))
-                .with_phone_number(Some("123 4567 8910".into()))
-                .with_slug_id("s".into())
-                .with_username("u".into());
+    c.bench_function(
+        "main_demo create [fail: required errors (email or phone_number, username)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let _ = UserModel
+                    .create(PartialUserInput::new(), UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
 
-            let _ = UserModel.create(input, UserCtxOptions::new()).await;
-        });
-    });
+    c.bench_function(
+        "main_demo create [fail: validation error (email, slug_id, username)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let input = PartialUserInput::new()
+                    .with_email(Some("1.com".into()))
+                    .with_phone_number(Some("123 4567 8910".into()))
+                    .with_slug_id("s".into())
+                    .with_username("u".into());
 
-    c.bench_function("main_demo create", |b| {
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo create [fail: re_validation error (username taken)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let input = PartialUserInput::new()
+                    .with_email(Some("1@1.com".into()))
+                    .with_username("user-1".into());
+
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo create [fail: post-validation error (slug taken)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let input = PartialUserInput::new()
+                    .with_email(Some("1@1.com".into()))
+                    .with_username("user-10".into())
+                    .with_slug_id("user-1".into());
+
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
+            });
+        },
+    );
+
+    c.bench_function("main_demo create [success: 2/4 inputs (a)]", |b| {
         b.to_async(rt).iter(|| async {
             let input = PartialUserInput::new()
                 .with_email(Some("1@1.com".into()))
                 .with_username("user-10".into());
+
+            let _ = UserModel.create(input, UserCtxOptions::new()).await;
+        });
+    });
+
+    c.bench_function("main_demo create [success: 2/4 inputs (b)]", |b| {
+        b.to_async(rt).iter(|| async {
+            let input = PartialUserInput::new()
+                .with_phone_number(Some("123 4567 8910".into()))
+                .with_username("user-10".into());
+
+            let _ = UserModel.create(input, UserCtxOptions::new()).await;
+        });
+    });
+
+    c.bench_function("main_demo create [success: 3/4 inputs]", |b| {
+        b.to_async(rt).iter(|| async {
+            let input = PartialUserInput::new()
+                .with_email(Some("1@1.com".into()))
+                .with_phone_number(Some("123 4567 8910".into()))
+                .with_username("user-10".into());
+
+            let _ = UserModel.create(input, UserCtxOptions::new()).await;
+        });
+    });
+
+    c.bench_function("main_demo create [success: 4/4 inputs]", |b| {
+        b.to_async(rt).iter(|| async {
+            let input = PartialUserInput::new()
+                .with_email(Some("1@1.com".into()))
+                .with_phone_number(Some("123 4567 8910".into()))
+                .with_username("user-10".into())
+                .with_slug_id("sloppy-slug-id".into());
 
             let _ = UserModel.create(input, UserCtxOptions::new()).await;
         });

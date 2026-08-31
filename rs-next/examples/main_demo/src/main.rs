@@ -8,6 +8,9 @@ use crate::domain::{PartialUserInput, User, UserCtxOptions, UserModel};
 
 #[async_std::main]
 async fn main() {
+    // // required error (email or phone_number, username)
+    // let input = PartialUserInput::new();
+
     // // required error (email or phone_number)
     // let input = PartialUserInput::new().with_username("user-10".into());
 
