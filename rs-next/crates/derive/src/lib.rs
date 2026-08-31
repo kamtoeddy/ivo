@@ -1921,11 +1921,12 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
                 &mut self,
                 reason: impl ::core::convert::Into<::std::string::String>,
                 metadata: ::core::option::Option<Metadata>,
-            ) {
+            ) -> &mut Self {
                 self.#name = ::core::option::Option::Some(::ivo::__ivo_internals::FieldError {
                     reason: reason.into(),
                     metadata,
                 });
+                self
             }
         }
     });
