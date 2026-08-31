@@ -829,6 +829,700 @@ async fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field_a
 async_test_matrix!(should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field_async);
 
 // -----------------------------------------------------------------------------
+// Field-level #[ignore(handler)] on virtual fields. Bare `#[ignore]` isn't a
+// valid attribute (it must be conditional -- `#[ignore(|_, _| ...)]` or the
+// async equivalents), unlike `#[ignore_update]`/`#[ignore_init]`, which do
+// have bare forms; the closures below use an unconditional `true` (same
+// convention `rs/`'s original test used) purely to isolate "is the field
+// ever actually ignored" from any input-dependent branching. Applies to both
+// `create` and `update`, unlike `#[ignore_update]` (update only) and
+// `#[ignore_init]` (create only, below).
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_field_level_ignore_on_virtual_fields() {
+    let created = sync_ignore_schema::DataModel
+        .create(
+            sync_ignore_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_schema::DataModel
+        .create(
+            sync_ignore_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_schema::PartialData {
+            lax: Some(30),
+            dependent: None,
+        }
+    );
+
+    let failed = sync_ignore_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+#[test]
+fn should_respect_field_level_ignore_on_an_aliased_virtual_field() {
+    let created = sync_ignore_alias_schema::DataModel
+        .create(
+            sync_ignore_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_alias_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_alias_schema::DataModel
+        .create(
+            sync_ignore_alias_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_alias_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: None,
+        }
+    );
+
+    let failed = sync_ignore_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+#[test]
+fn should_respect_field_level_ignore_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
+    let created = sync_ignore_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_dependent_alias_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_dependent_alias_schema::PartialDataInput {
+                lax: Some(20),
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_dependent_alias_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_dependent_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: None,
+        }
+    );
+
+    let failed = sync_ignore_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+// -----------------------------------------------------------------------------
+// Field-level bare #[ignore_init] on virtual fields (no closure form -- see
+// GOAL.md's field-config table: "Resolver form is rejected"). Ignores the
+// field during `create` only; `update` is unaffected, unlike `#[ignore]`
+// above (both) and `#[ignore_update]` (update only). The two `update` calls
+// below are both made against the *same* base record (from the second
+// `create`, `dependent == 1`), not chained, matching `rs/`'s original.
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_field_level_ignore_init_on_virtual_fields() {
+    let created = sync_ignore_init_schema::DataModel
+        .create(
+            sync_ignore_init_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_init_schema::DataModel
+        .create(
+            sync_ignore_init_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_init_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_schema::PartialData {
+            lax: Some(30),
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+
+    let updated = sync_ignore_init_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_schema::PartialData {
+            lax: None,
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+}
+
+#[test]
+fn should_respect_field_level_ignore_init_on_an_aliased_virtual_field() {
+    let created = sync_ignore_init_alias_schema::DataModel
+        .create(
+            sync_ignore_init_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_alias_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_init_alias_schema::DataModel
+        .create(
+            sync_ignore_init_alias_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_alias_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_init_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+
+    let updated = sync_ignore_init_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_alias_schema::PartialData {
+            lax: None,
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+}
+
+#[test]
+fn should_respect_field_level_ignore_init_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
+    let created = sync_ignore_init_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_init_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_dependent_alias_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_init_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_init_dependent_alias_schema::PartialDataInput {
+                lax: Some(20),
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_dependent_alias_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_init_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_dependent_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+
+    let updated = sync_ignore_init_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_dependent_alias_schema::PartialData {
+            lax: None,
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+}
+
+// -----------------------------------------------------------------------------
+// The `_with_alias_same_as_dependent` collision variant was covered above for
+// the two brand-new scenario types, but was still missing for the three
+// scenario types already covered earlier in this file (field-level
+// `#[ignore_update]`, grouped `#[ignore]`, grouped `#[ignore_update]`) --
+// closing that gap too, one variant each, matching the alias-collides
+// schema shape used everywhere else in this file.
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_field_level_ignore_update_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
+    let created = sync_ignore_update_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_update_dependent_alias_schema::Data {
+            lax: 10,
+            dependent: 2,
+        }
+    );
+
+    let updated = sync_ignore_update_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("new_virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_update_dependent_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: None,
+        }
+    );
+
+    let failed = sync_ignore_update_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("ignored_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+#[test]
+fn should_respect_grouped_ignore_rule_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
+    let default_dependent_value = 1;
+    let default_lax_value = 10;
+
+    let created = sync_grouped_ignore_dependent_alias_schema::DataModel
+        .create(
+            sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_dependent_alias_schema::Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value,
+        }
+    );
+
+    let created = sync_grouped_ignore_dependent_alias_schema::DataModel
+        .create(
+            sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
+                lax: Some(20),
+                dependent: Some("keep".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_dependent_alias_schema::Data {
+            dependent: 2,
+            lax: 20,
+        }
+    );
+
+    let updated = sync_grouped_ignore_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("keep".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_dependent_alias_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = sync_grouped_ignore_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+#[test]
+fn should_respect_grouped_ignore_update_rule_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
+    let default_lax_value = 10;
+
+    let created = sync_grouped_ignore_update_dependent_alias_schema::DataModel
+        .create(
+            sync_grouped_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_update_dependent_alias_schema::Data {
+            dependent: 2,
+            lax: default_lax_value,
+        }
+    );
+
+    let updated = sync_grouped_ignore_update_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("keep".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_update_dependent_alias_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = sync_grouped_ignore_update_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+// -----------------------------------------------------------------------------
 // Schema definitions
 // -----------------------------------------------------------------------------
 
@@ -1141,6 +1835,211 @@ mod async_grouped_ignore_update_alias_schema {
     #[ignore_update(["virtual_field", "lax"], async |ctx, _| {
         ctx.input()
             .virtual_alias
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_dependent_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_init_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_init]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_init_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_init]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_init_dependent_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_init]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_update_dependent_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_update(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_grouped_ignore_dependent_alias_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore(["virtual_field", "lax"], |ctx, _| {
+        ctx.input()
+            .dependent
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_grouped_ignore_update_dependent_alias_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore_update(["virtual_field", "lax"], |ctx, _| {
+        ctx.input()
+            .dependent
             .as_ref()
             .map(|v| v == "virtual_value")
             .unwrap_or(false)
