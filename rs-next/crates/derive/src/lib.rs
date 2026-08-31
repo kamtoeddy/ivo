@@ -3690,16 +3690,17 @@ fn generate_model(
             emit_async_phase(items, &ctx_rebuild)
         };
 
-    // `update`'s guard matches `rs/`'s `post_validate`, which only runs a
-    // group if at least one of its fields is in `relevant_fields_provided`
-    // -- otherwise a group covering only fields nobody actually touched
-    // still runs unconditionally and can corrupt untouched output (e.g. a
-    // group reading an unrelated required field's *stored* value as a
-    // fallback when its own fields are absent). `create` has an analogous
-    // gap in `rs/` (a group whose fields were never submitted, even if
-    // later defaulted, is also skipped there), but that's not implemented
-    // here yet -- deliberately left as `true` (always runs) to avoid
-    // touching `create`'s behavior in this pass; see TODO.md.
+    // Both guards match `rs/`'s `post_validate`, which only runs a group if
+    // at least one of its fields is in `relevant_fields_provided` --
+    // otherwise a group covering only fields nobody actually touched still
+    // runs unconditionally and can corrupt untouched output (e.g. a group
+    // reading an unrelated required field's *stored*/*defaulted* value as a
+    // fallback when its own fields are absent). "Relevant" means "actually
+    // submitted", not "has a value" -- a lax field that's only ever
+    // defaulted (never submitted) doesn't count on either side, matching
+    // `rs/`'s `filter_input_fields_allowed`, which builds
+    // `relevant_fields_provided` from presence in the raw input, before any
+    // default gets applied.
     let update_group_relevance_guard = |g: &PostValidateGroupInfo| -> proc_macro2::TokenStream {
         if g.group_fields.is_empty() {
             return quote! { false };
@@ -3716,13 +3717,35 @@ fn generate_model(
         quote! { (#(#flags)||*) }
     };
 
+    // `create`'s counterpart: required/lax defaults are only ever written to
+    // `output`, never back into `input` (see `create_early_items`), so
+    // `input.#name.is_some()` reliably means "submitted", not "has a value"
+    // -- unlike `output`, nothing rewrites it before this guard runs.
+    // Virtual fields reuse the same `__virtual_provided_*` flags update
+    // does (declared once in `create_virtual`'s setup, which runs earlier in
+    // `create_validate_phase`, and never re-derived here).
+    let create_group_relevance_guard = |g: &PostValidateGroupInfo| -> proc_macro2::TokenStream {
+        if g.group_fields.is_empty() {
+            return quote! { false };
+        }
+        let flags = g.group_fields.iter().map(|(name, is_virtual)| {
+            if *is_virtual {
+                let flag = format_ident!("__virtual_provided_{}", name);
+                quote! { #flag }
+            } else {
+                quote! { input.#name.is_some() }
+            }
+        });
+        quote! { (#(#flags)||*) }
+    };
+
     let post_validate_create_pre_phase = build_post_validate_phase(
         &|g| g.pre_validate.clone(),
         &|g| &g.create_apply_updates,
         &quote!(::core::option::Option::None),
         &quote!(::core::option::Option::None),
         &quote!(__original_input.clone()),
-        &|_| quote! { true },
+        &create_group_relevance_guard,
     );
     let post_validate_create_main_phase = build_post_validate_phase(
         &|g| Some(g.handler.clone()),
@@ -3730,7 +3753,7 @@ fn generate_model(
         &quote!(::core::option::Option::None),
         &quote!(::core::option::Option::None),
         &quote!(__original_input.clone()),
-        &|_| quote! { true },
+        &create_group_relevance_guard,
     );
     let post_validate_update_pre_phase = build_post_validate_phase(
         &|g| g.pre_validate.clone(),
