@@ -112,7 +112,7 @@ async fn main() {
     //     .with_slug_id("user-1".into());
 
     // // nothing to update: 1/4 inputs (a)
-    // let updates = PartialUserInput::new().with_email(user.email.clone());
+    let updates = PartialUserInput::new().with_email(user.email.clone());
 
     // // nothing to update: 1/4 inputs (b)
     // let updates = PartialUserInput::new().with_phone_number(user.phone_number.clone());
@@ -137,7 +137,7 @@ async fn main() {
     //     .with_slug_id(user.slug_id.to_string().clone());
 
     // // update success: 1/4 inputs (a)
-    let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
+    // let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
 
     // // update success: 1/4 inputs (b)
     // let updates = PartialUserInput::new().with_phone_number(Some("123 4567 8911".into()));
@@ -187,8 +187,8 @@ async fn main() {
         }
     };
 
-    let timer = Instant::now();
-    UserModel.delete(&user, UserCtxOptions::new());
+    // let timer = Instant::now();
+    // UserModel.delete(&user, UserCtxOptions::new());
 
-    println!("\nDelete triggers: {:?}", timer.elapsed());
+    // println!("\nDelete triggers: {:?}", timer.elapsed());
 }

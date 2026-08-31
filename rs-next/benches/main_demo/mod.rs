@@ -197,7 +197,108 @@ fn bench_main_demo(c: &mut Criterion) {
         },
     );
 
-    c.bench_function("main_demo update [success: 1/4 inputs (d)]", |b| {
+    c.bench_function(
+        "main_demo update [fail: nothing to update: 1/4 inputs (a)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new().with_email(user.email.clone());
+
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo update [fail: nothing to update: 1/4 inputs (b)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new().with_phone_number(user.phone_number.clone());
+
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo update [fail: nothing to update: 1/4 inputs (c)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates =
+                    PartialUserInput::new().with_slug_id(user.slug_id.to_string().clone());
+
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo update [fail: nothing to update: 1/4 inputs (d)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new().with_username(user.username.clone());
+
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo update [fail: nothing to update: 2/4 inputs]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new()
+                    .with_email(user.email.clone())
+                    .with_phone_number(user.phone_number.clone());
+
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo update [fail: nothing to update: 3/4 inputs]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new()
+                    .with_email(user.email.clone())
+                    .with_phone_number(user.phone_number.clone())
+                    .with_username(user.username.clone());
+
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo update [fail: nothing to update: 4/4 inputs]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new()
+                    .with_email(user.email.clone())
+                    .with_phone_number(user.phone_number.clone())
+                    .with_username(user.username.clone())
+                    .with_slug_id(user.slug_id.to_string().clone());
+
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function("main_demo update [success: 1/4 inputs (a)]", |b| {
         b.to_async(rt).iter(|| async {
             let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
 

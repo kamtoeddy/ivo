@@ -125,6 +125,11 @@ async fn main() {
     // // nothing to update: 1/4 inputs (d)
     // let updates = PartialUserInput::new().with_username(user.username.clone());
 
+    // // nothing to update: 2/4 inputs
+    // let updates = PartialUserInput::new()
+    //     .with_email(user.email.clone())
+    //     .with_phone_number(user.phone_number.clone());
+
     // // nothing to update: 3/4 inputs
     // let updates = PartialUserInput::new()
     //     .with_email(user.email.clone())
@@ -132,11 +137,11 @@ async fn main() {
     //     .with_username(user.username.clone());
 
     // // nothing to update: 4/4 inputs
-    let updates = PartialUserInput::new()
-        .with_email(user.email.clone())
-        .with_phone_number(user.phone_number.clone())
-        .with_username(user.username.clone())
-        .with_slug_id(user.slug_id.to_string().clone());
+    // let updates = PartialUserInput::new()
+    //     .with_email(user.email.clone())
+    //     .with_phone_number(user.phone_number.clone())
+    //     .with_username(user.username.clone())
+    //     .with_slug_id(user.slug_id.to_string().clone());
 
     // // update success: 1/4 inputs (a)
     // let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
