@@ -4,6 +4,8 @@ mod constants;
 mod dependents;
 mod lax;
 mod required;
+mod sync_concurrency;
+mod sync_write;
 mod virtuals;
 
 #[derive(Clone)]

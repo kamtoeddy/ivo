@@ -30,7 +30,8 @@ async fn should_trigger_async_on_failure_handlers_at_creation() {
                 lax_field: Some("ok".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
@@ -52,7 +53,10 @@ async_test_matrix!(
 fn should_trigger_sync_on_failure_handlers_during_updates() {
     let errors = sync_on_failure_update_schema::DataModel
         .update(
-            sync_on_failure_update_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_update_schema::PartialDataInput {
                 virtual_field: Some("fail_validation".into()),
                 lax_field: Some("fail_validation".into()),
@@ -63,7 +67,13 @@ fn should_trigger_sync_on_failure_handlers_during_updates() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -73,18 +83,28 @@ fn should_trigger_sync_on_failure_handlers_during_updates() {
 async fn should_trigger_async_on_failure_handlers_during_updates() {
     let errors = async_on_failure_update_schema::DataModel
         .update(
-            async_on_failure_update_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_update_schema::PartialDataInput {
                 virtual_field: Some("fail_validation".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -126,7 +146,8 @@ async fn should_trigger_async_on_failure_handlers_at_creation_with_alias() {
                 lax_field: Some("ok".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
@@ -148,7 +169,10 @@ async_test_matrix!(
 fn should_trigger_sync_on_failure_handlers_during_updates_with_alias() {
     let errors = sync_on_failure_update_alias_schema::DataModel
         .update(
-            sync_on_failure_update_alias_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_update_alias_schema::PartialDataInput {
                 virtual_alias: Some("fail_validation".into()),
                 lax_field: Some("fail_validation".into()),
@@ -159,7 +183,13 @@ fn should_trigger_sync_on_failure_handlers_during_updates_with_alias() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -169,18 +199,28 @@ fn should_trigger_sync_on_failure_handlers_during_updates_with_alias() {
 async fn should_trigger_async_on_failure_handlers_during_updates_with_alias() {
     let errors = async_on_failure_update_alias_schema::DataModel
         .update(
-            async_on_failure_update_alias_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_update_alias_schema::PartialDataInput {
                 virtual_alias: Some("fail_validation".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -222,7 +262,8 @@ async fn should_trigger_async_on_failure_handlers_at_creation_with_alias_as_depe
                 lax_field: Some("ok".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
@@ -244,7 +285,10 @@ async_test_matrix!(
 fn should_trigger_sync_on_failure_handlers_during_updates_with_alias_as_dependent() {
     let errors = sync_on_failure_update_alias_as_dependent_schema::DataModel
         .update(
-            sync_on_failure_update_alias_as_dependent_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_update_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("fail_validation".into()),
                 lax_field: Some("fail_validation".into()),
@@ -255,7 +299,13 @@ fn should_trigger_sync_on_failure_handlers_during_updates_with_alias_as_dependen
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -265,18 +315,28 @@ fn should_trigger_sync_on_failure_handlers_during_updates_with_alias_as_dependen
 async fn should_trigger_async_on_failure_handlers_during_updates_with_alias_as_dependent() {
     let errors = async_on_failure_update_alias_as_dependent_schema::DataModel
         .update(
-            async_on_failure_update_alias_as_dependent_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_update_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("fail_validation".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -290,7 +350,8 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation(
+) {
     let errors = sync_on_failure_ignore_at_creation_schema::DataModel
         .create(
             sync_on_failure_ignore_at_creation_schema::PartialDataInput {
@@ -310,7 +371,8 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation(
+) {
     let errors = async_on_failure_ignore_at_creation_schema::DataModel
         .create(
             async_on_failure_ignore_at_creation_schema::PartialDataInput {
@@ -318,7 +380,8 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
@@ -337,10 +400,14 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates(
+) {
     let errors = sync_on_failure_ignore_during_update_schema::DataModel
         .update(
-            sync_on_failure_ignore_during_update_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_ignore_during_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_ignore_during_update_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
@@ -351,28 +418,45 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates(
+) {
     let errors = async_on_failure_ignore_during_update_schema::DataModel
         .update(
-            async_on_failure_ignore_during_update_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_ignore_during_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_ignore_during_update_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -386,10 +470,14 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn(
+) {
     let errors = sync_on_failure_ignore_init_schema::DataModel
         .update(
-            sync_on_failure_ignore_init_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_ignore_init_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
@@ -400,28 +488,45 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn(
+) {
     let errors = async_on_failure_ignore_init_schema::DataModel
         .update(
-            async_on_failure_ignore_init_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_ignore_init_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -435,10 +540,14 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn(
+) {
     let errors = sync_on_failure_ignore_update_schema::DataModel
         .update(
-            sync_on_failure_ignore_update_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_ignore_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_ignore_update_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
@@ -449,28 +558,45 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn(
+) {
     let errors = async_on_failure_ignore_update_schema::DataModel
         .update(
-            async_on_failure_ignore_update_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_ignore_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_ignore_update_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -484,7 +610,8 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias(
+) {
     let errors = sync_on_failure_ignore_at_creation_alias_schema::DataModel
         .create(
             sync_on_failure_ignore_at_creation_alias_schema::PartialDataInput {
@@ -504,7 +631,8 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias(
+) {
     let errors = async_on_failure_ignore_at_creation_alias_schema::DataModel
         .create(
             async_on_failure_ignore_at_creation_alias_schema::PartialDataInput {
@@ -512,7 +640,8 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
@@ -531,10 +660,14 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias(
+) {
     let errors = sync_on_failure_ignore_during_update_alias_schema::DataModel
         .update(
-            sync_on_failure_ignore_during_update_alias_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_ignore_during_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_ignore_during_update_alias_schema::PartialDataInput {
                 virtual_alias: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
@@ -545,28 +678,45 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias(
+) {
     let errors = async_on_failure_ignore_during_update_alias_schema::DataModel
         .update(
-            async_on_failure_ignore_during_update_alias_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_ignore_during_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_ignore_during_update_alias_schema::PartialDataInput {
                 virtual_alias: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -580,10 +730,14 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias(
+) {
     let errors = sync_on_failure_ignore_init_alias_schema::DataModel
         .update(
-            sync_on_failure_ignore_init_alias_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_ignore_init_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
@@ -594,28 +748,45 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias(
+) {
     let errors = async_on_failure_ignore_init_alias_schema::DataModel
         .update(
-            async_on_failure_ignore_init_alias_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_ignore_init_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -629,10 +800,14 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias(
+) {
     let errors = sync_on_failure_ignore_update_alias_schema::DataModel
         .update(
-            sync_on_failure_ignore_update_alias_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_ignore_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_ignore_update_alias_schema::PartialDataInput {
                 virtual_alias: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
@@ -643,28 +818,45 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias(
+) {
     let errors = async_on_failure_ignore_update_alias_schema::DataModel
         .update(
-            async_on_failure_ignore_update_alias_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_ignore_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_ignore_update_alias_schema::PartialDataInput {
                 virtual_alias: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -678,7 +870,8 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_as_dependent() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_as_dependent(
+) {
     let errors = sync_on_failure_ignore_at_creation_alias_as_dependent_schema::DataModel
         .create(
             sync_on_failure_ignore_at_creation_alias_as_dependent_schema::PartialDataInput {
@@ -698,7 +891,8 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_as_dependent() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_as_dependent(
+) {
     let errors = async_on_failure_ignore_at_creation_alias_as_dependent_schema::DataModel
         .create(
             async_on_failure_ignore_at_creation_alias_as_dependent_schema::PartialDataInput {
@@ -706,7 +900,8 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
@@ -725,10 +920,14 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_as_dependent() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_as_dependent(
+) {
     let errors = sync_on_failure_ignore_during_update_alias_as_dependent_schema::DataModel
         .update(
-            sync_on_failure_ignore_during_update_alias_as_dependent_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_ignore_during_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_ignore_during_update_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
@@ -739,28 +938,45 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_as_dependent() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_as_dependent(
+) {
     let errors = async_on_failure_ignore_during_update_alias_as_dependent_schema::DataModel
         .update(
-            async_on_failure_ignore_during_update_alias_as_dependent_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_ignore_during_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_ignore_during_update_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -774,10 +990,14 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_as_dependent() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_as_dependent(
+) {
     let errors = sync_on_failure_ignore_init_alias_as_dependent_schema::DataModel
         .update(
-            sync_on_failure_ignore_init_alias_as_dependent_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_ignore_init_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
@@ -788,28 +1008,45 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_as_dependent() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_as_dependent(
+) {
     let errors = async_on_failure_ignore_init_alias_as_dependent_schema::DataModel
         .update(
-            async_on_failure_ignore_init_alias_as_dependent_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_ignore_init_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -823,10 +1060,14 @@ async_test_matrix!(
 
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
 #[test]
-fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent() {
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent(
+) {
     let errors = sync_on_failure_ignore_update_alias_as_dependent_schema::DataModel
         .update(
-            sync_on_failure_ignore_update_alias_as_dependent_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            sync_on_failure_ignore_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             sync_on_failure_ignore_update_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
@@ -837,28 +1078,45 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
     errors.handle_failure();
 }
 
-async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent() {
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent(
+) {
     let errors = async_on_failure_ignore_update_alias_as_dependent_schema::DataModel
         .update(
-            async_on_failure_ignore_update_alias_as_dependent_schema::Data { lax_field: "ok".into(), dependent: 1 },
+            async_on_failure_ignore_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
             async_on_failure_ignore_update_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("update to be ignored".into()),
                 lax_field: Some("fail_validation".into()),
             },
             (),
-        ).await
+        )
+        .await
         .err()
         .unwrap();
 
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_field").unwrap().reason,
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
         "validation failed"
     );
 
@@ -869,7 +1127,6 @@ async_test_matrix!(
     "[virtual_field]: on_failure triggered with value: update to be ignored",
     should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent
 );
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -884,7 +1141,6 @@ mod sync_on_failure_creation_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(|ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -908,7 +1164,6 @@ mod sync_on_failure_creation_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -923,7 +1178,6 @@ mod async_on_failure_creation_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(async |ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -947,7 +1201,6 @@ mod async_on_failure_creation_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -962,7 +1215,6 @@ mod sync_on_failure_update_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(|ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -986,7 +1238,6 @@ mod sync_on_failure_update_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1001,7 +1252,6 @@ mod async_on_failure_update_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(async |ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -1026,7 +1276,6 @@ mod async_on_failure_update_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1040,7 +1289,6 @@ mod sync_on_failure_creation_alias_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(|ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -1064,7 +1312,6 @@ mod sync_on_failure_creation_alias_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1079,7 +1326,6 @@ mod async_on_failure_creation_alias_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(async |ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -1103,7 +1349,6 @@ mod async_on_failure_creation_alias_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1118,7 +1363,6 @@ mod sync_on_failure_update_alias_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(|ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -1142,7 +1386,6 @@ mod sync_on_failure_update_alias_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1157,7 +1400,6 @@ mod async_on_failure_update_alias_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(async |ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -1182,7 +1424,6 @@ mod async_on_failure_update_alias_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1196,7 +1437,6 @@ mod sync_on_failure_creation_alias_as_dependent_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(|ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -1220,7 +1460,6 @@ mod sync_on_failure_creation_alias_as_dependent_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1235,7 +1474,6 @@ mod async_on_failure_creation_alias_as_dependent_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(async |ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -1260,7 +1498,6 @@ mod async_on_failure_creation_alias_as_dependent_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1274,7 +1511,6 @@ mod sync_on_failure_update_alias_as_dependent_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(|ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -1299,7 +1535,6 @@ mod sync_on_failure_update_alias_as_dependent_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1313,7 +1548,6 @@ mod async_on_failure_update_alias_as_dependent_schema {
             }
             Ok(None)
         })]
-        
         #[on_failure(async |ctx, _| {
             panic!(
                 "[virtual_field]: on_failure triggered with value: {}",
@@ -1337,7 +1571,6 @@ mod async_on_failure_update_alias_as_dependent_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1377,7 +1610,6 @@ mod sync_on_failure_ignore_at_creation_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1415,7 +1647,6 @@ mod async_on_failure_ignore_at_creation_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1455,7 +1686,6 @@ mod sync_on_failure_ignore_during_update_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1493,7 +1723,6 @@ mod async_on_failure_ignore_during_update_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1534,7 +1763,6 @@ mod sync_on_failure_ignore_init_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1574,7 +1802,6 @@ mod async_on_failure_ignore_init_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1612,7 +1839,6 @@ mod sync_on_failure_ignore_update_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1652,7 +1878,6 @@ mod async_on_failure_ignore_update_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1690,7 +1915,6 @@ mod sync_on_failure_ignore_at_creation_alias_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1730,7 +1954,6 @@ mod async_on_failure_ignore_at_creation_alias_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1769,7 +1992,6 @@ mod sync_on_failure_ignore_during_update_alias_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1807,7 +2029,6 @@ mod async_on_failure_ignore_during_update_alias_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1848,7 +2069,6 @@ mod sync_on_failure_ignore_init_alias_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1888,7 +2108,6 @@ mod async_on_failure_ignore_init_alias_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -1926,7 +2145,6 @@ mod sync_on_failure_ignore_update_alias_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -1966,7 +2184,6 @@ mod async_on_failure_ignore_update_alias_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -2004,7 +2221,6 @@ mod sync_on_failure_ignore_at_creation_alias_as_dependent_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -2044,7 +2260,6 @@ mod async_on_failure_ignore_at_creation_alias_as_dependent_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -2083,7 +2298,6 @@ mod sync_on_failure_ignore_during_update_alias_as_dependent_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -2121,7 +2335,6 @@ mod async_on_failure_ignore_during_update_alias_as_dependent_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
@@ -2162,7 +2375,6 @@ mod sync_on_failure_ignore_init_alias_as_dependent_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -2202,7 +2414,6 @@ mod async_on_failure_ignore_init_alias_as_dependent_schema {
     }
 }
 
-
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
     output(Data, derive(Debug, Clone, PartialEq))
@@ -2240,7 +2451,6 @@ mod sync_on_failure_ignore_update_alias_as_dependent_schema {
         pub dependent: i32,
     }
 }
-
 
 #[ivo_schema(
     input(DataInput, derive(Debug, Clone, PartialEq)),
