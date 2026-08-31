@@ -1,3 +1,7 @@
+mod ignore;
+mod on_failure;
+mod on_success;
+
 use ivo::ivo_schema;
 
 // -----------------------------------------------------------------------------
@@ -1012,6 +1016,153 @@ mod post_validate_aliased_virtual_schema {
         },
     )]
     const _: () = ();
+}
+
+// -----------------------------------------------------------------------------
+// The same class of bug as `should_surface_post_validate_errors_on_an_aliased_
+// virtual_field` above, but for a virtual field's *own* `#[validate]`/
+// `#[re_validate]`/field-level `#[required(...)]` handlers: each of these
+// inserts directly into the top-level `errors` payload (not through a
+// generated `{Input}Errors` struct like `post_validate` does), and that
+// insert used the field's *internal* schema name instead of its alias --
+// so an aliased virtual field's own validation errors were present under
+// the wrong key (e.g. `"v_field"` instead of `"aliased"`), silently
+// breaking any caller doing `errors.get("aliased")`. Unlike the
+// `post_validate` case this didn't drop the error or cause a panic, but it
+// broke the public error-key contract for every other phase. Fixed in
+// `crates/derive/src/lib.rs`: `VField::name_str` (virtual field validate/
+// re_validate) and both `field_required_handlers` call sites (create +
+// update) now use `external_field_name(f)` instead of `f.name.to_string()`.
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_key_required_error_by_alias_for_an_aliased_virtual_field() {
+    let create_errors = alias_field_level_errors_schema::DataModel
+        .create(
+            alias_field_level_errors_schema::PartialDataInput {
+                lax: None,
+                aliased: None,
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        create_errors.errors.get("aliased").unwrap().reason,
+        "aliased is required"
+    );
+    assert!(create_errors.errors.get("v_field").is_none());
+
+    let created = alias_field_level_errors_schema::DataModel
+        .create(
+            alias_field_level_errors_schema::PartialDataInput {
+                lax: None,
+                aliased: Some("ok".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    let update_errors = alias_field_level_errors_schema::DataModel
+        .update(
+            created.data.clone(),
+            alias_field_level_errors_schema::PartialDataInput {
+                // `lax` must be provided too, or the update is a no-op
+                // ("nothing to update") that short-circuits before the
+                // required check ever runs.
+                lax: Some(Some("unrelated update".into())),
+                aliased: None,
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        update_errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("aliased")
+            .unwrap()
+            .reason,
+        "aliased is required"
+    );
+}
+
+#[test]
+fn should_key_validate_error_by_alias_for_an_aliased_virtual_field() {
+    let errors = alias_field_level_errors_schema::DataModel
+        .create(
+            alias_field_level_errors_schema::PartialDataInput {
+                lax: None,
+                aliased: Some("fail-validate".into()),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        errors.errors.get("aliased").unwrap().reason,
+        "validate failed"
+    );
+    assert!(errors.errors.get("v_field").is_none());
+}
+
+#[test]
+fn should_key_re_validate_error_by_alias_for_an_aliased_virtual_field() {
+    let errors = alias_field_level_errors_schema::DataModel
+        .create(
+            alias_field_level_errors_schema::PartialDataInput {
+                lax: None,
+                aliased: Some("fail-re-validate".into()),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        errors.errors.get("aliased").unwrap().reason,
+        "re_validate failed"
+    );
+    assert!(errors.errors.get("v_field").is_none());
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod alias_field_level_errors_schema {
+    struct Fields {
+        #[lax(None)]
+        pub lax: Option<String>,
+
+        #[ivo_virtual("aliased")]
+        // Unconditional: the field-level required handler always returns
+        // `Some(..)`, but the generated required-check only actually
+        // inserts the error when the field is missing, so this is safe for
+        // both create and update.
+        #[required(|_ctx, _| ::core::option::Option::Some("aliased is required".to_string()))]
+        #[validate(|v: String, _, _| {
+            if v == "fail-validate" {
+                return Err(("validate failed".to_string(), None));
+            }
+            Ok(Some(v))
+        })]
+        #[re_validate(|v: String, _, _| {
+            if v == "fail-re-validate" {
+                return Err(("re_validate failed".to_string(), None));
+            }
+            Ok(None)
+        })]
+        pub v_field: String,
+
+        #[depends_on("v_field")]
+        #[default(String::new())]
+        #[resolve(|_, _| "derived".to_string())]
+        pub derived: String,
+    }
 }
 
 // -----------------------------------------------------------------------------

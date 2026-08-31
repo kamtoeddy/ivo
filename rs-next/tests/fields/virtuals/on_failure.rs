@@ -111,7 +111,7 @@ fn should_trigger_sync_on_failure_handlers_at_creation_with_alias() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.errors.get("virtual_alias").unwrap().reason,
         "validation failed"
     );
 
@@ -131,7 +131,7 @@ async fn should_trigger_async_on_failure_handlers_at_creation_with_alias() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.errors.get("virtual_alias").unwrap().reason,
         "validation failed"
     );
 
@@ -207,7 +207,7 @@ fn should_trigger_sync_on_failure_handlers_at_creation_with_alias_as_dependent()
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.errors.get("dependent").unwrap().reason,
         "validation failed"
     );
 
@@ -227,7 +227,7 @@ async fn should_trigger_async_on_failure_handlers_at_creation_with_alias_as_depe
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.errors.get("dependent").unwrap().reason,
         "validation failed"
     );
 

@@ -2667,7 +2667,10 @@ fn generate_model(
             .iter()
             .map(|(f, handler)| {
                 let input_tokens = input_field_name(f);
-                let name_str = f.name.to_string();
+                // Aliased virtual fields expose this required-error under
+                // their external name; keep the top-level `errors` key
+                // consistent with everywhere else (see `external_field_name`).
+                let name_str = external_field_name(f);
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) = make_required_call(handler, &ctx_ty, &ctx_expr, &opts_expr);
@@ -3158,7 +3161,11 @@ fn generate_model(
             .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
             .map(|f| VField {
                 f,
-                name_str: f.name.to_string(),
+                // Errors inserted into the top-level `errors` payload below
+                // (from this field's own `validate`/`re_validate`) must be
+                // keyed by the external/alias name, matching every other
+                // externally-visible error key (see `external_field_name`).
+                name_str: external_field_name(f),
                 ty_tokens: {
                     let ty = &f.ty;
                     quote!(#ty)
@@ -3876,7 +3883,10 @@ fn generate_model(
             .iter()
             .map(|(f, handler)| {
                 let input_tokens = input_field_name(f);
-                let name_str = f.name.to_string();
+                // Same as `create`'s field-level required handler: keep the
+                // top-level `errors` key consistent with the external/alias
+                // name (see `external_field_name`).
+                let name_str = external_field_name(f);
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) =
