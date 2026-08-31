@@ -1409,12 +1409,12 @@ impl<
                         output.ivo_internal_unset(field_name);
                     }
 
-                    continue;
+                    // continue;
                 }
 
-                if fields_collection.fields_provided().contains(field_name) {
-                    relevant_fields_provided.insert(field_name.to_string());
-                }
+                // if fields_collection.fields_provided().contains(field_name) {
+                //     relevant_fields_provided.insert(field_name.to_string());
+                // }
             }
         }
 

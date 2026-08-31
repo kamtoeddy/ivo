@@ -49,28 +49,28 @@ async fn main() {
     //     .with_username("user-10".into());
 
     // // crate success: 4/4 inputs
-    let input = PartialUserInput::new()
-        .with_email(Some("1@1.com".into()))
-        .with_phone_number(Some("123 4567 8910".into()))
-        .with_username("user-10".into())
-        .with_slug_id("sloppy-slug-id".into());
+    // let input = PartialUserInput::new()
+    //     .with_email(Some("1@1.com".into()))
+    //     .with_phone_number(Some("123 4567 8910".into()))
+    //     .with_username("user-10".into())
+    //     .with_slug_id("sloppy-slug-id".into());
 
-    let timer = Instant::now();
+    // let timer = Instant::now();
 
-    let r = UserModel.create(input, UserCtxOptions::new()).await;
+    // let r = UserModel.create(input, UserCtxOptions::new()).await;
 
-    println!("\nCreate duration: {:?}", timer.elapsed());
+    // println!("\nCreate duration: {:?}", timer.elapsed());
 
-    match r {
-        Ok(handle) => {
-            println!("\n{:#?}\n", handle.data);
+    // match r {
+    //     Ok(handle) => {
+    //         println!("\n{:#?}\n", handle.data);
 
-            handle.handle_success();
-        }
-        Err(handle) => {
-            println!("\nFailed to create: {:#?}", handle.errors);
-        }
-    };
+    //         handle.handle_success();
+    //     }
+    //     Err(handle) => {
+    //         println!("\nFailed to create: {:#?}", handle.errors);
+    //     }
+    // };
 
     let (username, slug_id) = {
         let username = "John Doe";
@@ -111,8 +111,33 @@ async fn main() {
     // let updates = PartialUserInput::new()
     //     .with_slug_id("user-1".into());
 
+    // // nothing to update: 1/4 inputs (a)
+    // let updates = PartialUserInput::new().with_email(user.email.clone());
+
+    // // nothing to update: 1/4 inputs (b)
+    // let updates = PartialUserInput::new().with_phone_number(user.phone_number.clone());
+
+    // // nothing to update: 1/4 inputs (c)
+    // let updates = PartialUserInput::new().with_slug_id(user.slug_id.to_string().clone());
+
+    // // nothing to update: 1/4 inputs (d)
+    // let updates = PartialUserInput::new().with_username(user.username.clone());
+
+    // // nothing to update: 3/4 inputs
+    // let updates = PartialUserInput::new()
+    //     .with_email(user.email.clone())
+    //     .with_phone_number(user.phone_number.clone())
+    //     .with_username(user.username.clone());
+
+    // // nothing to update: 4/4 inputs
+    // let updates = PartialUserInput::new()
+    //     .with_email(user.email.clone())
+    //     .with_phone_number(user.phone_number.clone())
+    //     .with_username(user.username.clone())
+    //     .with_slug_id(user.slug_id.to_string().clone());
+
     // // update success: 1/4 inputs (a)
-    // let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
+    let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
 
     // // update success: 1/4 inputs (b)
     // let updates = PartialUserInput::new().with_phone_number(Some("123 4567 8911".into()));
@@ -130,11 +155,11 @@ async fn main() {
     //     .with_username("new_username".into());
 
     // // update success: 4/4 inputs
-    let updates = PartialUserInput::new()
-        .with_email(Some("1@1.com".into()))
-        .with_phone_number(Some("123 4567 8910".into()))
-        .with_username("new_username".into())
-        .with_slug_id("newly-updated-slug-id: Lol".into());
+    // let updates = PartialUserInput::new()
+    //     .with_email(Some("1@1.com".into()))
+    //     .with_phone_number(Some("123 4567 8910".into()))
+    //     .with_username("new_username".into())
+    //     .with_slug_id("newly-updated-slug-id: Lol".into());
 
     let timer = Instant::now();
 
