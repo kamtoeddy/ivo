@@ -5078,6 +5078,8 @@ fn generate_model(
     // `on_failure` triggers read `__changes` at the point of failure, and
     // checking right after this phase (before that recompute runs) would
     // make them observe stale, pre-recompute state instead.
+    let create_required_phase = quote! { #create_required_phase #create_error_check };
+    let update_required_phase = quote! { #update_required_evaluations #update_error_check };
     let create_validate_phase = quote! { #create_validate_phase #create_error_check };
     let create_re_validate_phase = quote! { #create_re_validate_phase #create_error_check };
     let post_validate_create_pre_phase =
@@ -5092,6 +5094,52 @@ fn generate_model(
     let update_re_validate_phase = quote! { #update_re_validate_phase #update_error_check };
     let post_validate_update_pre_phase =
         quote! { #post_validate_update_pre_phase #update_error_check };
+
+    // `update`'s post-validate phase, as one self-contained unit: run
+    // pre_validate then main validate against a scratch `input`/`ctx` seeded
+    // from only the fields each group covers, then -- once main validate has
+    // actually run -- recompute `changes` and strip any field whose value
+    // turned out unchanged from both `changes` and `input` (matching `rs/`'s
+    // `evaluate_update_validity`), and *then* fail fast. This has to be one
+    // phase rather than "phase, then separately-spliced recompute logic"
+    // because the recompute needs main validate's results and the fail-fast
+    // check needs the recompute's results -- see the note on
+    // `post_validate_create_main_phase` above for why the check can't move
+    // any earlier than this.
+    let update_post_validate_phase = quote! {
+        let mut __post_input: #partial_input_name = ::core::default::Default::default();
+        #(#post_input_inits)*
+        {
+            let mut input = __post_input.clone();
+            let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                input.clone(),
+                updates.clone(),
+                output.clone(),
+                __changes.clone(),
+                true,
+            );
+            #post_validate_update_pre_phase
+
+            #post_validate_update_main_phase
+            __post_input = input;
+        }
+
+        __changes = ::core::default::Default::default();
+        #(
+            if &__original_output.#change_field_names != &output.#change_field_names {
+                __changes.#change_field_setters(output.#change_field_names.clone());
+            }
+        )*
+        #(
+            if &__original_output.#input_strip_unchanged_output_names
+                == &output.#input_strip_unchanged_output_names
+            {
+                input.#input_strip_unchanged_input_names = ::core::option::Option::None;
+            }
+        )*
+
+        #update_error_check
+    };
 
     let update_nothing_to_update_return = quote! {
         let __trigger_changes = __changes.clone();
@@ -5168,8 +5216,6 @@ fn generate_model(
 
                 #create_required_phase
 
-                #create_error_check
-
                 #create_validate_phase
 
                 #create_re_validate_phase
@@ -5235,46 +5281,13 @@ fn generate_model(
 
                 #update_early_nothing_to_update_check
 
-                #update_required_evaluations
-
-                #update_error_check
+                #update_required_phase
 
                 #update_validate_phase
 
                 #update_re_validate_phase
 
-                let mut __post_input: #partial_input_name = ::core::default::Default::default();
-                #(#post_input_inits)*
-                {
-                    let mut input = __post_input.clone();
-                    let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                        input.clone(),
-                        updates.clone(),
-                        output.clone(),
-                        __changes.clone(),
-                        true,
-                    );
-                    #post_validate_update_pre_phase
-
-                    #post_validate_update_main_phase
-                    __post_input = input;
-                }
-
-                __changes = ::core::default::Default::default();
-                #(
-                    if &__original_output.#change_field_names != &output.#change_field_names {
-                        __changes.#change_field_setters(output.#change_field_names.clone());
-                    }
-                )*
-                #(
-                    if &__original_output.#input_strip_unchanged_output_names
-                        == &output.#input_strip_unchanged_output_names
-                    {
-                        input.#input_strip_unchanged_input_names = ::core::option::Option::None;
-                    }
-                )*
-
-                #update_error_check
+                #update_post_validate_phase
 
                 #update_mid_pipeline_nothing_to_update_check
 
