@@ -360,10 +360,28 @@ impl<CtxOptions> IvoCtxOptions<CtxOptions> {
         Self(rw.0.clone())
     }
 
+    /// Read the options, `.await`ing if another guard is currently held.
+    ///
+    /// Use this from an **async** lifecycle hook (`on_success`/`on_failure`/
+    /// `on_delete`). For a **sync** hook, use [`Self::read_sync`] instead --
+    /// calling this and never polling the returned future does nothing
+    /// useful, and blocking on it defeats the point of the async form.
     pub fn read(&self) -> impl Future<Output = async_lock::RwLockReadGuard<'_, CtxOptions>> + '_ {
         self.0.read()
     }
 
+    /// Read the options, blocking the current thread if another guard is
+    /// currently held.
+    ///
+    /// Use this from a **sync** lifecycle hook. Do not call it from inside
+    /// an `async` block/future you're not immediately blocking on to
+    /// completion -- parking the executor thread while other tasks on that
+    /// same thread still need to run is the standard async-blocking
+    /// footgun, and can stall or deadlock a single-threaded/limited-worker
+    /// runtime. Safe to call here specifically because hooks are read-only
+    /// (there's no writer this could ever contend with within `ivo`'s own
+    /// generated pipeline -- see [`IvoRwCtxOptions::read_sync`] for the
+    /// fuller version of this warning, which does apply to writers).
     pub fn read_sync(&self) -> async_lock::RwLockReadGuard<'_, CtxOptions> {
         self.0.read_blocking()
     }
@@ -382,23 +400,71 @@ impl<CtxOptions> IvoRwCtxOptions<CtxOptions> {
         Self(std::sync::Arc::new(async_lock::RwLock::new(opts)))
     }
 
+    /// Read the options, `.await`ing if a writer currently holds the lock.
+    /// Any number of readers (sync or async) may hold it at once.
+    ///
+    /// Use this from an **async** validator/re-validator/sanitizer/resolver.
+    /// For a **sync** handler, use [`Self::read_sync`] instead.
     pub fn read(&self) -> impl Future<Output = async_lock::RwLockReadGuard<'_, CtxOptions>> + '_ {
         self.0.read()
     }
 
+    /// Write the options, `.await`ing until every other reader/writer has
+    /// released. Excludes every other reader and writer while the returned
+    /// guard is held.
+    ///
+    /// Use this from an **async** validator/re-validator/sanitizer/resolver.
+    /// For a **sync** handler, use [`Self::write_sync`] instead.
     pub fn write(&self) -> impl Future<Output = async_lock::RwLockWriteGuard<'_, CtxOptions>> + '_ {
         self.0.write()
     }
 
+    /// Read the options, blocking the current thread if a writer currently
+    /// holds the lock.
+    ///
+    /// Use this from a **sync** validator/re-validator/sanitizer/resolver.
+    ///
+    /// **Do not** call this (or [`Self::write_sync`]) from inside a task you
+    /// spawn yourself (e.g. `tokio::spawn`) that runs independently of the
+    /// handler that spawned it. Within a single `create`/`update` call,
+    /// `ivo`'s generated pipeline guarantees every sync handler in a phase
+    /// runs to completion *before* that phase's async handlers are polled
+    /// (see `emit_async_phase` in `crates/derive/src/lib.rs`), so a sync
+    /// `read_sync`/`write_sync` call here is always racing against an
+    /// uncontended lock. That guarantee only covers concurrency `ivo`
+    /// itself orchestrates -- a task you spawn independently is no longer
+    /// sequenced by it, and blocking the executor thread on a guard held by
+    /// such a task (or that such a task is waiting to acquire) is the usual
+    /// async-Rust footgun: it can stall or deadlock a single-threaded or
+    /// limited-worker runtime. Use [`Self::read`] there instead, or
+    /// `spawn_blocking` if you must combine both.
     pub fn read_sync(&self) -> async_lock::RwLockReadGuard<'_, CtxOptions> {
         self.0.read_blocking()
     }
 
+    /// Write the options, blocking the current thread until every other
+    /// reader/writer has released. Excludes every other reader and writer
+    /// while the returned guard is held.
+    ///
+    /// Use this from a **sync** validator/re-validator/sanitizer/resolver.
+    /// Same caveat as [`Self::read_sync`] about independently-spawned tasks
+    /// -- it applies here too, and matters more for writers, since a stuck
+    /// writer also blocks every reader.
     pub fn write_sync(&self) -> async_lock::RwLockWriteGuard<'_, CtxOptions> {
         self.0.write_blocking()
     }
 
-    pub fn read_only(&self) -> IvoCtxOptions<CtxOptions> {
+    /// Downgrades this read/write handle to the read-only wrapper handed to
+    /// lifecycle hooks. Only ever called by macro-generated code (to build
+    /// the `IvoCtxOptions` passed into `on_success`/`on_failure`/`on_delete`
+    /// and the returned `ctx_options` handle) -- not part of the public API,
+    /// hence the leading `__` and `#[doc(hidden)]`, matching the crate's
+    /// existing convention for internals that must stay technically
+    /// reachable from macro-expanded code in the caller's own crate (Rust
+    /// has no way to restrict visibility to "generated code only") but
+    /// aren't meant to be called directly from user-written handlers.
+    #[doc(hidden)]
+    pub fn __read_only(&self) -> IvoCtxOptions<CtxOptions> {
         IvoCtxOptions(self.0.clone())
     }
 }

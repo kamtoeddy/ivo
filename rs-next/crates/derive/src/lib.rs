@@ -4724,7 +4724,7 @@ fn generate_model(
                 _ctx_options: #ctx_options_ty,
             ) {
                 let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
-                let _ctx_options = _rw_ctx_options.read_only();
+                let _ctx_options = _rw_ctx_options.__read_only();
 
                 #on_delete_body
             }
@@ -5361,7 +5361,7 @@ fn generate_model(
                 I: ::core::convert::Into<#partial_input_name>,
             {
                 let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
-                let _ctx_options = _rw_ctx_options.read_only();
+                let _ctx_options = _rw_ctx_options.__read_only();
 
                 let mut input: #partial_input_name = input.into();
                 let __original_input = input.clone();
@@ -5422,7 +5422,7 @@ fn generate_model(
                 ::ivo::__ivo_internals::IvoFailureHandle<::core::option::Option<#payload_ty>, #ctx_options_ty, #update_failure_is_async, #has_failure_handlers>,
             > {
                 let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
-                let _ctx_options = _rw_ctx_options.read_only();
+                let _ctx_options = _rw_ctx_options.__read_only();
 
                 let mut output = existing;
                 let __original_output = output.clone();
