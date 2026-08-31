@@ -3452,7 +3452,7 @@ mod sync_on_failure_ignored_update_schema {
         #[on_failure(|ctx, _| {
             panic!(
                 "[required]: on_failure triggered with value: {}",
-                ctx.input().required.as_ref().unwrap().as_str()
+                ctx.raw_input().required.as_ref().unwrap().as_str()
             );
         })]
         pub required: String,
@@ -3484,7 +3484,7 @@ mod async_on_failure_ignored_update_schema {
         #[on_failure(async |ctx, _| {
             panic!(
                 "[required]: on_failure triggered with value: {}",
-                ctx.input().required.as_ref().unwrap().as_str()
+                ctx.raw_input().required.as_ref().unwrap().as_str()
             );
         })]
         pub required: String,
@@ -3516,7 +3516,7 @@ mod sync_on_failure_readonly_update_schema {
         #[on_failure(|ctx, _| {
             panic!(
                 "[required]: on_failure triggered with value: {} as readonly",
-                ctx.input().required.as_ref().unwrap().as_str()
+                ctx.raw_input().required.as_ref().unwrap().as_str()
             );
         })]
         pub required: String,
@@ -3548,7 +3548,7 @@ mod async_on_failure_readonly_update_schema {
         #[on_failure(async |ctx, _| {
             panic!(
                 "[required]: on_failure triggered with value: {} as readonly",
-                ctx.input().required.as_ref().unwrap().as_str()
+                ctx.raw_input().required.as_ref().unwrap().as_str()
             );
         })]
         pub required: String,

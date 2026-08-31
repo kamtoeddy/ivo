@@ -3442,53 +3442,67 @@ fn generate_model(
     // safe to batch: 0/1 async handler stays sequential, 2+ are polled
     // concurrently via `join!`. Required/lax and virtual fields' re-validators
     // are batched together as one combined phase, same as validate above.
-    let re_validate_items: Vec<AsyncPhaseItem> = fields
-        .iter()
-        .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
-        .filter_map(|f| {
-            let name = &f.name;
-            let name_str = name.to_string();
-            let ty = &f.ty;
-            let ty_tokens = quote!(#ty);
-            let re_validator = attr_value_tokens(&f.attrs, "re_validate")?;
-            let value_expr = quote!(__value.clone());
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, call) = make_validator_call(
-                &re_validator,
-                &ty_tokens,
-                &value_expr,
-                &ctx_expr,
-                &opts_expr,
-            );
-            let value_expr = quote! {
-                if !errors.contains_key(#name_str) {
-                    let __value: #ty = output.#name.clone();
-                    ::core::option::Option::Some(#call)
-                } else {
-                    ::core::option::Option::None
-                }
-            };
-            let apply = quote! {
-                if let ::core::option::Option::Some(__result) = __phase_result {
-                    match __result {
-                        ::core::result::Result::Ok(::core::option::Option::Some(__new_value)) => {
-                            output.#name = __new_value.clone();
+    // Shared by `create` and `update`, but the two need different relevance
+    // gating: `create` always processes every required/lax field (each one
+    // already got a base value, defaulted or provided), so no extra guard is
+    // needed there. `update` must additionally skip a field that wasn't
+    // actually relevant to this call -- matching `rs/`'s `re_validate()`,
+    // which only iterates `relevant_fields_provided` -- otherwise a field
+    // that was never submitted (or submitted unchanged) still gets
+    // re-validated against its already-stored value and silently
+    // overwritten with whatever the re-validator produces.
+    let build_re_validate_items =
+        |extra_guard: &dyn Fn(&FieldDef) -> proc_macro2::TokenStream| -> Vec<AsyncPhaseItem> {
+            fields
+                .iter()
+                .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
+                .filter_map(|f| {
+                    let name = &f.name;
+                    let name_str = name.to_string();
+                    let ty = &f.ty;
+                    let ty_tokens = quote!(#ty);
+                    let re_validator = attr_value_tokens(&f.attrs, "re_validate")?;
+                    let value_expr = quote!(__value.clone());
+                    let ctx_expr = quote!(&ctx);
+                    let opts_expr = quote!(&_rw_ctx_options);
+                    let (is_async, call) = make_validator_call(
+                        &re_validator,
+                        &ty_tokens,
+                        &value_expr,
+                        &ctx_expr,
+                        &opts_expr,
+                    );
+                    let guard = extra_guard(f);
+                    let value_expr = quote! {
+                        if !errors.contains_key(#name_str) && #guard {
+                            let __value: #ty = output.#name.clone();
+                            ::core::option::Option::Some(#call)
+                        } else {
+                            ::core::option::Option::None
                         }
-                        ::core::result::Result::Ok(::core::option::Option::None) => {}
-                        ::core::result::Result::Err(e) => {
-                            errors.insert(::std::string::String::from(#name_str), e);
+                    };
+                    let apply = quote! {
+                        if let ::core::option::Option::Some(__result) = __phase_result {
+                            match __result {
+                                ::core::result::Result::Ok(::core::option::Option::Some(__new_value)) => {
+                                    output.#name = __new_value.clone();
+                                }
+                                ::core::result::Result::Ok(::core::option::Option::None) => {}
+                                ::core::result::Result::Err(e) => {
+                                    errors.insert(::std::string::String::from(#name_str), e);
+                                }
+                            }
                         }
-                    }
-                }
-            };
-            Some(AsyncPhaseItem {
-                is_async,
-                value_expr,
-                apply,
-            })
-        })
-        .collect();
+                    };
+                    Some(AsyncPhaseItem {
+                        is_async,
+                        value_expr,
+                        apply,
+                    })
+                })
+                .collect()
+        };
+    let re_validate_items: Vec<AsyncPhaseItem> = build_re_validate_items(&|_| quote! { true });
     let re_validate_any_async = re_validate_items.iter().any(|i| i.is_async);
     create_has_async |= re_validate_any_async;
     update_has_async |= re_validate_any_async;
@@ -3516,6 +3530,13 @@ fn generate_model(
         update_apply_updates: Vec<proc_macro2::TokenStream>,
         pre_validate: Option<proc_macro2::TokenStream>,
         handler: proc_macro2::TokenStream,
+        // Internal field name + virtual-ness for each field in the group,
+        // kept separately from `allowed_names` (external/alias names) so
+        // `update`'s relevance guard (added where `build_post_validate_phase`
+        // is actually called, once `update_relevant_flag_for` is in scope)
+        // can look up each field's `__update_relevant_*`/`__virtual_provided_*`
+        // flag without re-deriving it from scratch.
+        group_fields: Vec<(Ident, bool)>,
     }
     let post_validate_groups: Vec<PostValidateGroupInfo> = post_validate_options
         .iter()
@@ -3570,19 +3591,21 @@ fn generate_model(
                             }
                             #update_output_update
                         },
+                        (f.name.clone(), is_virtual),
                     )
                 })
                 .collect();
 
             PostValidateGroupInfo {
-                allowed_names: field_infos.iter().map(|(n, _, _)| n.clone()).collect(),
+                allowed_names: field_infos.iter().map(|(n, _, _, _)| n.clone()).collect(),
                 create_apply_updates: field_infos
                     .iter()
-                    .map(|(_, create_stmt, _)| create_stmt.clone())
+                    .map(|(_, create_stmt, _, _)| create_stmt.clone())
                     .collect(),
+                group_fields: field_infos.iter().map(|(_, _, _, gf)| gf.clone()).collect(),
                 update_apply_updates: field_infos
                     .iter()
-                    .map(|(_, _, update_stmt)| update_stmt.clone())
+                    .map(|(_, _, update_stmt, _)| update_stmt.clone())
                     .collect(),
                 pre_validate: o.pre_validate.clone(),
                 handler: o.handler.clone(),
@@ -3606,7 +3629,8 @@ fn generate_model(
          apply_updates_for: &dyn Fn(&PostValidateGroupInfo) -> &[proc_macro2::TokenStream],
          changes_expr: &proc_macro2::TokenStream,
          is_update_flag: bool,
-         raw_input_expr: &proc_macro2::TokenStream|
+         raw_input_expr: &proc_macro2::TokenStream,
+         relevance_guard_for: &dyn Fn(&PostValidateGroupInfo) -> proc_macro2::TokenStream|
          -> proc_macro2::TokenStream {
             let items: Vec<AsyncPhaseItem> = post_validate_groups
             .iter()
@@ -3615,6 +3639,7 @@ fn generate_model(
                 let apply_updates = apply_updates_for(g);
                 let allowed_names = &g.allowed_names;
                 let allowed_names_expr = quote! { [#(#allowed_names),*] };
+                let relevance_guard = relevance_guard_for(g);
 
                 let ctx_expr = quote!(ctx);
                 let opts_expr = quote!(_rw_ctx_options);
@@ -3624,7 +3649,11 @@ fn generate_model(
                         let __post_result: ::core::result::Result<
                             ::core::option::Option<#partial_input_name>,
                             #input_errors_name<#metadata_ty>,
-                        > = #call;
+                        > = if #relevance_guard {
+                            #call
+                        } else {
+                            ::core::result::Result::Ok(::core::option::Option::None)
+                        };
                         __post_result
                     }
                 };
@@ -3661,12 +3690,39 @@ fn generate_model(
             emit_async_phase(items, &ctx_rebuild)
         };
 
+    // `update`'s guard matches `rs/`'s `post_validate`, which only runs a
+    // group if at least one of its fields is in `relevant_fields_provided`
+    // -- otherwise a group covering only fields nobody actually touched
+    // still runs unconditionally and can corrupt untouched output (e.g. a
+    // group reading an unrelated required field's *stored* value as a
+    // fallback when its own fields are absent). `create` has an analogous
+    // gap in `rs/` (a group whose fields were never submitted, even if
+    // later defaulted, is also skipped there), but that's not implemented
+    // here yet -- deliberately left as `true` (always runs) to avoid
+    // touching `create`'s behavior in this pass; see TODO.md.
+    let update_group_relevance_guard = |g: &PostValidateGroupInfo| -> proc_macro2::TokenStream {
+        if g.group_fields.is_empty() {
+            return quote! { false };
+        }
+        let flags = g.group_fields.iter().map(|(name, is_virtual)| {
+            if *is_virtual {
+                let flag = format_ident!("__virtual_provided_{}", name);
+                quote! { #flag }
+            } else {
+                let flag = format_ident!("__update_relevant_{}", name);
+                quote! { #flag }
+            }
+        });
+        quote! { (#(#flags)||*) }
+    };
+
     let post_validate_create_pre_phase = build_post_validate_phase(
         &|g| g.pre_validate.clone(),
         &|g| &g.create_apply_updates,
         &quote!(output.clone().into()),
         false,
         &quote!(__original_input.clone()),
+        &|_| quote! { true },
     );
     let post_validate_create_main_phase = build_post_validate_phase(
         &|g| Some(g.handler.clone()),
@@ -3674,6 +3730,7 @@ fn generate_model(
         &quote!(output.clone().into()),
         false,
         &quote!(__original_input.clone()),
+        &|_| quote! { true },
     );
     let post_validate_update_pre_phase = build_post_validate_phase(
         &|g| g.pre_validate.clone(),
@@ -3681,6 +3738,7 @@ fn generate_model(
         &quote!(__changes.clone()),
         true,
         &quote!(updates.clone()),
+        &update_group_relevance_guard,
     );
     let post_validate_update_main_phase = build_post_validate_phase(
         &|g| Some(g.handler.clone()),
@@ -3688,6 +3746,7 @@ fn generate_model(
         &quote!(__changes.clone()),
         true,
         &quote!(updates.clone()),
+        &update_group_relevance_guard,
     );
 
     let post_validate_any_async = post_validate_groups.iter().any(|g| {
@@ -3846,8 +3905,15 @@ fn generate_model(
 
     // Whether a given Required/Lax/Virtual field, as provided in `updates`,
     // is still "relevant" once ignore/`#[readonly]` are accounted for --
-    // shared by the early "nothing to update" checkpoint below and (for
-    // required/lax) `update_assignment_items` above.
+    // used by the early "nothing to update" checkpoint below. Matches `rs/`'s
+    // `filter_input_fields_allowed`: for a non-virtual field, being present
+    // in `updates` isn't enough on its own -- if the submitted value is
+    // identical to what's already stored, `rs/` treats it as not actually
+    // provided at all (`relevant_fields_provided` excludes it), so this has
+    // to compare against `__original_output`, not just check `.is_some()`.
+    // Virtual fields can't be compared yet (their dependent(s) haven't
+    // resolved), so they stay "relevant" as soon as they're provided and not
+    // ignored, same as before.
     let update_field_relevant_check = |f: &FieldDef| -> proc_macro2::TokenStream {
         let name = &f.name;
         let name_str = name.to_string();
@@ -3873,7 +3939,20 @@ fn generate_model(
         } else {
             quote! { true }
         };
-        quote! { (updates.#input_name.is_some() && !#ignore_update_flag && #readonly_guard) }
+        let unchanged_guard = if matches!(f.field_type, FieldType::Virtual { .. }) {
+            quote! { true }
+        } else {
+            quote! {
+                updates.#input_name.as_ref()
+                    != ::core::option::Option::Some(&__original_output.#name)
+            }
+        };
+        quote! {
+            (updates.#input_name.is_some()
+                && !#ignore_update_flag
+                && #readonly_guard
+                && #unchanged_guard)
+        }
     };
     let update_relevant_field_checks: Vec<proc_macro2::TokenStream> = fields
         .iter()
@@ -3885,6 +3964,49 @@ fn generate_model(
         })
         .map(update_field_relevant_check)
         .collect();
+
+    // `__update_relevant_{name}` flags, one per required/lax field, declared
+    // once up front (mirroring virtual fields' own `__virtual_provided_*`)
+    // so `re_validate` and `post_validate` can gate on "was this field
+    // actually relevant to this update" without re-deriving the same
+    // provided/ignored/readonly/unchanged expression themselves, and without
+    // it silently going stale if the field's value is later mutated by
+    // `validate` (relevance is fixed once, at filter time, matching `rs/`'s
+    // `relevant_fields_provided`). Virtual fields already have an equivalent
+    // flag (`__virtual_provided_*`) from `build_virtual_pipeline`, so they're
+    // excluded here.
+    let update_relevant_flag_decls: Vec<proc_macro2::TokenStream> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax))
+        .map(|f| {
+            let flag = format_ident!("__update_relevant_{}", f.name);
+            let expr = update_field_relevant_check(f);
+            let input_name = input_field_name(f);
+            // Matches `rs/`'s `filter_input_fields_allowed`, which unsets
+            // `input` for a non-relevant field immediately (not just once
+            // it's excluded from validate/re_validate/post_validate) --
+            // `ctx.input()` must stop reporting it as soon as it's known to
+            // be irrelevant, same as an ignored field.
+            quote! {
+                let #flag: bool = #expr;
+                if !#flag {
+                    input.#input_name = ::core::option::Option::None;
+                }
+            }
+        })
+        .collect();
+    let update_relevant_flag_for = |f: &FieldDef| -> proc_macro2::TokenStream {
+        match &f.field_type {
+            FieldType::Virtual { .. } => {
+                let flag = format_ident!("__virtual_provided_{}", f.name);
+                quote! { #flag }
+            }
+            _ => {
+                let flag = format_ident!("__update_relevant_{}", f.name);
+                quote! { #flag }
+            }
+        }
+    };
 
     let update_virtual_ignore_flag_for = |f: &FieldDef| -> proc_macro2::TokenStream {
         let name_str = f.name.to_string();
@@ -4046,9 +4168,17 @@ fn generate_model(
                 quote! { ::core::result::Result::Ok(__value) }
             };
 
+            // Matches `rs/`'s `filter_input_fields_allowed`: a field that's
+            // present in `updates` but whose value is identical to what's
+            // already stored isn't "relevant" -- it's excluded from
+            // `relevant_fields_provided` entirely, so `validate`/
+            // `re_validate` never see it, exactly as if it hadn't been
+            // submitted. It still counts as "attempted" (`rs/`'s broader
+            // `fields_provided`, used for `on_failure` trigger relevance),
+            // just with no value change and no validator call.
             let value_expr = quote! {
                 if let ::core::option::Option::Some(v) = &updates.#input_name {
-                    if !#ignore_update_flag && #readonly_guard {
+                    if !#ignore_update_flag && #readonly_guard && v != &__original_output.#name {
                         let __value: #ty_tokens = v.clone();
                         (true, ::core::option::Option::Some(#validated_expr))
                     } else {
@@ -4101,12 +4231,13 @@ fn generate_model(
         quote! { #setup #phase }
     };
 
-    // Re-validate: required/lax (`re_validate_items`, shared with create
-    // above) and virtual fields' re-validators, batched together as one
-    // combined phase, same as validate above.
+    // Re-validate: required/lax (rebuilt from `build_re_validate_items`,
+    // gated by `__update_relevant_*`/`__virtual_provided_*` this time -- see
+    // the comment on `build_re_validate_items` above) and virtual fields'
+    // re-validators, batched together as one combined phase, same as
+    // validate above.
     let update_re_validate_phase = {
-        let items: Vec<AsyncPhaseItem> = re_validate_items
-            .clone()
+        let items: Vec<AsyncPhaseItem> = build_re_validate_items(&update_relevant_flag_for)
             .into_iter()
             .chain(update_virtual.re_validate_items.clone())
             .collect();
@@ -4231,13 +4362,21 @@ fn generate_model(
                         Some(quote! { !#parent_ignored && input.#input_name.is_some() })
                     } else if matches!(parent_def.field_type, FieldType::Required | FieldType::Lax)
                     {
-                        let input_name = input_field_name(parent_def);
-                        Some(quote! {
-                            !#parent_ignored && (
-                                updates.#input_name.is_some()
-                                    || __original_output.#parent != output.#parent
-                            )
-                        })
+                        // Matches `rs/`'s `resolve_dependent_values`, which
+                        // only resolves a dependent whose parent is in
+                        // `relevant_fields_provided` -- not just "was
+                        // submitted" (`__update_relevant_*` already folds in
+                        // "provided, not ignored, not readonly-blocked, and
+                        // the submitted value actually differs from what's
+                        // stored" -- see `update_field_relevant_check`).
+                        // Previously this checked `updates.field.is_some()`
+                        // instead, so a parent field submitted with its
+                        // *unchanged* value still (wrongly) triggered every
+                        // dependent below it -- e.g. `username_last_updated_at`
+                        // getting a fresh timestamp on every update that
+                        // merely re-submitted the same `username`.
+                        let relevant_flag = format_ident!("__update_relevant_{}", p);
+                        Some(quote! { !#parent_ignored && #relevant_flag })
                     } else {
                         Some(quote! { !#parent_ignored && __original_output.#parent != output.#parent })
                     }
@@ -5278,6 +5417,8 @@ fn generate_model(
                     ::std::collections::HashMap::new();
 
                 #update_ignore_phase
+
+                #(#update_relevant_flag_decls)*
 
                 #update_early_nothing_to_update_check
 
