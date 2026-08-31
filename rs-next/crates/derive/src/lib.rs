@@ -2620,6 +2620,17 @@ fn generate_model(
         quote! { #flag = true; }
     });
 
+    // One combined "ignore" phase for `create`: flag declarations, the
+    // batched ignore evaluation itself, and the `#[ignore_init]` overrides
+    // are conceptually a single step (GOAL.md §17 step 1), not three
+    // independent splices. All three are already empty when the schema has
+    // no `ignore`/`ignore_init` configured at all, so this stays empty too.
+    let create_ignore_phase = quote! {
+        #(#ignore_flag_decls)*
+        #ignore_evaluations
+        #(#ignore_init_assignments)*
+    };
+
     // Required evaluation: same "one go" batching as ignore, for grouped
     // `#[required(...)]` and field-level `#[required(...)]` together.
     let create_required_items: Vec<AsyncPhaseItem> = {
@@ -2727,6 +2738,16 @@ fn generate_model(
                 }
             }
         });
+
+    // One combined "required" phase for `create`: the batched conditional
+    // required evaluation and the bare `#[required]` missing-field checks
+    // are conceptually a single step (GOAL.md §17 step 3), not two
+    // independent splices. Both are already empty when the schema has no
+    // required fields/options at all, so this stays empty too.
+    let create_required_phase = quote! {
+        #required_evaluations
+        #(#required_field_checks)*
+    };
 
     // Early create phase: required/lax base-value + validate, timestamps
     // (already deduped to a single resolver call above), and dependent-field
@@ -3000,7 +3021,15 @@ fn generate_model(
         .count();
     create_has_async |= dependent_async_count > 0;
 
-    let dependent_create_block = if dependent_async_count < 2 {
+    let dependent_create_block = if dependent_infos.is_empty() {
+        // No `#[depends_on]` fields at all: don't generate the resolution
+        // loop's `HashSet`/`loop` scaffold, matching GOAL.md §17's "a schema
+        // with no `#[depends_on]` fields does not generate the
+        // dependent-resolution loop" guarantee. The loop would otherwise
+        // still compile correctly (it breaks on its first iteration with an
+        // empty body), just for no reason.
+        quote! {}
+    } else if dependent_async_count < 2 {
         // At most one async resolver: sequential `.await`s are already as
         // parallel as it gets, so keep the simpler, incrementally-updated-ctx
         // codegen (each field observes prior fields' changes within the same
@@ -3790,6 +3819,13 @@ fn generate_model(
         let flag = format_ident!("ignore_update_{}", name);
         quote! { #flag = true; }
     });
+
+    // Same consolidation as `create_ignore_phase` above, for `update`.
+    let update_ignore_phase = quote! {
+        #(#update_ignore_flag_decls)*
+        #update_ignore_evaluations
+        #(#bare_ignore_update_assignments)*
+    };
 
     // Whether a given Required/Lax/Virtual field, as provided in `updates`,
     // is still "relevant" once ignore/`#[readonly]` are accounted for --
@@ -5092,12 +5128,9 @@ fn generate_model(
                     false,
                 );
 
-                #(#ignore_flag_decls)*
-                #ignore_evaluations
-                #(#ignore_init_assignments)*
+                #create_ignore_phase
 
-                #required_evaluations
-                #(#required_field_checks)*
+                #create_required_phase
 
                 #create_error_check
 
@@ -5170,9 +5203,7 @@ fn generate_model(
                 let mut errors: ::ivo::__ivo_internals::IvoErrorPayload<#metadata_ty> =
                     ::std::collections::HashMap::new();
 
-                #(#update_ignore_flag_decls)*
-                #update_ignore_evaluations
-                #(#bare_ignore_update_assignments)*
+                #update_ignore_phase
 
                 #update_early_nothing_to_update_check
 

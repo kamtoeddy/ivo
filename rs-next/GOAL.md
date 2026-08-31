@@ -609,42 +609,77 @@ When a schema has no `on_success` handlers, `handle_success` is not present on `
 
 `create` and `update` execute the following phases in order. The macro omits any phase that does not apply to the schema, which eliminates runtime branches and dead code for simple schemas.
 
+Every phase below that can produce an `errors`/field-error entry is followed
+immediately by a fail-fast check: if any error was recorded, `create`/
+`update` return right away rather than letting later phases run against
+already-invalid data. Where a phase says "batched", every independent
+handler in it (across every field it applies to, and across
+required/lax/virtual fields together where noted) is resolved in one go via
+`emit_async_phase`: synchronously if 0/1 of them is async, concurrently via
+`join!` if 2+ are.
+
 ### Create
 
-1. Filter input fields (`ignore`, `ignore_init`).
-2. Attach defaults for `#[lax]` / `#[dependent]` fields.
-3. Evaluate missing required fields (`#[required]` fields and conditional `#[required]` on `#[lax]` / `#[ivo_virtual]` and options).
-4. Validate fields (`#[validate]`).
-5. Re-validate fields (`#[re_validate]`).
-6. Post-validate (`#[post_validate]` validators).
-7. Sanitize virtual fields (`#[sanitize]`).
-8. Resolve dependent fields (`#[resolve]`), looping until no new changes.
-9. Attach constants (`#[value]`).
-<!--9. Attach constants (`#[value]`), defaults for `#[lax]` fields not provided or ignored, and `#[dependent]` fields whose values were not resolved. (all in parallel)-->
-10. Attach timestamps (`#[created_at]` / `#[updated_at]`).
+1. Ignore phase: evaluate `ignore`/`ignore_init` (batched: entity-level,
+   field-level, and grouped resolvers together), then apply `ignore_init`
+   overrides.
+2. Required phase: evaluate conditional `#[required]` (batched, same scope as
+   step 1) and check bare `#[required]` fields for a missing value. *Fail
+   fast.*
+3. Validate fields (`#[validate]`) -- required/lax and virtual fields'
+   validators run as one combined batched phase, not two separate passes.
+   Defaults for unset `#[lax]` fields are applied as part of this same step.
+   *Fail fast.*
+4. Re-validate fields (`#[re_validate]`) -- required/lax and virtual merged
+   the same way as step 3, gated on each field having successfully validated.
+   *Fail fast.*
+5. Post-validate, `pre_validate` handlers only, all `#[post_validate]` groups
+   batched together against a snapshot from before this phase. *Fail fast.*
+6. Post-validate, main `validate` handlers, same batching -- does not run at
+   all if step 5 produced any error. *Fail fast.*
+7. Sanitize virtual fields (`#[sanitize]`) -- only for virtual fields that
+   were provided and not ignored; runs only once step 6 has succeeded.
+8. Resolve dependent fields (`#[resolve]`), one round per dependency-graph
+   level, looping until no new changes; each round's independent resolvers
+   are batched via `emit_async_phase`.
+9. Attach constants (`#[constant]`) -- runs after dependent resolution so
+   constant resolvers can read resolved dependent values via `ctx.values()`.
+10. Attach timestamps (`#[created_at]` / `#[updated_at]`) -- after constants;
+    the resolver is called at most once and shared across both fields.
 11. Prepare success / failure triggers.
 
 ### Update
 
-1. Filter input fields (`ignore`, `ignore_update`, `readonly`).
-   1. Filter
-   2. Evaluate update validity (strip unchanged fields).
-2. Evaluate missing required fields (conditional `#[required]` on `#[lax]` / `#[ivo_virtual]`, and options).
-3. Validate fields (`#[validate]`).
-   1. Validate
-   2. Evaluate update validity (strip unchanged fields).
-4. Re-validate fields (`#[re_validate]`).
-   1. Re-Validate
-   2. Evaluate update validity (strip unchanged fields).
-5. Post-validate (`#[post_validate]` validators).
-   1. Post-Validate
-   2. Evaluate update validity (strip unchanged fields).
-6. Sanitize virtual fields (`#[sanitize]`).
-   1. Sanitize
-   2. Evaluate update validity (strip unchanged fields).
-7. Resolve dependent fields (`#[resolve]`), looping until no new changes.
-8. Attach timestamps (`#[updated_at]`).
-9. Prepare success / failure triggers.
+1. Ignore phase: evaluate `ignore`/`ignore_update` (batched, same scope as
+   create's step 1), then apply bare `#[ignore_update]` overrides.
+2. Nothing-to-update checkpoint 1: if no `#[required]`/`#[lax]`/virtual field
+   actually present in the update survives ignore/`#[readonly]` filtering,
+   fail immediately with "nothing to update" (before the required check ever
+   runs).
+3. Evaluate missing required fields (conditional `#[required]` only -- bare
+   `#[required]` is creation-only). *Fail fast.*
+4. Validate fields (`#[validate]`), batched like create's step 3. *Fail fast.*
+5. Re-validate fields (`#[re_validate]`), batched like create's step 4.
+   *Fail fast.*
+6. Post-validate: `pre_validate` then main `validate`, batched and gated the
+   same way as create's steps 5-6, against a scratch `input` seeded from
+   only the fields each group covers. *Fail fast.*
+7. Evaluate update validity: recompute `changes` and strip any field whose
+   value turned out unchanged from both `changes` and `input` (matching
+   `rs/`'s `evaluate_update_validity`; `raw_input()` still shows what was
+   submitted). Runs once, right after post-validate -- not after every
+   phase. *Fail fast.*
+8. Nothing-to-update checkpoint 2: if nothing is left in `changes` after step
+   7 *and* no virtual field is still relevant (its dependent(s) haven't
+   resolved yet), fail immediately, before dependent resolution runs.
+9. Sanitize virtual fields (`#[sanitize]`), same condition as create's step 7.
+10. Resolve dependent fields (`#[resolve]`), one round per dependency-graph
+    level (a single topological pass, not a convergence loop, since update's
+    dependency guards read from `updates`/`__original_output` directly).
+11. Nothing-to-update checkpoint 3: if `changes` is still empty after
+    dependent resolution, fail with "nothing to update".
+12. Attach timestamps (`#[updated_at]`).
+13. Prepare success / failure triggers.
 
 ### Dynamic pipeline generation
 
