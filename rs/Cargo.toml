@@ -6,7 +6,7 @@ categories.workspace = true
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
-license-file.workspace = true
+license.workspace = true
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
@@ -17,11 +17,11 @@ members = ["crates/*", "examples/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 authors = ["kamtoeddy <kamtoeddytagne@gmail.com>"]
 categories = ["data-structures", "development-tools"]
-license-file = "LICENSE"
+license = "MIT"
 readme = "README.md"
 repository = "https://github.com/kamtoeddy/ivo/rs"
 homepage = "https://ivo.kamtoeddy.com/docs/rs"
@@ -44,8 +44,8 @@ validators = ["dep:ivo-validators"]
 [dependencies]
 futures = "0.3"
 futures-locks.workspace = true
-ivo-derive = { path = "./crates/derive", version = "0.4.1" }
-ivo-validators = { path = "./crates/validators", version = "0.4.1", optional = true}
+ivo-derive = { path = "./crates/derive", version = "0.4.2" }
+ivo-validators = { path = "./crates/validators", version = "0.4.2", optional = true}
 
 [dev-dependencies]
 chrono.workspace = true

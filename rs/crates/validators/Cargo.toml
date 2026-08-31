@@ -1,8 +1,8 @@
 
 [package]
 name = "ivo-validators"
-license-file = "../../../LICENSE"
 publish = true
+license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true
