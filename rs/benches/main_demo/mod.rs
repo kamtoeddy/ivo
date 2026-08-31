@@ -119,19 +119,129 @@ fn bench_main_demo(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("main_demo update", |b| {
-        let user = rt.block_on(async {
-            let input = PartialUserInput::new()
-                .with_email(Some("1@1.com".into()))
-                .with_username("user-10".into());
+    let user = User {
+        id: 1,
+        created_at: two_days_ago,
+        updated_at: two_days_ago,
+        email: Some("1@1.com".into()),
+        phone_number: Some("123 4567 8910".into()),
+        username,
+        username_last_updated_at: None,
+        slug_id,
+    };
 
-            let (data, _, _) = match USER_MODEL.create(&input, UserCtxOptions::new()).await {
-                Ok(result) => result,
-                Err(_) => panic!("main_demo create failed"),
-            };
-            data
+    c.bench_function(
+        "main_demo update [fail: required error (email or phone_number)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new()
+                    .with_email(None)
+                    .with_phone_number(None);
+
+                let _ = USER_MODEL
+                    .update(&user, &updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo update [fail: validation error (email, slug_id, username)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new()
+                    .with_email(Some("1.com".into()))
+                    .with_phone_number(Some("123 4567 8910".into()))
+                    .with_slug_id("s".into())
+                    .with_username("u".into());
+
+                let _ = USER_MODEL
+                    .update(&user, &updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo update [fail: re_validation error (username taken)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new().with_username("user-1".into());
+
+                let _ = USER_MODEL
+                    .update(&user, &updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function(
+        "main_demo update [fail: post-validation error (slug taken)]",
+        |b| {
+            b.to_async(rt).iter(|| async {
+                let updates = PartialUserInput::new().with_slug_id("user-1".into());
+
+                let _ = USER_MODEL
+                    .update(&user, &updates, UserCtxOptions::new())
+                    .await;
+            });
+        },
+    );
+
+    c.bench_function("main_demo update [success: 1/4 inputs (d)]", |b| {
+        b.to_async(rt).iter(|| async {
+            let updates = PartialUserInput::new().with_email(Some("1@1.com".into()));
+
+            let _ = USER_MODEL
+                .update(&user, &updates, UserCtxOptions::new())
+                .await;
         });
+    });
 
+    c.bench_function("main_demo update [success: 1/4 inputs (b)]", |b| {
+        b.to_async(rt).iter(|| async {
+            let updates = PartialUserInput::new().with_phone_number(Some("123 4567 8910".into()));
+
+            let _ = USER_MODEL
+                .update(&user, &updates, UserCtxOptions::new())
+                .await;
+        });
+    });
+
+    c.bench_function("main_demo update [success: 1/4 inputs (c)]", |b| {
+        b.to_async(rt).iter(|| async {
+            let updates = PartialUserInput::new().with_slug_id("newly-updated-slug-id: Lol".into());
+
+            let _ = USER_MODEL
+                .update(&user, &updates, UserCtxOptions::new())
+                .await;
+        });
+    });
+
+    c.bench_function("main_demo update [success: 1/4 inputs (d)]", |b| {
+        b.to_async(rt).iter(|| async {
+            let updates = PartialUserInput::new().with_username("new-username".into());
+
+            let _ = USER_MODEL
+                .update(&user, &updates, UserCtxOptions::new())
+                .await;
+        });
+    });
+
+    c.bench_function("main_demo update [success: 3/4 inputs]", |b| {
+        b.to_async(rt).iter(|| async {
+            let updates = PartialUserInput::new()
+                .with_email(Some("1@1.com".into()))
+                .with_phone_number(Some("123 4567 8910".into()))
+                .with_username("new_username".into());
+
+            let _ = USER_MODEL
+                .update(&user, &updates, UserCtxOptions::new())
+                .await;
+        });
+    });
+
+    c.bench_function("main_demo update [success: 4/4 inputs]", |b| {
         b.to_async(rt).iter(|| async {
             let updates = PartialUserInput::new()
                 .with_email(Some("1@1.com".into()))

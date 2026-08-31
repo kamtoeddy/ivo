@@ -49,28 +49,28 @@ async fn main() {
     //     .with_username("user-10".into());
 
     // // crate success: 4/4 inputs
-    // let input = PartialUserInput::new()
-    //     .with_email(Some("1@1.com".into()))
-    //     .with_phone_number(Some("123 4567 8910".into()))
-    //     .with_username("user-10".into())
-    //     .with_slug_id("sloppy-slug-id".into());
+    let input = PartialUserInput::new()
+        .with_email(Some("1@1.com".into()))
+        .with_phone_number(Some("123 4567 8910".into()))
+        .with_username("user-10".into())
+        .with_slug_id("sloppy-slug-id".into());
 
-    // let timer = Instant::now();
+    let timer = Instant::now();
 
-    // let r = UserModel.create(input, UserCtxOptions::new()).await;
+    let r = UserModel.create(input, UserCtxOptions::new()).await;
 
-    // println!("\nCreate duration: {:?}", timer.elapsed());
+    println!("\nCreate duration: {:?}", timer.elapsed());
 
-    // match r {
-    //     Ok(handle) => {
-    //         println!("\n{:#?}\n", handle.data);
+    match r {
+        Ok(handle) => {
+            println!("\n{:#?}\n", handle.data);
 
-    //         handle.handle_success();
-    //     }
-    //     Err(handle) => {
-    //         println!("\nFailed to create: {:#?}", handle.errors);
-    //     }
-    // };
+            handle.handle_success();
+        }
+        Err(handle) => {
+            println!("\nFailed to create: {:#?}", handle.errors);
+        }
+    };
 
     let (username, slug_id) = {
         let username = "John Doe";
@@ -91,52 +91,50 @@ async fn main() {
         slug_id,
     };
 
-    println!("\n{:#?}", user);
+    // // required error (email or phone_number)
+    // let updates = PartialUserInput::new()
+    //     .with_email(None)
+    //     .with_phone_number(None);
 
+    // // validation error (email, slug_id, username)
+    // let updates = PartialUserInput::new()
+    //     .with_email(Some("1.com".into()))
+    //     .with_phone_number(Some("123 4567 8910".into()))
+    //     .with_slug_id("s".into())
+    //     .with_username("u".into());
+
+    // // re_validation error "username taken"
+    // let updates = PartialUserInput::new()
+    //     .with_username("user-1".into());
+
+    // // post-validation error "slug taken"
+    // let updates = PartialUserInput::new()
+    //     .with_slug_id("user-1".into());
+
+    // // update success: 1/4 inputs (a)
+    // let updates = PartialUserInput::new().with_email(Some("1@1.com".into()));
+
+    // // update success: 1/4 inputs (b)
+    // let updates = PartialUserInput::new().with_phone_number(Some("123 4567 8910".into()));
+
+    // // update success: 1/4 inputs (c)
+    // let updates = PartialUserInput::new().with_slug_id("newly-updated-slug-id: Lol".into());
+
+    // // update success: 1/4 inputs (d)
+    // let updates = PartialUserInput::new().with_username("new_username".into());
+
+    // // update success: 3/4 inputs
+    // let updates = PartialUserInput::new()
+    //     .with_email(Some("1@1.com".into()))
+    //     .with_phone_number(Some("123 4567 8910".into()))
+    //     .with_username("new_username".into());
+
+    // // update success: 4/4 inputs
     let updates = PartialUserInput::new()
-        .with_email(user.email.clone())
+        .with_email(Some("1@1.com".into()))
         .with_phone_number(Some("123 4567 8910".into()))
-        .with_slug_id("updated-slug-id: Lol".into())
-        .with_username("new_username".into());
-
-    let timer = Instant::now();
-
-    let r = UserModel
-        .update(user.clone(), updates, UserCtxOptions::new())
-        .await;
-
-    println!("\nUpdate duration: {:?}", timer.elapsed());
-
-    let mut updated_user = None;
-
-    match r {
-        Ok(handle) => {
-            let merged_data = user.clone_with_updates(&handle.data);
-
-            println!("\nupdates: {:#?}", handle.data);
-            println!("\nold + updates: {:#?}\n", merged_data);
-
-            updated_user = Some(merged_data);
-
-            handle.handle_success();
-        }
-        Err(handle) => {
-            match handle.errors.as_ref() {
-                Some(payload) => println!("\nFailed to update: {:#?}", payload),
-                None => println!("\nNothing to update"),
-            };
-        }
-    };
-
-    let Some(user) = updated_user else {
-        return;
-    };
-
-    let updates = PartialUserInput::new()
-        .with_email(user.email.clone())
-        .with_phone_number(user.phone_number.clone())
-        .with_slug_id("newly-updated-slug-id: Lol".into())
-        .with_username(user.username.clone());
+        .with_username("new_username".into())
+        .with_slug_id("newly-updated-slug-id: Lol".into());
 
     let timer = Instant::now();
 

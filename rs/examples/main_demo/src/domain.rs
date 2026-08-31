@@ -201,6 +201,28 @@ pub static USER_MODEL: LazyLock<IvoModel<UserInput, User, UserCtxOptions, Timest
                             _ => false,
                         })
                     })
+                    .post_validate(["email", "phone_number"], |b| {
+                        b.validate(async |ctx: Ctx, o: RwCtxOptions| {
+                            if !ctx.is_update() {
+                                return Ok(None);
+                            }
+
+                            let input = ctx.input();
+
+                            let is_valid = input.email.as_ref().map_or(false, |e| e.is_some())
+                                || input.phone_number.as_ref().map_or(false, |p| p.is_some());
+
+                            if is_valid {
+                                return Ok(None);
+                            }
+
+                            let error = "provide either an \"email\" or a \"phone number\" to proceed";
+
+                            Err(UserInputErrors::new()
+                                .with_email(error, None)
+                                .with_phone_number(error, None))
+                        })
+                    })
                     .post_validate(["username", "v_slug"], |b| {
                         b.validate(async |ctx: Ctx, o: RwCtxOptions| {
                             let input = ctx.input();

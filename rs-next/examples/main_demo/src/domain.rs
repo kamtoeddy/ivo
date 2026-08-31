@@ -144,6 +144,30 @@ mod user_schema {
     })]
     const _: () = ();
 
+    #[post_validate(["email", "phone_number"], validate =  |ctx, _| {
+        if !ctx.is_update() {
+            return Ok(None);
+        }
+
+        let input = ctx.input();
+
+        let is_valid =
+            input.email.as_ref().map_or(false, |e| e.is_some()) ||
+            input.phone_number.as_ref().map_or(false, |p| p.is_some());
+
+        if is_valid {
+            return Ok(None);
+        }
+
+        let error = "provide either an \"email\" or a \"phone number\" to proceed";
+
+        Err(UserInputErrors::new()
+            .with_email(error, None)
+            .with_phone_number(error, None)
+        )
+    })]
+    const _: () = ();
+
     #[ignore_update(["username", "v_slug"], |ctx, _| {
         match ctx.values().username_last_updated_at {
             Some(dt) => (Utc::now() - dt).num_days() < 30,
