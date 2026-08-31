@@ -305,6 +305,12 @@ struct VirtualPipeline {
     /// Sanitize has no non-virtual counterpart to merge with, so it's
     /// already fully assembled.
     sanitize_phase: proc_macro2::TokenStream,
+    /// `true` if *any* virtual field's `__virtual_provided_*` flag is set --
+    /// built right alongside those flags (rather than reconstructed at a
+    /// distance by re-deriving each flag's identifier from a field name), so
+    /// callers that need "is any virtual field still relevant" don't have to
+    /// know the `__virtual_provided_{name}` naming convention themselves.
+    still_relevant_expr: proc_macro2::TokenStream,
     any_async: bool,
 }
 
@@ -3021,7 +3027,7 @@ fn generate_model(
         .count();
     create_has_async |= dependent_async_count > 0;
 
-    let dependent_create_block = if dependent_infos.is_empty() {
+    let dependent_create_phase = if dependent_infos.is_empty() {
         // No `#[depends_on]` fields at all: don't generate the resolution
         // loop's `HashSet`/`loop` scaffold, matching GOAL.md §17's "a schema
         // with no `#[depends_on]` fields does not generate the
@@ -3034,7 +3040,7 @@ fn generate_model(
         // parallel as it gets, so keep the simpler, incrementally-updated-ctx
         // codegen (each field observes prior fields' changes within the same
         // round, matching the pre-existing, well-tested behavior).
-        let dependent_create_steps = dependent_infos.iter().map(|d| {
+        let dependent_create_phase = dependent_infos.iter().map(|d| {
             let DependentInfo { name, name_str, ty, parent_guard, resolver, .. } = d;
             let ctx_expr = quote!(ctx.clone());
             let opts_expr = quote!(&_rw_ctx_options);
@@ -3063,7 +3069,7 @@ fn generate_model(
             loop {
                 let mut __dependent_next_parents: ::std::collections::HashSet<&'static str> =
                     ::std::collections::HashSet::new();
-                #(#dependent_create_steps)*
+                #(#dependent_create_phase)*
                 if __dependent_next_parents.is_empty() {
                     break;
                 }
@@ -3209,6 +3215,16 @@ fn generate_model(
                 ignore_flag_tokens: ignore_flag_for(f),
             })
             .collect();
+
+        // Built right alongside the `__virtual_provided_*` flags themselves
+        // (see `VirtualPipeline::still_relevant_expr`), not reconstructed
+        // later by re-deriving each flag's identifier from a field name.
+        let still_relevant_expr = if vfields.is_empty() {
+            quote! { false }
+        } else {
+            let flags = vfields.iter().map(|v| &v.provided_flag);
+            quote! { (#(#flags)||*) }
+        };
 
         // Setup always runs eagerly and sequentially: it's cheap (a couple of
         // boolean checks), and later phases (re-validate, sanitize) as well as
@@ -3382,6 +3398,7 @@ fn generate_model(
             re_validate_items,
             ctx_rebuild,
             sanitize_phase,
+            still_relevant_expr,
             any_async,
         }
     };
@@ -3407,7 +3424,7 @@ fn generate_model(
     // Validate is one combined phase across every field type: required/lax
     // (`create_early_items`, computed above) and virtual fields' validators
     // are batched together, not run as two separate sequential passes.
-    let create_validate_steps = {
+    let create_validate_phase = {
         let items: Vec<AsyncPhaseItem> = create_virtual
             .validate_items
             .clone()
@@ -3476,7 +3493,7 @@ fn generate_model(
     create_has_async |= re_validate_any_async;
     update_has_async |= re_validate_any_async;
 
-    let create_re_validate_steps = {
+    let create_re_validate_phase = {
         let items: Vec<AsyncPhaseItem> = re_validate_items
             .clone()
             .into_iter()
@@ -3484,7 +3501,7 @@ fn generate_model(
             .collect();
         emit_async_phase(items, &create_virtual.ctx_rebuild)
     };
-    let create_virtual_sanitize_steps = create_virtual.sanitize_phase.clone();
+    let create_virtual_sanitize_phase = create_virtual.sanitize_phase.clone();
 
     let post_validate_options: Vec<_> = options
         .iter()
@@ -4072,7 +4089,7 @@ fn generate_model(
     // Validate is one combined phase across every field type: required/lax
     // (`update_assignment_items`) and virtual fields' validators are batched
     // together, not run as two separate sequential passes.
-    let update_validate_steps = {
+    let update_validate_phase = {
         let items: Vec<AsyncPhaseItem> = update_virtual
             .validate_items
             .clone()
@@ -4087,7 +4104,7 @@ fn generate_model(
     // Re-validate: required/lax (`re_validate_items`, shared with create
     // above) and virtual fields' re-validators, batched together as one
     // combined phase, same as validate above.
-    let update_re_validate_steps = {
+    let update_re_validate_phase = {
         let items: Vec<AsyncPhaseItem> = re_validate_items
             .clone()
             .into_iter()
@@ -4095,7 +4112,7 @@ fn generate_model(
             .collect();
         emit_async_phase(items, &update_virtual.ctx_rebuild)
     };
-    let update_virtual_sanitize_steps = update_virtual.sanitize_phase.clone();
+    let update_virtual_sanitize_phase = update_virtual.sanitize_phase.clone();
 
     // A virtual field that is ignored on update still counts as an attempted update,
     // so that an update consisting only of an ignored virtual field returns the
@@ -4145,8 +4162,9 @@ fn generate_model(
         .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax))
         .collect();
     let input_strip_unchanged_output_names = input_strip_unchanged_fields.iter().map(|f| &f.name);
-    let input_strip_unchanged_input_names =
-        input_strip_unchanged_fields.iter().map(|f| input_field_name(f));
+    let input_strip_unchanged_input_names = input_strip_unchanged_fields
+        .iter()
+        .map(|f| input_field_name(f));
 
     // Same per-field pieces as before, but grouped into dependency levels: level
     // 0 depends only on non-dependent fields (already fully resolved before
@@ -4293,7 +4311,7 @@ fn generate_model(
         }
     };
 
-    let dependent_update_assignments: Vec<proc_macro2::TokenStream> = dependent_update_levels
+    let dependent_update_phase: Vec<proc_macro2::TokenStream> = dependent_update_levels
         .into_iter()
         .map(|level_infos| {
             let async_count = level_infos
@@ -4442,7 +4460,7 @@ fn generate_model(
         })
         .collect();
     update_has_async |= timestamp_update_pairs.iter().any(|(a, _)| *a);
-    let timestamp_update_assignments = timestamp_update_pairs.into_iter().map(|(_, stmt)| stmt);
+    let timestamp_update_phase = timestamp_update_pairs.into_iter().map(|(_, stmt)| stmt);
 
     let post_input_inits: Vec<_> = fields
         .iter()
@@ -5045,6 +5063,36 @@ fn generate_model(
             ));
         }
     };
+
+    // Each of validate/re-validate/post-validate-pre/post-validate-main is
+    // now a self-contained phase that includes its own fail-fast check,
+    // rather than the caller splicing `#create_error_check`/
+    // `#update_error_check` separately after each -- matching `rs/`'s
+    // `validate()`/`re_validate()` shape, where checking `error_tool.
+    // has_errors()` is part of the same function as running the validators,
+    // not a separate step the caller has to remember to call.
+    //
+    // `update`'s post-validate *main* phase is the one exception: its real
+    // fail-fast check intentionally stays where it already was, after the
+    // `__changes`/`input` recompute that follows it (not merged in here) --
+    // `on_failure` triggers read `__changes` at the point of failure, and
+    // checking right after this phase (before that recompute runs) would
+    // make them observe stale, pre-recompute state instead.
+    let create_validate_phase = quote! { #create_validate_phase #create_error_check };
+    let create_re_validate_phase = quote! { #create_re_validate_phase #create_error_check };
+    let post_validate_create_pre_phase =
+        quote! { #post_validate_create_pre_phase #create_error_check };
+    let post_validate_create_main_phase =
+        quote! { #post_validate_create_main_phase #create_error_check };
+    let update_validate_phase = quote! {
+        #update_validate_phase
+        #(#virtual_ignore_update_attempts)*
+        #update_error_check
+    };
+    let update_re_validate_phase = quote! { #update_re_validate_phase #update_error_check };
+    let post_validate_update_pre_phase =
+        quote! { #post_validate_update_pre_phase #update_error_check };
+
     let update_nothing_to_update_return = quote! {
         let __trigger_changes = __changes.clone();
         let __return_opts = _ctx_options.clone();
@@ -5075,19 +5123,7 @@ fn generate_model(
     // for that, a virtual-only update would be incorrectly rejected here
     // before dependent resolution ever gets a chance to run.
     let update_mid_pipeline_nothing_to_update_check = {
-        let virtual_provided_checks: Vec<_> = fields
-            .iter()
-            .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
-            .map(|f| {
-                let provided_flag = format_ident!("__virtual_provided_{}", f.name);
-                quote! { #provided_flag }
-            })
-            .collect();
-        let virtual_still_relevant = if virtual_provided_checks.is_empty() {
-            quote! { false }
-        } else {
-            quote! { (#(#virtual_provided_checks)||*) }
-        };
+        let virtual_still_relevant = &update_virtual.still_relevant_expr;
         quote! {
             if __changes.is_empty() && !(#virtual_still_relevant) {
                 #update_nothing_to_update_return
@@ -5134,23 +5170,15 @@ fn generate_model(
 
                 #create_error_check
 
-                #create_validate_steps
+                #create_validate_phase
 
-                #create_error_check
-
-                #create_re_validate_steps
-
-                #create_error_check
+                #create_re_validate_phase
 
                 #post_validate_create_pre_phase
 
-                #create_error_check
-
                 #post_validate_create_main_phase
 
-                #create_error_check
-
-                #create_virtual_sanitize_steps
+                #create_virtual_sanitize_phase
 
                 let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
@@ -5160,7 +5188,7 @@ fn generate_model(
                     false,
                 );
 
-                #dependent_create_block
+                #dependent_create_phase
 
                 #create_constants_phase
 
@@ -5211,15 +5239,9 @@ fn generate_model(
 
                 #update_error_check
 
-                #update_validate_steps
+                #update_validate_phase
 
-                #(#virtual_ignore_update_attempts)*
-
-                #update_error_check
-
-                #update_re_validate_steps
-
-                #update_error_check
+                #update_re_validate_phase
 
                 let mut __post_input: #partial_input_name = ::core::default::Default::default();
                 #(#post_input_inits)*
@@ -5233,8 +5255,6 @@ fn generate_model(
                         true,
                     );
                     #post_validate_update_pre_phase
-
-                    #update_error_check
 
                     #post_validate_update_main_phase
                     __post_input = input;
@@ -5258,7 +5278,7 @@ fn generate_model(
 
                 #update_mid_pipeline_nothing_to_update_check
 
-                #update_virtual_sanitize_steps
+                #update_virtual_sanitize_phase
                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     updates.clone(),
@@ -5267,13 +5287,13 @@ fn generate_model(
                     true,
                 );
 
-                #(#dependent_update_assignments)*
+                #(#dependent_update_phase)*
 
                 if __update_attempted && __changes.is_empty() {
                     #update_nothing_to_update_return
                 }
 
-                #(#timestamp_update_assignments)*
+                #(#timestamp_update_phase)*
 
                 let __trigger_changes = __changes.clone();
                 let __return_opts = _ctx_options.clone();
