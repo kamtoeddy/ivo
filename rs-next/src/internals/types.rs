@@ -224,7 +224,7 @@ pub trait WithPartialStruct {
 }
 
 pub trait WithPartialErrors<Metadata: Send + Sync> {
-    type PartialErrors: PartialErrorsMethods<Metadata> + Send + Sync;
+    type PartialErrors: Send + Sync;
 }
 
 pub trait IvoStruct: WithPartialStruct + Into<Self::Partial> + Send + Sync + 'static {
@@ -234,18 +234,6 @@ pub trait IvoStruct: WithPartialStruct + Into<Self::Partial> + Send + Sync + 'st
 pub trait IvoInputStruct<CtxOptions, ErrorSanitizer: IvoErrorSanitizer<CtxOptions>>:
     IvoStruct + WithPartialErrors<ErrorSanitizer::Metadata>
 {
-}
-
-pub trait PartialErrorsMethods<Metadata: Send + Sync> {
-    fn entries(self) -> Vec<(String, (String, Option<Metadata>))>;
-}
-
-impl<Metadata: Send + Sync + Clone> PartialErrorsMethods<Metadata> for IvoErrorPayload<Metadata> {
-    fn entries(self) -> Vec<(String, (String, Option<Metadata>))> {
-        self.into_iter()
-            .map(|(k, v)| (k, (v.reason, v.metadata)))
-            .collect()
-    }
 }
 
 // Context types
@@ -315,39 +303,6 @@ impl<I, O: WithPartialStruct> IvoContext<I, O> {
 
     pub fn is_update(&self) -> bool {
         self.previous_values.is_some()
-    }
-}
-
-pub struct IvoDefaultCtx<I> {
-    _input: std::marker::PhantomData<I>,
-}
-
-impl<I> IvoDefaultCtx<I> {
-    pub fn input(&self) -> &I {
-        unimplemented!()
-    }
-
-    pub fn raw_input(&self) -> &I {
-        unimplemented!()
-    }
-}
-
-pub struct IvoConstantCtx<I, O> {
-    _input: std::marker::PhantomData<I>,
-    _output: std::marker::PhantomData<O>,
-}
-
-impl<I, O> IvoConstantCtx<I, O> {
-    pub fn input(&self) -> &I {
-        unimplemented!()
-    }
-
-    pub fn raw_input(&self) -> &I {
-        unimplemented!()
-    }
-
-    pub fn values(&self) -> &O {
-        unimplemented!()
     }
 }
 

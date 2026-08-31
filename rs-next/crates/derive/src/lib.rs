@@ -2758,12 +2758,12 @@ fn generate_model(
 
     // Early create phase: required/lax base-value + validate, timestamps
     // (already deduped to a single resolver call above), and dependent-field
-    // defaults. None of these handlers can read a sibling's output (lax/
-    // dependent defaults only get `IvoDefaultCtx<I>`, which exposes just
-    // input/raw_input; required/lax validators get the full `IvoContext`, but
-    // -- matching the reference implementation -- every item in this phase is
-    // evaluated against the *same* pre-phase `ctx` snapshot, not one another's
-    // results), so the whole phase is safe to batch: sequential when 0/1
+    // defaults. Every handler here gets the same full `IvoContext` (there's
+    // no cut-down context type for defaults/resolvers), but -- matching the
+    // reference implementation -- every item in this phase is evaluated
+    // against the *same* pre-phase `ctx` snapshot, not one another's results,
+    // so none of them can actually observe a sibling's output from this same
+    // phase, making the whole phase safe to batch: sequential when 0/1
     // handlers are async, `join!`-concurrent when 2+ are. `#[constant]`
     // fields are handled separately, in their own phase after dependent
     // resolution (see below), since their ctx *does* expose `ctx.values()`
