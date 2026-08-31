@@ -35,8 +35,24 @@ MEMORY_BENCHES: List[str] = [
 ]
 
 MAIN_DEMO_BENCHES: List[str] = [
-    "main_demo create",
-    "main_demo update",
+    "main_demo create [fail: required errors (email or phone_number)]",
+    "main_demo create [fail: required errors (email or phone_number, username)]",
+    "main_demo create [fail: validation error (email, slug_id, username)]",
+    "main_demo create [fail: re_validation error (username taken)]",
+    "main_demo create [fail: post-validation error (slug taken)]",
+    "main_demo create [success: 2/4 inputs (a)]",
+    "main_demo create [success: 2/4 inputs (b)]",
+    "main_demo create [success: 3/4 inputs]",
+    "main_demo create [success: 4/4 inputs]",
+    "main_demo update [fail: required error (email or phone_number)]",
+    "main_demo update [fail: validation error (email, slug_id, username)]",
+    "main_demo update [fail: re_validation error (username taken)]",
+    "main_demo update [fail: post-validation error (slug taken)]",
+    "main_demo update [success: 1/4 inputs (d)]",
+    "main_demo update [success: 1/4 inputs (b)]",
+    "main_demo update [success: 1/4 inputs (c)]",
+    "main_demo update [success: 3/4 inputs]",
+    "main_demo update [success: 4/4 inputs]",
     "main_demo delete",
 ]
 

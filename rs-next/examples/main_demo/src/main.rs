@@ -112,10 +112,10 @@ async fn main() {
     //     .with_slug_id("user-1".into());
 
     // // update success: 1/4 inputs (a)
-    // let updates = PartialUserInput::new().with_email(Some("1@1.com".into()));
+    // let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
 
     // // update success: 1/4 inputs (b)
-    // let updates = PartialUserInput::new().with_phone_number(Some("123 4567 8910".into()));
+    // let updates = PartialUserInput::new().with_phone_number(Some("123 4567 8911".into()));
 
     // // update success: 1/4 inputs (c)
     // let updates = PartialUserInput::new().with_slug_id("newly-updated-slug-id: Lol".into());

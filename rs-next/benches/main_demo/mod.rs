@@ -1,10 +1,11 @@
+use chrono::{Days, Utc};
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::sync::LazyLock;
 
 mod domain;
 mod slugify;
 
-use domain::{PartialUserInput, UserCtxOptions, UserModel};
+use domain::{PartialUserInput, User, UserCtxOptions, UserModel};
 
 static TOKIO_RT: LazyLock<tokio::runtime::Runtime> =
     LazyLock::new(|| tokio::runtime::Runtime::new().unwrap());
@@ -119,6 +120,14 @@ fn bench_main_demo(c: &mut Criterion) {
         });
     });
 
+    let (username, slug_id) = {
+        let username = "John Doe";
+
+        (username.into(), username.into())
+    };
+
+    let two_days_ago = Utc::now().checked_sub_days(Days::new(2)).unwrap();
+
     let user = User {
         id: 1,
         created_at: two_days_ago,
@@ -190,7 +199,7 @@ fn bench_main_demo(c: &mut Criterion) {
 
     c.bench_function("main_demo update [success: 1/4 inputs (d)]", |b| {
         b.to_async(rt).iter(|| async {
-            let updates = PartialUserInput::new().with_email(Some("1@1.com".into()));
+            let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
 
             let _ = UserModel
                 .update(user.clone(), updates, UserCtxOptions::new())
@@ -200,7 +209,7 @@ fn bench_main_demo(c: &mut Criterion) {
 
     c.bench_function("main_demo update [success: 1/4 inputs (b)]", |b| {
         b.to_async(rt).iter(|| async {
-            let updates = PartialUserInput::new().with_phone_number(Some("123 4567 8910".into()));
+            let updates = PartialUserInput::new().with_phone_number(Some("123 4567 8911".into()));
 
             let _ = UserModel
                 .update(user.clone(), updates, UserCtxOptions::new())

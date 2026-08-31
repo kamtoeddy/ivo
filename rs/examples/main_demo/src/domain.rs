@@ -182,7 +182,14 @@ pub static USER_MODEL: LazyLock<IvoModel<UserInput, User, UserCtxOptions, Timest
                     })
             },
             |o| {
-                o.required(["email", "phone_number"], |ctx: Ctx, _| {
+                o
+                    .ignore_update(["username", "v_slug"], |_, user: User, _| {
+                        ready(match user.username_last_updated_at {
+                            Some(dt) => (Utc::now() - dt).num_days() < 30,
+                            _ => false,
+                        })
+                    })
+                    .required(["email", "phone_number"], |ctx: Ctx, _| {
                     if ctx.is_update() {
                         return ready(None);
                     }
@@ -195,14 +202,8 @@ pub static USER_MODEL: LazyLock<IvoModel<UserInput, User, UserCtxOptions, Timest
                             .with_phone_number(error, None),
                     ))
                 })
-                    .ignore_update(["username", "v_slug"], |_, user: User, _| {
-                        ready(match user.username_last_updated_at {
-                            Some(dt) => (Utc::now() - dt).num_days() < 30,
-                            _ => false,
-                        })
-                    })
                     .post_validate(["email", "phone_number"], |b| {
-                        b.validate(async |ctx: Ctx, o: RwCtxOptions| {
+                        b.validate(async |ctx: Ctx, _| {
                             if !ctx.is_update() {
                                 return Ok(None);
                             }
