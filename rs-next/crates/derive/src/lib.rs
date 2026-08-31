@@ -2882,8 +2882,8 @@ fn generate_model(
             input.clone(),
             __original_input.clone(),
             output.clone(),
-            output.clone().into(),
-            false,
+            ::core::option::Option::None,
+            ::core::option::Option::None,
         );
     };
     // Not emitted yet: merged with virtual fields' validate items below (see
@@ -2937,8 +2937,8 @@ fn generate_model(
             input.clone(),
             __original_input.clone(),
             output.clone(),
-            output.clone().into(),
-            false,
+            ::core::option::Option::None,
+            ::core::option::Option::None,
         );
     };
     let create_constants_phase =
@@ -3056,8 +3056,8 @@ fn generate_model(
                         input.clone(),
                         __original_input.clone(),
                         output.clone(),
-                        output.clone().into(),
-                        false,
+                        ::core::option::Option::None,
+                        ::core::option::Option::None,
                     );
                 }
             }
@@ -3162,8 +3162,8 @@ fn generate_model(
                     input.clone(),
                     __original_input.clone(),
                     output.clone(),
-                    output.clone().into(),
-                    false,
+                    ::core::option::Option::None,
+                    ::core::option::Option::None,
                 );
             }
         }
@@ -3184,7 +3184,7 @@ fn generate_model(
         &FieldDef,
     ) -> proc_macro2::TokenStream,
                                   changes_expr: &proc_macro2::TokenStream,
-                                  is_update_flag: bool,
+                                  previous_values_expr: &proc_macro2::TokenStream,
                                   raw_input_expr: &proc_macro2::TokenStream|
      -> VirtualPipeline {
         struct VField<'a> {
@@ -3249,7 +3249,7 @@ fn generate_model(
                 #raw_input_expr,
                 output.clone(),
                 #changes_expr,
-                #is_update_flag,
+                #previous_values_expr,
             );
         };
 
@@ -3415,8 +3415,8 @@ fn generate_model(
 
     let create_virtual = build_virtual_pipeline(
         &create_virtual_ignore_flag_for,
-        &quote!(output.clone().into()),
-        false,
+        &quote!(::core::option::Option::None),
+        &quote!(::core::option::Option::None),
         &quote!(__original_input.clone()),
     );
     create_has_async |= create_virtual.any_async;
@@ -3628,7 +3628,7 @@ fn generate_model(
         |handler_for: &dyn Fn(&PostValidateGroupInfo) -> Option<proc_macro2::TokenStream>,
          apply_updates_for: &dyn Fn(&PostValidateGroupInfo) -> &[proc_macro2::TokenStream],
          changes_expr: &proc_macro2::TokenStream,
-         is_update_flag: bool,
+         previous_values_expr: &proc_macro2::TokenStream,
          raw_input_expr: &proc_macro2::TokenStream,
          relevance_guard_for: &dyn Fn(&PostValidateGroupInfo) -> proc_macro2::TokenStream|
          -> proc_macro2::TokenStream {
@@ -3684,7 +3684,7 @@ fn generate_model(
                     #raw_input_expr,
                     output.clone(),
                     #changes_expr,
-                    #is_update_flag,
+                    #previous_values_expr,
                 );
             };
             emit_async_phase(items, &ctx_rebuild)
@@ -3719,32 +3719,32 @@ fn generate_model(
     let post_validate_create_pre_phase = build_post_validate_phase(
         &|g| g.pre_validate.clone(),
         &|g| &g.create_apply_updates,
-        &quote!(output.clone().into()),
-        false,
+        &quote!(::core::option::Option::None),
+        &quote!(::core::option::Option::None),
         &quote!(__original_input.clone()),
         &|_| quote! { true },
     );
     let post_validate_create_main_phase = build_post_validate_phase(
         &|g| Some(g.handler.clone()),
         &|g| &g.create_apply_updates,
-        &quote!(output.clone().into()),
-        false,
+        &quote!(::core::option::Option::None),
+        &quote!(::core::option::Option::None),
         &quote!(__original_input.clone()),
         &|_| quote! { true },
     );
     let post_validate_update_pre_phase = build_post_validate_phase(
         &|g| g.pre_validate.clone(),
         &|g| &g.update_apply_updates,
-        &quote!(__changes.clone()),
-        true,
+        &quote!(::core::option::Option::Some(__changes.clone())),
+        &quote!(::core::option::Option::Some(__original_output.clone())),
         &quote!(updates.clone()),
         &update_group_relevance_guard,
     );
     let post_validate_update_main_phase = build_post_validate_phase(
         &|g| Some(g.handler.clone()),
         &|g| &g.update_apply_updates,
-        &quote!(__changes.clone()),
-        true,
+        &quote!(::core::option::Option::Some(__changes.clone())),
+        &quote!(::core::option::Option::Some(__original_output.clone())),
         &quote!(updates.clone()),
         &update_group_relevance_guard,
     );
@@ -4020,8 +4020,8 @@ fn generate_model(
 
     let update_virtual = build_virtual_pipeline(
         &update_virtual_ignore_flag_for,
-        &quote!(__changes.clone()),
-        true,
+        &quote!(::core::option::Option::Some(__changes.clone())),
+        &quote!(::core::option::Option::Some(__original_output.clone())),
         &quote!(updates.clone()),
     );
     update_has_async |= update_virtual.any_async;
@@ -4479,8 +4479,8 @@ fn generate_model(
                                         input.clone(),
                                         updates.clone(),
                                         output.clone(),
-                                        __changes.clone(),
-                                        true,
+                                        ::core::option::Option::Some(__changes.clone()),
+                                        ::core::option::Option::Some(__original_output.clone()),
                                     );
                                 }
                             }
@@ -4560,8 +4560,8 @@ fn generate_model(
                         input.clone(),
                         updates.clone(),
                         output.clone(),
-                        __changes.clone(),
-                        true,
+                        ::core::option::Option::Some(__changes.clone()),
+                        ::core::option::Option::Some(__original_output.clone()),
                     );
                 }
             }
@@ -5088,8 +5088,8 @@ fn generate_model(
                 __trigger_input.clone(),
                 __trigger_raw_input.clone(),
                 __trigger_output.clone(),
-                __trigger_output.clone().into(),
-                false,
+                ::core::option::Option::None,
+                ::core::option::Option::None,
             );
         };
         make_trigger(create_success_items, setup)
@@ -5104,8 +5104,8 @@ fn generate_model(
                 __trigger_input.clone(),
                 __trigger_raw_input.clone(),
                 __trigger_output.clone(),
-                __trigger_output.clone().into(),
-                false,
+                ::core::option::Option::None,
+                ::core::option::Option::None,
             );
         };
         make_trigger(create_failure_items, setup)
@@ -5121,8 +5121,8 @@ fn generate_model(
                 __trigger_input.clone(),
                 __trigger_raw_input.clone(),
                 __trigger_output.clone(),
-                __trigger_changes.clone(),
-                true,
+                ::core::option::Option::Some(__trigger_changes.clone()),
+                ::core::option::Option::Some(__original_output.clone()),
             );
         };
         make_trigger(update_success_items, setup)
@@ -5137,8 +5137,8 @@ fn generate_model(
                 __trigger_input.clone(),
                 __trigger_raw_input.clone(),
                 __trigger_output.clone(),
-                __trigger_changes.clone(),
-                true,
+                ::core::option::Option::Some(__trigger_changes.clone()),
+                ::core::option::Option::Some(__original_output.clone()),
             );
         };
         make_trigger(update_failure_items, setup)
@@ -5254,8 +5254,8 @@ fn generate_model(
                 input.clone(),
                 updates.clone(),
                 output.clone(),
-                __changes.clone(),
-                true,
+                ::core::option::Option::Some(__changes.clone()),
+                ::core::option::Option::Some(__original_output.clone()),
             );
             #post_validate_update_pre_phase
 
@@ -5347,8 +5347,8 @@ fn generate_model(
                     input.clone(),
                     __original_input.clone(),
                     output.clone(),
-                    output.clone().into(),
-                    false,
+                    ::core::option::Option::None,
+                    ::core::option::Option::None,
                 );
 
                 #create_ignore_phase
@@ -5369,8 +5369,8 @@ fn generate_model(
                     input.clone(),
                     __original_input.clone(),
                     output.clone(),
-                    output.clone().into(),
-                    false,
+                    ::core::option::Option::None,
+                    ::core::option::Option::None,
                 );
 
                 #dependent_create_phase
@@ -5409,8 +5409,8 @@ fn generate_model(
                     input.clone(),
                     updates.clone(),
                     output.clone(),
-                    __changes.clone(),
-                    true,
+                    ::core::option::Option::Some(__changes.clone()),
+                    ::core::option::Option::Some(__original_output.clone()),
                 );
 
                 let mut errors: ::ivo::__ivo_internals::IvoErrorPayload<#metadata_ty> =
@@ -5437,8 +5437,8 @@ fn generate_model(
                     input.clone(),
                     updates.clone(),
                     output.clone(),
-                    __changes.clone(),
-                    true,
+                    ::core::option::Option::Some(__changes.clone()),
+                    ::core::option::Option::Some(__original_output.clone()),
                 );
 
                 #(#dependent_update_phase)*

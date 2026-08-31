@@ -773,11 +773,10 @@ Both options wrappers are backed by `async-lock::RwLock` so guards can safely be
 
 - `input()` — current partial input.
 - `raw_input()` — original partial input.
-- `values()` — current full output values being built.
-- `changes()` — current update changes (update only).
-- `full_values()` — previous full output values (update only).
-- `previous_values()` — alias for `full_values()`.
-- `is_update()` — whether the context is for an update.
+- `values()` — current full output values being built (creation or update).
+- `changes()` — `Option<&O::Partial>`, the subset of output values changed by this update; `None` at creation.
+- `previous_values()` — `Option<&O>`, the record as it was before this update was applied; `None` at creation.
+- `is_update()` — whether the context is for an update (equivalent to `previous_values().is_some()`).
 
 ### Error sanitizer trait
 

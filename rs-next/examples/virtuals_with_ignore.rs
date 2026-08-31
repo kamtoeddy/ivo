@@ -207,7 +207,7 @@ mod data_schema {
         #[ivo_virtual]
         #[ignore(|ctx, _| {
             ctx.input().lax == Some(crate::IGNORE_TRIGGER_VALUE.to_string())
-                || (ctx.is_update() && ctx.full_values().lax == crate::IGNORE_TRIGGER_VALUE.to_string())
+                || (ctx.is_update() && ctx.values().lax == crate::IGNORE_TRIGGER_VALUE.to_string())
         })]
         #[validate(|_, _, _| Ok(None))]
         #[on_success(|ctx, _| {

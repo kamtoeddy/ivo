@@ -180,7 +180,7 @@ mod data_schema {
         #[lax(crate::DEFAULT_USERNAME.to_string())]
         #[ignore(|ctx, _| {
             ctx.input().lax == Some(crate::IGNORE_TRIGGER_VALUE.to_string())
-                || (ctx.is_update() && ctx.full_values().lax == crate::IGNORE_TRIGGER_VALUE.to_string())
+                || (ctx.is_update() && ctx.values().lax == crate::IGNORE_TRIGGER_VALUE.to_string())
         })]
         #[on_success(|ctx, _| {
             println!("\n[on_success]: username = {}", ctx.values().username);

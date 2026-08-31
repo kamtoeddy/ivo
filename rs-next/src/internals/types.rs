@@ -255,8 +255,8 @@ pub struct IvoContext<I, O: WithPartialStruct> {
     input: I,
     raw_input: I,
     values: O,
-    changes: O::Partial,
-    is_update: bool,
+    changes: Option<O::Partial>,
+    previous_values: Option<O>,
 }
 
 impl<I, O: WithPartialStruct> IvoContext<I, O> {
@@ -265,13 +265,25 @@ impl<I, O: WithPartialStruct> IvoContext<I, O> {
     /// never mutated afterward -- distinct from `input`, which evolves as
     /// the pipeline runs (ignored fields cleared, validated/re-validated/
     /// sanitized values substituted in, `post_validate` updates merged in).
-    pub fn new(input: I, raw_input: I, values: O, changes: O::Partial, is_update: bool) -> Self {
+    ///
+    /// `changes` and `previous_values` are only meaningful during an update
+    /// (there's no prior record and no diff-from-prior-record at creation),
+    /// so both are `None` on `create` and `Some` on `update` -- `is_update()`
+    /// is derived from `previous_values`'s presence rather than tracked
+    /// separately, so the two can't drift out of sync.
+    pub fn new(
+        input: I,
+        raw_input: I,
+        values: O,
+        changes: Option<O::Partial>,
+        previous_values: Option<O>,
+    ) -> Self {
         Self {
             input,
             raw_input,
             values,
             changes,
-            is_update,
+            previous_values,
         }
     }
 
@@ -283,24 +295,26 @@ impl<I, O: WithPartialStruct> IvoContext<I, O> {
         &self.raw_input
     }
 
+    /// The full, most-up-to-date set of output values, at creation or during
+    /// an update (includes whatever this pipeline run has resolved so far).
     pub fn values(&self) -> &O {
         &self.values
     }
 
-    pub fn changes(&self) -> &O::Partial {
-        &self.changes
+    /// The subset of output values changed by this update. `None` at
+    /// creation (everything is new there, so "changed" is meaningless).
+    pub fn changes(&self) -> Option<&O::Partial> {
+        self.changes.as_ref()
     }
 
-    pub fn full_values(&self) -> &O {
-        &self.values
-    }
-
-    pub fn previous_values(&self) -> &O {
-        &self.values
+    /// The record as it was *before* this update was applied. `None` at
+    /// creation (there is no prior record).
+    pub fn previous_values(&self) -> Option<&O> {
+        self.previous_values.as_ref()
     }
 
     pub fn is_update(&self) -> bool {
-        self.is_update
+        self.previous_values.is_some()
     }
 }
 

@@ -2752,7 +2752,7 @@ mod respect_ignore_rule_schema {
         #[validate(|_, _, _| Ok(None))]
         #[ignore(|ctx, _| {
             if ctx.is_update() {
-                return "ignore_lax_for_update" == ctx.previous_values().other;
+                return "ignore_lax_for_update" == ctx.previous_values().unwrap().other;
             }
 
             ctx.input().other == Some("ignore_lax_for_init".into())
