@@ -4580,7 +4580,7 @@ fn generate_model(
                 quote! { false }
             };
             let condition = if matches!(f.field_type, FieldType::Virtual { .. }) {
-                quote! { !#ignored && __trigger_input.#input_name.is_some() }
+                quote! { !#ignored && __trigger_raw_input.#input_name.is_some() }
             } else {
                 quote! { true }
             };
@@ -4644,7 +4644,7 @@ fn generate_model(
                 } else {
                     quote! { false }
                 };
-                quote! { !#ignored && __trigger_updates.#input_name.is_some() }
+                quote! { !#ignored && __trigger_raw_input.#input_name.is_some() }
             } else {
                 quote! { __trigger_changes.#name.is_some() }
             };
@@ -4856,14 +4856,25 @@ fn generate_model(
             }
         };
 
+    // `__trigger_input` captures the pipeline's *current* input at the point
+    // each trigger is constructed -- e.g. a failure trigger built right
+    // after `validate` reflects validate's rewrites, matching `ctx.input()`'s
+    // meaning everywhere else in the pipeline (`rs/`'s
+    // `prepare_success_handlers`/`prepare_failure_handlers` are likewise
+    // called with whatever `ctx` exists at that specific return point, not a
+    // fixed snapshot). `__trigger_raw_input` is the true, never-mutated
+    // original the caller passed in, for `ctx.raw_input()` (and for "was
+    // this field originally provided" checks, which should stay pinned to
+    // what the caller actually submitted regardless of later rewrites).
     let create_success_trigger = {
         let setup = quote! {
-            let __trigger_input = __original_input.clone();
+            let __trigger_input = input.clone();
+            let __trigger_raw_input = __original_input.clone();
             let __trigger_output = output.clone();
             #create_triggered_fields_init
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
-                __trigger_input.clone(),
+                __trigger_raw_input.clone(),
                 __trigger_output.clone(),
                 __trigger_output.clone().into(),
                 false,
@@ -4874,11 +4885,12 @@ fn generate_model(
 
     let create_failure_trigger = {
         let setup = quote! {
-            let __trigger_input = __original_input.clone();
+            let __trigger_input = input.clone();
+            let __trigger_raw_input = __original_input.clone();
             let __trigger_output = output.clone();
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
-                __trigger_input.clone(),
+                __trigger_raw_input.clone(),
                 __trigger_output.clone(),
                 __trigger_output.clone().into(),
                 false,
@@ -4889,12 +4901,13 @@ fn generate_model(
 
     let update_success_trigger = {
         let setup = quote! {
-            let __trigger_updates = updates.clone();
+            let __trigger_input = input.clone();
+            let __trigger_raw_input = updates.clone();
             let __trigger_output = output.clone();
             #update_triggered_fields_init
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                __trigger_updates.clone(),
-                __trigger_updates.clone(),
+                __trigger_input.clone(),
+                __trigger_raw_input.clone(),
                 __trigger_output.clone(),
                 __trigger_changes.clone(),
                 true,
@@ -4905,11 +4918,12 @@ fn generate_model(
 
     let update_failure_trigger = {
         let setup = quote! {
-            let __trigger_updates = updates.clone();
+            let __trigger_input = input.clone();
+            let __trigger_raw_input = updates.clone();
             let __trigger_output = output.clone();
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                __trigger_updates.clone(),
-                __trigger_updates.clone(),
+                __trigger_input.clone(),
+                __trigger_raw_input.clone(),
                 __trigger_output.clone(),
                 __trigger_changes.clone(),
                 true,

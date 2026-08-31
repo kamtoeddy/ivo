@@ -113,3 +113,116 @@ mod raw_input_update_schema {
         pub dependent: String,
     }
 }
+
+// -----------------------------------------------------------------------------
+// Lifecycle-hook (`on_success`/`on_failure`) trigger contexts previously
+// built `ctx` entirely from the pristine original input, so `ctx.input()`
+// inside those handlers reported the *original* value even after later
+// pipeline phases (validate, re-validate, sanitize, post_validate) had
+// rewritten it -- the same bug `raw_input()` had, just baked into the
+// trigger-construction call sites instead of the accessor itself. `#[on_
+// success]` runs only after the whole pipeline completes, so it's a direct
+// way to prove `ctx.input()` there now reflects the final, fully-rewritten
+// state while `ctx.raw_input()` still reflects the untouched original.
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_triggers_during_create()
+{
+    let created = raw_input_trigger_create_schema::DataModel
+        .create(
+            raw_input_trigger_create_schema::PartialDataInput {
+                virtual_field: Some("original".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    created.handle_success();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod raw_input_trigger_create_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v: String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+    }
+
+    #[on_success(|ctx, _| {
+        assert_eq!(
+            ctx.raw_input().virtual_field.as_deref(),
+            Some("original"),
+            "raw_input() must still show the value exactly as submitted"
+        );
+        assert_eq!(
+            ctx.input().virtual_field.as_deref(),
+            Some("REWRITTEN-original"),
+            "input() in an on_success trigger must reflect the pipeline's \
+             final state, not the pristine original"
+        );
+    })]
+    const _: () = ();
+}
+
+#[test]
+fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_triggers_during_update()
+{
+    let data = raw_input_trigger_update_schema::Data {
+        dependent: "old".into(),
+    };
+
+    let updated = raw_input_trigger_update_schema::DataModel
+        .update(
+            data,
+            raw_input_trigger_update_schema::PartialDataInput {
+                virtual_field: Some("original-update".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    updated.handle_success();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod raw_input_trigger_update_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v: String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+    }
+
+    #[on_success(|ctx, _| {
+        assert_eq!(
+            ctx.raw_input().virtual_field.as_deref(),
+            Some("original-update"),
+            "raw_input() must still show the value exactly as submitted"
+        );
+        assert_eq!(
+            ctx.input().virtual_field.as_deref(),
+            Some("REWRITTEN-original-update"),
+            "input() in an on_success trigger must reflect the pipeline's \
+             final state, not the pristine original"
+        );
+    })]
+    const _: () = ();
+}
