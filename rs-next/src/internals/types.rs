@@ -253,15 +253,22 @@ impl<Metadata: Send + Sync + Clone> PartialErrorsMethods<Metadata> for IvoErrorP
 #[derive(Clone)]
 pub struct IvoContext<I, O: WithPartialStruct> {
     input: I,
+    raw_input: I,
     values: O,
     changes: O::Partial,
     is_update: bool,
 }
 
 impl<I, O: WithPartialStruct> IvoContext<I, O> {
-    pub fn new(input: I, values: O, changes: O::Partial, is_update: bool) -> Self {
+    /// `raw_input` is the schema's original partial input exactly as the
+    /// caller passed it to `create`/`update`, captured once up front and
+    /// never mutated afterward -- distinct from `input`, which evolves as
+    /// the pipeline runs (ignored fields cleared, validated/re-validated/
+    /// sanitized values substituted in, `post_validate` updates merged in).
+    pub fn new(input: I, raw_input: I, values: O, changes: O::Partial, is_update: bool) -> Self {
         Self {
             input,
+            raw_input,
             values,
             changes,
             is_update,
@@ -273,7 +280,7 @@ impl<I, O: WithPartialStruct> IvoContext<I, O> {
     }
 
     pub fn raw_input(&self) -> &I {
-        &self.input
+        &self.raw_input
     }
 
     pub fn values(&self) -> &O {

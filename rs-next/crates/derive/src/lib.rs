@@ -2853,6 +2853,7 @@ fn generate_model(
     let create_early_ctx_rebuild = quote! {
         let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
             input.clone(),
+            __original_input.clone(),
             output.clone(),
             output.clone().into(),
             false,
@@ -2907,6 +2908,7 @@ fn generate_model(
     let create_constants_ctx_rebuild = quote! {
         let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
             input.clone(),
+            __original_input.clone(),
             output.clone(),
             output.clone().into(),
             false,
@@ -3017,6 +3019,7 @@ fn generate_model(
                     }
                     ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                         input.clone(),
+                        __original_input.clone(),
                         output.clone(),
                         output.clone().into(),
                         false,
@@ -3122,6 +3125,7 @@ fn generate_model(
                 __dependent_current_parents = __dependent_next_parents;
                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
+                    __original_input.clone(),
                     output.clone(),
                     output.clone().into(),
                     false,
@@ -3145,7 +3149,8 @@ fn generate_model(
         &FieldDef,
     ) -> proc_macro2::TokenStream,
                                   changes_expr: &proc_macro2::TokenStream,
-                                  is_update_flag: bool|
+                                  is_update_flag: bool,
+                                  raw_input_expr: &proc_macro2::TokenStream|
      -> VirtualPipeline {
         struct VField<'a> {
             f: &'a FieldDef,
@@ -3196,6 +3201,7 @@ fn generate_model(
         let ctx_rebuild = quote! {
             let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 input.clone(),
+                #raw_input_expr,
                 output.clone(),
                 #changes_expr,
                 #is_update_flag,
@@ -3365,6 +3371,7 @@ fn generate_model(
         &create_virtual_ignore_flag_for,
         &quote!(output.clone().into()),
         false,
+        &quote!(__original_input.clone()),
     );
     create_has_async |= create_virtual.any_async;
 
@@ -3552,7 +3559,8 @@ fn generate_model(
         |handler_for: &dyn Fn(&PostValidateGroupInfo) -> Option<proc_macro2::TokenStream>,
          apply_updates_for: &dyn Fn(&PostValidateGroupInfo) -> &[proc_macro2::TokenStream],
          changes_expr: &proc_macro2::TokenStream,
-         is_update_flag: bool|
+         is_update_flag: bool,
+         raw_input_expr: &proc_macro2::TokenStream|
          -> proc_macro2::TokenStream {
             let items: Vec<AsyncPhaseItem> = post_validate_groups
             .iter()
@@ -3598,6 +3606,7 @@ fn generate_model(
             let ctx_rebuild = quote! {
                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
+                    #raw_input_expr,
                     output.clone(),
                     #changes_expr,
                     #is_update_flag,
@@ -3611,24 +3620,28 @@ fn generate_model(
         &|g| &g.create_apply_updates,
         &quote!(output.clone().into()),
         false,
+        &quote!(__original_input.clone()),
     );
     let post_validate_create_main_phase = build_post_validate_phase(
         &|g| Some(g.handler.clone()),
         &|g| &g.create_apply_updates,
         &quote!(output.clone().into()),
         false,
+        &quote!(__original_input.clone()),
     );
     let post_validate_update_pre_phase = build_post_validate_phase(
         &|g| g.pre_validate.clone(),
         &|g| &g.update_apply_updates,
         &quote!(__changes.clone()),
         true,
+        &quote!(updates.clone()),
     );
     let post_validate_update_main_phase = build_post_validate_phase(
         &|g| Some(g.handler.clone()),
         &|g| &g.update_apply_updates,
         &quote!(__changes.clone()),
         true,
+        &quote!(updates.clone()),
     );
 
     let post_validate_any_async = post_validate_groups.iter().any(|g| {
@@ -3834,6 +3847,7 @@ fn generate_model(
         &update_virtual_ignore_flag_for,
         &quote!(__changes.clone()),
         true,
+        &quote!(updates.clone()),
     );
     update_has_async |= update_virtual.any_async;
 
@@ -4251,6 +4265,7 @@ fn generate_model(
                                     __changes.#setter(__new_value);
                                     ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                                         input.clone(),
+                                        updates.clone(),
                                         output.clone(),
                                         __changes.clone(),
                                         true,
@@ -4331,6 +4346,7 @@ fn generate_model(
                     #(#applies)*
                     ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                         input.clone(),
+                        updates.clone(),
                         output.clone(),
                         __changes.clone(),
                         true,
@@ -4847,6 +4863,7 @@ fn generate_model(
             #create_triggered_fields_init
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
+                __trigger_input.clone(),
                 __trigger_output.clone(),
                 __trigger_output.clone().into(),
                 false,
@@ -4860,6 +4877,7 @@ fn generate_model(
             let __trigger_input = __original_input.clone();
             let __trigger_output = output.clone();
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                __trigger_input.clone(),
                 __trigger_input.clone(),
                 __trigger_output.clone(),
                 __trigger_output.clone().into(),
@@ -4876,6 +4894,7 @@ fn generate_model(
             #update_triggered_fields_init
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_updates.clone(),
+                __trigger_updates.clone(),
                 __trigger_output.clone(),
                 __trigger_changes.clone(),
                 true,
@@ -4889,6 +4908,7 @@ fn generate_model(
             let __trigger_updates = updates.clone();
             let __trigger_output = output.clone();
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                __trigger_updates.clone(),
                 __trigger_updates.clone(),
                 __trigger_output.clone(),
                 __trigger_changes.clone(),
@@ -5033,6 +5053,7 @@ fn generate_model(
                 let mut output: #output_name = ::core::default::Default::default();
                 let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
+                    __original_input.clone(),
                     output.clone(),
                     output.clone().into(),
                     false,
@@ -5067,6 +5088,7 @@ fn generate_model(
 
                 let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
+                    __original_input.clone(),
                     output.clone(),
                     output.clone().into(),
                     false,
@@ -5106,6 +5128,7 @@ fn generate_model(
                 let mut input: #partial_input_name = updates.clone();
                 let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
+                    updates.clone(),
                     output.clone(),
                     __changes.clone(),
                     true,
@@ -5140,6 +5163,7 @@ fn generate_model(
                     let mut input = __post_input.clone();
                     let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                         input.clone(),
+                        updates.clone(),
                         output.clone(),
                         __changes.clone(),
                         true,
@@ -5166,6 +5190,7 @@ fn generate_model(
                 #update_virtual_sanitize_steps
                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
+                    updates.clone(),
                     output.clone(),
                     __changes.clone(),
                     true,
