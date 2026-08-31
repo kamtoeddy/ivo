@@ -106,7 +106,7 @@ mod user_schema {
 
         #[depends_on("username", "v_slug")]
         #[default(SlugifiedString::from(""))]
-        #[resolve(async |_, o| { o.read().await.slug_id.clone().unwrap() })]
+        #[resolve( |_, o| { o.read_sync().slug_id.clone().unwrap() })]
         #[on_delete(|data, _| {
             println!("[dependent_slug_id]: on delete: {:?}", data.slug_id);
         })]

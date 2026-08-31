@@ -112,7 +112,7 @@ async fn main() {
     //     .with_slug_id("user-1".into());
 
     // // nothing to update: 1/4 inputs (a)
-    let updates = PartialUserInput::new().with_email(user.email.clone());
+    // let updates = PartialUserInput::new().with_email(user.email.clone());
 
     // // nothing to update: 1/4 inputs (b)
     // let updates = PartialUserInput::new().with_phone_number(user.phone_number.clone());
@@ -155,11 +155,11 @@ async fn main() {
     //     .with_username("new_username".into());
 
     // // update success: 4/4 inputs
-    // let updates = PartialUserInput::new()
-    //     .with_email(Some("1@1.com".into()))
-    //     .with_phone_number(Some("123 4567 8910".into()))
-    //     .with_username("new_username".into())
-    //     .with_slug_id("newly-updated-slug-id: Lol".into());
+    let updates = PartialUserInput::new()
+        .with_email(Some("1@1.com".into()))
+        .with_phone_number(Some("123 4567 8910".into()))
+        .with_username("new_username".into())
+        .with_slug_id("newly-updated-slug-id: Lol".into());
 
     let timer = Instant::now();
 
