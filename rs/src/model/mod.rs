@@ -1412,7 +1412,9 @@ impl<
                     continue;
                 }
 
-                relevant_fields_provided.insert(field_name.to_string());
+                if fields_collection.fields_provided().contains(field_name) {
+                    relevant_fields_provided.insert(field_name.to_string());
+                }
             }
         }
 
