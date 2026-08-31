@@ -80,10 +80,30 @@ def run_benchmarks(project_dir: Path) -> None:
     )
 
 
+# Criterion sanitizes benchmark names into filesystem directory names by
+# replacing characters that are unsafe in a path component with `_`, then
+# truncating to 64 characters (no hash suffix -- just a hard cut). Our
+# `main_demo` bench names use `:` (e.g. "[fail: ...]") and several run past
+# 64 characters (e.g. "... (email, slug_id, username)]"), so both rewrites
+# have to be replicated here or those lookups silently miss.
+_CRITERION_UNSAFE_CHARS = str.maketrans('?"/\\*<>:|^', "_" * 10)
+_CRITERION_MAX_DIR_LEN = 64
+
+
+def criterion_dir_name(bench_name: str) -> str:
+    sanitized = bench_name.translate(_CRITERION_UNSAFE_CHARS)
+    return sanitized[:_CRITERION_MAX_DIR_LEN]
+
+
 def parse_criterion_json(project_dir: Path, bench_name: str) -> Optional[float]:
     """Return the mean point estimate in nanoseconds, or None if missing."""
     estimates_file = (
-        project_dir / "target" / "criterion" / bench_name / "new" / "estimates.json"
+        project_dir
+        / "target"
+        / "criterion"
+        / criterion_dir_name(bench_name)
+        / "new"
+        / "estimates.json"
     )
     if not estimates_file.exists():
         print(f"Warning: missing {estimates_file}", file=sys.stderr)
@@ -120,10 +140,16 @@ def throughput_ops_per_s(ns: float) -> str:
     return f"{ops:.0f}"
 
 
-def pct_change(old: float, new: float) -> str:
+def pct_change_value(old: float, new: float) -> Optional[float]:
     if old == 0:
+        return None
+    return (new - old) / old * 100
+
+
+def pct_change(old: float, new: float) -> str:
+    change = pct_change_value(old, new)
+    if change is None:
         return "-"
-    change = (new - old) / old * 100
     sign = "+" if change > 0 else ""
     return f"{sign}{change:.1f}%"
 
@@ -200,11 +226,31 @@ def generate_markdown(
         new_results,
     )
 
+    all_benches = THROUGHPUT_BENCHES + MEMORY_BENCHES + MAIN_DEMO_BENCHES
+    changes = [
+        c
+        for name in all_benches
+        if name in old_results and name in new_results
+        for c in [pct_change_value(old_results[name], new_results[name])]
+        if c is not None
+    ]
+    regressions = [c for c in changes if c > 0]
+    summary_line = (
+        f"- Summary: {len(changes)}/{len(all_benches)} benchmarks matched on both "
+        f"sides. {'No regressions' if not regressions else f'{len(regressions)} regression(s)'} "
+        f"-- `/rs-next` ranges from {min(changes):+.1f}% to {max(changes):+.1f}% "
+        "relative to `/rs` across everything measured."
+        if changes
+        else "- Summary: no benchmarks matched on both sides -- see the `Warning: missing ...` "
+        "lines printed during collection."
+    )
+
     lines.extend(
         [
             "",
             "## Notes",
             "",
+            summary_line,
             "- Lower time is better; negative `Change` means `/rs-next` is faster.",
             "- The new `update` API takes the existing data by value, so the update",
             "  harnesses clone the data each iteration. The old API borrowed the data.",
@@ -212,7 +258,15 @@ def generate_markdown(
             "  `codegen-units = 1`) and the same Tokio runtime.",
             "- `main_demo` benchmarks exercise the same realistic schema (constants,",
             "  lax/required/dependent/virtual fields, timestamps, grouped validation,",
-            "  post-validation, hooks) in both implementations.",
+            "  post-validation, hooks) in both implementations, across every distinct",
+            "  outcome the schema can produce: each `create`/`update` failure mode",
+            "  (required/validation/re-validation/post-validation), each success shape",
+            "  (partial vs. full input), every `update [fail: nothing to update: ...]`",
+            "  no-op-resubmission case, and `delete`.",
+            "- Criterion sanitizes benchmark names into directory names under",
+            "  `target/criterion/` (replacing filesystem-unsafe characters with `_` and",
+            "  truncating to 64 characters); `criterion_dir_name()` in this script",
+            "  replicates both so lookups for the longer `main_demo` names don't miss.",
         ]
     )
 
