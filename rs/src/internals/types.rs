@@ -579,18 +579,16 @@ impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool>
 
 impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, false, true> {
     pub fn handle_success(self) {
-        match self.trigger {
-            IvoTriggerFn::Sync(f) => f(),
-            IvoTriggerFn::Async(_) => unreachable!(),
+        if let IvoTriggerFn::Sync(trigger) = self.trigger {
+            trigger()
         }
     }
 }
 
 impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, true, true> {
     pub async fn handle_success(self) {
-        match self.trigger {
-            IvoTriggerFn::Async(t) => t.await,
-            IvoTriggerFn::Sync(_) => unreachable!(),
+        if let IvoTriggerFn::Async(fut) = self.trigger {
+            fut.await
         }
     }
 }
@@ -631,18 +629,16 @@ impl<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool>
 
 impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, false, true> {
     pub fn handle_failure(self) {
-        match self.trigger {
-            IvoTriggerFn::Sync(f) => f(),
-            IvoTriggerFn::Async(_) => unreachable!(),
+        if let IvoTriggerFn::Sync(trigger) = self.trigger {
+            trigger()
         }
     }
 }
 
 impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, true, true> {
     pub async fn handle_failure(self) {
-        match self.trigger {
-            IvoTriggerFn::Async(t) => t.await,
-            IvoTriggerFn::Sync(_) => unreachable!(),
+        if let IvoTriggerFn::Async(fut) = self.trigger {
+            fut.await
         }
     }
 }
