@@ -1,5 +1,5 @@
 //! Wraps a handful of curated `ivo` (Rust) schema demos - one schema module per
-//! demo, each mirroring a `rs-next/examples/*.rs`/docs-rs example - and exposes
+//! demo, each mirroring a `rs/examples/*.rs`/docs-rs example - and exposes
 //! them to JS/WASM as JSON-in, JSON-out functions. This is deliberately *not*
 //! an arbitrary-code Rust playground (see /docs/README.md for why); each
 //! demo's schema is fixed at compile time and only the input JSON is editable.

@@ -45,12 +45,12 @@ fn main() {
 
 `#[re_validate]` requires `#[validate]` to be present on the same field -- it's a compile error
 otherwise. See it used for real (checking a username isn't already taken, via `ctx_options`) in
-[`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
+[`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 - Validators & re-validators: see
-  [lax fields](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_validators.rs),
-  [required fields](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_with_re_validate.rs)
-  and [virtual fields](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals.rs)
+  [lax fields](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_validators.rs),
+  [required fields](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_with_re_validate.rs)
+  and [virtual fields](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals.rs)
 - Custom required errors: see [Required Fields](./definitions/required.md#custom-required-error)
 
 ## Built-in validation helpers
@@ -74,7 +74,7 @@ pub email: Option<String>,
 ```
 
 See the
-[crate source](https://github.com/kamtoeddy/ivo/blob/main/rs-next/crates/validators/src/lib.rs)
+[crate source](https://github.com/kamtoeddy/ivo/blob/main/rs/crates/validators/src/lib.rs)
 for implementation details, and
-[`main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs)
+[`main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs)
 for a schema that uses them.

@@ -133,7 +133,7 @@ dépendances, cache, données propres à la requête, ...) à travers chaque ges
 `create`/`update`. Voir
 [Options du schéma - Options de contexte personnalisées](./options.md#options-de-contexte-personnalisées),
 ou la démo complète dans
-[`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
+[`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 ## `ErrorSanitizer` personnalisé
 
@@ -162,5 +162,5 @@ exhaustive de l'API générée (types, fonctions, macros dérivées), voir :
 - **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — rustdoc hébergé pour le crate publié.
 - **[crates.io/crates/ivo](https://crates.io/crates/ivo)** — page du registre de crates (versions,
   dépendances, README).
-- **rustdoc local** — exécutez `cargo doc --no-deps --open` depuis le répertoire `rs-next/` pour
+- **rustdoc local** — exécutez `cargo doc --no-deps --open` depuis le répertoire `rs/` pour
   parcourir la même référence générée localement.

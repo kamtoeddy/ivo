@@ -49,13 +49,13 @@ fn main() {
 }
 ```
 
-See [`lax_with_ignore.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore.rs)
+See [`lax_with_ignore.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore.rs)
 and field-level `#[ignore]` on virtual fields (Virtual Fields, in the Fields section of the sidebar).
 
 ## `ignore_update`
 
 Same idea as `ignore`, but evaluated during updates only. `#[ignore_update([...], handler)]`
-requires at least two fields; to ignore the *entire entity* on update, omit the array and use the
+requires at least two fields; to ignore the _entire entity_ on update, omit the array and use the
 bare `#[ignore_update(handler)]` entity-level form instead.
 
 ```rust
@@ -96,12 +96,12 @@ fn main() {
 }
 ```
 
-See [`lax_with_ignore_update.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore_update.rs).
+See [`lax_with_ignore_update.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore_update.rs).
 
 ## `required`
 
 Enforces that at least one of the listed lax/virtual fields is provided. The handler runs only
-when *none* of the listed fields were provided, and returns `Option<{InputName}Errors>` -- `Some`
+when _none_ of the listed fields were provided, and returns `Option<{InputName}Errors>` -- `Some`
 merges per-field errors into the payload, `None` means the requirement doesn't apply. Requires at
 least two fields. Commonly used for "provide email or phone" style rules.
 
@@ -149,7 +149,7 @@ fn main() {
 
 `DataInputErrors` is generated automatically alongside `DataInput`/`PartialDataInput`. See the same
 pattern in
-[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
+[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 ## `post_validate`
 
@@ -200,7 +200,7 @@ fn main() {
 ```
 
 See the cross-field validation in
-[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
+[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 ## `on_success`
 
@@ -249,7 +249,7 @@ fn main() {
 ```
 
 See the runnable
-[`option_on_success.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/option_on_success.rs)
+[`option_on_success.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/option_on_success.rs)
 example for more detail, including dependent and virtual fields.
 
 ## `on_delete`
@@ -328,7 +328,7 @@ fn main() {
 ```
 
 Pass `()` when a schema declares no `ctx_options(...)`, as in every other example on this page.
-See [`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs)
+See [`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs)
 for a complete, realistic example (dependency lookups, uniqueness checks, and mutation across
 several handlers in the same call).
 
@@ -395,12 +395,12 @@ fn main() {
 ```
 
 See the full example, including a custom `ctx_options` type, in
-[`tests/extras/error_sanitizer.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/tests/extras/error_sanitizer.rs).
+[`tests/extras/error_sanitizer.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/extras/error_sanitizer.rs).
 
 ## API reference
 
 For the exhaustive list of grouped-option signatures and constraints, see:
 
 - **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — hosted rustdoc for the published crate.
-- **Local rustdoc** — run `cargo doc --no-deps --open` from the `rs-next/` directory to browse the
+- **Local rustdoc** — run `cargo doc --no-deps --open` from the `rs/` directory to browse the
   same generated reference locally.

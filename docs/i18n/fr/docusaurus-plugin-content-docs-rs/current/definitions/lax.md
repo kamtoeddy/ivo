@@ -51,13 +51,13 @@ fn main() {
 
 ## Autres exemples
 
-- [Valeurs par défaut](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_defaults.rs)
-- [Validateurs et re-validateurs](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_validators.rs)
-- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_readonly.rs)
-- [Requis conditionnel](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_required.rs)
-- [Ignore](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore.rs)
-- [Ignore init](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore_init.rs)
-- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore_update.rs)
+- [Valeurs par défaut](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_defaults.rs)
+- [Validateurs et re-validateurs](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_validators.rs)
+- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_readonly.rs)
+- [Requis conditionnel](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_required.rs)
+- [Ignore](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore.rs)
+- [Ignore init](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore_init.rs)
+- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore_update.rs)
 
 ## Essayez-le dans le navigateur
 

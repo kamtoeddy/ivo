@@ -81,8 +81,8 @@ first `update`.
 
 ## More examples
 
-- [Default names](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/timestamps_with_default_names.rs)
-- [Custom names](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/timestamps_with_custom_names.rs)
+- [Default names](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/timestamps_with_default_names.rs)
+- [Custom names](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/timestamps_with_custom_names.rs)
 
 ## Try it in the browser
 

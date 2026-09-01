@@ -48,13 +48,13 @@ fn main() {
 `#[re_validate]` nécessite la présence de `#[validate]` sur le même champ -- c'est une erreur de
 compilation sinon. Voir un exemple réel (vérifier qu'un nom d'utilisateur n'est pas déjà pris, via
 `ctx_options`) dans
-[`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
+[`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 - Validateurs et re-validateurs : voir les
-  [champs lax](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_validators.rs),
+  [champs lax](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_validators.rs),
   les
-  [champs requis](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_with_re_validate.rs)
-  et les [champs virtuels](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals.rs)
+  [champs requis](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_with_re_validate.rs)
+  et les [champs virtuels](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals.rs)
 - Erreurs requises personnalisées : voir
   [Champs requis](./definitions/required.md#erreur-requise-personnalisée)
 
@@ -79,7 +79,7 @@ pub email: Option<String>,
 ```
 
 Voir le
-[code source du crate](https://github.com/kamtoeddy/ivo/blob/main/rs-next/crates/validators/src/lib.rs)
+[code source du crate](https://github.com/kamtoeddy/ivo/blob/main/rs/crates/validators/src/lib.rs)
 pour les détails d'implémentation, et
-[`main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs)
+[`main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs)
 pour un schéma qui les utilise.

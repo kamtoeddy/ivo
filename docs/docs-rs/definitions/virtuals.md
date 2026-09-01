@@ -84,19 +84,19 @@ mod virtuals_alias_schema {
 ```
 
 Note `ctx.input().password_confirmation` above -- the input struct's field is named after the
-*alias*, not the virtual field's own declared name. `#[depends_on("password_confirm")]` still uses
+_alias_, not the virtual field's own declared name. `#[depends_on("password_confirm")]` still uses
 the declared name (an alias may also depend on itself by its own name if it collides with an
 existing dependent field name -- see the alias-collision example below).
 
 ## More examples
 
-- [Validators & re-validators](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals.rs)
-- [With alias name](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_alias_name.rs)
-- [With alias name same as dependent](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_alias_name_same_as_dependent.rs)
-- [Conditional required](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_required.rs)
-- [Ignore](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_ignore.rs)
-- [Ignore init](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_ignore_init.rs)
-- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_ignore_update.rs)
+- [Validators & re-validators](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals.rs)
+- [With alias name](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_alias_name.rs)
+- [With alias name same as dependent](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_alias_name_same_as_dependent.rs)
+- [Conditional required](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_required.rs)
+- [Ignore](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore.rs)
+- [Ignore init](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore_init.rs)
+- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore_update.rs)
 
 ## Try it in the browser
 

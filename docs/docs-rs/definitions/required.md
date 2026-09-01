@@ -64,11 +64,11 @@ pub username: String,
 
 ## More examples
 
-- [Required](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required.rs)
-- [Custom required error](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_error.rs)
-- [Re-validators](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_with_re_validate.rs)
-- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_readonly.rs)
-- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_with_ignore_update.rs)
+- [Required](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required.rs)
+- [Custom required error](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_error.rs)
+- [Re-validators](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_with_re_validate.rs)
+- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_readonly.rs)
+- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_with_ignore_update.rs)
 
 ## Try it in the browser
 

@@ -50,14 +50,14 @@ fn main() {
 }
 ```
 
-Voir [`lax_with_ignore.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore.rs)
+Voir [`lax_with_ignore.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore.rs)
 et `#[ignore]` au niveau du champ sur les champs virtuels (page Champs virtuels, section Champs de
 la barre latérale).
 
 ## `ignore_update`
 
 Même idée que `ignore`, mais évalué uniquement lors des mises à jour. `#[ignore_update([...],
-handler)]` nécessite au moins deux champs ; pour ignorer *l'entité entière* lors d'une mise à jour,
+handler)]` nécessite au moins deux champs ; pour ignorer _l'entité entière_ lors d'une mise à jour,
 omettez le tableau et utilisez plutôt la forme nue au niveau de l'entité,
 `#[ignore_update(handler)]`.
 
@@ -99,12 +99,12 @@ fn main() {
 }
 ```
 
-Voir [`lax_with_ignore_update.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore_update.rs).
+Voir [`lax_with_ignore_update.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore_update.rs).
 
 ## `required`
 
 Impose qu'au moins un des champs lax/virtuels listés soit fourni. Le gestionnaire ne s'exécute que
-lorsque *aucun* des champs listés n'a été fourni, et retourne `Option<{InputName}Errors>` -- `Some`
+lorsque _aucun_ des champs listés n'a été fourni, et retourne `Option<{InputName}Errors>` -- `Some`
 fusionne les erreurs par champ dans le payload, `None` signifie que l'exigence ne s'applique pas.
 Nécessite au moins deux champs. Couramment utilisé pour des règles du type "fournir un email ou un
 téléphone".
@@ -153,7 +153,7 @@ fn main() {
 
 `DataInputErrors` est généré automatiquement aux côtés de `DataInput`/`PartialDataInput`. Voir le
 même schéma dans
-[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
+[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 ## `post_validate`
 
@@ -205,7 +205,7 @@ fn main() {
 ```
 
 Voir la validation transversale dans
-[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
+[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 ## `on_success`
 
@@ -254,7 +254,7 @@ fn main() {
 ```
 
 Voir l'exemple exécutable
-[`option_on_success.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/option_on_success.rs)
+[`option_on_success.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/option_on_success.rs)
 pour plus de détails, y compris les champs dépendants et virtuels.
 
 ## `on_delete`
@@ -338,7 +338,7 @@ fn main() {
 
 Passez `()` lorsqu'un schéma ne déclare aucune `ctx_options(...)`, comme dans tous les autres
 exemples de cette page. Voir
-[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs)
+[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs)
 pour un exemple complet et réaliste (recherches de dépendances, vérifications d'unicité, et
 mutation à travers plusieurs gestionnaires dans le même appel).
 
@@ -406,12 +406,12 @@ fn main() {
 ```
 
 Voir l'exemple complet, incluant un type `ctx_options` personnalisé, dans
-[`tests/extras/error_sanitizer.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/tests/extras/error_sanitizer.rs).
+[`tests/extras/error_sanitizer.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/extras/error_sanitizer.rs).
 
 ## Référence de l'API
 
 Pour la liste exhaustive des signatures et contraintes des options groupées, voir :
 
 - **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — rustdoc hébergé pour le crate publié.
-- **rustdoc local** — exécutez `cargo doc --no-deps --open` depuis le répertoire `rs-next/` pour
+- **rustdoc local** — exécutez `cargo doc --no-deps --open` depuis le répertoire `rs/` pour
   parcourir la même référence générée localement.

@@ -79,9 +79,9 @@ phases.
 
 ## Autres exemples
 
-- [Valeurs par défaut](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/dependent_defaults.rs)
-- [Dépendant d'un dépendant](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/dependent_on_dependent.rs)
-- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/dependent_readonly.rs)
+- [Valeurs par défaut](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_defaults.rs)
+- [Dépendant d'un dépendant](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_on_dependent.rs)
+- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_readonly.rs)
 
 ## Essayez-le dans le navigateur
 

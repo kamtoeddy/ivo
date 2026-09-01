@@ -66,11 +66,11 @@ pub username: String,
 
 ## Autres exemples
 
-- [Requis](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required.rs)
-- [Erreur requise personnalisée](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_error.rs)
-- [Re-validateurs](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_with_re_validate.rs)
-- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_readonly.rs)
-- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/required_with_ignore_update.rs)
+- [Requis](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required.rs)
+- [Erreur requise personnalisée](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_error.rs)
+- [Re-validateurs](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_with_re_validate.rs)
+- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_readonly.rs)
+- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/required_with_ignore_update.rs)
 
 ## Essayez-le dans le navigateur
 

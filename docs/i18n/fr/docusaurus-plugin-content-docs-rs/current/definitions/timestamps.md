@@ -83,8 +83,8 @@ la première `update`.
 
 ## Autres exemples
 
-- [Noms par défaut](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/timestamps_with_default_names.rs)
-- [Noms personnalisés](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/timestamps_with_custom_names.rs)
+- [Noms par défaut](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/timestamps_with_default_names.rs)
+- [Noms personnalisés](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/timestamps_with_custom_names.rs)
 
 ## Essayez-le dans le navigateur
 

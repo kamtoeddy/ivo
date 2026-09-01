@@ -86,19 +86,19 @@ mod virtuals_alias_schema {
 ```
 
 Notez `ctx.input().password_confirmation` ci-dessus -- le champ de la struct d'entrée porte le nom
-de l'*alias*, pas le nom déclaré du champ virtuel. `#[depends_on("password_confirm")]` utilise
+de l'_alias_, pas le nom déclaré du champ virtuel. `#[depends_on("password_confirm")]` utilise
 toujours le nom déclaré (un alias peut aussi coïncider avec le nom d'un champ dépendant existant --
 voir l'exemple de collision d'alias ci-dessous).
 
 ## Autres exemples
 
-- [Validateurs et re-validateurs](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals.rs)
-- [Avec alias](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_alias_name.rs)
-- [Avec alias identique au dépendant](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_alias_name_same_as_dependent.rs)
-- [Requis conditionnel](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_required.rs)
-- [Ignore](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_ignore.rs)
-- [Ignore init](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_ignore_init.rs)
-- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/virtuals_with_ignore_update.rs)
+- [Validateurs et re-validateurs](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals.rs)
+- [Avec alias](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_alias_name.rs)
+- [Avec alias identique au dépendant](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_alias_name_same_as_dependent.rs)
+- [Requis conditionnel](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_required.rs)
+- [Ignore](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore.rs)
+- [Ignore init](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore_init.rs)
+- [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/virtuals_with_ignore_update.rs)
 
 ## Essayez-le dans le navigateur
 

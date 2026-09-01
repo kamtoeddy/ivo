@@ -74,9 +74,9 @@ fn main() {
 
 ## More examples
 
-- [Default values](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/dependent_defaults.rs)
-- [Dependent on dependent](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/dependent_on_dependent.rs)
-- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/dependent_readonly.rs)
+- [Default values](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_defaults.rs)
+- [Dependent on dependent](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_on_dependent.rs)
+- [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_readonly.rs)
 
 ## Try it in the browser
 

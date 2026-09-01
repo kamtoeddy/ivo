@@ -131,7 +131,7 @@ a runnable example.
 request-scoped data, ...) through every handler in a `create`/`update` call. See
 [Schema Options - Custom context options](./options.md#custom-context-options), or the full demo
 in
-[`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
+[`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 ## Custom `ErrorSanitizer`
 
@@ -160,5 +160,5 @@ The prose docs above cover the high-level concepts. For the exhaustive generated
 - **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — hosted rustdoc for the published crate.
 - **[crates.io/crates/ivo](https://crates.io/crates/ivo)** — crate registry page (versions, dependencies,
   README).
-- **Local rustdoc** — run `cargo doc --no-deps --open` from the `rs-next/` directory to browse the
+- **Local rustdoc** — run `cargo doc --no-deps --open` from the `rs/` directory to browse the
   same generated reference locally.
