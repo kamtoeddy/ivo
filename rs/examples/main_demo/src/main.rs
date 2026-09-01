@@ -1,15 +1,15 @@
 use chrono::{Days, Utc};
-use ivo::IvoStruct;
-use std::{sync::LazyLock, time::Instant};
+use std::time::Instant;
 
 mod domain;
 mod slugify;
 
-use crate::domain::{PartialUserInput, User, UserCtxOptions, USER_MODEL};
+use crate::domain::{PartialUserInput, User, UserCtxOptions, UserModel};
 
 #[async_std::main]
 async fn main() {
-    LazyLock::force(&USER_MODEL);
+    // // required error (email or phone_number, username)
+    // let input = PartialUserInput::new();
 
     // // required error (email or phone_number)
     // let input = PartialUserInput::new().with_username("user-10".into());
@@ -57,20 +57,18 @@ async fn main() {
 
     // let timer = Instant::now();
 
-    // let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+    // let r = UserModel.create(input, UserCtxOptions::new()).await;
 
     // println!("\nCreate duration: {:?}", timer.elapsed());
 
     // match r {
-    //     Ok((data, handle_success, _)) => {
-    //         println!("\n{:#?}\n", data);
+    //     Ok(handle) => {
+    //         println!("\n{:#?}\n", handle.data);
 
-    //         handle_success().await;
+    //         handle.handle_success();
     //     }
-    //     Err((payload, handle_failure, _)) => {
-    //         println!("\nFailed to create: {:#?}", payload);
-
-    //         handle_failure().await;
+    //     Err(handle) => {
+    //         println!("\nFailed to create: {:#?}", handle.errors);
     //     }
     // };
 
@@ -125,11 +123,6 @@ async fn main() {
     // // nothing to update: 1/4 inputs (d)
     // let updates = PartialUserInput::new().with_username(user.username.clone());
 
-    // // nothing to update: 2/4 inputs
-    // let updates = PartialUserInput::new()
-    //     .with_email(user.email.clone())
-    //     .with_phone_number(user.phone_number.clone());
-
     // // nothing to update: 3/4 inputs
     // let updates = PartialUserInput::new()
     //     .with_email(user.email.clone())
@@ -137,11 +130,11 @@ async fn main() {
     //     .with_username(user.username.clone());
 
     // // nothing to update: 4/4 inputs
-    let updates = PartialUserInput::new()
-        .with_email(user.email.clone())
-        .with_phone_number(user.phone_number.clone())
-        .with_username(user.username.clone())
-        .with_slug_id(user.slug_id.to_string().clone());
+    // let updates = PartialUserInput::new()
+    //     .with_email(user.email.clone())
+    //     .with_phone_number(user.phone_number.clone())
+    //     .with_username(user.username.clone())
+    //     .with_slug_id(user.slug_id.to_string().clone());
 
     // // update success: 1/4 inputs (a)
     // let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
@@ -157,46 +150,45 @@ async fn main() {
 
     // // update success: 3/4 inputs
     // let updates = PartialUserInput::new()
-    // .with_email(Some("1@1.com".into()))
-    // .with_phone_number(Some("123 4567 8910".into()))
-    // .with_username("new_username".into());
-
-    // // update success: 4/4 inputs
-    // let updates = PartialUserInput::new()
     //     .with_email(Some("1@1.com".into()))
     //     .with_phone_number(Some("123 4567 8910".into()))
-    //     .with_username("new_username".into())
-    //     .with_slug_id("newly-updated-slug-id: Lol".into());
+    //     .with_username("new_username".into());
+
+    // // update success: 4/4 inputs
+    let updates = PartialUserInput::new()
+        .with_email(Some("1@1.com".into()))
+        .with_phone_number(Some("123 4567 8910".into()))
+        .with_username("new_username".into())
+        .with_slug_id("newly-updated-slug-id: Lol".into());
 
     let timer = Instant::now();
 
-    let r = USER_MODEL
-        .update(&user, &updates, UserCtxOptions::new())
+    let r = UserModel
+        .update(user.clone(), updates, UserCtxOptions::new())
         .await;
 
     println!("\nUpdate duration: {:?}", timer.elapsed());
 
     match r {
-        Ok((data, handle_success, _)) => {
-            println!("\nupdates: {:#?}", data);
-            println!("\nold + updates: {:#?}\n", user.clone_with_updates(&data));
+        Ok(handle) => {
+            println!("\nupdates: {:#?}", handle.data);
+            println!(
+                "\nold + updates: {:#?}\n",
+                user.clone_with_updates(&handle.data)
+            );
 
-            handle_success().await;
+            handle.handle_success();
         }
-        Err((error, handle_failure, _)) => {
-            match error {
-                Some(payload) => {
-                    println!("\nFailed to update: {:#?}\n", payload)
-                }
-                _ => println!("\nNothing to update\n"),
+        Err(handle) => {
+            match handle.errors.as_ref() {
+                Some(payload) => println!("\nFailed to update: {:#?}\n", payload),
+                None => println!("\nNothing to update\n"),
             };
-
-            handle_failure().await;
         }
     };
 
-    //     let timer = Instant::now();
-    //     USER_MODEL.delete(&user, UserCtxOptions::new()).await;
+    // let timer = Instant::now();
+    // UserModel.delete(&user, UserCtxOptions::new());
 
-    //     println!("\nDelete triggers: {:?}", timer.elapsed());
+    // println!("\nDelete triggers: {:?}", timer.elapsed());
 }

@@ -1,118 +1,88 @@
-use std::{future::ready, sync::LazyLock};
-
-use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
+use ivo::ivo_schema;
 
 const MIN_USERNAME_LEN: usize = 4;
 
-#[async_std::main]
-async fn main() {
+fn main() {
     let username = "n".repeat(MIN_USERNAME_LEN - 1);
-    let username_input_value = Some(username.clone());
 
-    let (payload, handle_failure, _) = DATA_MODEL
+    let failed = data_schema::DataModel
         .create(
-            &PartialDataInput {
-                username: username_input_value,
-            },
-            None,
+            data_schema::PartialData::new().with_username(username.clone()),
+            (),
         )
-        .await
         .err()
         .unwrap();
 
-    println!("\nfailed to create: {:#?}", payload);
+    println!("\nfailed to create: {:#?}", failed.errors);
 
     assert_eq!(
-        payload.get("username").unwrap().reason,
+        failed.errors.get("username").unwrap().reason,
         format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long")
     );
 
-    handle_failure().await;
+    failed.handle_failure();
 
     let updated_username = Some("j".repeat(MIN_USERNAME_LEN - 1));
 
-    let (error, handle_failure, _) = DATA_MODEL
+    let failed_update = data_schema::DataModel
         .update(
-            &Data {
+            data_schema::Data {
                 username: username.clone(),
             },
-            &PartialDataInput {
+            data_schema::PartialData {
                 username: updated_username.clone(),
             },
-            None,
+            (),
         )
-        .await
         .err()
         .unwrap();
 
-    let Some(payload) = error else {
-        println!("\nNothing to update");
-
-        return;
-    };
-
-    println!("\nfailed to update: {:#?}", payload);
+    println!("\nfailed to update: {:#?}", failed_update.errors);
 
     assert_eq!(
-        payload.get("username").unwrap().reason,
+        failed_update
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("username")
+            .unwrap()
+            .reason,
         format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long")
     );
 
-    handle_failure().await;
+    failed_update.handle_failure();
 }
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub username: String,
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod data_schema {
+    struct Fields {
+        #[lax("default-username".to_string())]
+        #[validate(|v, _, _| {
+            if v.len() < crate::MIN_USERNAME_LEN {
+                Err((
+                    format!(
+                        "\"username\" must be at least {} characters long",
+                        crate::MIN_USERNAME_LEN
+                    ),
+                    None,
+                ))
+            } else {
+                Ok(None)
+            }
+        })]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: username = {}", ctx.values().username);
+        })]
+        #[on_failure(|ctx, _| {
+            println!("\n[on_failure]: raw username = {}", ctx.raw_input().username.as_ref().unwrap());
+            println!(
+                "\n[on_failure]: validated username = {}",
+                ctx.input().username.as_ref().unwrap()
+            );
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: username = {}", data.username);
+        })]
+        pub username: String,
+    }
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub username: String,
-}
-
-pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("username")
-                    .default("default-username".to_string())
-                    .validate(|v: String, _, _| {
-                        if v.len() < MIN_USERNAME_LEN {
-                            return ready(Err((
-                                format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long"),
-                                None,
-                            )));
-                        }
-                        ready(Ok(None))
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_success]: username = {}",
-                            ctx.values().username.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: username = {}", data.username);
-
-                        ready(())
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_failure]: raw username = {}",
-                            ctx.raw_input().username.unwrap()
-                        );
-                        println!(
-                            "\n[on_failure]: validated username = {}",
-                            ctx.input().username.unwrap()
-                        );
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    )
-});

@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 mod domain;
 mod slugify;
 
-use domain::{PartialUserInput, User, UserCtxOptions, USER_MODEL};
+use domain::{PartialUserInput, User, UserCtxOptions, UserModel};
 
 static TOKIO_RT: LazyLock<tokio::runtime::Runtime> =
     LazyLock::new(|| tokio::runtime::Runtime::new().unwrap());
@@ -19,7 +19,7 @@ fn bench_main_demo(c: &mut Criterion) {
             b.to_async(rt).iter(|| async {
                 let input = PartialUserInput::new().with_username("user-10".into());
 
-                let _ = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
             });
         },
     );
@@ -28,8 +28,8 @@ fn bench_main_demo(c: &mut Criterion) {
         "main_demo create [fail: required errors (email or phone_number, username)]",
         |b| {
             b.to_async(rt).iter(|| async {
-                let _ = USER_MODEL
-                    .create(&PartialUserInput::new(), UserCtxOptions::new())
+                let _ = UserModel
+                    .create(PartialUserInput::new(), UserCtxOptions::new())
                     .await;
             });
         },
@@ -45,7 +45,7 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_slug_id("s".into())
                     .with_username("u".into());
 
-                let _ = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
             });
         },
     );
@@ -58,7 +58,7 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_email(Some("1@1.com".into()))
                     .with_username("user-1".into());
 
-                let _ = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
             });
         },
     );
@@ -72,7 +72,7 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_username("user-10".into())
                     .with_slug_id("user-1".into());
 
-                let _ = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
             });
         },
     );
@@ -83,7 +83,7 @@ fn bench_main_demo(c: &mut Criterion) {
                 .with_email(Some("1@1.com".into()))
                 .with_username("user-10".into());
 
-            let _ = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+            let _ = UserModel.create(input, UserCtxOptions::new()).await;
         });
     });
 
@@ -93,7 +93,7 @@ fn bench_main_demo(c: &mut Criterion) {
                 .with_phone_number(Some("123 4567 8910".into()))
                 .with_username("user-10".into());
 
-            let _ = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+            let _ = UserModel.create(input, UserCtxOptions::new()).await;
         });
     });
 
@@ -104,7 +104,7 @@ fn bench_main_demo(c: &mut Criterion) {
                 .with_phone_number(Some("123 4567 8910".into()))
                 .with_username("user-10".into());
 
-            let _ = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+            let _ = UserModel.create(input, UserCtxOptions::new()).await;
         });
     });
 
@@ -116,7 +116,7 @@ fn bench_main_demo(c: &mut Criterion) {
                 .with_username("user-10".into())
                 .with_slug_id("sloppy-slug-id".into());
 
-            let _ = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+            let _ = UserModel.create(input, UserCtxOptions::new()).await;
         });
     });
 
@@ -147,8 +147,8 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_email(None)
                     .with_phone_number(None);
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -164,8 +164,8 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_slug_id("s".into())
                     .with_username("u".into());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -177,8 +177,8 @@ fn bench_main_demo(c: &mut Criterion) {
             b.to_async(rt).iter(|| async {
                 let updates = PartialUserInput::new().with_username("user-1".into());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -190,8 +190,8 @@ fn bench_main_demo(c: &mut Criterion) {
             b.to_async(rt).iter(|| async {
                 let updates = PartialUserInput::new().with_slug_id("user-1".into());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -203,8 +203,8 @@ fn bench_main_demo(c: &mut Criterion) {
             b.to_async(rt).iter(|| async {
                 let updates = PartialUserInput::new().with_email(user.email.clone());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -216,8 +216,8 @@ fn bench_main_demo(c: &mut Criterion) {
             b.to_async(rt).iter(|| async {
                 let updates = PartialUserInput::new().with_phone_number(user.phone_number.clone());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -230,8 +230,8 @@ fn bench_main_demo(c: &mut Criterion) {
                 let updates =
                     PartialUserInput::new().with_slug_id(user.slug_id.to_string().clone());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -243,8 +243,8 @@ fn bench_main_demo(c: &mut Criterion) {
             b.to_async(rt).iter(|| async {
                 let updates = PartialUserInput::new().with_username(user.username.clone());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -258,8 +258,8 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_email(user.email.clone())
                     .with_phone_number(user.phone_number.clone());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -274,8 +274,8 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_phone_number(user.phone_number.clone())
                     .with_username(user.username.clone());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -291,8 +291,8 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_username(user.username.clone())
                     .with_slug_id(user.slug_id.to_string().clone());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             });
         },
@@ -302,8 +302,8 @@ fn bench_main_demo(c: &mut Criterion) {
         b.to_async(rt).iter(|| async {
             let updates = PartialUserInput::new().with_email(Some("1@2.com".into()));
 
-            let _ = USER_MODEL
-                .update(&user, &updates, UserCtxOptions::new())
+            let _ = UserModel
+                .update(user.clone(), updates, UserCtxOptions::new())
                 .await;
         });
     });
@@ -312,8 +312,8 @@ fn bench_main_demo(c: &mut Criterion) {
         b.to_async(rt).iter(|| async {
             let updates = PartialUserInput::new().with_phone_number(Some("123 4567 8911".into()));
 
-            let _ = USER_MODEL
-                .update(&user, &updates, UserCtxOptions::new())
+            let _ = UserModel
+                .update(user.clone(), updates, UserCtxOptions::new())
                 .await;
         });
     });
@@ -322,8 +322,8 @@ fn bench_main_demo(c: &mut Criterion) {
         b.to_async(rt).iter(|| async {
             let updates = PartialUserInput::new().with_slug_id("newly-updated-slug-id: Lol".into());
 
-            let _ = USER_MODEL
-                .update(&user, &updates, UserCtxOptions::new())
+            let _ = UserModel
+                .update(user.clone(), updates, UserCtxOptions::new())
                 .await;
         });
     });
@@ -332,8 +332,8 @@ fn bench_main_demo(c: &mut Criterion) {
         b.to_async(rt).iter(|| async {
             let updates = PartialUserInput::new().with_username("new-username".into());
 
-            let _ = USER_MODEL
-                .update(&user, &updates, UserCtxOptions::new())
+            let _ = UserModel
+                .update(user.clone(), updates, UserCtxOptions::new())
                 .await;
         });
     });
@@ -345,8 +345,8 @@ fn bench_main_demo(c: &mut Criterion) {
                 .with_phone_number(Some("123 4567 8910".into()))
                 .with_username("new_username".into());
 
-            let _ = USER_MODEL
-                .update(&user, &updates, UserCtxOptions::new())
+            let _ = UserModel
+                .update(user.clone(), updates, UserCtxOptions::new())
                 .await;
         });
     });
@@ -359,8 +359,8 @@ fn bench_main_demo(c: &mut Criterion) {
                 .with_slug_id("updated-slug-id: Lol".into())
                 .with_username("new_username".into());
 
-            let _ = USER_MODEL
-                .update(&user, &updates, UserCtxOptions::new())
+            let _ = UserModel
+                .update(user.clone(), updates, UserCtxOptions::new())
                 .await;
         });
     });
@@ -370,15 +370,15 @@ fn bench_main_demo(c: &mut Criterion) {
             let input = PartialUserInput::new()
                 .with_email(Some("1@1.com".into()))
                 .with_username("user-10".into());
-            let (data, _, _) = match USER_MODEL.create(&input, UserCtxOptions::new()).await {
-                Ok(result) => result,
+
+            match UserModel.create(input, UserCtxOptions::new()).await {
+                Ok(handle) => handle.data,
                 Err(_) => panic!("main_demo create failed"),
-            };
-            data
+            }
         });
 
         b.to_async(rt).iter(|| async {
-            USER_MODEL.delete(&user, UserCtxOptions::new()).await;
+            UserModel.delete(&user, UserCtxOptions::new());
         });
     });
 
@@ -396,7 +396,7 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_username("user-10".into())
                     .with_slug_id("sloppy-slug-id".into());
 
-                let _ = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+                let _ = UserModel.create(input, UserCtxOptions::new()).await;
             }
         });
     });
@@ -410,8 +410,8 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_slug_id("updated-slug-id: Lol".into())
                     .with_username("new_username".into());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             }
         });
@@ -426,8 +426,8 @@ fn bench_main_demo(c: &mut Criterion) {
                     .with_username(user.username.clone())
                     .with_slug_id(user.slug_id.to_string().clone());
 
-                let _ = USER_MODEL
-                    .update(&user, &updates, UserCtxOptions::new())
+                let _ = UserModel
+                    .update(user.clone(), updates, UserCtxOptions::new())
                     .await;
             }
         });
@@ -438,16 +438,16 @@ fn bench_main_demo(c: &mut Criterion) {
             let input = PartialUserInput::new()
                 .with_email(Some("1@1.com".into()))
                 .with_username("user-10".into());
-            let (data, _, _) = match USER_MODEL.create(&input, UserCtxOptions::new()).await {
-                Ok(result) => result,
+
+            match UserModel.create(input, UserCtxOptions::new()).await {
+                Ok(handle) => handle.data,
                 Err(_) => panic!("main_demo create failed"),
-            };
-            data
+            }
         });
 
         b.to_async(rt).iter(|| async {
             for _ in 0..1000 {
-                USER_MODEL.delete(&user, UserCtxOptions::new()).await;
+                UserModel.delete(&user, UserCtxOptions::new());
             }
         });
     });

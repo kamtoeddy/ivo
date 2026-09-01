@@ -1,68 +1,12 @@
-#![expect(dead_code)]
-
-use ivo::{constant_field, required_field, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoStruct};
-use std::{array, collections::HashMap, future::ready, sync::LazyLock};
-
-use crate::async_test_matrix;
+use ivo::ivo_schema;
 
 mod constants;
 mod dependents;
 mod lax;
 mod required;
+mod sync_concurrency;
+mod sync_write;
 mod virtuals;
-
-// [x] constants
-// [x] dependents
-// [x] lax
-// [x] required
-// [x] virtuals
-
-async fn should_properly_update_ctx_options() {
-    let supplier_num = 2;
-
-    let (data, _, ctx_options) = PRODUCT_MODEL
-        .create(
-            &PartialProductInput {
-                name: Some("product_name".into()),
-                price: Some(1_000),
-                sku: Some("product_sku".into()),
-                supplier: Some(SupplierID(supplier_num)),
-            },
-            ProductCtxOptions::new(),
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        ctx_options.warnings[0],
-        format!("warning: supplier {supplier_num} is not currently active!")
-    );
-
-    let supplier_num = 3;
-
-    let (_, _, ctx_options) = PRODUCT_MODEL
-        .update(
-            &data,
-            &PartialProductInput {
-                name: None,
-                price: None,
-                sku: None,
-                supplier: Some(SupplierID(supplier_num)),
-            },
-            ProductCtxOptions::new(),
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        ctx_options.warnings[0],
-        format!("warning: supplier {supplier_num} is not currently active!")
-    );
-}
-
-async_test_matrix!(should_properly_update_ctx_options);
 
 #[derive(Clone)]
 struct ProductCtxOptions {
@@ -83,29 +27,13 @@ impl ProductCtxOptions {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 struct ProductID(u64);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 struct SupplierID(u64);
 
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Product {
-    id: ProductID,
-    name: String,
-    sku: String,
-    price: u32,
-    supplier: SupplierID,
-}
-
-#[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-pub struct ProductInput {
-    name: String,
-    sku: String,
-    price: u32,
-    supplier: SupplierID,
-}
-
+#[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub enum SupplierStatus {
     Active,
@@ -113,6 +41,7 @@ pub enum SupplierStatus {
     Suspended,
 }
 
+#[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Supplier {
     id: SupplierID,
@@ -122,66 +51,120 @@ pub struct Supplier {
     status: SupplierStatus,
 }
 
-static PRODUCT_MODEL: LazyLock<IvoModel<ProductInput, Product, ProductCtxOptions>> =
-    LazyLock::new(|| {
-        IvoModel::new(
-            |f| {
-                f.field(constant_field("id").value(ProductID(1)))
-                    .field(required_field("name").validate(|_: String, _, _| ready(Ok(None))))
-                    .field(required_field("sku").validate(|_: String, _, _| ready(Ok(None))))
-                    .field(required_field("price").validate(|_: u32, _, _| ready(Ok(None))))
-                    .field(
-                        required_field("supplier")
-                            .validate(|_: SupplierID, _, _| ready(Ok(None)))
-                            .re_validate(
-                                async |id: SupplierID, _, o: IvoRwCtxOptions<ProductCtxOptions>| {
-                                    let mut ctx_options = o.write().await;
+async fn should_properly_update_ctx_options() {
+    let supplier_num = 2;
 
-                                    if let Some(supplier) =
-                                        ctx_options.get_supplier_by_id(&id).await
-                                    {
-                                        if matches!(
-                                            supplier.status,
-                                            SupplierStatus::PhaseOut | SupplierStatus::Suspended
-                                        ) {
-                                            let n = id.0;
-
-                                            ctx_options.add_warning(&format!(
-                                                "warning: supplier {n} is not currently active!"
-                                            ))
-                                        }
-
-                                        return Ok(None);
-                                    }
-
-                                    Err(("Supplier not found".into(), None))
-                                },
-                            ),
-                    )
+    let created = product_schema::ProductModel
+        .create(
+            product_schema::PartialProductInput {
+                name: Some("product_name".into()),
+                price: Some(1_000),
+                sku: Some("product_sku".into()),
+                supplier: Some(SupplierID(supplier_num)),
             },
-            |o| o,
+            ProductCtxOptions::new(),
         )
-    });
+        .await
+        .ok()
+        .unwrap();
 
-static SUPPLIERS_DB: LazyLock<HashMap<SupplierID, Supplier>> = LazyLock::new(|| {
-    let arr: [_; 5] = array::from_fn(|i| {
-        let num = i + 1;
+    assert_eq!(
+        created.ctx_options.read().await.warnings[0],
+        format!("warning: supplier {supplier_num} is not currently active!")
+    );
 
-        let id = SupplierID(num as u64);
-        let name = format!("supplier-{num}");
-        let company_name = format!("company_{num}");
+    let supplier_num = 3;
 
-        (
-            id,
-            Supplier {
+    let updated = product_schema::ProductModel
+        .update(
+            created.data.clone(),
+            product_schema::PartialProductInput {
+                name: None,
+                price: None,
+                sku: None,
+                supplier: Some(SupplierID(supplier_num)),
+            },
+            ProductCtxOptions::new(),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.ctx_options.read().await.warnings[0],
+        format!("warning: supplier {supplier_num} is not currently active!")
+    );
+}
+
+async_test_matrix!(should_properly_update_ctx_options);
+
+#[ivo_schema(
+    input(ProductInput, derive(Debug, Clone, PartialEq)),
+    output(Product, derive(Debug, Clone, PartialEq)),
+    ctx_options(ProductCtxOptions)
+)]
+mod product_schema {
+    use super::{ProductCtxOptions, ProductID, SupplierID, SupplierStatus};
+
+    struct Fields {
+        #[constant(ProductID(1))]
+        pub id: ProductID,
+
+        #[required]
+        pub name: String,
+
+        #[required]
+        pub sku: String,
+
+        #[required]
+        pub price: u32,
+
+        #[required]
+        #[validate(async |id, _, opts| {
+            let mut ctx_options = opts.write().await;
+
+            if let Some(supplier) = ctx_options.get_supplier_by_id(&id).await {
+                if matches!(
+                    supplier.status,
+                    SupplierStatus::PhaseOut | SupplierStatus::Suspended
+                ) {
+                    let number = id.0;
+                    ctx_options.add_warning(&format!(
+                        "warning: supplier {number} is not currently active!"
+                    ));
+                }
+
+                return Ok(None);
+            }
+
+            Err(("Supplier not found".into(), None))
+        })]
+        pub supplier: SupplierID,
+    }
+}
+
+use std::{array, collections::HashMap};
+
+static SUPPLIERS_DB: std::sync::LazyLock<HashMap<SupplierID, Supplier>> =
+    std::sync::LazyLock::new(|| {
+        let arr: [_; 5] = array::from_fn(|i| {
+            let num = i + 1;
+
+            let id = SupplierID(num as u64);
+            let name = format!("supplier-{num}");
+            let company_name = format!("company_{num}");
+
+            (
                 id,
-                name: name.clone(),
-                company_name: company_name.clone(),
-                contact_email: format!("{name}@{company_name}.com"),
-                status: SupplierStatus::PhaseOut,
-            },
-        )
-    });
+                Supplier {
+                    id,
+                    name: name.clone(),
+                    company_name: company_name.clone(),
+                    contact_email: format!("{name}@{company_name}.com"),
+                    status: SupplierStatus::PhaseOut,
+                },
+            )
+        });
 
-    HashMap::from(arr)
-});
+        HashMap::from(arr)
+    });

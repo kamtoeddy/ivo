@@ -1,384 +1,190 @@
-use ivo::{
-    constant_field, dependent_field, lax_field, virtual_field, IvoInputStruct, IvoModel, IvoStruct,
-};
-use std::{future::ready, panic};
+// Compile-time validation tests for grouped `#[post_validate(...)]` are located
+// in `compile_fail/post_validate.rs`.
+
+use ivo::ivo_schema;
+
+// -----------------------------------------------------------------------------
+// Main `validate` does not run once `pre_validate` has already failed
+// -----------------------------------------------------------------------------
 
 #[test]
-#[should_panic(expected = "[options.post_validate]: post-validation expects at least 2 fields")]
-fn should_reject_if_fields_array_is_empty() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
+fn should_not_run_main_validate_once_pre_validate_has_failed() {
+    let errors = pre_validate_aborts_main_schema::DataInputModel
+        .create(
+            pre_validate_aborts_main_schema::PartialDataInput {
+                field_a: Some("fail-pre".into()),
+                field_b: Some("b".into()),
+            },
+            (),
+        )
+        .unwrap_err();
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.post_validate([], |v| v.validate(|_, _| ready(Ok(None)))),
-    );
+    assert_eq!(errors.errors.get("field_a").unwrap().reason, "pre failed");
 }
 
-#[test]
-#[should_panic(expected = "[options.post_validate]: post-validation expects at least 2 fields")]
-fn should_reject_if_fields_array_has_just_one_field() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod pre_validate_aborts_main_schema {
+    struct Fields {
+        #[required]
+        pub field_a: String,
+
+        #[required]
+        pub field_b: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
+    #[post_validate(
+        ["field_a", "field_b"],
+        pre_validate = |ctx, _| {
+            if ctx.input().field_a.as_deref() == Some("fail-pre") {
+                let mut errors = DataInputErrors::new();
+                errors.set_field_a("pre failed", None);
+                return Err(errors);
+            }
+            Ok(None)
         },
-        |o| o.post_validate(["lax"], |v| v.validate(|_, _| ready(Ok(None)))),
-    );
+        validate = |_ctx, _opts| {
+            panic!("main validate must not run once pre_validate has already failed");
+        },
+    )]
+    const _: () = ();
 }
 
+// -----------------------------------------------------------------------------
+// Multiple groups: each group's pre_validate/validate is batched against a
+// snapshot from *before* the phase, not against a sibling group's updates
+// (matches the reference implementation's two-phase, all-groups-at-once
+// batching).
+// -----------------------------------------------------------------------------
+
 #[test]
-#[should_panic(
-    expected = "[options.post_validate]: remove duplicates of \"lax\" in your post-validation config"
-)]
-fn should_reject_if_the_fields_array_contains_any_duplicates() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
+fn should_not_let_one_group_see_another_groups_pre_validate_updates() {
+    // group_a's pre_validate sets `shared` to "from-a"; group_b's pre_validate
+    // reads `shared` and records what it saw. Since both groups' pre_validate
+    // handlers are batched against the same pre-phase snapshot, group_b must
+    // see the *original* value, not group_a's update.
+    let created = independent_post_validate_groups_schema::DataInputModel
+        .create(
+            independent_post_validate_groups_schema::PartialDataInput {
+                shared: Some("original".into()),
+                field_a: Some("a".into()),
+                field_b: Some("b".into()),
+                seen_by_b: Some(String::new()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.post_validate(["lax", "lax"], |v| v.validate(|_, _| ready(Ok(None)))),
-    );
+    assert_eq!(created.data.shared, "from-a");
+    assert_eq!(created.data.seen_by_b, "original");
 }
 
-#[test]
-#[should_panic(
-    expected = "[options.post_validate]: \"invalid_field\" does not exist on your schema"
-)]
-fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_schema() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod independent_post_validate_groups_schema {
+    struct Fields {
+        #[required]
+        pub shared: String,
+
+        #[required]
+        pub field_a: String,
+
+        #[required]
+        pub field_b: String,
+
+        #[required]
+        pub seen_by_b: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
+    #[post_validate(
+        ["shared", "field_a"],
+        validate = |ctx, _| {
+            let mut updates = PartialDataInput::new();
+            updates.set_shared("from-a".to_string());
+            let _ = &ctx;
+            Ok(Some(updates))
+        },
+    )]
+    const _: () = ();
 
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
+    #[post_validate(
+        ["seen_by_b", "field_b"],
+        validate = |ctx, _| {
+            let mut updates = PartialDataInput::new();
+            updates.set_seen_by_b(ctx.input().shared.clone().unwrap());
+            Ok(Some(updates))
         },
-        |o| {
-            o.post_validate(["lax", "invalid_field"], |v| {
-                v.validate(|_, _| ready(Ok(None)))
-            })
-        },
-    );
+    )]
+    const _: () = ();
 }
 
-#[test]
-#[should_panic(
-    expected = "[options.post_validate]: only lax, required and virtual fields can be post-validated; remove \"id\""
-)]
-fn should_reject_if_a_constant_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        lax: i32,
-        lax_1: i32,
-    }
+// -----------------------------------------------------------------------------
+// Parallel resolution of independent groups' main `validate` handlers
+// -----------------------------------------------------------------------------
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
+#[tokio::test]
+async fn should_run_independent_groups_main_validate_concurrently() {
+    // Two separate `#[post_validate(...)]` groups' main validators must be
+    // polled concurrently (not one `.await` at a time). `rendezvous()` only
+    // returns once *both* have started.
+    async_parallel_post_validate_groups_schema::STARTED
+        .store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value(1234))
-                .field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.post_validate(["lax", "id"], |v| v.validate(|_, _| ready(Ok(None)))),
-    );
+    let created = async_parallel_post_validate_groups_schema::DataInputModel
+        .create(
+            async_parallel_post_validate_groups_schema::DataInput {
+                field_a: "a".into(),
+                field_b: "b".into(),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(created.data.field_a, "a");
+    assert_eq!(created.data.field_b, "b");
 }
 
-#[test]
-#[should_panic(
-    expected = "[options.post_validate]: only lax, required and virtual fields can be post-validated; remove \"dependent\""
-)]
-fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod async_parallel_post_validate_groups_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous() {
+        STARTED.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if STARTED.load(Ordering::SeqCst) >= 2 {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("post_validate groups were not run concurrently");
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
+    struct Fields {
+        #[required]
+        pub field_a: String,
+
+        #[required]
+        pub field_b: String,
     }
 
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "lax_1"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
+    #[post_validate(
+        ["field_a", "field_b"],
+        validate = async |_ctx, _opts| {
+            rendezvous().await;
+            Ok(None)
         },
-        |o| {
-            o.post_validate(["lax", "lax_1", "dependent"], |v| {
-                v.validate(|_, _| ready(Ok(None)))
-            })
+    )]
+    const _: () = ();
+
+    #[post_validate(
+        ["field_b", "field_a"],
+        validate = async |_ctx, _opts| {
+            rendezvous().await;
+            Ok(None)
         },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.post_validate]: \"dependent\" is an alias; use \"virtual_field\" instead"
-)]
-fn should_reject_if_an_alias_similar_to_a_dependent_field_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "virtual_field"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_, _, _| ready(Ok(Some(1)))),
-            )
-        },
-        |o| {
-            o.post_validate(["lax", "lax_1", "dependent"], |v| {
-                v.validate(|_, _| ready(Ok(None)))
-            })
-        },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.post_validate]: \"alias\" is an alias; use \"virtual_field\" instead"
-)]
-fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-        alias: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "virtual_field"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("alias")
-                    .validate(|_, _, _| ready(Ok(Some(1)))),
-            )
-        },
-        |o| {
-            o.post_validate(["lax", "lax_1", "alias"], |v| {
-                v.validate(|_, _| ready(Ok(None)))
-            })
-        },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.post_validate]: only lax, required and virtual fields can be post-validated; remove \"created_at\""
-)]
-fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        created_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).created_at(None))
-        },
-        |o| {
-            o.post_validate(["lax", "lax_1", "created_at"], |v| {
-                v.validate(|_, _| ready(Ok(None)))
-            })
-        },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.post_validate]: only lax, required and virtual fields can be post-validated; remove \"custom_created_at\""
-)]
-fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        custom_created_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).created_at(Some("custom_created_at")))
-        },
-        |o| {
-            o.post_validate(["lax", "lax_1", "custom_created_at"], |v| {
-                v.validate(|_, _| ready(Ok(None)))
-            })
-        },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.post_validate]: only lax, required and virtual fields can be post-validated; remove \"updated_at\""
-)]
-fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        updated_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).updated_at(None))
-        },
-        |o| {
-            o.post_validate(["lax", "lax_1", "updated_at"], |v| {
-                v.validate(|_, _| ready(Ok(None)))
-            })
-        },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.post_validate]: only lax, required and virtual fields can be post-validated; remove \"custom_updated_at\""
-)]
-fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        custom_updated_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).updated_at(Some("custom_updated_at")))
-        },
-        |o| {
-            o.post_validate(["lax", "lax_1", "custom_updated_at"], |v| {
-                v.validate(|_, _| ready(Ok(None)))
-            })
-        },
-    );
+    )]
+    const _: () = ();
 }

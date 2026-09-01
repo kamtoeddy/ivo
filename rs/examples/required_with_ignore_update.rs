@@ -1,23 +1,19 @@
-use std::{future::ready, sync::LazyLock};
-
-use ivo::{required_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
+use ivo::ivo_schema;
 
 #[async_std::main]
 async fn main() {
-    let (payload, handle_failure, _) = DATA_MODEL
-        .create(&PartialDataInput { username: None }, None)
-        .await
-        .err()
-        .unwrap();
+    let errors = DataModel
+        .create(PartialData { username: None }, ())
+        .unwrap_err();
 
-    println!("\nfailed to create: {:#?}", payload);
+    println!("\nfailed to create: {:#?}", errors.errors);
 
     assert_eq!(
-        payload.get("username").unwrap().reason,
+        errors.errors.get("username").unwrap().reason,
         "\"username\" was not provided!"
     );
 
-    handle_failure().await;
+    errors.handle_failure();
 
     let data = Data {
         username: "john-doe".to_string(),
@@ -25,23 +21,21 @@ async fn main() {
 
     let updated_username = Some("ignore-update".to_string());
 
-    let (error, handle_failure, _) = DATA_MODEL
+    let handle = DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            PartialData {
                 username: updated_username.clone(),
             },
-            None,
+            (),
         )
-        .await
-        .err()
-        .unwrap();
+        .unwrap_err();
 
-    assert!(error.is_none());
+    assert!(handle.errors.is_none());
 
     println!("\nNothing to update");
 
-    handle_failure().await;
+    handle.handle_failure();
 
     let updated_username = Some("james-doe".to_string());
 
@@ -49,84 +43,60 @@ async fn main() {
         username: "john-doe".to_string(),
     };
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updated = DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            PartialData {
                 username: updated_username.clone(),
             },
-            None,
+            (),
         )
-        .await
-        .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
+        updated.data,
         PartialData {
             username: updated_username
         }
     );
 
-    handle_success().await;
+    let updated_data = updated.data.clone();
 
-    let data = data.clone_with_updates(&updates);
+    updated.handle_success();
 
-    DATA_MODEL.delete(&data, None).await;
+    let data = data.clone_with_updates(&updated_data);
+
+    DataModel.delete(&data, ());
 }
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub username: String,
+pub use schema::{Data, DataModel, PartialData};
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod schema {
+    struct Fields {
+        #[required]
+        #[required_error(|_, _| "\"username\" was not provided!".to_string())]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_update(|ctx, _| {
+            let username = ctx.input().username.clone().unwrap();
+
+            println!("\n[ignore_update]: raw username = {}", username);
+            println!("\n[ignore_update]: previous username = {}", ctx.values().username);
+
+            username == "ignore-update"
+        })]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: username = {}", ctx.values().username);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: username = {}", data.username);
+        })]
+        #[on_failure(|ctx, _| {
+            println!("\n[on_failure]: raw username = {:?}", ctx.raw_input().username);
+            if let Some(name) = ctx.input().username.as_ref() {
+                println!("\n[on_failure]: validated username = {}", name);
+            }
+        })]
+        pub username: String,
+    }
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub username: String,
-}
-
-pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                required_field("username")
-                    .required_error("\"username\" was not provided!")
-                    .validate(|_, _, _| ready(Ok(None::<String>)))
-                    .ignore_update(|raw_input: PartialDataInput, data: Data, _| {
-                        let username = raw_input.username.unwrap();
-
-                        println!("\n[ignore_update]: raw username = {}", username);
-                        println!("\n[ignore_update]: previous username = {}", data.username);
-
-                        ready(username == "ignore-update")
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_success]: username = {}",
-                            ctx.values().username.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: username = {}", data.username);
-
-                        ready(())
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_failure]: raw username = {}",
-                            ctx.raw_input().username.unwrap()
-                        );
-
-                        if let Some(name) = ctx.input().username {
-                            println!("\n[on_failure]: validated username = {}", name);
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    )
-});

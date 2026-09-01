@@ -1,7 +1,7 @@
-use std::{future::ready, sync::LazyLock};
-
 use chrono::{DateTime, Utc};
-use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
+use ivo::ivo_schema;
+
+type Timestamp = DateTime<Utc>;
 
 #[async_std::main]
 async fn main() {
@@ -18,143 +18,130 @@ async fn should_properly_create_and_update() {
     let username = "john-doe".to_string();
     let datetime_before = Utc::now();
 
-    let (data, _, _) = DATA_MODEL
+    let created = DataModel
         .create(
-            &PartialDataInput {
+            PartialDataInput {
                 username: Some(username.clone()),
             },
-            None,
+            (),
         )
-        .await
-        .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
-    assert_eq!(data.username, username);
-    assert_eq!(data.custom_created_at, data.custom_updated_at);
-    assert!(data.custom_created_at > datetime_before);
-    assert!(data.custom_updated_at > datetime_before);
+    assert_eq!(created.data.username, username);
+    assert_eq!(
+        created.data.custom_created_at,
+        created.data.custom_updated_at
+    );
+    assert!(created.data.custom_created_at > datetime_before);
+    assert!(created.data.custom_updated_at > datetime_before);
 
     let username = "jane-doe".to_string();
 
-    let (updates, _, _) = DATA_MODEL
+    let updated = DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            PartialDataInput {
                 username: Some(username.clone()),
             },
-            None,
+            (),
         )
-        .await
-        .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
-    assert_eq!(updates.username, Some(username));
-    assert!(updates.custom_created_at.is_none());
-    assert!(updates.custom_updated_at.is_some());
+    assert_eq!(updated.data.username, Some(username));
+    assert!(updated.data.custom_created_at.is_none());
+    assert!(updated.data.custom_updated_at.is_some());
 }
 
 async fn should_properly_create_and_update_with_optional_updated_at() {
     let username = "john-doe".to_string();
     let datetime_before = Utc::now();
 
-    let (data, _, _) = DATA_MODEL_WITH_OPTIONAL_UPDATED_AT
+    let created = DataWithOptionalUpdatedAtModel
         .create(
-            &PartialDataInput {
+            OptionalUpdatedAtPartialDataInput {
                 username: Some(username.clone()),
             },
-            None,
+            (),
         )
-        .await
-        .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
-    assert_eq!(data.username, username);
-    assert!(data.custom_created_at > datetime_before);
-    assert!(data.custom_updated_at.is_none());
+    assert_eq!(created.data.username, username);
+    assert!(created.data.custom_created_at > datetime_before);
+    assert!(created.data.custom_updated_at.is_none());
 
     let username = "jane-doe".to_string();
 
-    let (updates, _, _) = DATA_MODEL_WITH_OPTIONAL_UPDATED_AT
+    let updated = DataWithOptionalUpdatedAtModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            OptionalUpdatedAtPartialDataInput {
                 username: Some(username.clone()),
             },
-            None,
+            (),
         )
-        .await
-        .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
-    assert_eq!(updates.username, Some(username));
-    assert!(updates.custom_created_at.is_none());
-    assert!(updates.custom_updated_at.unwrap().is_some());
+    assert_eq!(updated.data.username, Some(username));
+    assert!(updated.data.custom_created_at.is_none());
+    assert!(updated.data.custom_updated_at.unwrap().is_some());
 }
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    username: String,
+pub use custom_name_schema::{Data, DataModel, PartialData, PartialDataInput};
+pub use optional_updated_at_schema::{
+    DataWithOptionalUpdatedAt, DataWithOptionalUpdatedAtModel,
+    PartialDataInput as OptionalUpdatedAtPartialDataInput, PartialDataWithOptionalUpdatedAt,
+};
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod custom_name_schema {
+    use super::Timestamp;
+
+    struct Fields {
+        #[lax("default-value".into())]
+        #[validate(|_, _, _| Ok(None))]
+        pub username: String,
+
+        #[created_at]
+        pub custom_created_at: Timestamp,
+
+        #[updated_at]
+        pub custom_updated_at: Timestamp,
+    }
+
+    #[timestamps(chrono::Utc::now)]
+    const _: () = ();
 }
 
-type Timestamp = DateTime<Utc>;
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(DataWithOptionalUpdatedAt, derive(Debug, Clone, PartialEq))
+)]
+mod optional_updated_at_schema {
+    use super::Timestamp;
 
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    custom_created_at: Timestamp,
-    username: String,
-    custom_updated_at: Timestamp,
+    struct Fields {
+        #[lax("default-value".into())]
+        #[validate(|_, _, _| Ok(None))]
+        pub username: String,
+
+        #[created_at]
+        pub custom_created_at: Timestamp,
+
+        #[optional_updated_at]
+        pub custom_updated_at: Option<Timestamp>,
+    }
+
+    #[timestamps(chrono::Utc::now)]
+    const _: () = ();
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct DataWithOptionalUpdatedAt {
-    custom_created_at: Timestamp,
-    username: String,
-    custom_updated_at: Option<Timestamp>,
-}
-
-pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data, Option<()>, Timestamp>> =
-    LazyLock::new(|| {
-        IvoModel::new(
-            |f| {
-                f.field(
-                    lax_field("username")
-                        .default("default-value".into())
-                        .validate(|_, _, _| ready(Ok(None::<String>))),
-                )
-                .timestamps(|t| {
-                    t.resolve(Utc::now)
-                        .created_at(Some("custom_created_at"))
-                        .updated_at(Some("custom_updated_at"))
-                })
-            },
-            |o| o,
-        )
-    });
-
-pub static DATA_MODEL_WITH_OPTIONAL_UPDATED_AT: LazyLock<
-    IvoModel<DataInput, DataWithOptionalUpdatedAt, Option<()>, Timestamp>,
-> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("username")
-                    .default("default-value".into())
-                    .validate(|_, _, _| ready(Ok(None::<String>))),
-            )
-            .timestamps(|t| {
-                t.resolve(Utc::now)
-                    .created_at(Some("custom_created_at"))
-                    .optional_updated_at(Some("custom_updated_at"))
-            })
-        },
-        |o| o,
-    )
-});

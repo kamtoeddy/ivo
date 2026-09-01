@@ -1,117 +1,34 @@
-use std::future::ready;
-
-use crate::async_test_matrix;
-use ivo::{
-    constant_field, dependent_field, lax_field, virtual_field, IvoContext, IvoInputStruct,
-    IvoModel, IvoStruct,
-};
-
+mod compile_fail;
 mod ignore;
 mod ignore_update;
+mod parallel_hooks;
 mod post_validate;
 mod required;
 
-// [x] ignore
-// [x] ignore_update
-// [x] on_delete
-// [x] on_success
-// [x] post_validate
-// [x] required
+use ivo::ivo_schema;
 
-// ignore_update
-async fn should_respect_option_to_ignore_updates_with_empty_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: String,
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod grouped_on_delete_schema {
+    struct Fields {
+        #[lax(1234)]
+        pub lax: i32,
+
+        #[lax(5678)]
+        pub lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-    }
-
-    let default_value = "default_lax_value";
-    const IGNORE_VALUE: &str = "ignore_value";
-
-    let model = IvoModel::<DataInput, Data>::new(
-        |f| f.field(lax_field("lax").default(default_value.to_string())),
-        |o| {
-            o.ignore_update([], |input: PartialDataInput, _, _| {
-                ready(input.lax.map(|v| v == IGNORE_VALUE).unwrap_or(false))
-            })
-        },
-    );
-
-    let lax = "lax_value".to_string();
-
-    let data = Data { lax };
-    let lax_update = IGNORE_VALUE.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: Some(lax_update),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((e, _, _)) => assert!(e.is_none()),
-        _ => unreachable!(),
-    }
-
-    let lax_update = "should_not_ignore".to_string();
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: Some(lax_update.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            lax: Some(lax_update)
+    #[on_delete(|_data, _opts| {
+        if true {
+            panic!("[options.on_delete]: handler triggered");
         }
-    );
+    })]
+    const _: () = ();
 }
 
-async_test_matrix!(should_respect_option_to_ignore_updates_with_empty_fields_array);
-
-// on_delete
-
 async fn should_properly_trigger_on_delete_handlers() {
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
+    let data = grouped_on_delete_schema::Data { lax: 2, lax_1: 3 };
 
-    let model: IvoModel<Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| {
-            o.on_delete(|_, _| {
-                if true {
-                    panic!("[options.on_delete]: handler triggered");
-                }
-
-                ready(())
-            })
-        },
-    );
-
-    model.delete(&Data { lax: 2, lax_1: 3 }, None).await
+    grouped_on_delete_schema::DataModel.delete(&data, ());
 }
 
 async_test_matrix!(
@@ -119,30 +36,31 @@ async_test_matrix!(
     should_properly_trigger_on_delete_handlers
 );
 
-async fn should_properly_trigger_all_on_delete_handlers() {
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod multiple_grouped_on_delete_schema {
+    struct Fields {
+        #[lax(1234)]
+        pub lax: i32,
+
+        #[lax(5678)]
+        pub lax_1: i32,
     }
 
-    let model: IvoModel<Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| {
-            o.on_delete(|_, _| ready(())).on_delete(|_, _| {
-                if true {
-                    panic!("[options.on_delete]: second handler triggered");
-                }
+    #[on_delete(|_data, _opts| {})]
+    const _: () = ();
 
-                ready(())
-            })
-        },
-    );
+    #[on_delete(|_data, _opts| {
+        if true {
+            panic!("[options.on_delete]: second handler triggered");
+        }
+    })]
+    const _: () = ();
+}
 
-    model.delete(&Data { lax: 2, lax_1: 3 }, None).await
+async fn should_properly_trigger_all_on_delete_handlers() {
+    let data = multiple_grouped_on_delete_schema::Data { lax: 2, lax_1: 3 };
+
+    multiple_grouped_on_delete_schema::DataModel.delete(&data, ());
 }
 
 async_test_matrix!(
@@ -150,248 +68,94 @@ async_test_matrix!(
     should_properly_trigger_all_on_delete_handlers
 );
 
-// on_success
-
-#[test]
-#[should_panic(
-    expected = "[options.on_success]: remove duplicates of \"lax\" in grouped on_success config"
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
 )]
-fn should_reject_if_the_fields_array_contains_any_duplicates() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
+mod allow_constant_and_dependents_on_success_schema {
+    struct Fields {
+        #[constant(1234)]
+        pub id: i32,
+
+        #[lax(5678)]
+        pub lax: i32,
+
+        #[depends_on("lax")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().lax.unwrap_or(0) + 1)]
+        pub dependent: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.on_success(["lax", "lax"], |s| s.handle(|_, _| ready(()))),
-    );
+    #[on_success(["id", "dependent"], |_ctx, _opts| {})]
+    const _: () = ();
 }
 
-#[test]
-#[should_panic(expected = "[options.on_success]: \"invalid_field\" does not exist on your schema")]
-fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_schema() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
+#[tokio::test]
+async fn should_allow_constant_and_dependents_in_fields_array() {
+    let input = allow_constant_and_dependents_on_success_schema::DataInput { lax: 5678 };
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
+    let created = allow_constant_and_dependents_on_success_schema::DataModel
+        .create(input, ())
+        .unwrap();
 
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.on_success(["lax", "invalid_field"], |s| s.handle(|_, _| ready(()))),
-    );
+    assert_eq!(created.data.id, 1234);
+    assert_eq!(created.data.dependent, 5679);
 }
 
+// -----------------------------------------------------------------------------
+// Named const anchors for grouped options (GOAL.md §10)
+// -----------------------------------------------------------------------------
+
 #[test]
-#[should_panic(
-    expected = "[options.on_success]: \"alias\" is an alias; use \"virtual_field\" instead"
-)]
-fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
+fn should_allow_named_consts_as_grouped_option_anchors() {
+    // A named const (used here for its own stable identifier, matching
+    // GOAL.md §10's `NAME_EMAIL_REQUIRED` example) must work exactly like the
+    // anonymous `const _: () = ();` default.
+    let errors = named_const_option_schema::DataInputModel
+        .create(
+            named_const_option_schema::PartialDataInput {
+                email: None,
+                phone_number: None,
+            },
+            (),
+        )
+        .unwrap_err();
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-        alias: i32,
-    }
+    assert!(errors.errors.get("email").is_some());
+    assert!(errors.errors.get("phone_number").is_some());
 
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "virtual_field"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("alias")
-                    .validate(|_, _, _| ready(Ok(Some(1)))),
-            )
-        },
-        |o| o.on_success(["lax", "lax_1", "alias"], |s| s.handle(|_, _| ready(()))),
-    );
+    let created = named_const_option_schema::DataInputModel
+        .create(
+            named_const_option_schema::PartialDataInput {
+                email: Some(Some("a@b.com".to_string())),
+                phone_number: None,
+            },
+            (),
+        )
+        .unwrap();
+
+    assert_eq!(created.data.email.as_deref(), Some("a@b.com"));
 }
 
-#[test]
-#[should_panic(
-    expected = "[options.on_success]: timestamps are not allowed in on_success. remove \"created_at\""
-)]
-fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        created_at: i32,
-        lax: i32,
-        lax_1: i32,
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod named_const_option_schema {
+    struct Fields {
+        #[lax(None)]
+        pub email: Option<String>,
+
+        #[lax(None)]
+        pub phone_number: Option<String>,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
+    #[required(["email", "phone_number"], |ctx, _| {
+        if ctx.input().email.is_some() || ctx.input().phone_number.is_some() {
+            return None;
+        }
 
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).created_at(None))
-        },
-        |o| {
-            o.on_success(["lax", "lax_1", "created_at"], |s| {
-                s.handle(|_, _| ready(()))
-            })
-        },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.on_success]: timestamps are not allowed in on_success. remove \"custom_created_at\""
-)]
-fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        custom_created_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).created_at(Some("custom_created_at")))
-        },
-        |o| {
-            o.on_success(["lax", "lax_1", "custom_created_at"], |s| {
-                s.handle(|_, _| ready(()))
-            })
-        },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.on_success]: timestamps are not allowed in on_success. remove \"updated_at\""
-)]
-fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        updated_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).updated_at(None))
-        },
-        |o| {
-            o.on_success(["lax", "lax_1", "updated_at"], |s| {
-                s.handle(|_, _| ready(()))
-            })
-        },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.on_success]: timestamps are not allowed in on_success. remove \"custom_updated_at\""
-)]
-fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        custom_updated_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).updated_at(Some("custom_updated_at")))
-        },
-        |o| {
-            o.on_success(["lax", "lax_1", "custom_updated_at"], |s| {
-                s.handle(|_, _| ready(()))
-            })
-        },
-    );
-}
-
-#[test]
-fn should_allow_constant_and_dependents_in_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value(1234))
-                .field(dependent_field("dependent", ["lax"]).default(1).resolve(
-                    |ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    },
-                ))
-                .field(lax_field("lax").default(5678))
-        },
-        |o| o.on_success(["id", "dependent"], |s| s.handle(|_, _| ready(()))),
-    );
+        let mut errors = DataInputErrors::new();
+        errors.set_email("either \"email\" or \"phone_number\" is required", None);
+        errors.set_phone_number("either \"email\" or \"phone_number\" is required", None);
+        Some(errors)
+    })]
+    const NAME_EMAIL_REQUIRED: () = ();
 }

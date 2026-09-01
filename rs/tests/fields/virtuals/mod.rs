@@ -1,5092 +1,2128 @@
-use ivo::{
-    dependent_field, lax_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct,
-};
-use std::{future::ready, ops::RangeInclusive, panic};
-
-use crate::async_test_matrix;
-
 mod ignore;
 mod on_failure;
 mod on_success;
 
-// TODO:
-// [x] alias
-// [x] ignore
-// [x] ignore_init
-// [x] ignore_update
-// [x] required
-// [x] validate
-// [x] re_validate
-// [x] sanitizer
-// [x] on_failure
-// [x] on_success
-// [x] o.on_success
-// [x] o.post_validate
-// [x] o.requied
+use ivo::ivo_schema;
 
-// nothing to update
+// -----------------------------------------------------------------------------
+// Alias support
+// -----------------------------------------------------------------------------
 
-async fn should_reject_updates_if_no_value_has_changed() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-    }
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(1)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(virtual_field("virtual_field").validate(|_, _, _| ready(Ok(None::<i32>))))
-        },
-        |o| o,
-    );
-
+#[test]
+fn should_resolve_sync_virtual_fields_with_and_without_aliases() {
     let value = 24;
 
-    let (err, _, _) = model
-        .update(
-            &Data { dependent: value },
-            &PartialDataInput {
+    let created = sync_no_alias_schema::DataModel
+        .create(
+            sync_no_alias_schema::PartialDataInput {
+                virtual_field: Some(value.to_string()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_no_alias_schema::Data {
+            dependent: value + 1,
+        }
+    );
+
+    let created = sync_alias_schema::DataModel
+        .create(
+            sync_alias_schema::PartialDataInput {
+                virtual_alias: Some(value.to_string()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_alias_schema::Data {
+            dependent: value + 1,
+        }
+    );
+
+    let created = sync_alias_as_dependent_schema::DataModel
+        .create(
+            sync_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some(value.to_string()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_alias_as_dependent_schema::Data {
+            dependent: value + 1,
+        }
+    );
+}
+
+async fn should_resolve_async_virtual_fields_with_and_without_aliases() {
+    let value = 24;
+
+    let created = async_no_alias_schema::DataModel
+        .create(
+            async_no_alias_schema::PartialDataInput {
+                virtual_field: Some(value.to_string()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_no_alias_schema::Data {
+            dependent: value + 1,
+        }
+    );
+
+    let created = async_alias_schema::DataModel
+        .create(
+            async_alias_schema::PartialDataInput {
+                virtual_alias: Some(value.to_string()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_alias_schema::Data {
+            dependent: value + 1,
+        }
+    );
+
+    let created = async_alias_as_dependent_schema::DataModel
+        .create(
+            async_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some(value.to_string()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_alias_as_dependent_schema::Data {
+            dependent: value + 1,
+        }
+    );
+}
+
+async_test_matrix!(should_resolve_async_virtual_fields_with_and_without_aliases);
+
+// -----------------------------------------------------------------------------
+// No-change updates
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_return_empty_updates_when_no_value_has_changed() {
+    let value = 24;
+
+    let created = sync_no_change_schema::DataModel
+        .create(
+            sync_no_change_schema::PartialDataInput {
                 virtual_field: Some(value),
             },
-            None,
+            (),
         )
-        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_no_change_schema::Data { dependent: value }
+    );
+
+    let failed = sync_no_change_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_no_change_schema::PartialDataInput {
+                virtual_field: Some(value),
+            },
+            (),
+        )
         .err()
         .unwrap();
 
-    assert!(err.is_none())
+    assert!(failed.errors.is_none());
 }
 
-async_test_matrix!(should_reject_updates_if_no_value_has_changed);
-
-async fn should_reject_updates_if_no_value_has_changed_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: i32,
-    }
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(1)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|_, _, _| ready(Ok(None::<i32>))),
-            )
-        },
-        |o| o,
-    );
-
+async fn should_return_empty_updates_when_no_value_has_changed_async() {
     let value = 24;
 
-    let (err, _, _) = model
-        .update(
-            &Data { dependent: value },
-            &PartialDataInput {
-                virtual_alias: Some(value),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(err.is_none())
-}
-
-async_test_matrix!(should_reject_updates_if_no_value_has_changed_with_alias);
-
-async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: i32,
-    }
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(1)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_, _, _| ready(Ok(None::<i32>))),
-            )
-        },
-        |o| o,
-    );
-
-    let value = 24;
-
-    let (err, _, _) = model
-        .update(
-            &Data { dependent: value },
-            &PartialDataInput {
-                dependent: Some(value),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(err.is_none())
-}
-
-async_test_matrix!(should_reject_updates_if_no_value_has_changed_with_alias_same_as_dependent);
-
-// required
-
-async fn should_respect_the_required_rule() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        virtual_field: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = "default_lax_value".to_string();
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value.clone()))
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .required(|ctx: IvoContext<DataInput, Data>, _| {
-                        if ctx.is_update() {
-                            if "require_virtual_field_for_update"
-                                == ctx.previous_values().unwrap().lax
-                            {
-                                return ready(Some(
-                                    "virtual_field is required for this update".into(),
-                                ));
-                            }
-
-                            return ready(None);
-                        }
-
-                        if Some("required_virtual_field_for_init".into()) == ctx.input().lax {
-                            return ready(Some(
-                                "virtual_field is required to create at this time".into(),
-                            ));
-                        }
-
-                        ready(None)
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let r = model
+    let created = async_no_change_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: Some("required_virtual_field_for_init".into()),
-                virtual_field: None,
+            async_no_change_schema::PartialDataInput {
+                virtual_field: Some(value),
             },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((payload, _, _)) => assert_eq!(
-            payload.get("virtual_field").unwrap().reason,
-            "virtual_field is required to create at this time"
-        ),
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let lax = "require_virtual_field_for_update".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                virtual_field: None,
-            },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax,
-        }
+        created.data,
+        async_no_change_schema::Data { dependent: value }
     );
 
-    let r = model
+    let failed = async_no_change_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: None,
-                lax: Some("some update".into()),
+            created.data.clone(),
+            async_no_change_schema::PartialDataInput {
+                virtual_field: Some(value),
             },
-            None,
+            (),
         )
-        .await;
+        .await
+        .err()
+        .unwrap();
 
-    match r {
-        Err((Some(payload), _, _)) => assert_eq!(
-            payload.get("virtual_field").unwrap().reason,
-            "virtual_field is required for this update"
-        ),
-        _ => unreachable!("expected a validation error"),
-    }
+    assert!(failed.errors.is_none());
 }
 
-async_test_matrix!(should_respect_the_required_rule);
+async_test_matrix!(should_return_empty_updates_when_no_value_has_changed_async);
 
-async fn should_respect_the_required_rule_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-    }
+// -----------------------------------------------------------------------------
+// Required rules
+// -----------------------------------------------------------------------------
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        virtual_alias: String,
-    }
+#[test]
+fn should_respect_the_required_rule() {
+    let required_error = "virtual_field is required to create at this time";
+    let update_required_error = "virtual_field is required for this update";
 
-    let default_dependent_value = 1;
-    let default_lax_value = "default_lax_value".to_string();
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value.clone()))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .required(|ctx: IvoContext<DataInput, Data>, _| {
-                        if ctx.is_update() {
-                            if "require_virtual_field_for_update"
-                                == ctx.previous_values().unwrap().lax
-                            {
-                                return ready(Some(
-                                    "virtual_field is required for this update".into(),
-                                ));
-                            }
-
-                            return ready(None);
-                        }
-
-                        if Some("required_virtual_field_for_init".into()) == ctx.input().lax {
-                            return ready(Some(
-                                "virtual_field is required to create at this time".into(),
-                            ));
-                        }
-
-                        ready(None)
-                    }),
-            )
+    let result = sync_required_schema::DataModel.create(
+        sync_required_schema::PartialDataInput {
+            lax: Some("required_virtual_field_for_init".into()),
+            virtual_field: None,
         },
-        |o| o,
+        (),
     );
 
-    let r = model
-        .create(
-            &PartialDataInput {
-                lax: Some("required_virtual_field_for_init".into()),
-                virtual_alias: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((payload, _, _)) => assert_eq!(
-            payload.get("virtual_alias").unwrap().reason,
-            "virtual_field is required to create at this time"
-        ),
-        _ => unreachable!("expected a validation error"),
-    }
+    let errors = result.unwrap_err();
+    assert_eq!(
+        errors.errors.get("virtual_field").unwrap().reason,
+        required_error
+    );
 
     let lax = "require_virtual_field_for_update".to_string();
 
-    let (data, _, _) = model
+    let created = sync_required_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_required_schema::PartialDataInput {
                 lax: Some(lax.clone()),
-                virtual_alias: None,
+                virtual_field: None,
             },
-            None,
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_required_schema::Data { dependent: 1, lax }
+    );
+
+    let errors = sync_required_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_required_schema::PartialDataInput {
+                lax: Some("some update".into()),
+                virtual_field: None,
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
+        update_required_error
+    );
+}
+
+async fn should_respect_the_required_rule_async() {
+    let required_error = "virtual_field is required to create at this time";
+    let update_required_error = "virtual_field is required for this update";
+
+    let result = async_required_schema::DataModel
+        .create(
+            async_required_schema::PartialDataInput {
+                lax: Some("required_virtual_field_for_init".into()),
+                virtual_field: None,
+            },
+            (),
+        )
+        .await;
+
+    let errors = result.unwrap_err();
+    assert_eq!(
+        errors.errors.get("virtual_field").unwrap().reason,
+        required_error
+    );
+
+    let lax = "require_virtual_field_for_update".to_string();
+
+    let created = async_required_schema::DataModel
+        .create(
+            async_required_schema::PartialDataInput {
+                lax: Some(lax.clone()),
+                virtual_field: None,
+            },
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax,
-        }
+        created.data,
+        async_required_schema::Data { dependent: 1, lax }
     );
 
-    let r = model
+    let errors = async_required_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: None,
+            created.data.clone(),
+            async_required_schema::PartialDataInput {
                 lax: Some("some update".into()),
+                virtual_field: None,
             },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => assert_eq!(
-            payload.get("virtual_alias").unwrap().reason,
-            "virtual_field is required for this update"
-        ),
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(should_respect_the_required_rule_with_alias);
-
-async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        lax: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = "default_lax_value".to_string();
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value.clone()))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .required(|ctx: IvoContext<DataInput, Data>, _| {
-                        if ctx.is_update() {
-                            if "require_virtual_field_for_update"
-                                == ctx.previous_values().unwrap().lax
-                            {
-                                return ready(Some(
-                                    "virtual_field is required for this update".into(),
-                                ));
-                            }
-
-                            return ready(None);
-                        }
-
-                        if Some("required_virtual_field_for_init".into()) == ctx.input().lax {
-                            return ready(Some(
-                                "virtual_field is required to create at this time".into(),
-                            ));
-                        }
-
-                        ready(None)
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                lax: Some("required_virtual_field_for_init".into()),
-                dependent: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((payload, _, _)) => assert_eq!(
-            payload.get("dependent").unwrap().reason,
-            "virtual_field is required to create at this time"
-        ),
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let lax = "require_virtual_field_for_update".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                dependent: None,
-                lax: Some(lax.clone()),
-            },
-            None,
+            (),
         )
         .await
-        .ok()
+        .err()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax,
-        }
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
+        update_required_error
     );
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: None,
-                lax: Some("some update".into()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => assert_eq!(
-            payload.get("dependent").unwrap().reason,
-            "virtual_field is required for this update"
-        ),
-        _ => unreachable!("expected a validation error"),
-    }
 }
 
-async_test_matrix!(should_respect_the_required_rule_with_alias_same_as_dependent);
+async_test_matrix!(should_respect_the_required_rule_async);
 
-// grouped required
+#[test]
+fn should_properly_handle_grouped_required_errors() {
+    const EXPECTED_REQUIRED_ERROR: &str = "field is required";
 
-async fn should_properly_handle_grouped_required_errors() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
-    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
-    const EXPECTED_VIRTUAL_OR_LAX_1: &str = "EXPECTED_VIRTUAL_OR_LAX_1";
-    const VIRTUAL_IS_MISSING: &str = "VIRTUAL_IS_MISSING";
-    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
-
-    let default_dependent_value = "default_dependent_value";
-    let default_lax_1_value = "default_lax_1_value";
-    let default_lax_2_value = "default_lax_2_value";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value.to_string())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
-            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
-            .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
-        },
-        |o| {
-            o.required(
-                ["virtual_field", "lax_1"],
-                |ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(lax) = ctx.input().lax_2 {
-                        if lax == IGNORE_WITH_SAME_ERROR {
-                            errors
-                                .set_virtual_field(EXPECTED_VIRTUAL_OR_LAX_1, None)
-                                .set_lax_1(EXPECTED_VIRTUAL_OR_LAX_1, None);
-
-                            return ready(Some(errors));
-                        }
-
-                        errors
-                            .set_virtual_field(VIRTUAL_IS_MISSING, None)
-                            .set_lax_1(LAX_1_IS_MISSING, None);
-                    }
-
-                    ready(errors.into_option())
-                },
-            )
-        },
-    );
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (payload, _, _) = model
+    let errors = sync_grouped_required_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_grouped_required_schema::PartialDataInput {
                 virtual_field: None,
                 lax_1: None,
-                lax_2: Some(lax.clone()),
+                lax_2: Some("any_value".into()),
             },
-            None,
+            (),
         )
-        .await
         .err()
         .unwrap();
 
-    assert!(payload.get("lax_2").is_none());
+    assert!(errors.errors.get("lax_2").is_none());
     assert_eq!(
-        payload.get("virtual_field").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
+        errors.errors.get("virtual_field").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
     );
     assert_eq!(
-        payload.get("lax_1").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
+        errors.errors.get("lax_1").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
     );
 
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
+    let errors = sync_grouped_required_schema::DataModel
+        .update(
+            sync_grouped_required_schema::Data {
+                dependent: 1,
+                lax_1: "default_lax_1_value".into(),
+                lax_2: "default_lax_2_value".into(),
+            },
+            sync_grouped_required_schema::PartialDataInput {
                 virtual_field: None,
                 lax_1: None,
-                lax_2: Some(lax.clone()),
+                lax_2: Some("any_value".into()),
             },
-            None,
+            (),
         )
-        .await
         .err()
         .unwrap();
 
-    assert!(payload.get("lax_2").is_none());
+    assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        payload.get("virtual_field").unwrap().reason,
-        VIRTUAL_IS_MISSING
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
+        EXPECTED_REQUIRED_ERROR
     );
-    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
+    assert_eq!(
+        errors.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+}
 
-    // updates
+async fn should_properly_handle_grouped_required_errors_async() {
+    const EXPECTED_REQUIRED_ERROR: &str = "field is required";
 
-    let data = Data {
-        dependent: default_dependent_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-        lax_2: default_lax_2_value.to_string(),
-    };
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
+    let errors = async_grouped_required_schema::DataModel
+        .create(
+            async_grouped_required_schema::PartialDataInput {
                 virtual_field: None,
                 lax_1: None,
-                lax_2: Some(lax.clone()),
+                lax_2: Some("any_value".into()),
             },
-            None,
+            (),
         )
         .await
         .err()
         .unwrap();
 
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-            assert_eq!(
-                payload.get("lax_1").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    assert!(errors.errors.get("lax_2").is_none());
+    assert_eq!(
+        errors.errors.get("virtual_field").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+    assert_eq!(
+        errors.errors.get("lax_1").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
 
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (error, _, _) = model
+    let errors = async_grouped_required_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            async_grouped_required_schema::Data {
+                dependent: 1,
+                lax_1: "default_lax_1_value".into(),
+                lax_2: "default_lax_2_value".into(),
+            },
+            async_grouped_required_schema::PartialDataInput {
                 virtual_field: None,
                 lax_1: None,
-                lax_2: Some(lax.clone()),
+                lax_2: Some("any_value".into()),
             },
-            None,
+            (),
         )
         .await
         .err()
         .unwrap();
 
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                VIRTUAL_IS_MISSING
-            );
-            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
+        EXPECTED_REQUIRED_ERROR
+    );
+    assert_eq!(
+        errors.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        EXPECTED_REQUIRED_ERROR
+    );
 }
 
-async_test_matrix!(should_properly_handle_grouped_required_errors);
+async_test_matrix!(should_properly_handle_grouped_required_errors_async);
 
-async fn should_properly_handle_grouped_required_errors_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-        lax_1: String,
-        lax_2: String,
-    }
+// -----------------------------------------------------------------------------
+// Primary validators
+// -----------------------------------------------------------------------------
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-        lax_1: String,
-        lax_2: String,
-    }
+#[test]
+fn should_not_create_if_primary_validation_fails() {
+    const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
-    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
-    const EXPECTED_VIRTUAL_OR_LAX_1: &str = "EXPECTED_VIRTUAL_OR_LAX_1";
-    const VIRTUAL_IS_MISSING: &str = "VIRTUAL_IS_MISSING";
-    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
-
-    let default_dependent_value = "default_dependent_value";
-    let default_lax_1_value = "default_lax_1_value";
-    let default_lax_2_value = "default_lax_2_value";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value.to_string())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
-            .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
-        },
-        |o| {
-            o.required(
-                ["virtual_field", "lax_1"],
-                |ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(lax) = ctx.input().lax_2 {
-                        if lax == IGNORE_WITH_SAME_ERROR {
-                            errors
-                                .set_virtual_alias(EXPECTED_VIRTUAL_OR_LAX_1, None)
-                                .set_lax_1(EXPECTED_VIRTUAL_OR_LAX_1, None);
-
-                            return ready(Some(errors));
-                        }
-
-                        errors
-                            .set_virtual_alias(VIRTUAL_IS_MISSING, None)
-                            .set_lax_1(LAX_1_IS_MISSING, None);
-                    }
-
-                    ready(errors.into_option())
-                },
-            )
-        },
-    );
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(
-        payload.get("virtual_alias").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-    assert_eq!(
-        payload.get("lax_1").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(
-        payload.get("virtual_alias").unwrap().reason,
-        VIRTUAL_IS_MISSING
-    );
-    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-        lax_2: default_lax_2_value.to_string(),
-    };
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("virtual_alias").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-            assert_eq!(
-                payload.get("lax_1").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("virtual_alias").unwrap().reason,
-                VIRTUAL_IS_MISSING
-            );
-            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(should_properly_handle_grouped_required_errors_with_alias);
-
-async fn should_properly_handle_grouped_required_errors_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
-    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
-    const EXPECTED_VIRTUAL_OR_LAX_1: &str = "EXPECTED_VIRTUAL_OR_LAX_1";
-    const VIRTUAL_IS_MISSING: &str = "VIRTUAL_IS_MISSING";
-    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
-
-    let default_dependent_value = "default_dependent_value";
-    let default_lax_1_value = "default_lax_1_value";
-    let default_lax_2_value = "default_lax_2_value";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value.to_string())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
-            .field(lax_field("lax_2").default(default_lax_2_value.to_string()))
-        },
-        |o| {
-            o.required(
-                ["virtual_field", "lax_1"],
-                |ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(lax) = ctx.input().lax_2 {
-                        if lax == IGNORE_WITH_SAME_ERROR {
-                            errors
-                                .set_dependent(EXPECTED_VIRTUAL_OR_LAX_1, None)
-                                .set_lax_1(EXPECTED_VIRTUAL_OR_LAX_1, None);
-
-                            return ready(Some(errors));
-                        }
-
-                        errors
-                            .set_dependent(VIRTUAL_IS_MISSING, None)
-                            .set_lax_1(LAX_1_IS_MISSING, None);
-                    }
-
-                    ready(errors.into_option())
-                },
-            )
-        },
-    );
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                dependent: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(
-        payload.get("dependent").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-    assert_eq!(
-        payload.get("lax_1").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                dependent: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(payload.get("dependent").unwrap().reason, VIRTUAL_IS_MISSING);
-    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-        lax_2: default_lax_2_value.to_string(),
-    };
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("dependent").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-            assert_eq!(
-                payload.get("lax_1").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(payload.get("dependent").unwrap().reason, VIRTUAL_IS_MISSING);
-            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(should_properly_handle_grouped_required_errors_with_alias_same_as_dependent);
-
-// validators
-
-async fn should_not_create_if_primary_validation_fails() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
-
-    let default_dependent_value = 1;
-
-    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(virtual_field("virtual_field").validate(|v: String, _, _| {
-                let validated = v.trim();
-
-                if validated.len() < 2 {
-                    return ready(Err((MIN_LENGTH_ERROR.into(), None)));
-                }
-
-                ready(Ok(Some(validated.into())))
-            }))
-        },
-        |o| o,
-    );
-
-    let values = [
-        String::from(" "),
-        String::from(" 1"),
-        String::from("1"),
-        String::from(" 1   "),
-    ];
+    let values = [String::from(" "), String::from(" 1"), String::from("1")];
 
     for value in values {
-        let r = model
+        let errors = sync_primary_validation_schema::DataModel
             .create(
-                &PartialDataInput {
+                sync_primary_validation_schema::PartialDataInput {
                     virtual_field: Some(value),
                 },
-                None,
+                (),
             )
-            .await;
-
-        match r {
-            Err((p, _, _)) => {
-                assert_eq!(p.get("virtual_field").unwrap().reason, MIN_LENGTH_ERROR);
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    let values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
-
-    for value in values {
-        let r = model
-            .create(
-                &PartialDataInput {
-                    virtual_field: Some(value.clone()),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((data, _, _)) => {
-                assert_eq!(data.dependent, default_dependent_value + 1);
-            }
-            _ => unreachable!("expected successful creation"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_create_if_primary_validation_fails);
-
-async fn should_not_create_if_primary_validation_fails_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-    }
-
-    let default_dependent_value = 1;
-
-    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return ready(Err((MIN_LENGTH_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(Some(validated.into())))
-                    })
-                    .alias("virtual_alias"),
-            )
-        },
-        |o| o,
-    );
-
-    let values = [
-        String::from(" "),
-        String::from(" 1"),
-        String::from("1"),
-        String::from(" 1   "),
-    ];
-
-    for value in values {
-        let r = model
-            .create(
-                &PartialDataInput {
-                    virtual_alias: Some(value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((p, _, _)) => {
-                assert_eq!(p.get("virtual_alias").unwrap().reason, MIN_LENGTH_ERROR);
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    let values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
-
-    for value in values {
-        let r = model
-            .create(
-                &PartialDataInput {
-                    virtual_alias: Some(value.clone()),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((data, _, _)) => {
-                assert_eq!(data.dependent, default_dependent_value + 1);
-            }
-            _ => unreachable!("expected successful creation"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_create_if_primary_validation_fails_with_alias);
-
-async fn should_not_create_if_primary_validation_fails_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-    }
-
-    let default_dependent_value = 1;
-
-    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return ready(Err((MIN_LENGTH_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(Some(validated.into())))
-                    })
-                    .alias("dependent"),
-            )
-        },
-        |o| o,
-    );
-
-    let values = [
-        String::from(" "),
-        String::from(" 1"),
-        String::from("1"),
-        String::from(" 1   "),
-    ];
-
-    for value in values {
-        let r = model
-            .create(
-                &PartialDataInput {
-                    dependent: Some(value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((p, _, _)) => {
-                assert_eq!(p.get("dependent").unwrap().reason, MIN_LENGTH_ERROR);
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    let values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
-
-    for value in values {
-        let r = model
-            .create(
-                &PartialDataInput {
-                    dependent: Some(value.clone()),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((data, _, _)) => {
-                assert_eq!(data.dependent, default_dependent_value + 1);
-            }
-            _ => unreachable!("expected successful creation"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_create_if_primary_validation_fails_with_alias_same_as_dependent);
-
-async fn should_not_update_if_primary_validation_fails() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
-    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(virtual_field("virtual_field").validate(|v: i32, _, _| {
-                if !REQUIRED_VALUE_RANGE.contains(&v) {
-                    return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
-    );
-
-    let data = Data {
-        dependent: default_dependent_value,
-    };
-
-    let values = [-1, 0, REQUIRED_VALUE_RANGE.max().unwrap() + 1];
-
-    for value in values {
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    virtual_field: Some(value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((Some(payload), _, _)) => {
-                assert_eq!(
-                    payload.get("virtual_field").unwrap().reason,
-                    OUT_OF_RANGE_ERROR
-                )
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    for updated_value in REQUIRED_VALUE_RANGE.clone() {
-        if updated_value == data.dependent {
-            continue;
-        }
-
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    virtual_field: Some(updated_value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((d, _, _)) => {
-                assert_eq!(
-                    d,
-                    PartialData {
-                        dependent: Some(updated_value),
-                    }
-                )
-            }
-            _ => unreachable!("expected successful update"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_update_if_primary_validation_fails);
-
-async fn should_not_update_if_primary_validation_fails_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
-    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: i32, _, _| {
-                        if !REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let data = Data {
-        dependent: default_dependent_value,
-    };
-
-    let values = [-1, 0, REQUIRED_VALUE_RANGE.max().unwrap() + 1];
-
-    for value in values {
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    virtual_alias: Some(value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((Some(payload), _, _)) => {
-                assert_eq!(
-                    payload.get("virtual_alias").unwrap().reason,
-                    OUT_OF_RANGE_ERROR
-                )
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    for updated_value in REQUIRED_VALUE_RANGE.clone() {
-        if updated_value == data.dependent {
-            continue;
-        }
-
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    virtual_alias: Some(updated_value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((d, _, _)) => {
-                assert_eq!(
-                    d,
-                    PartialData {
-                        dependent: Some(updated_value),
-                    }
-                )
-            }
-            _ => unreachable!("expected successful update"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_update_if_primary_validation_fails_with_alias);
-
-async fn should_not_update_if_primary_validation_fails_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
-    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
-
-    let model: IvoModel<DataInput, Data> =
-        IvoModel::new(
-            |f| {
-                f.field(
-                    dependent_field("dependent", ["virtual_field"])
-                        .default(default_dependent_value)
-                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                            ready(ctx.input().dependent.unwrap())
-                        }),
-                )
-                .field(virtual_field("virtual_field").alias("dependent").validate(
-                    |v: i32, _, _| {
-                        if !REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    },
-                ))
-            },
-            |o| o,
+            .err()
+            .unwrap();
+
+        assert_eq!(
+            errors.errors.get("virtual_field").unwrap().reason,
+            MIN_LENGTH_ERROR
         );
+    }
 
-    let data = Data {
-        dependent: default_dependent_value,
-    };
-
-    let values = [-1, 0, REQUIRED_VALUE_RANGE.max().unwrap() + 1];
+    let values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
 
     for value in values {
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    dependent: Some(value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((Some(payload), _, _)) => {
-                assert_eq!(payload.get("dependent").unwrap().reason, OUT_OF_RANGE_ERROR)
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    for updated_value in REQUIRED_VALUE_RANGE.clone() {
-        if updated_value == data.dependent {
-            continue;
-        }
-
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    dependent: Some(updated_value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((d, _, _)) => {
-                assert_eq!(
-                    d,
-                    PartialData {
-                        dependent: Some(updated_value),
-                    }
-                )
-            }
-            _ => unreachable!("expected successful update"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_update_if_primary_validation_fails_with_alias_same_as_dependent);
-
-async fn should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(virtual_field("virtual_field").validate(|_: i32, _, _| ready(Ok(None))))
-        },
-        |o| o,
-    );
-
-    let value = 1;
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(data, Data { dependent: value });
-        }
-        _ => unreachable!("expected successful creation"),
-    }
-
-    let value = 2;
-
-    let r = model
-        .update(
-            &Data {
-                dependent: value - 1,
-            },
-            &PartialDataInput {
-                virtual_field: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(value)
-                }
-            );
-        }
-        _ => unreachable!("expected successful update"),
-    }
-}
-
-async_test_matrix!(should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value);
-
-async fn should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value_with_alias(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
-        |o| o,
-    );
-
-    let value = 1;
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(data, Data { dependent: value });
-        }
-        _ => unreachable!("expected successful creation"),
-    }
-
-    let value = 2;
-
-    let r = model
-        .update(
-            &Data {
-                dependent: value - 1,
-            },
-            &PartialDataInput {
-                virtual_alias: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(value)
-                }
-            );
-        }
-        _ => unreachable!("expected successful update"),
-    }
-}
-
-async_test_matrix!(should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value_with_alias);
-
-async fn should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value_with_alias_same_as_dependent(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
-        |o| o,
-    );
-
-    let value = 1;
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(data, Data { dependent: value });
-        }
-        _ => unreachable!("expected successful creation"),
-    }
-
-    let value = 2;
-
-    let r = model
-        .update(
-            &Data {
-                dependent: value - 1,
-            },
-            &PartialDataInput {
-                dependent: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(value)
-                }
-            );
-        }
-        _ => unreachable!("expected successful update"),
-    }
-}
-
-async_test_matrix!(should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value_with_alias_same_as_dependent);
-
-// re-validators
-
-async fn should_not_create_if_re_validation_fails() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
-
-    let default_dependent_value = 1;
-
-    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
-    const MIN_REVALIDATION_LENGTH_ERROR: &str =
-        "expected required to be at least 4 characters long";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return ready(Err((MIN_LENGTH_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(Some(validated.into())))
-                    })
-                    .re_validate(|v: String, _, _| {
-                        if v.len() < 4 {
-                            return ready(Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let values = [
-        String::from(" 111"),
-        String::from(" 11 "),
-        String::from("11"),
-        String::from(" 112   "),
-    ];
-
-    for value in values {
-        let r = model
+        let created = sync_primary_validation_schema::DataModel
             .create(
-                &PartialDataInput {
-                    virtual_field: Some(value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((p, _, _)) => {
-                assert_eq!(
-                    p.get("virtual_field").unwrap().reason,
-                    MIN_REVALIDATION_LENGTH_ERROR
-                );
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    let values = [String::from("1".repeat(4)), String::from("1".repeat(5))];
-
-    for value in values {
-        let r = model
-            .create(
-                &PartialDataInput {
+                sync_primary_validation_schema::PartialDataInput {
                     virtual_field: Some(value.clone()),
                 },
-                None,
+                (),
             )
-            .await;
+            .ok()
+            .unwrap();
 
-        match r {
-            Ok((data, _, _)) => {
-                assert_eq!(data.dependent, default_dependent_value + 1);
-            }
-            _ => unreachable!("expected creation to be successful"),
-        }
+        assert_eq!(created.data.dependent, value.len() as i32);
     }
 }
 
-async_test_matrix!(should_not_create_if_re_validation_fails);
+async fn should_not_create_if_primary_validation_fails_async() {
+    const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-async fn should_not_create_if_re_validation_fails_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-    }
-
-    let default_dependent_value = 1;
-
-    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
-    const MIN_REVALIDATION_LENGTH_ERROR: &str =
-        "expected required to be at least 4 characters long";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return ready(Err((MIN_LENGTH_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(Some(validated.into())))
-                    })
-                    .re_validate(|v: String, _, _| {
-                        if v.len() < 4 {
-                            return ready(Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let values = [
-        String::from(" 111"),
-        String::from(" 11 "),
-        String::from("11"),
-        String::from(" 112   "),
-    ];
+    let values = [String::from(" "), String::from(" 1"), String::from("1")];
 
     for value in values {
-        let r = model
+        let errors = async_primary_validation_schema::DataModel
             .create(
-                &PartialDataInput {
-                    virtual_alias: Some(value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((p, _, _)) => {
-                assert_eq!(
-                    p.get("virtual_alias").unwrap().reason,
-                    MIN_REVALIDATION_LENGTH_ERROR
-                );
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    let values = [String::from("1".repeat(4)), String::from("1".repeat(5))];
-
-    for value in values {
-        let r = model
-            .create(
-                &PartialDataInput {
-                    virtual_alias: Some(value.clone()),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((data, _, _)) => {
-                assert_eq!(data.dependent, default_dependent_value + 1);
-            }
-            _ => unreachable!("expected creation to be successful"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_create_if_re_validation_fails_with_alias);
-
-async fn should_not_create_if_re_validation_fails_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-    }
-
-    let default_dependent_value = 1;
-
-    const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
-    const MIN_REVALIDATION_LENGTH_ERROR: &str =
-        "expected required to be at least 4 characters long";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return ready(Err((MIN_LENGTH_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(Some(validated.into())))
-                    })
-                    .re_validate(|v: String, _, _| {
-                        if v.len() < 4 {
-                            return ready(Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let values = [
-        String::from(" 111"),
-        String::from(" 11 "),
-        String::from("11"),
-        String::from(" 112   "),
-    ];
-
-    for value in values {
-        let r = model
-            .create(
-                &PartialDataInput {
-                    dependent: Some(value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((p, _, _)) => {
-                assert_eq!(
-                    p.get("dependent").unwrap().reason,
-                    MIN_REVALIDATION_LENGTH_ERROR
-                );
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    let values = [String::from("1".repeat(4)), String::from("1".repeat(5))];
-
-    for value in values {
-        let r = model
-            .create(
-                &PartialDataInput {
-                    dependent: Some(value.clone()),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((data, _, _)) => {
-                assert_eq!(data.dependent, default_dependent_value + 1);
-            }
-            _ => unreachable!("expected creation to be successful"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_create_if_re_validation_fails_with_alias_same_as_dependent);
-
-async fn should_not_update_if_re_validation_fails() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 50 inclussive";
-    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=50;
-
-    const REVALIDATED_OUT_OF_RANGE_ERROR: &str =
-        "revalidated required must be between 10 & 5 inclussive";
-    const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: i32, _, _| {
-                        if REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Ok(None));
-                        }
-
-                        ready(Err((OUT_OF_RANGE_ERROR.into(), None)))
-                    })
-                    .re_validate(|v: i32, _, _| {
-                        if REVALIDATED_REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Ok(None));
-                        }
-
-                        ready(Err((REVALIDATED_OUT_OF_RANGE_ERROR.into(), None)))
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let data = Data {
-        dependent: default_dependent_value,
-    };
-
-    let values = [
-        REVALIDATED_REQUIRED_VALUE_RANGE.min().unwrap() - 1,
-        REVALIDATED_REQUIRED_VALUE_RANGE.max().unwrap() + 1,
-    ];
-
-    for value in values {
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
+                async_primary_validation_schema::PartialDataInput {
                     virtual_field: Some(value),
                 },
-                None,
+                (),
             )
-            .await;
+            .await
+            .err()
+            .unwrap();
 
-        match r {
-            Err((Some(payload), _, _)) => {
-                assert_eq!(
-                    payload.get("virtual_field").unwrap().reason,
-                    REVALIDATED_OUT_OF_RANGE_ERROR
-                );
-            }
-            _ => unreachable!("expected a validation error"),
-        }
+        assert_eq!(
+            errors.errors.get("virtual_field").unwrap().reason,
+            MIN_LENGTH_ERROR
+        );
     }
 
-    for updated_value in REVALIDATED_REQUIRED_VALUE_RANGE.clone() {
-        if updated_value == data.dependent {
-            continue;
-        }
-
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    virtual_field: Some(updated_value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((d, _, _)) => {
-                assert_eq!(
-                    d,
-                    PartialData {
-                        dependent: Some(updated_value),
-                    }
-                )
-            }
-            _ => unreachable!("expected update to be successful"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_update_if_re_validation_fails);
-
-async fn should_not_update_if_re_validation_fails_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 50 inclussive";
-    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=50;
-
-    const REVALIDATED_OUT_OF_RANGE_ERROR: &str =
-        "revalidated required must be between 10 & 5 inclussive";
-    const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: i32, _, _| {
-                        if REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Ok(None));
-                        }
-
-                        ready(Err((OUT_OF_RANGE_ERROR.into(), None)))
-                    })
-                    .re_validate(|v: i32, _, _| {
-                        if REVALIDATED_REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Ok(None));
-                        }
-
-                        ready(Err((REVALIDATED_OUT_OF_RANGE_ERROR.into(), None)))
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let data = Data {
-        dependent: default_dependent_value,
-    };
-
-    let values = [
-        REVALIDATED_REQUIRED_VALUE_RANGE.min().unwrap() - 1,
-        REVALIDATED_REQUIRED_VALUE_RANGE.max().unwrap() + 1,
-    ];
+    let values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
 
     for value in values {
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    virtual_alias: Some(value),
+        let created = async_primary_validation_schema::DataModel
+            .create(
+                async_primary_validation_schema::PartialDataInput {
+                    virtual_field: Some(value.clone()),
                 },
-                None,
+                (),
             )
-            .await;
+            .await
+            .ok()
+            .unwrap();
 
-        match r {
-            Err((Some(payload), _, _)) => {
-                assert_eq!(
-                    payload.get("virtual_alias").unwrap().reason,
-                    REVALIDATED_OUT_OF_RANGE_ERROR
-                );
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    for updated_value in REVALIDATED_REQUIRED_VALUE_RANGE.clone() {
-        if updated_value == data.dependent {
-            continue;
-        }
-
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    virtual_alias: Some(updated_value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((d, _, _)) => {
-                assert_eq!(
-                    d,
-                    PartialData {
-                        dependent: Some(updated_value),
-                    }
-                )
-            }
-            _ => unreachable!("expected update to be successful"),
-        }
+        assert_eq!(created.data.dependent, value.len() as i32);
     }
 }
 
-async_test_matrix!(should_not_update_if_re_validation_fails_with_alias);
+async_test_matrix!(should_not_create_if_primary_validation_fails_async);
 
-async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
+// -----------------------------------------------------------------------------
+// Re-validators
+// -----------------------------------------------------------------------------
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 50 inclussive";
-    const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=50;
-
-    const REVALIDATED_OUT_OF_RANGE_ERROR: &str =
-        "revalidated required must be between 10 & 5 inclussive";
-    const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: i32, _, _| {
-                        if REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Ok(None));
-                        }
-
-                        ready(Err((OUT_OF_RANGE_ERROR.into(), None)))
-                    })
-                    .re_validate(|v: i32, _, _| {
-                        if REVALIDATED_REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Ok(None));
-                        }
-
-                        ready(Err((REVALIDATED_OUT_OF_RANGE_ERROR.into(), None)))
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let data = Data {
-        dependent: default_dependent_value,
-    };
-
-    let values = [
-        REVALIDATED_REQUIRED_VALUE_RANGE.min().unwrap() - 1,
-        REVALIDATED_REQUIRED_VALUE_RANGE.max().unwrap() + 1,
-    ];
-
-    for value in values {
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    dependent: Some(value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((Some(payload), _, _)) => {
-                assert_eq!(
-                    payload.get("dependent").unwrap().reason,
-                    REVALIDATED_OUT_OF_RANGE_ERROR
-                );
-            }
-            _ => unreachable!("expected a validation error"),
-        }
-    }
-
-    for updated_value in REVALIDATED_REQUIRED_VALUE_RANGE.clone() {
-        if updated_value == data.dependent {
-            continue;
-        }
-
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    dependent: Some(updated_value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((d, _, _)) => {
-                assert_eq!(
-                    d,
-                    PartialData {
-                        dependent: Some(updated_value),
-                    }
-                )
-            }
-            _ => unreachable!("expected update to be successful"),
-        }
-    }
-}
-
-async_test_matrix!(should_not_update_if_re_validation_fails_with_alias_same_as_dependent);
-
-async fn should_properly_use_re_validated_values() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .re_validate(|v: i32, _, _| ready(Ok(Some(v + 1)))),
-            )
-        },
-        |o| o,
-    );
-
+#[test]
+fn should_properly_use_re_validated_values() {
     let value = 1;
 
-    let r = model
+    let created = sync_re_validate_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_re_validate_schema::PartialDataInput {
                 virtual_field: Some(value),
             },
-            None,
+            (),
         )
-        .await;
+        .ok()
+        .unwrap();
 
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: value + 1
-                }
-            );
+    assert_eq!(
+        created.data,
+        sync_re_validate_schema::Data {
+            dependent: value + 1
         }
-        _ => unreachable!("expected successful creation"),
-    }
+    );
 
     let value = 2;
 
-    let r = model
+    let updated = sync_re_validate_schema::DataModel
         .update(
-            &Data {
-                dependent: value - 1,
-            },
-            &PartialDataInput {
+            created.data.clone(),
+            sync_re_validate_schema::PartialDataInput {
                 virtual_field: Some(value),
             },
-            None,
+            (),
         )
-        .await;
+        .ok()
+        .unwrap();
 
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(value + 1)
-                }
-            );
+    assert_eq!(
+        updated.data,
+        sync_re_validate_schema::PartialData {
+            dependent: Some(value + 1),
         }
-        _ => unreachable!("expected successful update"),
-    }
+    );
 }
 
-async_test_matrix!(should_properly_use_re_validated_values);
-
-async fn should_properly_use_re_validated_values_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .re_validate(|v: i32, _, _| ready(Ok(Some(v + 1)))),
-            )
-        },
-        |o| o,
-    );
-
+async fn should_properly_use_re_validated_values_async() {
     let value = 1;
 
-    let r = model
+    let created = async_re_validate_schema::DataModel
         .create(
-            &PartialDataInput {
-                virtual_alias: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: value + 1
-                }
-            );
-        }
-        _ => unreachable!("expected successful creation"),
-    }
-
-    let value = 2;
-
-    let r = model
-        .update(
-            &Data {
-                dependent: value - 1,
-            },
-            &PartialDataInput {
-                virtual_alias: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(value + 1)
-                }
-            );
-        }
-        _ => unreachable!("expected successful update"),
-    }
-}
-
-async_test_matrix!(should_properly_use_re_validated_values_with_alias);
-
-async fn should_properly_use_re_validated_values_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .re_validate(|v: i32, _, _| ready(Ok(Some(v + 1)))),
-            )
-        },
-        |o| o,
-    );
-
-    let value = 1;
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: value + 1
-                }
-            );
-        }
-        _ => unreachable!("expected successful creation"),
-    }
-
-    let value = 2;
-
-    let r = model
-        .update(
-            &Data {
-                dependent: value - 1,
-            },
-            &PartialDataInput {
-                dependent: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(value + 1)
-                }
-            );
-        }
-        _ => unreachable!("expected successful update"),
-    }
-}
-
-async_test_matrix!(should_properly_use_re_validated_values_with_alias_same_as_dependent);
-
-async fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_return_a_validated_value(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
-                    .re_validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
-        |o| o,
-    );
-
-    let value = 1;
-
-    let r = model
-        .create(
-            &PartialDataInput {
+            async_re_validate_schema::PartialDataInput {
                 virtual_field: Some(value),
             },
-            None,
+            (),
         )
-        .await;
+        .await
+        .ok()
+        .unwrap();
 
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: value + 1
-                }
-            );
+    assert_eq!(
+        created.data,
+        async_re_validate_schema::Data {
+            dependent: value + 1
         }
-        _ => unreachable!("expected successful creation"),
-    }
+    );
 
     let value = 2;
 
-    let r = model
+    let updated = async_re_validate_schema::DataModel
         .update(
-            &Data {
-                dependent: value - 1,
-            },
-            &PartialDataInput {
+            created.data.clone(),
+            async_re_validate_schema::PartialDataInput {
                 virtual_field: Some(value),
             },
-            None,
+            (),
         )
-        .await;
+        .await
+        .ok()
+        .unwrap();
 
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(value + 1)
-                }
-            );
+    assert_eq!(
+        updated.data,
+        async_re_validate_schema::PartialData {
+            dependent: Some(value + 1),
         }
-        _ => unreachable!("expected successful update"),
-    }
-}
-
-async_test_matrix!(should_properly_use_input_values_as_output_values_if_re_validator_does_not_return_a_validated_value);
-
-async fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_return_a_validated_value_with_alias(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
-                    .re_validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
-        |o| o,
     );
-
-    let value = 1;
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: value + 1
-                }
-            );
-        }
-        _ => unreachable!("expected successful creation"),
-    }
-
-    let value = 2;
-
-    let r = model
-        .update(
-            &Data {
-                dependent: value - 1,
-            },
-            &PartialDataInput {
-                virtual_alias: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(value + 1)
-                }
-            );
-        }
-        _ => unreachable!("expected successful update"),
-    }
 }
 
-async_test_matrix!(should_properly_use_input_values_as_output_values_if_re_validator_does_not_return_a_validated_value_with_alias);
+async_test_matrix!(should_properly_use_re_validated_values_async);
 
-async fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_return_a_validated_value_with_alias_same_as_dependent(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
+#[test]
+fn should_not_re_validate_virtual_fields_that_were_not_provided_or_were_ignored() {
+    // re-validate must only run for a virtual field that was actually provided
+    // (and not ignored); a defaulted/absent virtual field should never reach
+    // the re-validator.
+    let created = sync_re_validate_not_provided_schema::DataModel
+        .create(
+            sync_re_validate_not_provided_schema::PartialDataInput {
+                virtual_field: None,
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: i32,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
-                    .re_validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
-        |o| o,
+    assert_eq!(
+        created.data,
+        sync_re_validate_not_provided_schema::Data { dependent: 0 }
     );
-
-    let value = 1;
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: value + 1
-                }
-            );
-        }
-        _ => unreachable!("expected successful creation"),
-    }
-
-    let value = 2;
-
-    let r = model
-        .update(
-            &Data {
-                dependent: value - 1,
-            },
-            &PartialDataInput {
-                dependent: Some(value),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(value + 1)
-                }
-            );
-        }
-        _ => unreachable!("expected successful update"),
-    }
 }
 
-async_test_matrix!(should_properly_use_input_values_as_output_values_if_re_validator_does_not_return_a_validated_value_with_alias_same_as_dependent);
-
-// post-validation
-
-async fn should_respect_post_validation_config() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-        virtual_field_1: String,
-        virtual_field_2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    const VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
-        "virtual_field failed pre-validation with unrelated errors";
-    const VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
-        "virtual_field failed post-validation with unrelated errors";
-
-    const VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
-    const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
-
-    const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
-    const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field(
-                    "dependent",
-                    ["virtual_field", "virtual_field_1", "virtual_field_2"],
-                )
-                .default(default_dependent_value)
-                .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                    ready(ctx.values().dependent.unwrap() + 1)
-                }),
-            )
-            .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
-            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
-            .field(virtual_field("virtual_field_2").validate(|_: String, _, _| ready(Ok(None))))
-        },
-        |o| {
-            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
-                v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(virtual_field) = ctx.input().virtual_field {
-                        if virtual_field == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                        {
-                            errors.set_virtual_field(
-                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            errors.set_virtual_field_2(
-                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            return ready(Err(errors));
-                        }
-
-                        if virtual_field == BOTH_PRE_VALIDATION_FAIL {
-                            errors.set_virtual_field(BOTH_PRE_VALIDATION_FAIL, None);
-
-                            errors.set_virtual_field_1(BOTH_PRE_VALIDATION_FAIL, None);
-                        }
-                    }
-
-                    if let Some(virtual_field_1) = ctx.input().virtual_field_1 {
-                        if errors.is_empty()
-                            && virtual_field_1 == VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL
-                        {
-                            errors.set_virtual_field_1(VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL, None);
-                        }
-                    }
-
-                    let result = if errors.is_empty() {
-                        Ok(None)
-                    } else {
-                        Err(errors)
-                    };
-
-                    ready(result)
-                })
-                .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(virtual_field) = ctx.input().virtual_field {
-                        if virtual_field == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                        {
-                            errors.set_virtual_field(
-                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            errors.set_virtual_field_2(
-                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            return ready(Err(errors));
-                        }
-
-                        if virtual_field == VIRTUAL_FIELD_VALIDATION_FAIL {
-                            errors.set_virtual_field(VIRTUAL_FIELD_VALIDATION_FAIL, None);
-                        } else if virtual_field == BOTH_VALIDATION_FAIL {
-                            errors.set_virtual_field(BOTH_VALIDATION_FAIL, None);
-                            errors.set_virtual_field_1(BOTH_VALIDATION_FAIL, None);
-                        }
-                    }
-
-                    let result = if errors.is_empty() {
-                        Ok(None)
-                    } else {
-                        Err(errors)
-                    };
-
-                    ready(result)
-                })
-            })
-        },
-    );
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-    let some_value = "some value".to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_1").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_field").unwrap().reason,
-                virtual_value,
-                "should ignore unrelated errors returned from pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let required = VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(required.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_1").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_field").unwrap().reason,
-                required,
-                "should ignore unrelated errors returned from post-validator"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_field_1 = VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(some_value.clone()),
-                virtual_field_1: Some(virtual_field_1.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_field_1").unwrap().reason,
-                virtual_field_1,
-                "should not create if one field has an error after pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = BOTH_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_field").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-            assert_eq!(
-                p.get("virtual_field_1").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_1").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_field").unwrap().reason,
-                virtual_value,
-                "should not create if one field has an error after post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = BOTH_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_field").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after post-validation"
-            );
-            assert_eq!(
-                p.get("virtual_field_1").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    // updates
-    let data = Data {
-        dependent: default_dependent_value,
-    };
-
-    let virtual_field_1 = VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: Some("lol".into()),
-                virtual_field_1: Some(virtual_field_1.clone()),
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field").is_none());
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field_1").unwrap().reason,
-                virtual_field_1,
-                "should not update if one field has an error after pre-validator in post-validation"
-            );
-        }
-        Err((None, _, _)) => {
-            unreachable!("did not expected nothing to update")
-        }
-        _ => unreachable!("did not expect successful update"),
-    }
-
-    let virtual_value = BOTH_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: None,
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-            assert_eq!(
-                payload.get("virtual_field_1").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: None,
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field_1").is_none());
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                virtual_value,
-                "should ignore unrelated errors returned from pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: None,
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field_1").is_none());
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                virtual_value,
-                "should ignore unrelated errors returned from post-validator"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(should_respect_post_validation_config);
-
-async fn should_respect_post_validation_config_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-        virtual_field_1: String,
-        virtual_field_2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    const VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
-        "virtual_field failed pre-validation with unrelated errors";
-    const VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
-        "virtual_field failed post-validation with unrelated errors";
-
-    const VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
-    const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
-
-    const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
-    const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field(
-                    "dependent",
-                    ["virtual_field", "virtual_field_1", "virtual_field_2"],
-                )
-                .default(default_dependent_value)
-                .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                    ready(ctx.values().dependent.unwrap() + 1)
-                }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
-            .field(virtual_field("virtual_field_2").validate(|_: String, _, _| ready(Ok(None))))
-        },
-        |o| {
-            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
-                v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(virtual_alias) = ctx.input().virtual_alias {
-                        if virtual_alias == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                        {
-                            errors.set_virtual_alias(
-                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            errors.set_virtual_field_2(
-                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            return ready(Err(errors));
-                        }
-
-                        if virtual_alias == BOTH_PRE_VALIDATION_FAIL {
-                            errors.set_virtual_alias(BOTH_PRE_VALIDATION_FAIL, None);
-
-                            errors.set_virtual_field_1(BOTH_PRE_VALIDATION_FAIL, None);
-                        }
-                    }
-
-                    if let Some(virtual_field_1) = ctx.input().virtual_field_1 {
-                        if errors.is_empty()
-                            && virtual_field_1 == VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL
-                        {
-                            errors.set_virtual_field_1(VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL, None);
-                        }
-                    }
-
-                    let result = if errors.is_empty() {
-                        Ok(None)
-                    } else {
-                        Err(errors)
-                    };
-
-                    ready(result)
-                })
-                .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(virtual_alias) = ctx.input().virtual_alias {
-                        if virtual_alias == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                        {
-                            errors.set_virtual_alias(
-                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            errors.set_virtual_field_2(
-                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            return ready(Err(errors));
-                        }
-
-                        if virtual_alias == VIRTUAL_FIELD_VALIDATION_FAIL {
-                            errors.set_virtual_alias(VIRTUAL_FIELD_VALIDATION_FAIL, None);
-                        } else if virtual_alias == BOTH_VALIDATION_FAIL {
-                            errors.set_virtual_alias(BOTH_VALIDATION_FAIL, None);
-                            errors.set_virtual_field_1(BOTH_VALIDATION_FAIL, None);
-                        }
-                    }
-
-                    let result = if errors.is_empty() {
-                        Ok(None)
-                    } else {
-                        Err(errors)
-                    };
-
-                    ready(result)
-                })
-            })
-        },
-    );
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-    let some_value = "some value".to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_1").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_alias").unwrap().reason,
-                virtual_value,
-                "should ignore unrelated errors returned from pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let required = VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(required.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_1").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_alias").unwrap().reason,
-                required,
-                "should ignore unrelated errors returned from post-validator"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_field_1 = VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(some_value.clone()),
-                virtual_field_1: Some(virtual_field_1.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_alias").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_field_1").unwrap().reason,
-                virtual_field_1,
-                "should not create if one field has an error after pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = BOTH_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_alias").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-            assert_eq!(
-                p.get("virtual_field_1").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_1").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_alias").unwrap().reason,
-                virtual_value,
-                "should not create if one field has an error after post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = BOTH_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_alias").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after post-validation"
-            );
-            assert_eq!(
-                p.get("virtual_field_1").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    // updates
-    let data = Data {
-        dependent: default_dependent_value,
-    };
-
-    let virtual_field_1 = VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: Some("lol".into()),
-                virtual_field_1: Some(virtual_field_1.clone()),
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_alias").is_none());
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field_1").unwrap().reason,
-                virtual_field_1,
-                "should not update if one field has an error after pre-validator in post-validation"
-            );
-        }
-        Err((None, _, _)) => {
-            unreachable!("did not expected nothing to update")
-        }
-        _ => unreachable!("did not expect successful update"),
-    }
-
-    let virtual_value = BOTH_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: None,
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("virtual_alias").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-            assert_eq!(
-                payload.get("virtual_field_1").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: None,
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field_1").is_none());
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("virtual_alias").unwrap().reason,
-                virtual_value,
-                "should ignore unrelated errors returned from pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: None,
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field_1").is_none());
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("virtual_alias").unwrap().reason,
-                virtual_value,
-                "should ignore unrelated errors returned from post-validator"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(should_respect_post_validation_config_with_alias);
-
-async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        virtual_field_1: String,
-        virtual_field_2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    const VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
-        "virtual_field failed pre-validation with unrelated errors";
-    const VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
-        "virtual_field failed post-validation with unrelated errors";
-
-    const VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
-    const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
-
-    const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
-    const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field(
-                    "dependent",
-                    ["virtual_field", "virtual_field_1", "virtual_field_2"],
-                )
-                .default(default_dependent_value)
-                .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                    ready(ctx.values().dependent.unwrap() + 1)
-                }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
-            .field(virtual_field("virtual_field_2").validate(|_: String, _, _| ready(Ok(None))))
-        },
-        |o| {
-            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
-                v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(dependent) = ctx.input().dependent {
-                        if dependent == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
-                            errors.set_dependent(
-                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            errors.set_virtual_field_2(
-                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            return ready(Err(errors));
-                        }
-
-                        if dependent == BOTH_PRE_VALIDATION_FAIL {
-                            errors.set_dependent(BOTH_PRE_VALIDATION_FAIL, None);
-
-                            errors.set_virtual_field_1(BOTH_PRE_VALIDATION_FAIL, None);
-                        }
-                    }
-
-                    if let Some(virtual_field_1) = ctx.input().virtual_field_1 {
-                        if errors.is_empty()
-                            && virtual_field_1 == VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL
-                        {
-                            errors.set_virtual_field_1(VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL, None);
-                        }
-                    }
-
-                    let result = if errors.is_empty() {
-                        Ok(None)
-                    } else {
-                        Err(errors)
-                    };
-
-                    ready(result)
-                })
-                .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(dependent) = ctx.input().dependent {
-                        if dependent == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
-                            errors.set_dependent(
-                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            errors.set_virtual_field_2(
-                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
-                                None,
-                            );
-
-                            return ready(Err(errors));
-                        }
-
-                        if dependent == VIRTUAL_FIELD_VALIDATION_FAIL {
-                            errors.set_dependent(VIRTUAL_FIELD_VALIDATION_FAIL, None);
-                        } else if dependent == BOTH_VALIDATION_FAIL {
-                            errors.set_dependent(BOTH_VALIDATION_FAIL, None);
-                            errors.set_virtual_field_1(BOTH_VALIDATION_FAIL, None);
-                        }
-                    }
-
-                    let result = if errors.is_empty() {
-                        Ok(None)
-                    } else {
-                        Err(errors)
-                    };
-
-                    ready(result)
-                })
-            })
-        },
-    );
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-    let some_value = "some value".to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_1").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("dependent").unwrap().reason,
-                virtual_value,
-                "should ignore unrelated errors returned from pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let required = VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(required.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_1").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("dependent").unwrap().reason,
-                required,
-                "should ignore unrelated errors returned from post-validator"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_field_1 = VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(some_value.clone()),
-                virtual_field_1: Some(virtual_field_1.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("dependent").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("virtual_field_1").unwrap().reason,
-                virtual_field_1,
-                "should not create if one field has an error after pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = BOTH_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("dependent").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-            assert_eq!(
-                p.get("virtual_field_1").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_1").is_none());
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("dependent").unwrap().reason,
-                virtual_value,
-                "should not create if one field has an error after post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = BOTH_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: Some(some_value.clone()),
-                virtual_field_2: Some(some_value.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((p, _, _)) => {
-            assert!(p.get("virtual_field_2").is_none());
-            assert_eq!(
-                p.get("dependent").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after post-validation"
-            );
-            assert_eq!(
-                p.get("virtual_field_1").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    // updates
-    let data = Data {
-        dependent: default_dependent_value,
-    };
-
-    let virtual_field_1 = VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: Some("lol".into()),
-                virtual_field_1: Some(virtual_field_1.clone()),
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("dependent").is_none());
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field_1").unwrap().reason,
-                virtual_field_1,
-                "should not update if one field has an error after pre-validator in post-validation"
-            );
-        }
-        Err((None, _, _)) => {
-            unreachable!("did not expected nothing to update")
-        }
-        _ => unreachable!("did not expect successful update"),
-    }
-
-    let virtual_value = BOTH_PRE_VALIDATION_FAIL.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: None,
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("dependent").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-            assert_eq!(
-                payload.get("virtual_field_1").unwrap().reason,
-                virtual_value,
-                "should not create if any field has an error after pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: None,
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field_1").is_none());
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("dependent").unwrap().reason,
-                virtual_value,
-                "should ignore unrelated errors returned from pre-validator in post-validation"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: None,
-                virtual_field_2: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), _, _)) => {
-            assert!(payload.get("virtual_field_1").is_none());
-            assert!(payload.get("virtual_field_2").is_none());
-            assert_eq!(
-                payload.get("dependent").unwrap().reason,
-                virtual_value,
-                "should ignore unrelated errors returned from post-validator"
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(should_respect_post_validation_config_with_alias_same_as_dependent);
-
-async fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_config() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-        virtual_field_1: String,
-    }
-
-    let default_dependent_value = "default_dependent_value";
-
-    const VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES: &str =
-        "VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES";
-    const VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES: &str =
-        "VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES";
-
-    const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
-    const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
-                    .default(default_dependent_value.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(virtual_field("virtual_field").validate(|_: String, _, _| ready(Ok(None))))
-            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
-        },
-        |o| {
-            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
-                v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut updates = PartialDataInput::new();
-
-                    if let Some(virtual_field) = ctx.input().virtual_field {
-                        if virtual_field == VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES {
-                            updates.set_virtual_field(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
-                        }
-                    }
-
-                    ready(Ok(updates.into_option()))
-                })
-                .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut updates = PartialDataInput::new();
-
-                    if let Some(virtual_field) = ctx.input().virtual_field {
-                        if virtual_field == VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES {
-                            updates.set_virtual_field(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
-                        }
-                    }
-
-                    ready(Ok(updates.into_option()))
-                })
-            })
-        },
-    );
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: UPDATED_VALUE_FROM_PRE_VALIDATOR.into()
-                },
-            );
-        }
-        _ => unreachable!("expected creation to be successful"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: UPDATED_VALUE_FROM_POST_VALIDATOR.into()
-                },
-            );
-        }
-        _ => unreachable!("expected creation to be successful"),
-    }
-
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value.into(),
-    };
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.into())
-                },
-            );
-        }
-        _ => unreachable!("expected update to be successful"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.into())
-                },
-            );
-        }
-        _ => unreachable!("expected update to be successful"),
-    }
-}
-
-async_test_matrix!(
-    should_respect_updated_values_returned_from_pre_validator_in_post_validation_config
-);
-
-async fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_with_alias(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-        virtual_field_1: String,
-    }
-
-    let default_dependent_value = "default_dependent_value";
-
-    const VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES: &str =
-        "VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES";
-    const VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES: &str =
-        "VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES";
-
-    const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
-    const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
-                    .default(default_dependent_value.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_: String, _, _| ready(Ok(None)))
-                    .alias("virtual_alias"),
-            )
-            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
-        },
-        |o| {
-            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
-                v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut updates = PartialDataInput::new();
-
-                    if let Some(virtual_alias) = ctx.input().virtual_alias {
-                        if virtual_alias == VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES {
-                            updates.set_virtual_alias(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
-                        }
-                    }
-
-                    ready(Ok(updates.into_option()))
-                })
-                .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut updates = PartialDataInput::new();
-
-                    if let Some(virtual_alias) = ctx.input().virtual_alias {
-                        if virtual_alias == VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES {
-                            updates.set_virtual_alias(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
-                        }
-                    }
-
-                    ready(Ok(updates.into_option()))
-                })
-            })
-        },
-    );
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: UPDATED_VALUE_FROM_PRE_VALIDATOR.into()
-                },
-            );
-        }
-        _ => unreachable!("expected creation to be successful"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: UPDATED_VALUE_FROM_POST_VALIDATOR.into()
-                },
-            );
-        }
-        _ => unreachable!("expected creation to be successful"),
-    }
-
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value.into(),
-    };
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.into())
-                },
-            );
-        }
-        _ => unreachable!("expected update to be successful"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.into())
-                },
-            );
-        }
-        _ => unreachable!("expected update to be successful"),
-    }
-}
-
-async_test_matrix!(
-    should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_with_alias
-);
-
-async fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_with_alias_same_as_dependent(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        virtual_field_1: String,
-    }
-
-    let default_dependent_value = "default_dependent_value";
-
-    const VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES: &str =
-        "VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES";
-    const VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES: &str =
-        "VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES";
-
-    const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
-    const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
-                    .default(default_dependent_value.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_: String, _, _| ready(Ok(None)))
-                    .alias("dependent"),
-            )
-            .field(virtual_field("virtual_field_1").validate(|_: String, _, _| ready(Ok(None))))
-        },
-        |o| {
-            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
-                v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut updates = PartialDataInput::new();
-
-                    if let Some(dependent) = ctx.input().dependent {
-                        if dependent == VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES {
-                            updates.set_dependent(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
-                        }
-                    }
-
-                    ready(Ok(updates.into_option()))
-                })
-                .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut updates = PartialDataInput::new();
-
-                    if let Some(dependent) = ctx.input().dependent {
-                        if dependent == VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES {
-                            updates.set_dependent(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
-                        }
-                    }
-
-                    ready(Ok(updates.into_option()))
-                })
-            })
-        },
-    );
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: UPDATED_VALUE_FROM_PRE_VALIDATOR.into()
-                },
-            );
-        }
-        _ => unreachable!("expected creation to be successful"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    dependent: UPDATED_VALUE_FROM_POST_VALIDATOR.into()
-                },
-            );
-        }
-        _ => unreachable!("expected creation to be successful"),
-    }
-
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value.into(),
-    };
-
-    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.into())
-                },
-            );
-        }
-        _ => unreachable!("expected update to be successful"),
-    }
-
-    let virtual_value = VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
-                virtual_field_1: None,
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    dependent: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.into())
-                },
-            );
-        }
-        _ => unreachable!("expected update to be successful"),
-    }
-}
-
-async_test_matrix!(
-    should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_with_alias_same_as_dependent
-);
-
-// sanitizer
-
-async fn should_respect_sanitizers_if_provided() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
-
-    let default_dependent_value = "default_dependent_value";
-
+// -----------------------------------------------------------------------------
+// Sanitizers
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_sanitizers_if_provided() {
     fn sanitize(value: &str) -> String {
         format!("sanitized-{value}")
     }
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_: String, _, _| ready(Ok(None)))
-                    .sanitize(|value: String, _, _| ready(sanitize(&value))),
-            )
-        },
-        |o| o,
-    );
+    let virtual_value = "raw-value".to_string();
 
-    let virtual_value = "virtual_value".to_string();
-
-    let (data, _, _) = model
+    let created = sync_sanitize_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_sanitize_schema::PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: sanitize(&virtual_value)
-        },
-    );
-
-    assert_ne!(
-        data,
-        Data {
-            dependent: virtual_value
+        created.data,
+        sync_sanitize_schema::Data {
+            dependent: sanitize(&virtual_value),
         }
     );
 
-    // updates
+    let updated_virtual_value = "updated-raw-value".to_string();
 
-    let data = Data {
-        dependent: default_dependent_value.into(),
-    };
-
-    let updated_virtual_value = "updated_virtual_value".to_string();
-
-    let (updates, _, _) = model
+    let updated = sync_sanitize_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            sync_sanitize_schema::PartialDataInput {
                 virtual_field: Some(updated_virtual_value.clone()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(sanitize(&updated_virtual_value))
-        },
-    );
-
-    assert_ne!(
-        updates,
-        PartialData {
-            dependent: Some(updated_virtual_value)
-        },
+        updated.data,
+        sync_sanitize_schema::PartialData {
+            dependent: Some(sanitize(&updated_virtual_value)),
+        }
     );
 }
 
-async_test_matrix!(should_respect_sanitizers_if_provided);
-
-async fn should_respect_sanitizers_if_provided_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-    }
-
-    let default_dependent_value = "default_dependent_value";
-
+async fn should_respect_sanitizers_if_provided_async() {
     fn sanitize(value: &str) -> String {
         format!("sanitized-{value}")
     }
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|_: String, _, _| ready(Ok(None)))
-                    .sanitize(|value: String, _, _| ready(sanitize(&value))),
-            )
-        },
-        |o| o,
-    );
+    let virtual_value = "raw-value".to_string();
 
-    let virtual_value = "virtual_value".to_string();
-
-    let (data, _, _) = model
+    let created = async_sanitize_schema::DataModel
         .create(
-            &PartialDataInput {
-                virtual_alias: Some(virtual_value.clone()),
+            async_sanitize_schema::PartialDataInput {
+                virtual_field: Some(virtual_value.clone()),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: sanitize(&virtual_value)
-        },
-    );
-
-    assert_ne!(
-        data,
-        Data {
-            dependent: virtual_value
+        created.data,
+        async_sanitize_schema::Data {
+            dependent: sanitize(&virtual_value),
         }
     );
 
-    // updates
+    let updated_virtual_value = "updated-raw-value".to_string();
 
-    let data = Data {
-        dependent: default_dependent_value.into(),
-    };
-
-    let updated_virtual_value = "updated_virtual_value".to_string();
-
-    let (updates, _, _) = model
+    let updated = async_sanitize_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: Some(updated_virtual_value.clone()),
+            created.data.clone(),
+            async_sanitize_schema::PartialDataInput {
+                virtual_field: Some(updated_virtual_value.clone()),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(sanitize(&updated_virtual_value))
-        },
-    );
-
-    assert_ne!(
-        updates,
-        PartialData {
-            dependent: Some(updated_virtual_value)
-        },
+        updated.data,
+        async_sanitize_schema::PartialData {
+            dependent: Some(sanitize(&updated_virtual_value)),
+        }
     );
 }
 
-async_test_matrix!(should_respect_sanitizers_if_provided_with_alias);
+async_test_matrix!(should_respect_sanitizers_if_provided_async);
 
-async fn should_respect_sanitizers_if_provided_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-    }
-
-    let default_dependent_value = "default_dependent_value";
-
-    fn sanitize(value: &str) -> String {
-        format!("sanitized-{value}")
-    }
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_: String, _, _| ready(Ok(None)))
-                    .sanitize(|value: String, _, _| ready(sanitize(&value))),
-            )
-        },
-        |o| o,
-    );
-
-    let virtual_value = "virtual_value".to_string();
-
-    let (data, _, _) = model
+#[test]
+fn should_only_sanitize_virtual_fields_that_were_provided() {
+    // A virtual field that was not provided (and thus never validated) must
+    // not be sanitized either; the resolver never sees a value for it.
+    let created = sync_sanitize_not_provided_schema::DataModel
         .create(
-            &PartialDataInput {
-                dependent: Some(virtual_value.clone()),
+            sync_sanitize_not_provided_schema::PartialDataInput {
+                virtual_field: None,
             },
-            None,
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_sanitize_not_provided_schema::Data {
+            dependent: String::new(),
+        }
+    );
+}
+
+#[test]
+fn should_sanitize_virtual_fields_only_after_post_validate_succeeds() {
+    // `post_validate` handlers must observe the validated-but-not-yet-sanitized
+    // virtual value; only once post-validation succeeds does sanitize run and
+    // feed the sanitized value to dependent resolution.
+    let created = sync_sanitize_after_post_validate_schema::DataModel
+        .create(
+            sync_sanitize_after_post_validate_schema::PartialDataInput {
+                name: Some("name".into()),
+                virtual_field: Some("raw".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_sanitize_after_post_validate_schema::Data {
+            name: "name".into(),
+            dependent: "sanitized-raw".into(),
+        }
+    );
+}
+
+// -----------------------------------------------------------------------------
+// Pass-through validators
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_use_input_value_if_validator_does_not_return_a_validated_value() {
+    let value = 1;
+
+    let created = sync_pass_through_schema::DataModel
+        .create(
+            sync_pass_through_schema::PartialDataInput {
+                virtual_field: Some(value),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_pass_through_schema::Data { dependent: value }
+    );
+}
+
+async fn should_use_input_value_if_validator_does_not_return_a_validated_value_async() {
+    let value = 1;
+
+    let created = async_pass_through_schema::DataModel
+        .create(
+            async_pass_through_schema::PartialDataInput {
+                virtual_field: Some(value),
+            },
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: sanitize(&virtual_value)
-        },
+        created.data,
+        async_pass_through_schema::Data { dependent: value }
+    );
+}
+
+async_test_matrix!(should_use_input_value_if_validator_does_not_return_a_validated_value_async);
+
+// -----------------------------------------------------------------------------
+// Post-validation
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_post_validation_config() {
+    const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validation";
+    const BOTH_VALIDATION_FAIL: &str = "both failed post-validation";
+    const SOME_VALUE: &str = "some value";
+
+    let virtual_value = VIRTUAL_FIELD_VALIDATION_FAIL.to_string();
+
+    let errors = sync_post_validate_schema::DataModel
+        .create(
+            sync_post_validate_schema::PartialDataInput {
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: Some(SOME_VALUE.into()),
+                virtual_field_2: Some(SOME_VALUE.into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(errors.errors.get("virtual_field_1").is_none());
+    assert!(errors.errors.get("virtual_field_2").is_none());
+    assert_eq!(
+        errors.errors.get("virtual_field").unwrap().reason,
+        virtual_value
     );
 
-    assert_ne!(
-        data,
-        Data {
-            dependent: virtual_value
+    let virtual_value = BOTH_VALIDATION_FAIL.to_string();
+
+    let errors = sync_post_validate_schema::DataModel
+        .create(
+            sync_post_validate_schema::PartialDataInput {
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: Some(SOME_VALUE.into()),
+                virtual_field_2: Some(SOME_VALUE.into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(errors.errors.get("virtual_field_2").is_none());
+    assert_eq!(
+        errors.errors.get("virtual_field").unwrap().reason,
+        virtual_value
+    );
+    assert_eq!(
+        errors.errors.get("virtual_field_1").unwrap().reason,
+        virtual_value
+    );
+}
+
+async fn should_respect_post_validation_config_async() {
+    const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validation";
+    const BOTH_VALIDATION_FAIL: &str = "both failed post-validation";
+    const SOME_VALUE: &str = "some value";
+
+    let virtual_value = VIRTUAL_FIELD_VALIDATION_FAIL.to_string();
+
+    let errors = async_post_validate_schema::DataModel
+        .create(
+            async_post_validate_schema::PartialDataInput {
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: Some(SOME_VALUE.into()),
+                virtual_field_2: Some(SOME_VALUE.into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(errors.errors.get("virtual_field_1").is_none());
+    assert!(errors.errors.get("virtual_field_2").is_none());
+    assert_eq!(
+        errors.errors.get("virtual_field").unwrap().reason,
+        virtual_value
+    );
+
+    let virtual_value = BOTH_VALIDATION_FAIL.to_string();
+
+    let errors = async_post_validate_schema::DataModel
+        .create(
+            async_post_validate_schema::PartialDataInput {
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: Some(SOME_VALUE.into()),
+                virtual_field_2: Some(SOME_VALUE.into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(errors.errors.get("virtual_field_2").is_none());
+    assert_eq!(
+        errors.errors.get("virtual_field").unwrap().reason,
+        virtual_value
+    );
+    assert_eq!(
+        errors.errors.get("virtual_field_1").unwrap().reason,
+        virtual_value
+    );
+}
+
+async_test_matrix!(should_respect_post_validation_config_async);
+
+// -----------------------------------------------------------------------------
+// A `#[post_validate(...)]` main `validate` error on an *aliased* virtual
+// field must actually surface, not get silently dropped. The handler's
+// `DataInputErrors::set_...` uses the field's external/alias name, so the
+// generated `IvoErrorPayload` this produces is keyed by the alias -- the
+// allow-list used to filter that payload back into `errors` must match the
+// alias too, not the field's internal (schema-only) name. Previously it used
+// the internal name, so the check `__allowed.contains(&__field_name)` always
+// failed for an aliased field, the error was dropped, and the pipeline
+// proceeded past `create`/`update` as if nothing had gone wrong -- surfaced
+// by a real panic in `examples/main_demo` (a later dependent-field resolver
+// unwrapping state that only gets set when `post_validate` actually succeeds).
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_surface_post_validate_errors_on_an_aliased_virtual_field() {
+    let errors = post_validate_aliased_virtual_schema::DataModel
+        .create(
+            post_validate_aliased_virtual_schema::PartialDataInput {
+                field_a: Some("a".into()),
+                aliased: Some("reject-me".into()),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        errors.errors.get("aliased").unwrap().reason,
+        "aliased field rejected"
+    );
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod post_validate_aliased_virtual_schema {
+    struct Fields {
+        #[required]
+        pub field_a: String,
+
+        #[ivo_virtual("aliased")]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub v_field: String,
+
+        #[depends_on("v_field")]
+        #[default(String::new())]
+        #[resolve(|_, _| "derived".to_string())]
+        pub derived: String,
+    }
+
+    #[post_validate(
+        ["field_a", "v_field"],
+        validate = |ctx, _| {
+            if ctx.input().aliased.as_deref() == Some("reject-me") {
+                let mut errors = DataInputErrors::new();
+                errors.set_aliased("aliased field rejected", None);
+                return Err(errors);
+            }
+            Ok(None)
+        },
+    )]
+    const _: () = ();
+}
+
+// -----------------------------------------------------------------------------
+// The same class of bug as `should_surface_post_validate_errors_on_an_aliased_
+// virtual_field` above, but for a virtual field's *own* `#[validate]`/
+// `#[re_validate]`/field-level `#[required(...)]` handlers: each of these
+// inserts directly into the top-level `errors` payload (not through a
+// generated `{Input}Errors` struct like `post_validate` does), and that
+// insert used the field's *internal* schema name instead of its alias --
+// so an aliased virtual field's own validation errors were present under
+// the wrong key (e.g. `"v_field"` instead of `"aliased"`), silently
+// breaking any caller doing `errors.get("aliased")`. Unlike the
+// `post_validate` case this didn't drop the error or cause a panic, but it
+// broke the public error-key contract for every other phase. Fixed in
+// `crates/derive/src/lib.rs`: `VField::name_str` (virtual field validate/
+// re_validate) and both `field_required_handlers` call sites (create +
+// update) now use `external_field_name(f)` instead of `f.name.to_string()`.
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_key_required_error_by_alias_for_an_aliased_virtual_field() {
+    let create_errors = alias_field_level_errors_schema::DataModel
+        .create(
+            alias_field_level_errors_schema::PartialDataInput {
+                lax: None,
+                aliased: None,
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        create_errors.errors.get("aliased").unwrap().reason,
+        "aliased is required"
+    );
+    assert!(create_errors.errors.get("v_field").is_none());
+
+    let created = alias_field_level_errors_schema::DataModel
+        .create(
+            alias_field_level_errors_schema::PartialDataInput {
+                lax: None,
+                aliased: Some("ok".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    let update_errors = alias_field_level_errors_schema::DataModel
+        .update(
+            created.data.clone(),
+            alias_field_level_errors_schema::PartialDataInput {
+                // `lax` must be provided too, or the update is a no-op
+                // ("nothing to update") that short-circuits before the
+                // required check ever runs.
+                lax: Some(Some("unrelated update".into())),
+                aliased: None,
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        update_errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("aliased")
+            .unwrap()
+            .reason,
+        "aliased is required"
+    );
+}
+
+#[test]
+fn should_key_validate_error_by_alias_for_an_aliased_virtual_field() {
+    let errors = alias_field_level_errors_schema::DataModel
+        .create(
+            alias_field_level_errors_schema::PartialDataInput {
+                lax: None,
+                aliased: Some("fail-validate".into()),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        errors.errors.get("aliased").unwrap().reason,
+        "validate failed"
+    );
+    assert!(errors.errors.get("v_field").is_none());
+}
+
+#[test]
+fn should_key_re_validate_error_by_alias_for_an_aliased_virtual_field() {
+    let errors = alias_field_level_errors_schema::DataModel
+        .create(
+            alias_field_level_errors_schema::PartialDataInput {
+                lax: None,
+                aliased: Some("fail-re-validate".into()),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        errors.errors.get("aliased").unwrap().reason,
+        "re_validate failed"
+    );
+    assert!(errors.errors.get("v_field").is_none());
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod alias_field_level_errors_schema {
+    struct Fields {
+        #[lax(None)]
+        pub lax: Option<String>,
+
+        #[ivo_virtual("aliased")]
+        // Unconditional: the field-level required handler always returns
+        // `Some(..)`, but the generated required-check only actually
+        // inserts the error when the field is missing, so this is safe for
+        // both create and update.
+        #[required(|_ctx, _| ::core::option::Option::Some("aliased is required".to_string()))]
+        #[validate(|v: String, _, _| {
+            if v == "fail-validate" {
+                return Err(("validate failed".to_string(), None));
+            }
+            Ok(Some(v))
+        })]
+        #[re_validate(|v: String, _, _| {
+            if v == "fail-re-validate" {
+                return Err(("re_validate failed".to_string(), None));
+            }
+            Ok(None)
+        })]
+        pub v_field: String,
+
+        #[depends_on("v_field")]
+        #[default(String::new())]
+        #[resolve(|_, _| "derived".to_string())]
+        pub derived: String,
+    }
+}
+
+// -----------------------------------------------------------------------------
+// No-change updates: alias variants
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_return_empty_updates_when_no_value_has_changed_with_alias() {
+    let value = 24;
+
+    let created = sync_no_change_alias_schema::DataModel
+        .create(
+            sync_no_change_alias_schema::PartialDataInput {
+                virtual_alias: Some(value),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_no_change_alias_schema::Data { dependent: value }
+    );
+
+    let failed = sync_no_change_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_no_change_alias_schema::PartialDataInput {
+                virtual_alias: Some(value),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async fn should_return_empty_updates_when_no_value_has_changed_with_alias_async() {
+    let value = 24;
+
+    let created = async_no_change_alias_schema::DataModel
+        .create(
+            async_no_change_alias_schema::PartialDataInput {
+                virtual_alias: Some(value),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_no_change_alias_schema::Data { dependent: value }
+    );
+
+    let failed = async_no_change_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_no_change_alias_schema::PartialDataInput {
+                virtual_alias: Some(value),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async_test_matrix!(should_return_empty_updates_when_no_value_has_changed_with_alias_async);
+
+// -----------------------------------------------------------------------------
+// Grouped ignore rules
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// Re-validators: schemas
+// -----------------------------------------------------------------------------
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_re_validate_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(|_: i32, _, _| Ok(None))]
+        #[re_validate(|v: i32, _, _| Ok(Some(v + 1)))]
+        pub virtual_field: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_re_validate_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(async |_: i32, _, _| Ok(None))]
+        #[re_validate(async |v: i32, _, _| Ok(Some(v + 1)))]
+        pub virtual_field: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_re_validate_not_provided_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(0)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(|v: i32, _, _| Ok(Some(v)))]
+        #[re_validate(|_: i32, _, _| panic!("re_validate must not run for a field that was not provided"))]
+        pub virtual_field: i32,
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Sanitizers: schemas
+// -----------------------------------------------------------------------------
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_sanitize_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[sanitize(|v: String, _, _| format!("sanitized-{v}"))]
+        pub virtual_field: String,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_sanitize_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(String::new())]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(async |v: String, _, _| Ok(Some(v)))]
+        #[sanitize(async |v: String, _, _| format!("sanitized-{v}"))]
+        pub virtual_field: String,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_sanitize_not_provided_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[sanitize(|_: String, _, _| panic!("sanitize must not run for a field that was not provided"))]
+        pub virtual_field: String,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_sanitize_after_post_validate_schema {
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[depends_on("virtual_field")]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[sanitize(|v: String, _, _| format!("sanitized-{v}"))]
+        pub virtual_field: String,
+    }
+
+    #[post_validate(
+        ["name", "virtual_field"],
+        validate = |ctx, _| {
+            assert_eq!(
+                ctx.input().virtual_field.clone().unwrap(),
+                "raw",
+                "post_validate must see the validated-but-not-yet-sanitized virtual value"
+            );
+            Ok(None)
+        },
+    )]
+    const _: () = ();
+}
+
+// -----------------------------------------------------------------------------
+// Grouped required errors: alias variants
+// -----------------------------------------------------------------------------
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_no_alias_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap().parse::<i32>().unwrap() + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_no_alias_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap().parse::<i32>().unwrap() + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_alias.clone().unwrap().parse::<i32>().unwrap() + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_alias.clone().unwrap().parse::<i32>().unwrap() + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().dependent.clone().unwrap().parse::<i32>().unwrap() + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(async |v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().dependent.clone().unwrap().parse::<i32>().unwrap() + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_no_change_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_no_change_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_no_change_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_alias.unwrap())]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_no_change_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_alias.unwrap())]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_required_schema {
+    struct Fields {
+        #[lax("default_lax_value".to_string())]
+        pub lax: String,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[required(|ctx, _| {
+            if ctx.is_update() {
+                if ctx.values().lax == "require_virtual_field_for_update" {
+                    Some("virtual_field is required for this update".into())
+                } else {
+                    None
+                }
+            } else if ctx.input().lax == Some("required_virtual_field_for_init".into()) {
+                Some("virtual_field is required to create at this time".into())
+            } else {
+                None
+            }
+        })]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_required_schema {
+    struct Fields {
+        #[lax(async |_, _| "default_lax_value".to_string())]
+        pub lax: String,
+
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        #[required(async |ctx, _| {
+            if ctx.is_update() {
+                if ctx.values().lax == "require_virtual_field_for_update" {
+                    Some("virtual_field is required for this update".into())
+                } else {
+                    None
+                }
+            } else if ctx.input().lax == Some("required_virtual_field_for_init".into()) {
+                Some("virtual_field is required to create at this time".into())
+            } else {
+                None
+            }
+        })]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_grouped_required_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax("default_lax_1_value".to_string())]
+        pub lax_1: String,
+
+        #[lax("default_lax_2_value".to_string())]
+        pub lax_2: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
+        pub dependent: i32,
+    }
+
+    #[required(
+        ["virtual_field", "lax_1"],
+        |ctx, _| {
+            ctx.input().lax_2.as_ref()?;
+            let mut errors = DataInputErrors::new();
+            errors.set_virtual_field("field is required", None);
+            errors.set_lax_1("field is required", None);
+            Some(errors)
+        }
+    )]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_grouped_required_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "default_lax_1_value".to_string())]
+        pub lax_1: String,
+
+        #[lax(async |_, _| "default_lax_2_value".to_string())]
+        pub lax_2: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
+        pub dependent: i32,
+    }
+
+    #[required(
+        ["virtual_field", "lax_1"],
+        async |ctx, _| {
+            if ctx.input().lax_2.is_none() {
+                return None;
+            }
+            // ctx.input().lax_2.as_ref()?;
+
+            Some(
+                DataInputErrors::new()
+                    .with_virtual_field("field is required", None)
+                    .with_lax_1("field is required", None),
+            )
+        }
+    )]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_primary_validation_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v, _, _| {
+            let validated = v.trim();
+            if validated.len() < 2 {
+                return Err(("expected virtual_field to be at least 2 characters long".into(), None));
+            }
+            Ok(Some(validated.into()))
+        })]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_primary_validation_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |v, _, _| {
+            let validated = v.trim();
+            if validated.len() < 2 {
+                return Err(("expected virtual_field to be at least 2 characters long".into(), None));
+            }
+            Ok(Some(validated.into()))
+        })]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.clone().unwrap().len() as i32)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_pass_through_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_pass_through_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_post_validate_schema {
+    const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validation";
+    const BOTH_VALIDATION_FAIL: &str = "both failed post-validation";
+
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field_1: String,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field_2: String,
+
+        #[depends_on("virtual_field", "virtual_field_1", "virtual_field_2")]
+        #[default(1)]
+        #[resolve(|ctx, _| {
+            ctx.input().virtual_field.clone().unwrap().len() as i32
+        })]
+        pub dependent: i32,
+    }
+
+    #[post_validate(
+        ["virtual_field", "virtual_field_1"],
+        validate = |ctx, _| {
+            let mut errors = DataInputErrors::new();
+
+            if let Some(value) = ctx.input().virtual_field.clone() {
+                if value == VIRTUAL_FIELD_VALIDATION_FAIL {
+                    errors.set_virtual_field(VIRTUAL_FIELD_VALIDATION_FAIL, None);
+                } else if value == BOTH_VALIDATION_FAIL {
+                    errors.set_virtual_field(BOTH_VALIDATION_FAIL, None);
+                    errors.set_virtual_field_1(BOTH_VALIDATION_FAIL, None);
+                }
+            }
+
+            if errors.is_empty() {
+                Ok(None)
+            } else {
+                Err(errors)
+            }
+        }
+    )]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_post_validate_schema {
+    const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validation";
+    const BOTH_VALIDATION_FAIL: &str = "both failed post-validation";
+
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field_1: String,
+
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field_2: String,
+
+        #[depends_on("virtual_field", "virtual_field_1", "virtual_field_2")]
+        #[default(1)]
+        #[resolve(async |ctx, _| {
+            ctx.input().virtual_field.clone().unwrap().len() as i32
+        })]
+        pub dependent: i32,
+    }
+
+    #[post_validate(
+        ["virtual_field", "virtual_field_1"],
+        validate = async |ctx, _| {
+            let mut errors = DataInputErrors::new();
+
+            if let Some(value) = ctx.input().virtual_field.clone() {
+                if value == VIRTUAL_FIELD_VALIDATION_FAIL {
+                    errors.set_virtual_field(VIRTUAL_FIELD_VALIDATION_FAIL, None);
+                } else if value == BOTH_VALIDATION_FAIL {
+                    errors.set_virtual_field(BOTH_VALIDATION_FAIL, None);
+                    errors.set_virtual_field_1(BOTH_VALIDATION_FAIL, None);
+                }
+            }
+
+            if errors.is_empty() {
+                Ok(None)
+            } else {
+                Err(errors)
+            }
+        }
+    )]
+    const _: () = ();
+}
+
+// -----------------------------------------------------------------------------
+// Parallel validate/re-validate/sanitize of independent virtual fields
+// -----------------------------------------------------------------------------
+
+#[tokio::test]
+async fn should_validate_re_validate_and_sanitize_independent_virtual_fields_concurrently() {
+    // Two virtual fields with no relationship to one another must have their
+    // validate/re-validate/sanitize handlers polled concurrently within each
+    // phase, not one `.await` at a time. Each `rendezvous()` only returns once
+    // *both* fields' handlers for that phase have started.
+    async_parallel_virtuals_schema::VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+    async_parallel_virtuals_schema::RE_VALIDATE_STARTED
+        .store(0, std::sync::atomic::Ordering::SeqCst);
+    async_parallel_virtuals_schema::SANITIZE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+
+    let created = async_parallel_virtuals_schema::DataModel
+        .create(
+            async_parallel_virtuals_schema::PartialDataInput {
+                virtual_a: Some("a".into()),
+                virtual_b: Some("b".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_parallel_virtuals_schema::Data {
+            dependent_a: "sanitized-a".into(),
+            dependent_b: "sanitized-b".into(),
         }
     );
 
-    // updates
+    async_parallel_virtuals_schema::VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+    async_parallel_virtuals_schema::RE_VALIDATE_STARTED
+        .store(0, std::sync::atomic::Ordering::SeqCst);
+    async_parallel_virtuals_schema::SANITIZE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let data = Data {
-        dependent: default_dependent_value.into(),
-    };
-
-    let updated_virtual_value = "updated_virtual_value".to_string();
-
-    let (updates, _, _) = model
+    let updated = async_parallel_virtuals_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                dependent: Some(updated_virtual_value.clone()),
+            created.data.clone(),
+            async_parallel_virtuals_schema::PartialDataInput {
+                virtual_a: Some("aa".into()),
+                virtual_b: Some("bb".into()),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(sanitize(&updated_virtual_value))
-        },
-    );
-
-    assert_ne!(
-        updates,
-        PartialData {
-            dependent: Some(updated_virtual_value)
-        },
+        updated.data,
+        async_parallel_virtuals_schema::PartialData {
+            dependent_a: Some("sanitized-aa".into()),
+            dependent_b: Some("sanitized-bb".into()),
+        }
     );
 }
 
-async_test_matrix!(should_respect_sanitizers_if_provided_with_alias_same_as_dependent);
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_parallel_virtuals_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static VALIDATE_STARTED: AtomicUsize = AtomicUsize::new(0);
+    pub static RE_VALIDATE_STARTED: AtomicUsize = AtomicUsize::new(0);
+    pub static SANITIZE_STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous(counter: &'static AtomicUsize, phase: &str) {
+        counter.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if counter.load(Ordering::SeqCst) >= 2 {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("virtual {phase} handlers were not run concurrently");
+    }
+
+    struct Fields {
+        #[depends_on("virtual_a")]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_a.clone().unwrap())]
+        pub dependent_a: String,
+
+        #[depends_on("virtual_b")]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_b.clone().unwrap())]
+        pub dependent_b: String,
+
+        #[ivo_virtual]
+        #[validate(async |v: String, _, _| {
+            rendezvous(&VALIDATE_STARTED, "validate").await;
+            Ok(Some(v))
+        })]
+        #[re_validate(async |v: String, _, _| {
+            rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
+            Ok(Some(v))
+        })]
+        #[sanitize(async |v: String, _, _| {
+            rendezvous(&SANITIZE_STARTED, "sanitize").await;
+            format!("sanitized-{v}")
+        })]
+        pub virtual_a: String,
+
+        #[ivo_virtual]
+        #[validate(async |v: String, _, _| {
+            rendezvous(&VALIDATE_STARTED, "validate").await;
+            Ok(Some(v))
+        })]
+        #[re_validate(async |v: String, _, _| {
+            rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
+            Ok(Some(v))
+        })]
+        #[sanitize(async |v: String, _, _| {
+            rendezvous(&SANITIZE_STARTED, "sanitize").await;
+            format!("sanitized-{v}")
+        })]
+        pub virtual_b: String,
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Validate/re-validate are one combined phase across field types, not a
+// virtual pass followed by a separate required/lax pass
+// -----------------------------------------------------------------------------
+
+#[tokio::test]
+async fn should_validate_required_and_virtual_fields_in_one_combined_phase() {
+    // A required field's validator and a virtual field's validator must be
+    // polled concurrently *together*, proving validate is one merged phase
+    // across field types rather than two sequential ones (virtual, then
+    // required/lax). Same for re-validate.
+    let created = async_merged_validate_schema::DataModel
+        .create(
+            async_merged_validate_schema::PartialDataInput {
+                name: Some("a".into()),
+                virtual_field: Some("b".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_merged_validate_schema::Data {
+            name: "revalidated-a".into(),
+            dependent: "revalidated-b".into(),
+        }
+    );
+
+    async_merged_validate_schema::VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+    async_merged_validate_schema::RE_VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+
+    let updated = async_merged_validate_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_merged_validate_schema::PartialDataInput {
+                name: Some("aa".into()),
+                virtual_field: Some("bb".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_merged_validate_schema::PartialData {
+            name: Some("revalidated-aa".into()),
+            dependent: Some("revalidated-bb".into()),
+        }
+    );
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_merged_validate_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static VALIDATE_STARTED: AtomicUsize = AtomicUsize::new(0);
+    pub static RE_VALIDATE_STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous(counter: &'static AtomicUsize, phase: &str) {
+        counter.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if counter.load(Ordering::SeqCst) >= 2 {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("required/lax and virtual {phase} handlers were not run in one combined phase");
+    }
+
+    struct Fields {
+        #[required]
+        #[validate(async |v: String, _, _| {
+            rendezvous(&VALIDATE_STARTED, "validate").await;
+            Ok(Some(v))
+        })]
+        #[re_validate(async |v: String, _, _| {
+            rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
+            Ok(Some(format!("revalidated-{v}")))
+        })]
+        pub name: String,
+
+        #[depends_on("virtual_field")]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(async |v: String, _, _| {
+            rendezvous(&VALIDATE_STARTED, "validate").await;
+            Ok(Some(v))
+        })]
+        #[re_validate(async |v: String, _, _| {
+            rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
+            Ok(Some(format!("revalidated-{v}")))
+        })]
+        pub virtual_field: String,
+    }
+}

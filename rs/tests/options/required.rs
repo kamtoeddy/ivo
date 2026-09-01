@@ -1,380 +1,287 @@
-use ivo::{
-    constant_field, dependent_field, lax_field, required_field, virtual_field, IvoInputStruct,
-    IvoModel, IvoStruct,
-};
-use std::{future::ready, panic};
+// Compile-time validation tests for grouped `#[required(...)]` are located
+// in `compile_fail/required.rs`.
 
-#[test]
-#[should_panic(expected = "[options.required]: grouped required expects at least 2 fields")]
-fn should_reject_if_fields_array_is_empty() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
+use ivo::ivo_schema;
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
+// -----------------------------------------------------------------------------
+// Parallel resolution of independent conditional-required resolvers
+// -----------------------------------------------------------------------------
+//
+// Each test below uses its own dedicated schema (and static counter) rather
+// than sharing one across create/update variants: cargo runs tests
+// concurrently by default, and two tests racing on the same counter could
+// spuriously satisfy each other's rendezvous, masking a real regression.
 
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.required([], |_, _| ready(None)),
+#[tokio::test]
+async fn should_evaluate_field_level_and_grouped_required_resolvers_concurrently_on_create() {
+    // A field-level `#[required(...)]` and a grouped `#[required([...], ...)]`
+    // are batched into a single "one go" phase (matching `rs/`'s
+    // `evaluate_missing_required_fields`), regardless of which kind of
+    // required option they came from. `rendezvous()` only returns once
+    // *both* have started.
+    let created = async_parallel_required_create_schema::DataInputModel
+        .create(
+            async_parallel_required_create_schema::PartialDataInput {
+                field_a: None,
+                field_b: None,
+                field_c: None,
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_parallel_required_create_schema::DataInput {
+            field_a: None,
+            field_b: None,
+            field_c: None,
+        }
     );
 }
 
-#[test]
-#[should_panic(expected = "[options.required]: grouped required expects at least 2 fields")]
-fn should_reject_if_fields_array_has_just_one_field() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod async_parallel_required_create_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous() -> Option<String> {
+        STARTED.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if STARTED.load(Ordering::SeqCst) >= 2 {
+                return None;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("required resolvers were not evaluated concurrently on create");
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
+    struct Fields {
+        #[lax(None)]
+        #[required(async |_ctx, _opts| { rendezvous().await })]
+        pub field_a: Option<String>,
+
+        #[lax(None)]
+        pub field_b: Option<String>,
+
+        #[lax(None)]
+        pub field_c: Option<String>,
     }
 
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.required(["lax"], |_, _| ready(None)),
+    #[required(["field_b", "field_c"], async |_ctx, _opts| {
+        rendezvous().await;
+        None::<DataInputErrors>
+    })]
+    const _: () = ();
+}
+
+#[tokio::test]
+async fn should_evaluate_field_level_and_grouped_required_resolvers_concurrently_on_update() {
+    let existing = async_parallel_required_update_schema::DataInput {
+        field_a: None,
+        field_b: None,
+        field_c: None,
+    };
+
+    let updated = async_parallel_required_update_schema::DataInputModel
+        .update(
+            existing,
+            async_parallel_required_update_schema::PartialDataInput {
+                field_a: Some(Some("a".to_string())),
+                field_b: None,
+                field_c: None,
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_parallel_required_update_schema::PartialDataInput {
+            field_a: Some(Some("a".to_string())),
+            field_b: None,
+            field_c: None,
+        }
     );
 }
 
-#[test]
-#[should_panic(
-    expected = "[options.required]: remove duplicates of \"lax\" in your grouped required config"
-)]
-fn should_reject_if_the_fields_array_contains_any_duplicates() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod async_parallel_required_update_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous() -> Option<String> {
+        STARTED.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if STARTED.load(Ordering::SeqCst) >= 2 {
+                return None;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("required resolvers were not evaluated concurrently on update");
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
+    struct Fields {
+        #[lax(None)]
+        #[required(async |_ctx, _opts| { rendezvous().await })]
+        pub field_a: Option<String>,
+
+        #[lax(None)]
+        pub field_b: Option<String>,
+
+        #[lax(None)]
+        pub field_c: Option<String>,
     }
 
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.required(["lax", "lax"], |_, _| ready(None)),
-    );
+    #[required(["field_b", "field_c"], async |_ctx, _opts| {
+        rendezvous().await;
+        None::<DataInputErrors>
+    })]
+    const _: () = ();
 }
 
+// -----------------------------------------------------------------------------
+// Grouped required handler's error payload: distinct errors per field, and a
+// same-error-on-both-fields shortcut, in both `create` and `update` -- ported
+// from `rs/tests/fields/lax/mod.rs::should_properly_handle_grouped_required_errors`,
+// which `should_evaluate_field_level_and_grouped_required_resolvers_concurrently_*`
+// above never actually exercised (those only cover concurrency, not the
+// error-payload shape a real handler produces).
+// -----------------------------------------------------------------------------
+
 #[test]
-#[should_panic(expected = "[options.required]: \"invalid_field\" does not exist on your schema")]
-fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_schema() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
+fn should_properly_handle_grouped_required_errors() {
+    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
+    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
+    const EXPECTED_LAX_OR_LAX_1: &str = "EXPECTED_LAX_OR_LAX_1";
+    const LAX_IS_MISSING: &str = "LAX_IS_MISSING";
+    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
+    const DEFAULT_LAX_VALUE: &str = "default_lax_value";
+    const DEFAULT_LAX_1_VALUE: &str = "default_lax_1_value";
+    const DEFAULT_LAX_2_VALUE: &str = "default_lax_2_value";
 
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.required(["lax", "invalid_field"], |_, _| ready(None)),
+    // create: same-error shortcut (lax_2 == IGNORE_WITH_SAME_ERROR)
+    let err = grouped_required_errors_schema::DataInputModel
+        .create(
+            grouped_required_errors_schema::PartialDataInput {
+                lax: None,
+                lax_1: None,
+                lax_2: Some(IGNORE_WITH_SAME_ERROR.to_string()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(err.errors.get("lax_2").is_none());
+    assert_eq!(err.errors.get("lax").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
+    assert_eq!(
+        err.errors.get("lax_1").unwrap().reason,
+        EXPECTED_LAX_OR_LAX_1
     );
+
+    // create: distinct-errors-per-field path (lax_2 == IGNORE_WITH_DIFFERENT_ERRORS)
+    let err = grouped_required_errors_schema::DataInputModel
+        .create(
+            grouped_required_errors_schema::PartialDataInput {
+                lax: None,
+                lax_1: None,
+                lax_2: Some(IGNORE_WITH_DIFFERENT_ERRORS.to_string()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(err.errors.get("lax_2").is_none());
+    assert_eq!(err.errors.get("lax").unwrap().reason, LAX_IS_MISSING);
+    assert_eq!(err.errors.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
+
+    // updates
+
+    let data = grouped_required_errors_schema::DataInput {
+        lax: DEFAULT_LAX_VALUE.to_string(),
+        lax_1: DEFAULT_LAX_1_VALUE.to_string(),
+        lax_2: DEFAULT_LAX_2_VALUE.to_string(),
+    };
+
+    // update: same-error shortcut
+    let err = grouped_required_errors_schema::DataInputModel
+        .update(
+            data.clone(),
+            grouped_required_errors_schema::PartialDataInput {
+                lax: None,
+                lax_1: None,
+                lax_2: Some(IGNORE_WITH_SAME_ERROR.to_string()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    let payload = err.errors.as_ref().unwrap();
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(payload.get("lax").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
+    assert_eq!(payload.get("lax_1").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
+
+    // update: distinct-errors-per-field path
+    let err = grouped_required_errors_schema::DataInputModel
+        .update(
+            data,
+            grouped_required_errors_schema::PartialDataInput {
+                lax: None,
+                lax_1: None,
+                lax_2: Some(IGNORE_WITH_DIFFERENT_ERRORS.to_string()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    let payload = err.errors.as_ref().unwrap();
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(payload.get("lax").unwrap().reason, LAX_IS_MISSING);
+    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
 }
 
-#[test]
-#[should_panic(
-    expected = "[options.required]: only lax and virtual fields can belong to grouped required configs; remove \"id\""
-)]
-fn should_reject_if_a_constant_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        lax: i32,
-        lax_1: i32,
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod grouped_required_errors_schema {
+    struct Fields {
+        #[lax("default_lax_value".to_string())]
+        pub lax: String,
+
+        #[lax("default_lax_1_value".to_string())]
+        pub lax_1: String,
+
+        #[lax("default_lax_2_value".to_string())]
+        pub lax_2: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
+    #[required(["lax", "lax_1"], |ctx, _| {
+        if let Some(lax_2) = ctx.input().lax_2.clone() {
+            if lax_2 == "IGNORE_WITH_SAME_ERROR" {
+                let mut errors = DataInputErrors::new();
+                errors
+                    .set_lax("EXPECTED_LAX_OR_LAX_1", None)
+                    .set_lax_1("EXPECTED_LAX_OR_LAX_1", None);
+                return Some(errors);
+            }
 
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value(1234))
-                .field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.required(["lax", "id"], |_, _| ready(None)),
-    );
-}
+            let mut errors = DataInputErrors::new();
+            errors
+                .set_lax("LAX_IS_MISSING", None)
+                .set_lax_1("LAX_1_IS_MISSING", None);
+            return Some(errors);
+        }
 
-#[test]
-#[should_panic(
-    expected = "[options.required]: only lax and virtual fields can belong to grouped required configs; remove \"dependent\""
-)]
-fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "lax_1"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.required(["lax", "lax_1", "dependent"], |_, _| ready(None)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.required]: only lax and virtual fields can belong to grouped required configs; remove \"required\""
-)]
-fn should_reject_if_a_required_field_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        required: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-        required: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .field(required_field("required").validate(|_: i32, _, _| ready(Ok(None))))
-        },
-        |o| o.required(["lax", "required", "lax_1"], |_, _| ready(None)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.required]: \"dependent\" is an alias; use \"virtual_field\" instead"
-)]
-fn should_reject_if_an_alias_similar_to_a_dependent_field_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "virtual_field"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_, _, _| ready(Ok(Some(1)))),
-            )
-        },
-        |o| o.required(["lax", "lax_1", "dependent"], |_, _| ready(None)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.required]: \"alias\" is an alias; use \"virtual_field\" instead"
-)]
-fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-        alias: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "virtual_field"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("alias")
-                    .validate(|_, _, _| ready(Ok(Some(1)))),
-            )
-        },
-        |o| o.required(["lax", "lax_1", "alias"], |_, _| ready(None)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.required]: only lax and virtual fields can belong to grouped required configs; remove \"created_at\""
-)]
-fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        created_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).created_at(None))
-        },
-        |o| o.required(["lax", "lax_1", "created_at"], |_, _| ready(None)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.required]: only lax and virtual fields can belong to grouped required configs; remove \"custom_created_at\""
-)]
-fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        custom_created_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).created_at(Some("custom_created_at")))
-        },
-        |o| o.required(["lax", "lax_1", "custom_created_at"], |_, _| ready(None)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.required]: only lax and virtual fields can belong to grouped required configs; remove \"updated_at\""
-)]
-fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        updated_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).updated_at(None))
-        },
-        |o| o.required(["lax", "lax_1", "updated_at"], |_, _| ready(None)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.required]: only lax and virtual fields can belong to grouped required configs; remove \"custom_updated_at\""
-)]
-fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        custom_updated_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).updated_at(Some("custom_updated_at")))
-        },
-        |o| o.required(["lax", "lax_1", "custom_updated_at"], |_, _| ready(None)),
-    );
+        None
+    })]
+    const _: () = ();
 }

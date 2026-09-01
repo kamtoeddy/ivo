@@ -1,133 +1,123 @@
-use std::{future::ready, sync::LazyLock};
-
-use ivo::{constant_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
-
-type DataModel = IvoModel<DataInput, Data>;
+use ivo::ivo_schema;
 
 const CONSTANT_VALUE: i32 = 1234;
 const DEFAULT_USERNAME: &str = "default-username";
 
-#[async_std::main]
-async fn main() {
-    println!("\nCONSTANT FIELDS WITH DYNAMIC VALUE\n");
-
-    should_properly_create_and_update(&DATA_MODEL_WITH_DYNAMIC_VALUE).await;
-
+fn main() {
     println!("\nCONSTANT FIELDS WITH STATIC VALUE\n");
+    should_properly_create_and_update_static();
 
-    should_properly_create_and_update(&DATA_MODEL_WITH_STATIC_VALUE).await;
+    println!("\nCONSTANT FIELDS WITH DYNAMIC VALUE\n");
+    should_properly_create_and_update_dynamic();
 }
 
-async fn should_properly_create_and_update(data_model: &DataModel) {
-    let username = "john-doe".to_string();
+macro_rules! should_properly_create_and_update {
+    ($module:ident) => {{
+        use $module::*;
 
-    let (data, _, _) = data_model
-        .create(
-            &PartialDataInput {
-                username: Some(username.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
+        let username = "john-doe".to_string();
 
-    println!("\ncreated: {:#?}", data);
+        let created = DataModel
+            .create(
+                DataInput {
+                    username: username.clone(),
+                },
+                (),
+            )
+            .ok()
+            .unwrap();
 
-    assert_eq!(data, Data { id: 1234, username });
+        println!("\ncreated: {:#?}", created.data);
+        assert_eq!(
+            created.data,
+            Data {
+                id: CONSTANT_VALUE,
+                username,
+            }
+        );
 
-    data_model.delete(&data, None).await;
+        let data = created.data.clone();
+        created.handle_success();
 
-    let username = "jane-doe".to_string();
+        DataModel.delete(&data, ());
 
-    let (updates, _, _) = data_model
-        .update(
-            &data,
-            &PartialDataInput {
-                username: Some(username.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
+        let username = "jane-doe".to_string();
 
-    println!("\nupdates: {:#?}", updates);
+        let updated = DataModel
+            .update(
+                data.clone(),
+                PartialDataInput {
+                    username: Some(username.clone()),
+                },
+                (),
+            )
+            .ok()
+            .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            id: None,
-            username: Some(username)
-        }
-    );
+        println!("\nupdates: {:#?}", updated.data);
+        assert_eq!(
+            updated.data,
+            PartialData {
+                id: None,
+                username: Some(username),
+            }
+        );
 
-    let data = data.clone_with_updates(&updates);
+        let updated_data = updated.data.clone();
+        updated.handle_success();
 
-    data_model.delete(&data, None).await;
+        let data = data.clone_with_updates(&updated_data);
+
+        DataModel.delete(&data, ());
+    }};
 }
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub username: String,
+fn should_properly_create_and_update_static() {
+    should_properly_create_and_update!(static_schema);
 }
 
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub id: i32,
-    pub username: String,
+fn should_properly_create_and_update_dynamic() {
+    should_properly_create_and_update!(dynamic_schema);
 }
 
-pub static DATA_MODEL_WITH_STATIC_VALUE: LazyLock<DataModel> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                constant_field("id")
-                    .value(CONSTANT_VALUE)
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!("\n[on_success]: id = {}", ctx.values().id.unwrap());
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod static_schema {
+    struct Fields {
+        #[constant(crate::CONSTANT_VALUE)]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: id = {}", ctx.values().id);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: id = {}", data.id);
+        })]
+        pub id: i32,
 
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: id = {}", data.id);
+        #[lax(crate::DEFAULT_USERNAME.into())]
+        #[validate(|_, _, _| { Ok(None) })]
+        pub username: String,
+    }
+}
 
-                        ready(())
-                    }),
-            )
-            .field(
-                lax_field("username")
-                    .default(DEFAULT_USERNAME.into())
-                    .validate(|_, _, _| ready(Ok(None::<String>))),
-            )
-        },
-        |o| o,
-    )
-});
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dynamic_schema {
+    struct Fields {
+        #[constant(|_, _| crate::CONSTANT_VALUE)]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: id = {}", ctx.values().id);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: id = {}", data.id);
+        })]
+        pub id: i32,
 
-pub static DATA_MODEL_WITH_DYNAMIC_VALUE: LazyLock<DataModel> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                constant_field("id")
-                    .value_fn(|_, _| ready(CONSTANT_VALUE))
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!("\n[on_success]: id = {}", ctx.values().id.unwrap());
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: id = {}", data.id);
-
-                        ready(())
-                    }),
-            )
-            .field(
-                lax_field("username")
-                    .default(DEFAULT_USERNAME.into())
-                    .validate(|_, _, _| ready(Ok(None::<String>))),
-            )
-        },
-        |o| o,
-    )
-});
+        #[lax(crate::DEFAULT_USERNAME.into())]
+        #[validate(|_, _, _| { Ok(None::<String>) })]
+        pub username: String,
+    }
+}

@@ -1,1518 +1,2491 @@
-use std::future::ready;
+use ivo::ivo_schema;
 
-use ivo::{dependent_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
-
-use crate::async_test_matrix;
-
-async fn should_trigger_on_failure_handlers_at_creation() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.input().virtual_field.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let r = model
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_at_creation() {
+    let errors = sync_on_failure_creation_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_on_failure_creation_schema::PartialDataInput {
                 virtual_field: Some("fail_validation".into()),
+                lax_field: Some("ok".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .err()
+        .unwrap();
 
-    match r {
-        Err((payload, handle_failure, _)) => {
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                "validation failed".to_string()
-            );
-            handle_failure().await;
-        }
-        _ => unreachable!(),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: fail_validation",
-    should_trigger_on_failure_handlers_at_creation
-);
-
-async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.input().virtual_alias.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    })
-                    .on_failure(|_, _| ready(())),
-            )
-        },
-        |o| o,
+    assert_eq!(
+        errors.errors.get("virtual_field").unwrap().reason,
+        "validation failed"
     );
 
-    let r = model
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_at_creation() {
+    let errors = async_on_failure_creation_schema::DataModel
         .create(
-            &PartialDataInput {
-                virtual_alias: Some("fail_validation".into()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((payload, handle_failure, _)) => {
-            assert_eq!(
-                payload.get("virtual_alias").unwrap().reason,
-                "validation failed".to_string()
-            );
-            handle_failure().await;
-        }
-        _ => unreachable!(),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: fail_validation",
-    should_trigger_on_failure_handlers_at_creation_with_alias
-);
-
-async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.input().dependent.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some("fail_validation".into()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((payload, handle_failure, _)) => {
-            assert_eq!(
-                payload.get("dependent").unwrap().reason,
-                "validation failed".to_string()
-            );
-            handle_failure().await;
-        }
-        _ => unreachable!(),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: fail_validation",
-    should_trigger_on_failure_handlers_at_creation_with_alias_same_as_dependent
-);
-
-async fn should_trigger_on_failure_handlers_during_updates() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.input().virtual_field.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let r = model
-        .update(
-            &Data {
-                dependent: default_dependent_value,
-            },
-            &PartialDataInput {
+            async_on_failure_creation_schema::PartialDataInput {
                 virtual_field: Some("fail_validation".into()),
+                lax_field: Some("ok".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .await
+        .err()
+        .unwrap();
 
-    match r {
-        Err((Some(payload), handle_failure, _)) => {
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                "validation failed".to_string()
-            );
+    assert_eq!(
+        errors.errors.get("virtual_field").unwrap().reason,
+        "validation failed"
+    );
 
-            handle_failure().await;
-        }
-        _ => unreachable!(),
-    }
+    errors.handle_failure().await;
 }
 
 async_test_matrix!(
     "[virtual_field]: on_failure triggered with value: fail_validation",
-    should_trigger_on_failure_handlers_during_updates
+    should_trigger_async_on_failure_handlers_at_creation
 );
 
-async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates() {
+    let errors = sync_on_failure_update_schema::DataModel
+        .update(
+            sync_on_failure_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_update_schema::PartialDataInput {
+                virtual_field: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.input().virtual_alias.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
     );
 
-    let r = model
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates() {
+    let errors = async_on_failure_update_schema::DataModel
         .update(
-            &Data {
-                dependent: default_dependent_value,
+            async_on_failure_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
             },
-            &PartialDataInput {
+            async_on_failure_update_schema::PartialDataInput {
+                virtual_field: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: fail_validation",
+    should_trigger_async_on_failure_handlers_during_updates
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_at_creation_with_alias() {
+    let errors = sync_on_failure_creation_alias_schema::DataModel
+        .create(
+            sync_on_failure_creation_alias_schema::PartialDataInput {
                 virtual_alias: Some("fail_validation".into()),
+                lax_field: Some("ok".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .err()
+        .unwrap();
 
-    match r {
-        Err((Some(payload), handle_failure, _)) => {
-            assert_eq!(
-                payload.get("virtual_alias").unwrap().reason,
-                "validation failed".to_string()
-            );
+    assert_eq!(
+        errors.errors.get("virtual_alias").unwrap().reason,
+        "validation failed"
+    );
 
-            handle_failure().await;
-        }
-        _ => unreachable!(),
-    }
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_at_creation_with_alias() {
+    let errors = async_on_failure_creation_alias_schema::DataModel
+        .create(
+            async_on_failure_creation_alias_schema::PartialDataInput {
+                virtual_alias: Some("fail_validation".into()),
+                lax_field: Some("ok".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors.errors.get("virtual_alias").unwrap().reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
 }
 
 async_test_matrix!(
     "[virtual_field]: on_failure triggered with value: fail_validation",
-    should_trigger_on_failure_handlers_during_updates_with_alias
+    should_trigger_async_on_failure_handlers_at_creation_with_alias
 );
 
-async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_with_alias() {
+    let errors = sync_on_failure_update_alias_schema::DataModel
+        .update(
+            sync_on_failure_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_update_alias_schema::PartialDataInput {
+                virtual_alias: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.input().dependent.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
     );
 
-    let r = model
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_with_alias() {
+    let errors = async_on_failure_update_alias_schema::DataModel
         .update(
-            &Data {
-                dependent: default_dependent_value,
+            async_on_failure_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
             },
-            &PartialDataInput {
+            async_on_failure_update_alias_schema::PartialDataInput {
+                virtual_alias: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: fail_validation",
+    should_trigger_async_on_failure_handlers_during_updates_with_alias
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_at_creation_with_alias_as_dependent() {
+    let errors = sync_on_failure_creation_alias_as_dependent_schema::DataModel
+        .create(
+            sync_on_failure_creation_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("fail_validation".into()),
+                lax_field: Some("ok".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .err()
+        .unwrap();
 
-    match r {
-        Err((Some(payload), handle_failure, _)) => {
-            assert_eq!(
-                payload.get("dependent").unwrap().reason,
-                "validation failed".to_string()
-            );
+    assert_eq!(
+        errors.errors.get("dependent").unwrap().reason,
+        "validation failed"
+    );
 
-            handle_failure().await;
-        }
-        _ => unreachable!(),
-    }
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_at_creation_with_alias_as_dependent() {
+    let errors = async_on_failure_creation_alias_as_dependent_schema::DataModel
+        .create(
+            async_on_failure_creation_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("fail_validation".into()),
+                lax_field: Some("ok".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors.errors.get("dependent").unwrap().reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
 }
 
 async_test_matrix!(
     "[virtual_field]: on_failure triggered with value: fail_validation",
-    should_trigger_on_failure_handlers_during_updates_with_alias_same_as_dependent
+    should_trigger_async_on_failure_handlers_at_creation_with_alias_as_dependent
 );
 
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_with_alias_as_dependent() {
+    let errors = sync_on_failure_update_alias_as_dependent_schema::DataModel
+        .update(
+            sync_on_failure_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_update_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore(|_, _| ready(true))
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().virtual_field.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
     );
 
-    let r = model
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_with_alias_as_dependent() {
+    let errors = async_on_failure_update_alias_as_dependent_schema::DataModel
+        .update(
+            async_on_failure_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            async_on_failure_update_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: fail_validation",
+    should_trigger_async_on_failure_handlers_during_updates_with_alias_as_dependent
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation(
+) {
+    let errors = sync_on_failure_ignore_at_creation_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_on_failure_ignore_at_creation_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
-                virtual_field2: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .err()
+        .unwrap();
 
-    match r {
-        Err((payload, handle_failure, _)) => {
-            assert!(payload.get("virtual_field").is_none());
-
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation
-);
-
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore(|_, _| ready(true))
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().virtual_alias.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
+    assert_eq!(
+        errors.errors.get("lax_field").unwrap().reason,
+        "validation failed"
     );
 
-    let r = model
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation(
+) {
+    let errors = async_on_failure_ignore_at_creation_schema::DataModel
         .create(
-            &PartialDataInput {
-                virtual_alias: Some("update to be ignored".into()),
-                virtual_field2: Some("fail_validation".into()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((payload, handle_failure, _)) => {
-            assert!(payload.get("virtual_alias").is_none());
-
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias
-);
-
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_same_as_dependent(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore(|_, _| ready(true))
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().dependent.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
-    );
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                dependent: Some("update to be ignored".into()),
-                virtual_field2: Some("fail_validation".into()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((payload, handle_failure, _)) => {
-            assert!(payload.get("dependent").is_none());
-
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_same_as_dependent
-);
-
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore(|_, _| ready(true))
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().virtual_field.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
-    );
-
-    let r = model
-        .update(
-            &Data {
-                dependent: default_dependent_value,
-            },
-            &PartialDataInput {
+            async_on_failure_ignore_at_creation_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
-                virtual_field2: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .await
+        .err()
+        .unwrap();
 
-    match r {
-        Err((Some(payload), handle_failure, _)) => {
-            assert!(payload.get("virtual_field").is_none());
+    assert_eq!(
+        errors.errors.get("lax_field").unwrap().reason,
+        "validation failed"
+    );
 
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    errors.handle_failure().await;
 }
 
 async_test_matrix!(
     "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation
 );
 
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias(
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore(|_, _| ready(true))
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().virtual_alias.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
-    );
-
-    let r = model
+    let errors = sync_on_failure_ignore_during_update_schema::DataModel
         .update(
-            &Data {
-                dependent: default_dependent_value,
+            sync_on_failure_ignore_during_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
             },
-            &PartialDataInput {
-                virtual_alias: Some("update to be ignored".into()),
-                virtual_field2: Some("fail_validation".into()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), handle_failure, _)) => {
-            assert!(payload.get("virtual_alias").is_none());
-
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias
-);
-
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_same_as_dependent(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore(|_, _| ready(true))
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().dependent.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
-    );
-
-    let r = model
-        .update(
-            &Data {
-                dependent: default_dependent_value,
-            },
-            &PartialDataInput {
-                dependent: Some("update to be ignored".into()),
-                virtual_field2: Some("fail_validation".into()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), handle_failure, _)) => {
-            assert!(payload.get("dependent").is_none());
-
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_same_as_dependent
-);
-
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_init()
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().virtual_field.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
-    );
-
-    let r = model
-        .create(
-            &PartialDataInput {
+            sync_on_failure_ignore_during_update_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
-                virtual_field2: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .err()
+        .unwrap();
 
-    match r {
-        Err((payload, handle_failure, _)) => {
-            assert!(payload.get("virtual_field").is_none());
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
 
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
+    errors.handle_failure();
+}
 
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates(
+) {
+    let errors = async_on_failure_ignore_during_update_schema::DataModel
+        .update(
+            async_on_failure_ignore_during_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            async_on_failure_ignore_during_update_schema::PartialDataInput {
+                virtual_field: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
 }
 
 async_test_matrix!(
     "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates
 );
 
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias(
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
+    let errors = sync_on_failure_ignore_init_schema::DataModel
+        .update(
+            sync_on_failure_ignore_init_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_ignore_init_schema::PartialDataInput {
+                virtual_field: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_init()
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().virtual_alias.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
     );
 
-    let r = model
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn(
+) {
+    let errors = async_on_failure_ignore_init_schema::DataModel
+        .update(
+            async_on_failure_ignore_init_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            async_on_failure_ignore_init_schema::PartialDataInput {
+                virtual_field: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: update to be ignored",
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn(
+) {
+    let errors = sync_on_failure_ignore_update_schema::DataModel
+        .update(
+            sync_on_failure_ignore_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_ignore_update_schema::PartialDataInput {
+                virtual_field: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn(
+) {
+    let errors = async_on_failure_ignore_update_schema::DataModel
+        .update(
+            async_on_failure_ignore_update_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            async_on_failure_ignore_update_schema::PartialDataInput {
+                virtual_field: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: update to be ignored",
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias(
+) {
+    let errors = sync_on_failure_ignore_at_creation_alias_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_on_failure_ignore_at_creation_alias_schema::PartialDataInput {
                 virtual_alias: Some("update to be ignored".into()),
-                virtual_field2: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .err()
+        .unwrap();
 
-    match r {
-        Err((payload, handle_failure, _)) => {
-            assert!(payload.get("virtual_alias").is_none());
-
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias
-);
-
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_same_as_dependent(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_init()
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().dependent.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
+    assert_eq!(
+        errors.errors.get("lax_field").unwrap().reason,
+        "validation failed"
     );
 
-    let r = model
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias(
+) {
+    let errors = async_on_failure_ignore_at_creation_alias_schema::DataModel
         .create(
-            &PartialDataInput {
+            async_on_failure_ignore_at_creation_alias_schema::PartialDataInput {
+                virtual_alias: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors.errors.get("lax_field").unwrap().reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: update to be ignored",
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias(
+) {
+    let errors = sync_on_failure_ignore_during_update_alias_schema::DataModel
+        .update(
+            sync_on_failure_ignore_during_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_ignore_during_update_alias_schema::PartialDataInput {
+                virtual_alias: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias(
+) {
+    let errors = async_on_failure_ignore_during_update_alias_schema::DataModel
+        .update(
+            async_on_failure_ignore_during_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            async_on_failure_ignore_during_update_alias_schema::PartialDataInput {
+                virtual_alias: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: update to be ignored",
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias(
+) {
+    let errors = sync_on_failure_ignore_init_alias_schema::DataModel
+        .update(
+            sync_on_failure_ignore_init_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_ignore_init_alias_schema::PartialDataInput {
+                virtual_alias: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias(
+) {
+    let errors = async_on_failure_ignore_init_alias_schema::DataModel
+        .update(
+            async_on_failure_ignore_init_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            async_on_failure_ignore_init_alias_schema::PartialDataInput {
+                virtual_alias: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: update to be ignored",
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias(
+) {
+    let errors = sync_on_failure_ignore_update_alias_schema::DataModel
+        .update(
+            sync_on_failure_ignore_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_ignore_update_alias_schema::PartialDataInput {
+                virtual_alias: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias(
+) {
+    let errors = async_on_failure_ignore_update_alias_schema::DataModel
+        .update(
+            async_on_failure_ignore_update_alias_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            async_on_failure_ignore_update_alias_schema::PartialDataInput {
+                virtual_alias: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: update to be ignored",
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_as_dependent(
+) {
+    let errors = sync_on_failure_ignore_at_creation_alias_as_dependent_schema::DataModel
+        .create(
+            sync_on_failure_ignore_at_creation_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("update to be ignored".into()),
-                virtual_field2: Some("fail_validation".into()),
+                lax_field: Some("fail_validation".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .err()
+        .unwrap();
 
-    match r {
-        Err((payload, handle_failure, _)) => {
-            assert!(payload.get("dependent").is_none());
-
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_same_as_dependent
-);
-
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_update()
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().virtual_field.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
+    assert_eq!(
+        errors.errors.get("lax_field").unwrap().reason,
+        "validation failed"
     );
 
-    let input = PartialDataInput {
-        virtual_field: Some("update to be ignored".into()),
-        virtual_field2: Some("fail_validation".into()),
-    };
-
-    let r = model
-        .update(
-            &Data {
-                dependent: default_dependent_value,
-            },
-            &input,
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), handle_failure, _)) => {
-            assert!(payload.get("virtual_field").is_none());
-
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    errors.handle_failure();
 }
 
-async_test_matrix!(
-    "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn
-);
-
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias(
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_as_dependent(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
+    let errors = async_on_failure_ignore_at_creation_alias_as_dependent_schema::DataModel
+        .create(
+            async_on_failure_ignore_at_creation_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_update()
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().virtual_alias.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
+    assert_eq!(
+        errors.errors.get("lax_field").unwrap().reason,
+        "validation failed"
     );
 
-    let input = PartialDataInput {
-        virtual_alias: Some("update to be ignored".into()),
-        virtual_field2: Some("fail_validation".into()),
-    };
-
-    let r = model
-        .update(
-            &Data {
-                dependent: default_dependent_value,
-            },
-            &input,
-            None,
-        )
-        .await;
-
-    match r {
-        Err((Some(payload), handle_failure, _)) => {
-            assert!(payload.get("virtual_alias").is_none());
-
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    errors.handle_failure().await;
 }
 
 async_test_matrix!(
     "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_as_dependent
 );
 
-async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_same_as_dependent(
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_as_dependent(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
+    let errors = sync_on_failure_ignore_during_update_alias_as_dependent_schema::DataModel
+        .update(
+            sync_on_failure_ignore_during_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_ignore_during_update_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        virtual_field2: String,
-    }
-
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field2"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_update()
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[virtual_field]: on_failure triggered with value: {}",
-                                ctx.raw_input().dependent.unwrap().as_str()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(virtual_field("virtual_field2").validate(|v: String, _, _| {
-                if v == "fail_validation" {
-                    return ready(Err(("validation failed".into(), None)));
-                }
-
-                ready(Ok(None))
-            }))
-        },
-        |o| o,
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
     );
 
-    let input = PartialDataInput {
-        dependent: Some("update to be ignored".into()),
-        virtual_field2: Some("fail_validation".into()),
-    };
+    errors.handle_failure();
+}
 
-    let r = model
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_as_dependent(
+) {
+    let errors = async_on_failure_ignore_during_update_alias_as_dependent_schema::DataModel
         .update(
-            &Data {
-                dependent: default_dependent_value,
+            async_on_failure_ignore_during_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
             },
-            &input,
-            None,
+            async_on_failure_ignore_during_update_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
         )
-        .await;
+        .await
+        .err()
+        .unwrap();
 
-    match r {
-        Err((Some(payload), handle_failure, _)) => {
-            assert!(payload.get("dependent").is_none());
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
 
-            assert_eq!(
-                payload.get("virtual_field2").unwrap().reason,
-                "validation failed".to_string()
-            );
-
-            handle_failure().await;
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    errors.handle_failure().await;
 }
 
 async_test_matrix!(
     "[virtual_field]: on_failure triggered with value: update to be ignored",
-    should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_same_as_dependent
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_as_dependent
 );
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_as_dependent(
+) {
+    let errors = sync_on_failure_ignore_init_alias_as_dependent_schema::DataModel
+        .update(
+            sync_on_failure_ignore_init_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_ignore_init_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_as_dependent(
+) {
+    let errors = async_on_failure_ignore_init_alias_as_dependent_schema::DataModel
+        .update(
+            async_on_failure_ignore_init_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            async_on_failure_ignore_init_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: update to be ignored",
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_as_dependent
+);
+
+#[should_panic(expected = "[virtual_field]: on_failure triggered with value: update to be ignored")]
+#[test]
+fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent(
+) {
+    let errors = sync_on_failure_ignore_update_alias_as_dependent_schema::DataModel
+        .update(
+            sync_on_failure_ignore_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            sync_on_failure_ignore_update_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure();
+}
+
+async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent(
+) {
+    let errors = async_on_failure_ignore_update_alias_as_dependent_schema::DataModel
+        .update(
+            async_on_failure_ignore_update_alias_as_dependent_schema::Data {
+                lax_field: "ok".into(),
+                dependent: 1,
+            },
+            async_on_failure_ignore_update_alias_as_dependent_schema::PartialDataInput {
+                dependent: Some("update to be ignored".into()),
+                lax_field: Some("fail_validation".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        errors
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("lax_field")
+            .unwrap()
+            .reason,
+        "validation failed"
+    );
+
+    errors.handle_failure().await;
+}
+
+async_test_matrix!(
+    "[virtual_field]: on_failure triggered with value: update to be ignored",
+    should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent
+);
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_creation_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_creation_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_update_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_update_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_creation_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_creation_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_update_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_update_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_creation_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_creation_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_update_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_update_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_at_creation_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(|_, _| true)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_at_creation_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(async |_, _| true)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_during_update_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(|_, _| true)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_during_update_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(async |_, _| true)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_init_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_init]
+        #[ignore_update(|_, _| false)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_init_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_init]
+        #[ignore_update(async |_, _| false)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_update_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_update(|_, _| true)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_update_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_update(async |_, _| true)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_field.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_at_creation_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(|_, _| true)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_at_creation_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(async |_, _| true)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_during_update_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(|_, _| true)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_during_update_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(async |_, _| true)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_init_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_init]
+        #[ignore_update(|_, _| false)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_init_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_init]
+        #[ignore_update(async |_, _| false)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_update_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_update(|_, _| true)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_update_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_update(async |_, _| true)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().virtual_alias.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_at_creation_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(|_, _| true)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_at_creation_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(async |_, _| true)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_during_update_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(|_, _| true)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_during_update_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore(async |_, _| true)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_init_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_init]
+        #[ignore_update(|_, _| false)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_init_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_init]
+        #[ignore_update(async |_, _| false)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_failure_ignore_update_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_update(|_, _| true)]
+        #[on_failure(|ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax("ok".into())]
+        #[validate(|v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_failure_ignore_update_alias_as_dependent_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        #[ignore_update(async |_, _| true)]
+        #[on_failure(async |ctx, _| {
+            panic!(
+                "[virtual_field]: on_failure triggered with value: {}",
+                ctx.raw_input().dependent.clone().unwrap()
+            );
+        })]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| "ok".into())]
+        #[validate(async |v, _, _| {
+            if v == "fail_validation" {
+                return Err(("validation failed".into(), None));
+            }
+            Ok(None)
+        })]
+        pub lax_field: String,
+
+        #[depends_on("virtual_field", "lax_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}

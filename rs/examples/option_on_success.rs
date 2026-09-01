@@ -1,233 +1,209 @@
-use std::{future::ready, sync::LazyLock};
-
-use ivo::{
-    dependent_field, lax_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoShared,
-    IvoStruct,
-};
+use ivo::ivo_schema;
 
 const DEFAULT_DEPENDENT_VALUE: &str = "DEFAULT_DEPENDENT_VALUE";
 const DEFAULT_LAX_VALUE: &str = "DEFAULT_LAX_VALUE";
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
-    let (data, handle_success, _) = DATA_MODEL
+    let created = data_schema::DataModel
         .create(
-            &PartialDataInput {
+            data_schema::PartialDataInput {
                 lax: None,
                 virtual_field: None,
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        data_schema::Data {
             dependent: DEFAULT_DEPENDENT_VALUE.to_string(),
             lax: DEFAULT_LAX_VALUE.to_string(),
         }
     );
 
-    handle_success().await;
+    let created_data = created.data.clone();
+    created.handle_success().await;
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&created_data, ());
 
     let virtual_value = "some value";
 
-    let (data, handle_success, _) = DATA_MODEL
+    let created = data_schema::DataModel
         .create(
-            &PartialDataInput {
+            data_schema::PartialDataInput {
                 lax: None,
-                virtual_field: Some(virtual_value.into()),
+                virtual_field: Some(virtual_value.to_string()),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        data_schema::Data {
             dependent: virtual_value.to_string(),
             lax: DEFAULT_LAX_VALUE.to_string(),
         }
     );
 
-    handle_success().await;
+    let created_data = created.data.clone();
+    created.handle_success().await;
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&created_data, ());
 
     let lax_value = "some lax value";
 
-    let (data, handle_success, _) = DATA_MODEL
+    let created = data_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: Some(lax_value.into()),
+            data_schema::PartialDataInput {
+                lax: Some(lax_value.to_string()),
                 virtual_field: None,
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        data_schema::Data {
             dependent: DEFAULT_DEPENDENT_VALUE.to_string(),
             lax: lax_value.to_string(),
         }
     );
 
-    handle_success().await;
+    let created_data = created.data.clone();
+    created.handle_success().await;
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&created_data, ());
 
     let updated_lax_value: Option<String> = Some("updated lax value".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updated = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created_data.clone(),
+            data_schema::PartialDataInput {
                 lax: updated_lax_value.clone(),
                 virtual_field: None,
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        data_schema::PartialData {
             dependent: None,
             lax: updated_lax_value,
         }
     );
 
-    handle_success().await;
+    let updated_data = updated.data.clone();
+    updated.handle_success().await;
 
-    let data = data.clone_with_updates(&updates);
+    let data = created_data.clone_with_updates(&updated_data);
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&data, ());
 
     let updated_virtual_value: Option<String> = Some("updated virtual_value value".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updated = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            data_schema::PartialDataInput {
                 lax: None,
                 virtual_field: updated_virtual_value.clone(),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        data_schema::PartialData {
             dependent: updated_virtual_value,
             lax: None
         }
     );
 
-    handle_success().await;
+    let updated_data = updated.data.clone();
+    updated.handle_success().await;
 
-    DATA_MODEL
-        .delete(&data.clone_with_updates(&updates), None)
-        .await;
+    data_schema::DataModel.delete(&data.clone_with_updates(&updated_data), ());
 }
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub lax: String,
-    pub virtual_field: String,
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod data_schema {
+    struct Fields {
+        #[lax(crate::DEFAULT_LAX_VALUE.to_string())]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: lax = {}", ctx.values().lax);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: lax = {}", data.lax);
+        })]
+        pub lax: String,
+
+        #[depends_on("virtual_field")]
+        #[default(crate::DEFAULT_DEPENDENT_VALUE.to_string())]
+        #[resolve(async |ctx, _| {
+            ctx.input().virtual_field.clone().unwrap()
+        })]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: dependent = {}", data.dependent);
+        })]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[on_success(|ctx, _| {
+            println!(
+                "\n[on_success]: virtual_field = {}",
+                ctx.input().virtual_field.as_deref().unwrap_or("(none)")
+            );
+        })]
+        pub virtual_field: String,
+    }
+
+    #[on_success(async |_, _| {
+        println!("\nthis handler gets triggered every time the creation or an update on an entity is successful");
+    })]
+    const _: () = ();
+
+    #[on_success(["lax", "dependent"], async |_, _| {
+        println!("\nthis handler gets triggered every time the creation or an update on an entity is successful and either lax or dependent is part of the success payload");
+    })]
+    const _: () = ();
+
+    #[on_success(["lax", "virtual_field"], async |_, _| {
+        println!("\nthis handler gets triggered every time the creation or an update on an entity is successful and lax is part of the success payload or if virtual_field is provided and accepted");
+    })]
+    const _: () = ();
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub dependent: String,
-    pub lax: String,
-}
-
-pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_LAX_VALUE.to_string())
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: lax = {}", data.lax);
-
-                        ready(())
-                    }),
-            )
-            .field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_DEPENDENT_VALUE.to_string())
-                    .resolve(async |ctx: IvoContext<DataInput, Data>, _| {
-                        ctx.input().virtual_field.unwrap()
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_success]: dependent = {}",
-                            ctx.values().dependent.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: dependent = {}", data.dependent);
-
-                        ready(())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_, _, _| ready(Ok(None::<String>)))
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_success]: virtual_field = {}",
-                            ctx.input().virtual_field.unwrap()
-                        );
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| {
-            o
-            .on_success([], |b|b.handle(async |_,_|{
-            println!("\nthis handler gets triggered everytime the creation or an update on an entity is successful")
-        }))
-            .on_success(["lax", "dependent"], |b|b.handle(async |_,_|{
-            println!("\nthis handler gets triggered everytime the creation or an update on an entity is successful and either lax or dependent is part of the success payload")
-        }))
-            .on_success(["lax", "virtual_field"], |b|b.handle(async |_,_|{
-            println!("\nthis handler gets triggered everytime the creation or an update on an entity is successful and lax is part of the success payload or if virtual_field is provided and accepted")
-        }))
-        },
-    )
-});

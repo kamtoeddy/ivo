@@ -1,359 +1,426 @@
-use std::time::Instant;
+use ivo::ivo_schema;
 
-use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
+//
+// NOTE ON PORTING
+//
+// The new `#[ivo_schema(...)]` macro supports timestamps via:
+//   - `#[created_at]` / `#[updated_at]` / `#[optional_updated_at]` on a field
+//   - `#[timestamps(|| ...)]` or `#[timestamps(path::to_now)]` const _: () = ();` to provide the resolver
+//
+// `updated_at` is re-resolved on every successful update; `optional_updated_at`
+// is `None` on create and `Some(value)` on update.
+//
+// Async timestamp resolvers are not supported by the current macro, so only
+// sync variants are ported.
+//
 
-use crate::async_test_matrix;
-
-async fn should_respect_created_at_timestamp_with_default_name() {
-    type Timestamp = u128;
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        created_at: Timestamp,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let timer = Instant::now();
-
-    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234)).timestamps(|t| {
-                t.resolve(move || timer.elapsed().as_micros())
-                    .created_at(None)
-            })
-        },
-        |o| o,
-    );
-
+#[test]
+fn should_respect_created_at_timestamp_with_default_name() {
     let lax = 400;
 
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
-        .await
+    let created = sync_created_at_default_name_schema::DataModel
+        .create(
+            sync_created_at_default_name_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
         .ok()
         .unwrap();
 
-    assert_eq!(data.lax, lax);
-    assert!(data.created_at > 0);
+    assert_eq!(created.data.lax, lax);
+    assert!(created.data.created_at > 0);
 
     let lax_update = 200;
 
-    let (updates, _, _) = model
+    let updated = sync_created_at_default_name_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            sync_created_at_default_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    assert_eq!(updates.lax, Some(lax_update));
-    assert_eq!(updates.created_at, None);
+    assert_eq!(updated.data.lax, Some(lax_update));
+    assert_eq!(updated.data.created_at, None);
 }
 
-async_test_matrix!(should_respect_created_at_timestamp_with_default_name);
-
-async fn should_respect_created_at_timestamp_with_custom_name() {
-    type Timestamp = u128;
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        custom_created_at: Timestamp,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let timer = Instant::now();
-
-    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234)).timestamps(|t| {
-                t.resolve(move || timer.elapsed().as_micros())
-                    .created_at(Some("custom_created_at"))
-            })
-        },
-        |o| o,
-    );
-
+#[test]
+fn should_respect_created_at_timestamp_with_custom_name() {
     let lax = 400;
 
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
-        .await
+    let created = sync_created_at_custom_name_schema::DataModel
+        .create(
+            sync_created_at_custom_name_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
         .ok()
         .unwrap();
 
-    assert_eq!(data.lax, lax);
-    assert!(data.custom_created_at > 0);
+    assert_eq!(created.data.lax, lax);
+    assert!(created.data.custom_created_at > 0);
 
     let lax_update = 200;
 
-    let (updates, _, _) = model
+    let updated = sync_created_at_custom_name_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            sync_created_at_custom_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    assert_eq!(updates.lax, Some(lax_update));
-    assert_eq!(updates.custom_created_at, None);
+    assert_eq!(updated.data.lax, Some(lax_update));
+    assert_eq!(updated.data.custom_created_at, None);
 }
 
-async_test_matrix!(should_respect_created_at_timestamp_with_custom_name);
-
-async fn should_respect_updated_at_timestamp_with_default_name() {
-    type Timestamp = u128;
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        updated_at: Timestamp,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let timer = Instant::now();
-
-    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234)).timestamps(|t| {
-                t.resolve(move || timer.elapsed().as_micros())
-                    .updated_at(None)
-            })
-        },
-        |o| o,
-    );
-
+#[test]
+fn should_respect_updated_at_timestamp_with_default_name() {
     let lax = 400;
 
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
-        .await
+    let created = sync_updated_at_default_name_schema::DataModel
+        .create(
+            sync_updated_at_default_name_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
         .ok()
         .unwrap();
 
-    assert_eq!(data.lax, lax);
-    assert!(data.updated_at > 0);
+    assert_eq!(created.data.lax, lax);
+    assert!(created.data.updated_at > 0);
 
     let lax_update = 200;
 
-    let (updates, _, _) = model
+    let updated = sync_updated_at_default_name_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            sync_updated_at_default_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    assert_eq!(updates.lax, Some(lax_update));
-    assert!(updates.updated_at.is_some());
+    assert_eq!(updated.data.lax, Some(lax_update));
+    assert!(updated.data.updated_at.is_some());
+    assert!(updated.data.updated_at.unwrap() >= created.data.updated_at);
 }
 
-async_test_matrix!(should_respect_updated_at_timestamp_with_default_name);
-
-async fn should_respect_updated_at_timestamp_with_custom_name() {
-    type Timestamp = u128;
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        custom_updated_at: Timestamp,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-    let timer = Instant::now();
-
-    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234)).timestamps(|t| {
-                t.resolve(move || timer.elapsed().as_micros())
-                    .updated_at(Some("custom_updated_at"))
-            })
-        },
-        |o| o,
-    );
-
+#[test]
+fn should_respect_updated_at_timestamp_with_custom_name() {
     let lax = 400;
 
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
-        .await
+    let created = sync_updated_at_custom_name_schema::DataModel
+        .create(
+            sync_updated_at_custom_name_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
         .ok()
         .unwrap();
 
-    assert_eq!(data.lax, lax);
-    assert!(data.custom_updated_at > 0);
+    assert_eq!(created.data.lax, lax);
+    assert!(created.data.custom_updated_at > 0);
 
     let lax_update = 200;
 
-    let (updates, _, _) = model
+    let updated = sync_updated_at_custom_name_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            sync_updated_at_custom_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    assert_eq!(updates.lax, Some(lax_update));
-    assert!(updates.custom_updated_at.is_some());
+    assert_eq!(updated.data.lax, Some(lax_update));
+    assert!(updated.data.custom_updated_at.is_some());
+    assert!(updated.data.custom_updated_at.unwrap() >= created.data.custom_updated_at);
 }
 
-async_test_matrix!(should_respect_updated_at_timestamp_with_custom_name);
-
-async fn should_respect_optional_updated_at_timestamp_with_default_name() {
-    type Timestamp = u128;
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        updated_at: Option<Timestamp>,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let timer = Instant::now();
-
-    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234)).timestamps(|t| {
-                t.resolve(move || timer.elapsed().as_micros())
-                    .optional_updated_at(None)
-            })
-        },
-        |o| o,
-    );
-
+#[test]
+fn should_respect_optional_updated_at_timestamp_with_default_name() {
     let lax = 400;
 
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
-        .await
+    let created = sync_optional_updated_at_default_name_schema::DataModel
+        .create(
+            sync_optional_updated_at_default_name_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
         .ok()
         .unwrap();
 
-    assert_eq!(data.lax, lax);
-    assert_eq!(data.updated_at, None);
+    assert_eq!(created.data.lax, lax);
+    assert_eq!(created.data.updated_at, None);
 
     let lax_update = 200;
 
-    let (updates, _, _) = model
+    let updated = sync_optional_updated_at_default_name_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            sync_optional_updated_at_default_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    assert_eq!(updates.lax, Some(lax_update));
-    assert!(updates.updated_at.is_some());
-
-    let updated = data.clone_with_updates(&updates);
-
-    assert_eq!(updated.lax, updates.lax.unwrap());
-    assert_eq!(updated.updated_at, updates.updated_at.unwrap());
+    assert_eq!(updated.data.lax, Some(lax_update));
+    assert!(updated.data.updated_at.is_some());
 }
 
-async_test_matrix!(should_respect_optional_updated_at_timestamp_with_default_name);
-
-async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
-    type Timestamp = u128;
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        custom_updated_at: Option<Timestamp>,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let timer = Instant::now();
-
-    let model: IvoModel<DataInput, Data, Option<()>, Timestamp> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234)).timestamps(|t| {
-                t.resolve(move || timer.elapsed().as_micros())
-                    .optional_updated_at(Some("custom_updated_at"))
-            })
-        },
-        |o| o,
-    );
-
+#[test]
+fn should_respect_optional_updated_at_timestamp_with_custom_name() {
     let lax = 400;
 
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
-        .await
+    let created = sync_optional_updated_at_custom_name_schema::DataModel
+        .create(
+            sync_optional_updated_at_custom_name_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
         .ok()
         .unwrap();
 
-    assert_eq!(data.lax, lax);
-    assert_eq!(data.custom_updated_at, None);
+    assert_eq!(created.data.lax, lax);
+    assert_eq!(created.data.custom_updated_at, None);
 
     let lax_update = 200;
 
-    let (updates, _, _) = model
+    let updated = sync_optional_updated_at_custom_name_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            sync_optional_updated_at_custom_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    assert_eq!(updates.lax, Some(lax_update));
-    assert!(updates.custom_updated_at.is_some());
+    assert_eq!(updated.data.lax, Some(lax_update));
+    assert!(updated.data.custom_updated_at.is_some());
+}
 
-    let updated = data.clone_with_updates(&updates);
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_created_at_default_name_schema {
+    type Timestamp = u128;
 
-    assert_eq!(updated.lax, updates.lax.unwrap());
+    fn now() -> Timestamp {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+    }
+
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[created_at]
+        pub created_at: Timestamp,
+    }
+
+    #[timestamps(now)]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_created_at_custom_name_schema {
+    type Timestamp = u128;
+
+    fn now() -> Timestamp {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+    }
+
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[created_at]
+        pub custom_created_at: Timestamp,
+    }
+
+    #[timestamps(|| now())]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_updated_at_default_name_schema {
+    type Timestamp = u128;
+
+    fn now() -> Timestamp {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+    }
+
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[updated_at]
+        pub updated_at: Timestamp,
+    }
+
+    #[timestamps(|| now())]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_updated_at_custom_name_schema {
+    type Timestamp = u128;
+
+    fn now() -> Timestamp {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+    }
+
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[updated_at]
+        pub custom_updated_at: Timestamp,
+    }
+
+    #[timestamps(|| now())]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_optional_updated_at_default_name_schema {
+    type Timestamp = u128;
+
+    fn now() -> Timestamp {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+    }
+
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[optional_updated_at]
+        pub updated_at: Option<Timestamp>,
+    }
+
+    #[timestamps(|| now())]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_optional_updated_at_custom_name_schema {
+    type Timestamp = u128;
+
+    fn now() -> Timestamp {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+    }
+
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[optional_updated_at]
+        pub custom_updated_at: Option<Timestamp>,
+    }
+
+    #[timestamps(|| now())]
+    const _: () = ();
+}
+
+// -----------------------------------------------------------------------------
+// Resolver call count
+// -----------------------------------------------------------------------------
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_created_and_updated_at_call_count_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+    fn now() -> u128 {
+        CALL_COUNT.fetch_add(1, Ordering::SeqCst);
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+    }
+
+    struct Fields {
+        #[lax(20)]
+        pub lax: i32,
+
+        #[created_at]
+        pub created_at: u128,
+
+        #[updated_at]
+        pub updated_at: u128,
+    }
+
+    #[timestamps(|| now())]
+    const _: () = ();
+}
+
+#[test]
+fn should_call_the_timestamp_resolver_at_most_once_per_create_call() {
+    use std::sync::atomic::Ordering;
+
+    let before = sync_created_and_updated_at_call_count_schema::CALL_COUNT.load(Ordering::SeqCst);
+
+    let created = sync_created_and_updated_at_call_count_schema::DataModel
+        .create(
+            sync_created_and_updated_at_call_count_schema::PartialDataInput { lax: Some(1) },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    let after = sync_created_and_updated_at_call_count_schema::CALL_COUNT.load(Ordering::SeqCst);
+
     assert_eq!(
-        updated.custom_updated_at,
-        updates.custom_updated_at.unwrap()
+        after - before,
+        1,
+        "the timestamp resolver must be invoked exactly once per create call, even with both \
+         #[created_at] and #[updated_at] declared"
     );
+    assert_eq!(created.data.created_at, created.data.updated_at);
 }
-
-async_test_matrix!(should_respect_optional_updated_at_timestamp_with_custom_name);

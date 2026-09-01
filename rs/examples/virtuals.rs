@@ -1,310 +1,137 @@
-use std::{future::ready, sync::LazyLock};
-
-use ivo::{
-    dependent_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct,
-};
+use ivo::ivo_schema;
 
 const DEFAULT_DEPENDENT_VALUE: &str = "DEFAULT_DEPENDENT_VALUE";
 
-#[async_std::main]
-async fn main() {
+fn main() {
     println!("\nVIRTUAL WITH VALIDATOR\n");
 
-    virtual_with_validator().await;
-
-    println!("\nVIRTUAL WITH REVALIDATOR\n");
-
-    virtual_with_re_validator().await;
+    virtual_with_validator();
 }
 
-async fn virtual_with_validator() {
-    let (data, handle_success, _) = DATA_MODEL_WITH_VALIDATOR
+fn virtual_with_validator() {
+    let created = data_schema::DataModel
         .create(
-            &PartialDataInput {
+            data_schema::PartialDataInput {
                 virtual_field: None,
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     assert_eq!(
-        data,
-        Data {
-            dependent: DEFAULT_DEPENDENT_VALUE.to_string(),
+        created.data,
+        data_schema::Data {
+            dependent: DEFAULT_DEPENDENT_VALUE.to_string()
         }
     );
 
-    handle_success().await;
+    let created_data = created.data.clone();
+    created.handle_success();
 
-    DATA_MODEL_WITH_VALIDATOR.delete(&data, None).await;
+    data_schema::DataModel.delete(&created_data, ());
 
     let value = "some value".to_string();
 
-    let (data, handle_success, _) = DATA_MODEL_WITH_VALIDATOR
+    let created = data_schema::DataModel
         .create(
-            &PartialDataInput {
+            data_schema::PartialDataInput {
                 virtual_field: Some(value.clone()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
-    assert_eq!(data, Data { dependent: value });
+    assert_eq!(created.data, data_schema::Data { dependent: value });
 
-    handle_success().await;
+    let created_data = created.data.clone();
+    created.handle_success();
 
-    DATA_MODEL_WITH_VALIDATOR.delete(&data, None).await;
+    data_schema::DataModel.delete(&created_data, ());
 
-    let data = Data {
+    let data = data_schema::Data {
         dependent: "dependent value".to_string(),
     };
 
     let updated_value = Some("updated value".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL_WITH_VALIDATOR
+    let updated = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            data_schema::PartialDataInput {
                 virtual_field: updated_value.clone(),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        data_schema::PartialData {
             dependent: updated_value
         }
     );
 
-    handle_success().await;
+    let updated_data = updated.data.clone();
+    updated.handle_success();
 
-    let data = data.clone_with_updates(&updates);
+    let data = data.clone_with_updates(&updated_data);
 
-    DATA_MODEL_WITH_VALIDATOR.delete(&data, None).await;
+    data_schema::DataModel.delete(&data, ());
 }
 
-async fn virtual_with_re_validator() {
-    let (data, handle_success, _) = DATA_MODEL_WITH_RE_VALIDATOR
-        .create(
-            &PartialDataInput {
-                virtual_field: None,
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod data_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(crate::DEFAULT_DEPENDENT_VALUE.to_string())]
+        #[resolve(|ctx, _| {
+            ctx.input()
+                .virtual_field
+                .clone()
+                .unwrap_or_else(|| ctx.values().dependent.clone())
+        })]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: dependent = {}", data.dependent);
+        })]
+        pub dependent: String,
 
-    println!("\ncreated: {:#?}", data);
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: DEFAULT_DEPENDENT_VALUE.to_string(),
-        }
-    );
-
-    handle_success().await;
-
-    DATA_MODEL_WITH_RE_VALIDATOR.delete(&data, None).await;
-
-    let value = "some value".to_string();
-
-    let (data, handle_success, _) = DATA_MODEL_WITH_RE_VALIDATOR
-        .create(
-            &PartialDataInput {
-                virtual_field: Some(value.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    println!("\ncreated: {:#?}", data);
-
-    assert_eq!(data, Data { dependent: value });
-
-    handle_success().await;
-
-    DATA_MODEL_WITH_RE_VALIDATOR.delete(&data, None).await;
-
-    let data = Data {
-        dependent: "dependent value".to_string(),
-    };
-
-    let updated_value = Some("updated value".to_string());
-
-    let (updates, handle_success, _) = DATA_MODEL_WITH_RE_VALIDATOR
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: updated_value.clone(),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    println!("\nupdates: {:#?}", updates);
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: updated_value
-        }
-    );
-
-    handle_success().await;
-
-    let data = data.clone_with_updates(&updates);
-
-    DATA_MODEL_WITH_RE_VALIDATOR.delete(&data, None).await;
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[on_success(|ctx, _| {
+            println!(
+                "\n[on_success]: raw virtual_field = {}",
+                ctx.raw_input().virtual_field.as_deref().unwrap_or("(none)")
+            );
+            println!(
+                "\n[on_success]: validated virtual_field = {}",
+                ctx.input().virtual_field.as_deref().unwrap_or("(none)")
+            );
+        })]
+        #[on_failure(|ctx, _| {
+            println!(
+                "\n[on_failure]: raw virtual_field = {}",
+                ctx.raw_input().virtual_field.as_deref().unwrap_or("(none)")
+            );
+            println!(
+                "\n[on_failure]: validated virtual_field = {}",
+                ctx.input().virtual_field.as_deref().unwrap_or("(none)")
+            );
+        })]
+        pub virtual_field: String,
+    }
 }
-
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub virtual_field: String,
-}
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub dependent: String,
-}
-
-pub static DATA_MODEL_WITH_VALIDATOR: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_DEPENDENT_VALUE.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(
-                            ctx.input()
-                                .virtual_field
-                                .unwrap_or_else(|| ctx.values().dependent.unwrap()),
-                        )
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_success]: dependent = {}",
-                            ctx.values().dependent.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: dependent = {}", data.dependent);
-
-                        ready(())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_, _, _| ready(Ok(None::<String>)))
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_failure]: raw virtual_field = {}",
-                            ctx.raw_input().virtual_field.unwrap()
-                        );
-                        println!(
-                            "\n[on_failure]: validated virtual_field = {}",
-                            ctx.input().virtual_field.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_failure]: raw virtual_field = {}",
-                            ctx.raw_input().virtual_field.unwrap()
-                        );
-                        println!(
-                            "\n[on_failure]: validated virtual_field = {}",
-                            ctx.input().virtual_field.unwrap()
-                        );
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    )
-});
-
-pub static DATA_MODEL_WITH_RE_VALIDATOR: LazyLock<IvoModel<DataInput, Data>> =
-    LazyLock::new(|| {
-        IvoModel::new(
-            |f| {
-                f.field(
-                    dependent_field("dependent", ["virtual_field"])
-                        .default(DEFAULT_DEPENDENT_VALUE.into())
-                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                            ready(
-                                ctx.input()
-                                    .virtual_field
-                                    .unwrap_or_else(|| ctx.values().dependent.unwrap()),
-                            )
-                        })
-                        .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                            println!(
-                                "\n[on_success]: dependent = {}",
-                                ctx.values().dependent.unwrap()
-                            );
-
-                            ready(())
-                        })
-                        .on_delete(|data: IvoShared<Data>, _| {
-                            println!("\n[on_delete]: dependent = {}", data.dependent);
-
-                            ready(())
-                        }),
-                )
-                .field(
-                    virtual_field("virtual_field")
-                        .validate(|_, _, _| ready(Ok(None::<String>)))
-                        .re_validate(|_, _, _| ready(Ok(None::<String>)))
-                        .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                            println!(
-                                "\n[on_failure]: raw virtual_field = {}",
-                                ctx.raw_input().virtual_field.unwrap()
-                            );
-                            println!(
-                                "\n[on_failure]: validated virtual_field = {}",
-                                ctx.input().virtual_field.unwrap()
-                            );
-
-                            ready(())
-                        })
-                        .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                            println!(
-                                "\n[on_failure]: raw virtual_field = {}",
-                                ctx.raw_input().virtual_field.unwrap()
-                            );
-                            println!(
-                                "\n[on_failure]: validated virtual_field = {}",
-                                ctx.input().virtual_field.unwrap()
-                            );
-
-                            ready(())
-                        }),
-                )
-            },
-            |o| o,
-        )
-    });

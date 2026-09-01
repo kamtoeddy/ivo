@@ -1,2192 +1,2048 @@
-use std::future::ready;
+use ivo::ivo_schema;
 
-use ivo::{
-    dependent_field, lax_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct,
-};
+// -----------------------------------------------------------------------------
+// Field-level #[ignore_update] on virtual fields
+// -----------------------------------------------------------------------------
 
-use crate::async_test_matrix;
-
-// ignore
-
-async fn should_respect_the_ignore_rule() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        virtual_field: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = 10;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore(|_, _| ready(true)),
-            )
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
+#[test]
+fn should_respect_field_level_ignore_update_on_virtual_fields() {
+    let created = sync_ignore_update_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_ignore_update_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("virtual_value".into()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax: default_lax_value
+        created.data,
+        sync_ignore_update_schema::Data {
+            lax: 10,
+            dependent: 2
         }
     );
 
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                virtual_field: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax
-        }
-    );
-
-    let lax = Some(data.lax + 10);
-
-    let (updates, _, _) = model
+    let updated = sync_ignore_update_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                virtual_field: Some("virtual_value".into()),
+            created.data.clone(),
+            sync_ignore_update_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("new_virtual_value".into()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        sync_ignore_update_schema::PartialData {
+            lax: Some(30),
             dependent: None,
-            lax
         }
     );
 
-    let r = model
+    let failed = sync_ignore_update_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            sync_ignore_update_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("ignored_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async fn should_respect_field_level_ignore_update_on_virtual_fields_async() {
+    let created = async_ignore_update_schema::DataModel
+        .create(
+            async_ignore_update_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("virtual_value".into()),
             },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((err, _, _)) => assert!(err.is_none()),
-        _ => unreachable!("expected nothing to update"),
-    }
-}
-
-async_test_matrix!(should_respect_the_ignore_rule);
-
-async fn should_respect_the_ignore_rule_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        virtual_alias: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = 10;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore(|_, _| ready(true)),
-            )
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: None,
-                virtual_alias: Some("virtual_value".into()),
-            },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax: default_lax_value
+        created.data,
+        async_ignore_update_schema::Data {
+            lax: 10,
+            dependent: 2
         }
     );
 
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                virtual_alias: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax
-        }
-    );
-
-    let lax = Some(data.lax + 10);
-
-    let (updates, _, _) = model
+    let updated = async_ignore_update_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                virtual_alias: Some("virtual_value".into()),
+            created.data.clone(),
+            async_ignore_update_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("new_virtual_value".into()),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        async_ignore_update_schema::PartialData {
+            lax: Some(30),
             dependent: None,
-            lax
         }
     );
 
-    let r = model
+    let failed = async_ignore_update_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            async_ignore_update_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("ignored_value".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async_test_matrix!(should_respect_field_level_ignore_update_on_virtual_fields_async);
+
+// -----------------------------------------------------------------------------
+// Field-level #[ignore_update] on an *aliased* virtual field: the ignore
+// resolver, the field's own provided/ignored bookkeeping, and the resulting
+// (non-)update must all key off the alias consistently -- same coverage as
+// the non-aliased case above, just confirming the alias doesn't break it.
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field() {
+    let created = sync_ignore_update_alias_schema::DataModel
+        .create(
+            sync_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("virtual_value".into()),
             },
-            None,
+            (),
         )
-        .await;
-
-    match r {
-        Err((err, _, _)) => assert!(err.is_none()),
-        _ => unreachable!("expected nothing to update"),
-    }
-}
-
-async_test_matrix!(should_respect_the_ignore_rule_with_alias);
-
-async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        lax: i32,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = 10;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore(|_, _| ready(true)),
-            )
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: None,
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax: default_lax_value
+        created.data,
+        sync_ignore_update_alias_schema::Data {
+            lax: 10,
+            dependent: 2
         }
     );
 
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax
-        }
-    );
-
-    let lax = Some(data.lax + 10);
-
-    let (updates, _, _) = model
+    let updated = sync_ignore_update_alias_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                dependent: Some("virtual_value".into()),
+            created.data.clone(),
+            sync_ignore_update_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("new_virtual_value".into()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        sync_ignore_update_alias_schema::PartialData {
+            lax: Some(30),
             dependent: None,
-            lax
         }
     );
 
-    let r = model
+    let failed = sync_ignore_update_alias_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            sync_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
-                dependent: Some("virtual_value".into()),
+                virtual_alias: Some("ignored_value".into()),
             },
-            None,
+            (),
         )
-        .await;
+        .err()
+        .unwrap();
 
-    match r {
-        Err((err, _, _)) => assert!(err.is_none()),
-        _ => unreachable!("expected nothing to update"),
-    }
+    assert!(failed.errors.is_none());
 }
 
-async_test_matrix!(should_respect_the_ignore_rule_with_alias_same_as_dependent);
-
-async fn should_respect_the_ignore_init_rule() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        virtual_field: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = 10;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_init(),
-            )
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
+async fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field_async() {
+    let created = async_ignore_update_alias_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: None,
-                virtual_field: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax: default_lax_value
-        }
-    );
-
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                virtual_field: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax
-        }
-    );
-
-    let lax = Some(data.lax + 10);
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                virtual_field: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax
-        }
-    );
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: None,
-                virtual_field: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax: None
-        }
-    );
-}
-
-async_test_matrix!(should_respect_the_ignore_init_rule);
-
-async fn should_respect_the_ignore_init_rule_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        virtual_alias: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = 10;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_init(),
-            )
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
+            async_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("virtual_value".into()),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax: default_lax_value
+        created.data,
+        async_ignore_update_alias_schema::Data {
+            lax: 10,
+            dependent: 2
         }
     );
 
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                virtual_alias: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax
-        }
-    );
-
-    let lax = Some(data.lax + 10);
-
-    let (updates, _, _) = model
+    let updated = async_ignore_update_alias_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                virtual_alias: Some("virtual_value".into()),
+            created.data.clone(),
+            async_ignore_update_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("new_virtual_value".into()),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax
-        }
-    );
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: None,
-                virtual_alias: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax: None
-        }
-    );
-}
-
-async_test_matrix!(should_respect_the_ignore_init_rule_with_alias);
-
-async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        dependent: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = 10;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_init(),
-            )
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: None,
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax: default_lax_value
-        }
-    );
-
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax
-        }
-    );
-
-    let lax = Some(data.lax + 10);
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax
-        }
-    );
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: None,
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax: None
-        }
-    );
-}
-
-async_test_matrix!(should_respect_the_ignore_init_rule_with_alias_same_as_dependent);
-
-async fn should_respect_the_ignore_update_rule() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        virtual_field: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = 10;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_update(),
-            )
-        },
-        |o| o,
-    );
-
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                virtual_field: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax
-        }
-    );
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: None,
-                virtual_field: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax: default_lax_value
-        }
-    );
-
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                virtual_field: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax
-        }
-    );
-
-    let lax = Some(data.lax + 10);
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                virtual_field: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        async_ignore_update_alias_schema::PartialData {
+            lax: Some(30),
             dependent: None,
-            lax
         }
     );
 
-    let r = model
+    let failed = async_ignore_update_alias_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            created.data.clone(),
+            async_ignore_update_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("ignored_value".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async_test_matrix!(should_respect_field_level_ignore_update_on_an_aliased_virtual_field_async);
+
+// -----------------------------------------------------------------------------
+// Grouped #[ignore([...], handler)] on virtual fields
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_grouped_ignore_rule_on_virtual_fields() {
+    let default_dependent_value = 1;
+    let default_lax_value = 10;
+
+    let created = sync_grouped_ignore_schema::DataModel
+        .create(
+            sync_grouped_ignore_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("virtual_value".into()),
             },
-            None,
+            (),
         )
-        .await;
-
-    match r {
-        Err((err, _, _)) => assert!(err.is_none()),
-        _ => unreachable!("expected nothing to update"),
-    }
-}
-
-async_test_matrix!(should_respect_the_ignore_update_rule);
-
-async fn should_respect_the_ignore_update_rule_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        virtual_alias: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = 10;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_update(),
-            )
-        },
-        |o| o,
-    );
-
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                virtual_alias: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax
-        }
-    );
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: None,
-                virtual_alias: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax: default_lax_value
-        }
-    );
-
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                virtual_alias: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax
-        }
-    );
-
-    let lax = Some(data.lax + 10);
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                virtual_alias: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: None,
-            lax
-        }
-    );
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: None,
-                virtual_alias: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((err, _, _)) => assert!(err.is_none()),
-        _ => unreachable!("expected nothing to update"),
-    }
-}
-
-async_test_matrix!(should_respect_the_ignore_update_rule_with_alias);
-
-async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        dependent: String,
-    }
-
-    let default_dependent_value = 1;
-    let default_lax_value = 10;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|v: String, _, _| {
-                        if v == "fail_validation" {
-                            return ready(Err(("validation failed".into(), None)));
-                        }
-
-                        ready(Ok(None))
-                    })
-                    .ignore_update(),
-            )
-        },
-        |o| o,
-    );
-
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax
-        }
-    );
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: None,
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax: default_lax_value
-        }
-    );
-
-    let lax = default_lax_value + 10;
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax),
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax
-        }
-    );
-
-    let lax = Some(data.lax + 10);
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: None,
-            lax
-        }
-    );
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: None,
-                dependent: Some("virtual_value".into()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((err, _, _)) => assert!(err.is_none()),
-        _ => unreachable!("expected nothing to update"),
-    }
-}
-
-async_test_matrix!(should_respect_the_ignore_update_rule_with_alias_same_as_dependent);
-
-// grouped ignore
-
-async fn should_properly_handle_grouped_ignore_rule() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        lax_1: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        lax_1: String,
-        virtual_field: String,
-    }
-
-    const IGNORE: &str = "IGNORE";
-
-    let default_lax_value = "default_lax_value";
-    let default_lax_1_value = "default_lax_1_value";
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(default_lax_value.to_string()))
-                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
-                .field(
-                    dependent_field("dependent", ["virtual_field"])
-                        .default(default_dependent_value)
-                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                            ready(ctx.values().dependent.unwrap() + 1)
-                        }),
-                )
-                .field(virtual_field("virtual_field").validate(|_, _, _| ready(Ok(None::<String>))))
-        },
-        |o| {
-            o.ignore(
-                ["virtual_field", "lax"],
-                |ctx: IvoContext<DataInput, Data>, _| ready(ctx.input().lax == Some(IGNORE.into())),
-            )
-        },
-    );
-
-    let lax = IGNORE.to_string();
-    let lax_1 = "lax_1".to_string();
-    let virtual_field = "virtual_field".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                virtual_field: Some(virtual_field.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
+        created.data,
+        sync_grouped_ignore_schema::Data {
             dependent: default_dependent_value,
-            lax: default_lax_value.to_string(),
-            lax_1,
+            lax: default_lax_value,
         }
     );
 
-    let lax = "some lax value".to_string();
-    let lax_1 = "lax_1".to_string();
-
-    let (data, _, _) = model
+    let created = sync_grouped_ignore_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                virtual_field: Some(virtual_field.clone()),
+            sync_grouped_ignore_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_field: Some("keep".into()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax,
-            lax_1,
+        created.data,
+        sync_grouped_ignore_schema::Data {
+            dependent: 2,
+            lax: 20,
         }
     );
 
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value,
-        lax: default_lax_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-    };
-
-    let lax = Some(IGNORE.to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_field = Some("virtual_field".to_string());
-
-    let (updates, _, _) = model
+    let updated = sync_grouped_ignore_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax: lax.clone(),
-                lax_1: lax_1.clone(),
-                virtual_field: virtual_field.clone(),
+            created.data.clone(),
+            sync_grouped_ignore_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("keep".into()),
             },
-            None,
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = sync_grouped_ignore_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async fn should_respect_grouped_ignore_rule_on_virtual_fields_async() {
+    let default_dependent_value = 1;
+    let default_lax_value = 10;
+
+    let created = async_grouped_ignore_schema::DataModel
+        .create(
+            async_grouped_ignore_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
+        created.data,
+        async_grouped_ignore_schema::Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value,
+        }
+    );
+
+    let created = async_grouped_ignore_schema::DataModel
+        .create(
+            async_grouped_ignore_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_field: Some("keep".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_grouped_ignore_schema::Data {
+            dependent: 2,
+            lax: 20,
+        }
+    );
+
+    let updated = async_grouped_ignore_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_grouped_ignore_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("keep".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_grouped_ignore_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = async_grouped_ignore_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_grouped_ignore_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async_test_matrix!(should_respect_grouped_ignore_rule_on_virtual_fields_async);
+
+// -----------------------------------------------------------------------------
+// Grouped #[ignore([...], handler)] on an *aliased* virtual field. Note the
+// field list in the attribute itself (`#[ignore(["virtual_field", "lax"], ..)]`)
+// still names the field's *internal* schema name, not the alias -- aliases
+// only rename the field externally (in `PartialDataInput`/`ctx.input()`),
+// they're never valid inside a grouped option's field list (see
+// `tests/options/compile_fail/on_success.rs`'s
+// `should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array`
+// for the equivalent compile-time rejection on `#[on_success(...)]`).
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field() {
+    let default_dependent_value = 1;
+    let default_lax_value = 10;
+
+    let created = sync_grouped_ignore_alias_schema::DataModel
+        .create(
+            sync_grouped_ignore_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_alias_schema::Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value,
+        }
+    );
+
+    let created = sync_grouped_ignore_alias_schema::DataModel
+        .create(
+            sync_grouped_ignore_alias_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_alias: Some("keep".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_alias_schema::Data {
+            dependent: 2,
+            lax: 20,
+        }
+    );
+
+    let updated = sync_grouped_ignore_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("keep".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_alias_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = sync_grouped_ignore_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field_async() {
+    let default_dependent_value = 1;
+    let default_lax_value = 10;
+
+    let created = async_grouped_ignore_alias_schema::DataModel
+        .create(
+            async_grouped_ignore_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_grouped_ignore_alias_schema::Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value,
+        }
+    );
+
+    let created = async_grouped_ignore_alias_schema::DataModel
+        .create(
+            async_grouped_ignore_alias_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_alias: Some("keep".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_grouped_ignore_alias_schema::Data {
+            dependent: 2,
+            lax: 20,
+        }
+    );
+
+    let updated = async_grouped_ignore_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_grouped_ignore_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("keep".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_grouped_ignore_alias_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = async_grouped_ignore_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_grouped_ignore_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async_test_matrix!(should_respect_grouped_ignore_rule_on_an_aliased_virtual_field_async);
+
+// -----------------------------------------------------------------------------
+// Grouped #[ignore_update([...], handler)] on virtual fields
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_grouped_ignore_update_rule_on_virtual_fields() {
+    let default_lax_value = 10;
+
+    let created = sync_grouped_ignore_update_schema::DataModel
+        .create(
+            sync_grouped_ignore_update_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_update_schema::Data {
+            dependent: 2,
+            lax: default_lax_value,
+        }
+    );
+
+    let updated = sync_grouped_ignore_update_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_update_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("keep".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_update_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = sync_grouped_ignore_update_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_update_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async fn should_respect_grouped_ignore_update_rule_on_virtual_fields_async() {
+    let default_lax_value = 10;
+
+    let created = async_grouped_ignore_update_schema::DataModel
+        .create(
+            async_grouped_ignore_update_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_grouped_ignore_update_schema::Data {
+            dependent: 2,
+            lax: default_lax_value,
+        }
+    );
+
+    let updated = async_grouped_ignore_update_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_grouped_ignore_update_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("keep".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_grouped_ignore_update_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = async_grouped_ignore_update_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_grouped_ignore_update_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async_test_matrix!(should_respect_grouped_ignore_update_rule_on_virtual_fields_async);
+
+// -----------------------------------------------------------------------------
+// Grouped #[ignore_update([...], handler)] on an *aliased* virtual field.
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field() {
+    let default_lax_value = 10;
+
+    let created = sync_grouped_ignore_update_alias_schema::DataModel
+        .create(
+            sync_grouped_ignore_update_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_grouped_ignore_update_alias_schema::Data {
+            dependent: 2,
+            lax: default_lax_value,
+        }
+    );
+
+    let updated = sync_grouped_ignore_update_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_update_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("keep".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_grouped_ignore_update_alias_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = sync_grouped_ignore_update_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_grouped_ignore_update_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field_async() {
+    let default_lax_value = 10;
+
+    let created = async_grouped_ignore_update_alias_schema::DataModel
+        .create(
+            async_grouped_ignore_update_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_grouped_ignore_update_alias_schema::Data {
+            dependent: 2,
+            lax: default_lax_value,
+        }
+    );
+
+    let updated = async_grouped_ignore_update_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_grouped_ignore_update_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("keep".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_grouped_ignore_update_alias_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
+        }
+    );
+
+    let failed = async_grouped_ignore_update_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_grouped_ignore_update_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+async_test_matrix!(should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field_async);
+
+// -----------------------------------------------------------------------------
+// Field-level #[ignore(handler)] on virtual fields. Bare `#[ignore]` isn't a
+// valid attribute (it must be conditional -- `#[ignore(|_, _| ...)]` or the
+// async equivalents), unlike `#[ignore_update]`/`#[ignore_init]`, which do
+// have bare forms; the closures below use an unconditional `true` (same
+// convention `rs/`'s original test used) purely to isolate "is the field
+// ever actually ignored" from any input-dependent branching. Applies to both
+// `create` and `update`, unlike `#[ignore_update]` (update only) and
+// `#[ignore_init]` (create only, below).
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_field_level_ignore_on_virtual_fields() {
+    let created = sync_ignore_schema::DataModel
+        .create(
+            sync_ignore_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_schema::DataModel
+        .create(
+            sync_ignore_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_schema::PartialData {
+            lax: Some(30),
             dependent: None,
+        }
+    );
+
+    let failed = sync_ignore_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+#[test]
+fn should_respect_field_level_ignore_on_an_aliased_virtual_field() {
+    let created = sync_ignore_alias_schema::DataModel
+        .create(
+            sync_ignore_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_alias_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_alias_schema::DataModel
+        .create(
+            sync_ignore_alias_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_alias_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: None,
+        }
+    );
+
+    let failed = sync_ignore_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+#[test]
+fn should_respect_field_level_ignore_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
+    let created = sync_ignore_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_dependent_alias_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_dependent_alias_schema::PartialDataInput {
+                lax: Some(20),
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_dependent_alias_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_dependent_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: None,
+        }
+    );
+
+    let failed = sync_ignore_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+// -----------------------------------------------------------------------------
+// Field-level bare #[ignore_init] on virtual fields (no closure form -- see
+// GOAL.md's field-config table: "Resolver form is rejected"). Ignores the
+// field during `create` only; `update` is unaffected, unlike `#[ignore]`
+// above (both) and `#[ignore_update]` (update only). The two `update` calls
+// below are both made against the *same* base record (from the second
+// `create`, `dependent == 1`), not chained, matching `rs/`'s original.
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_field_level_ignore_init_on_virtual_fields() {
+    let created = sync_ignore_init_schema::DataModel
+        .create(
+            sync_ignore_init_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_init_schema::DataModel
+        .create(
+            sync_ignore_init_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_init_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_schema::PartialData {
+            lax: Some(30),
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+
+    let updated = sync_ignore_init_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_schema::PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_schema::PartialData {
             lax: None,
-            lax_1,
-        }
-    );
-
-    let lax = Some("some lax value".to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_field = Some("virtual_field".to_string());
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: lax.clone(),
-                lax_1: lax_1.clone(),
-                virtual_field: virtual_field.clone(),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax,
-            lax_1,
+            dependent: Some(created.data.dependent + 1),
         }
     );
 }
 
-async_test_matrix!(should_properly_handle_grouped_ignore_rule);
+#[test]
+fn should_respect_field_level_ignore_init_on_an_aliased_virtual_field() {
+    let created = sync_ignore_init_alias_schema::DataModel
+        .create(
+            sync_ignore_init_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
 
-async fn should_properly_handle_grouped_ignore_rule_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        lax_1: String,
-    }
+    assert_eq!(
+        created.data,
+        sync_ignore_init_alias_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        lax_1: String,
-        virtual_alias: String,
-    }
+    let created = sync_ignore_init_alias_schema::DataModel
+        .create(
+            sync_ignore_init_alias_schema::PartialDataInput {
+                lax: Some(20),
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
 
-    const IGNORE: &str = "IGNORE";
+    assert_eq!(
+        created.data,
+        sync_ignore_init_alias_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
 
-    let default_lax_value = "default_lax_value";
-    let default_lax_1_value = "default_lax_1_value";
+    let updated = sync_ignore_init_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_alias_schema::PartialDataInput {
+                lax: Some(30),
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+
+    let updated = sync_ignore_init_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_alias_schema::PartialDataInput {
+                lax: None,
+                virtual_alias: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_alias_schema::PartialData {
+            lax: None,
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+}
+
+#[test]
+fn should_respect_field_level_ignore_init_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
+    let created = sync_ignore_init_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_init_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_dependent_alias_schema::Data {
+            lax: 10,
+            dependent: 1,
+        }
+    );
+
+    let created = sync_ignore_init_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_init_dependent_alias_schema::PartialDataInput {
+                lax: Some(20),
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_init_dependent_alias_schema::Data {
+            lax: 20,
+            dependent: 1,
+        }
+    );
+
+    let updated = sync_ignore_init_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_dependent_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+
+    let updated = sync_ignore_init_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_init_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_init_dependent_alias_schema::PartialData {
+            lax: None,
+            dependent: Some(created.data.dependent + 1),
+        }
+    );
+}
+
+// -----------------------------------------------------------------------------
+// The `_with_alias_same_as_dependent` collision variant was covered above for
+// the two brand-new scenario types, but was still missing for the three
+// scenario types already covered earlier in this file (field-level
+// `#[ignore_update]`, grouped `#[ignore]`, grouped `#[ignore_update]`) --
+// closing that gap too, one variant each, matching the alias-collides
+// schema shape used everywhere else in this file.
+// -----------------------------------------------------------------------------
+
+#[test]
+fn should_respect_field_level_ignore_update_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
+    let created = sync_ignore_update_dependent_alias_schema::DataModel
+        .create(
+            sync_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_ignore_update_dependent_alias_schema::Data {
+            lax: 10,
+            dependent: 2,
+        }
+    );
+
+    let updated = sync_ignore_update_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("new_virtual_value".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        sync_ignore_update_dependent_alias_schema::PartialData {
+            lax: Some(30),
+            dependent: None,
+        }
+    );
+
+    let failed = sync_ignore_update_dependent_alias_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("ignored_value".into()),
+            },
+            (),
+        )
+        .err()
+        .unwrap();
+
+    assert!(failed.errors.is_none());
+}
+
+#[test]
+fn should_respect_grouped_ignore_rule_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
     let default_dependent_value = 1;
+    let default_lax_value = 10;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(default_lax_value.to_string()))
-                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
-                .field(
-                    dependent_field("dependent", ["virtual_field"])
-                        .default(default_dependent_value)
-                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                            ready(ctx.values().dependent.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    virtual_field("virtual_field")
-                        .alias("virtual_alias")
-                        .validate(|_, _, _| ready(Ok(None::<String>))),
-                )
-        },
-        |o| {
-            o.ignore(
-                ["virtual_field", "lax"],
-                |ctx: IvoContext<DataInput, Data>, _| ready(ctx.input().lax == Some(IGNORE.into())),
-            )
-        },
-    );
-
-    let lax = IGNORE.to_string();
-    let lax_1 = "lax_1".to_string();
-    let virtual_field = "virtual_field".to_string();
-
-    let (data, _, _) = model
+    let created = sync_grouped_ignore_dependent_alias_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                virtual_alias: Some(virtual_field.clone()),
+            sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        sync_grouped_ignore_dependent_alias_schema::Data {
             dependent: default_dependent_value,
-            lax: default_lax_value.to_string(),
-            lax_1,
+            lax: default_lax_value,
         }
     );
 
-    let lax = "some lax value".to_string();
-    let lax_1 = "lax_1".to_string();
-
-    let (data, _, _) = model
+    let created = sync_grouped_ignore_dependent_alias_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                virtual_alias: Some(virtual_field.clone()),
+            sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
+                lax: Some(20),
+                dependent: Some("keep".into()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax,
-            lax_1,
+        created.data,
+        sync_grouped_ignore_dependent_alias_schema::Data {
+            dependent: 2,
+            lax: 20,
         }
     );
 
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value,
-        lax: default_lax_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-    };
-
-    let lax = Some(IGNORE.to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_field = Some("virtual_field".to_string());
-
-    let (updates, _, _) = model
+    let updated = sync_grouped_ignore_dependent_alias_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax: lax.clone(),
-                lax_1: lax_1.clone(),
-                virtual_alias: virtual_field.clone(),
+            created.data.clone(),
+            sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("keep".into()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
-            dependent: None,
-            lax: None,
-            lax_1,
+        updated.data,
+        sync_grouped_ignore_dependent_alias_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
         }
     );
 
-    let lax = Some("some lax value".to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_field = Some("virtual_field".to_string());
-
-    let (updates, _, _) = model
+    let failed = sync_grouped_ignore_dependent_alias_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax: lax.clone(),
-                lax_1: lax_1.clone(),
-                virtual_alias: virtual_field.clone(),
+            created.data.clone(),
+            sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
             },
-            None,
+            (),
         )
-        .await
-        .ok()
+        .err()
         .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax,
-            lax_1,
-        }
-    );
+    assert!(failed.errors.is_none());
 }
 
-async_test_matrix!(should_properly_handle_grouped_ignore_rule_with_alias);
+#[test]
+fn should_respect_grouped_ignore_update_rule_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
+) {
+    let default_lax_value = 10;
 
-async fn should_properly_handle_grouped_ignore_rule_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        lax_1: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        lax_1: String,
-        dependent: String,
-    }
-
-    const IGNORE: &str = "IGNORE";
-
-    let default_lax_value = "default_lax_value";
-    let default_lax_1_value = "default_lax_1_value";
-    let default_dependent_value = 1;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(default_lax_value.to_string()))
-                .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
-                .field(
-                    dependent_field("dependent", ["virtual_field"])
-                        .default(default_dependent_value)
-                        .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                            ready(ctx.values().dependent.unwrap() + 1)
-                        }),
-                )
-                .field(
-                    virtual_field("virtual_field")
-                        .alias("dependent")
-                        .validate(|_, _, _| ready(Ok(None::<String>))),
-                )
-        },
-        |o| {
-            o.ignore(
-                ["virtual_field", "lax"],
-                |ctx: IvoContext<DataInput, Data>, _| ready(ctx.input().lax == Some(IGNORE.into())),
-            )
-        },
-    );
-
-    let lax = IGNORE.to_string();
-    let lax_1 = "lax_1".to_string();
-    let virtual_field = "virtual_field".to_string();
-
-    let (data, _, _) = model
+    let created = sync_grouped_ignore_update_dependent_alias_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                dependent: Some(virtual_field.clone()),
+            sync_grouped_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value,
-            lax: default_lax_value.to_string(),
-            lax_1,
+        created.data,
+        sync_grouped_ignore_update_dependent_alias_schema::Data {
+            dependent: 2,
+            lax: default_lax_value,
         }
     );
 
-    let lax = "some lax value".to_string();
-    let lax_1 = "lax_1".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                dependent: Some(virtual_field.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: default_dependent_value + 1,
-            lax,
-            lax_1,
-        }
-    );
-
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value,
-        lax: default_lax_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-    };
-
-    let lax = Some(IGNORE.to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_field = Some("virtual_field".to_string());
-
-    let (updates, _, _) = model
+    let updated = sync_grouped_ignore_update_dependent_alias_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax: lax.clone(),
-                lax_1: lax_1.clone(),
-                dependent: virtual_field.clone(),
+            created.data.clone(),
+            sync_grouped_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: Some(30),
+                dependent: Some("keep".into()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
-            dependent: None,
-            lax: None,
-            lax_1,
+        updated.data,
+        sync_grouped_ignore_update_dependent_alias_schema::PartialData {
+            dependent: Some(3),
+            lax: Some(30),
         }
     );
 
-    let lax = Some("some lax value".to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_field = Some("virtual_field".to_string());
-
-    let (updates, _, _) = model
+    let failed = sync_grouped_ignore_update_dependent_alias_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax: lax.clone(),
-                lax_1: lax_1.clone(),
-                dependent: virtual_field.clone(),
+            created.data.clone(),
+            sync_grouped_ignore_update_dependent_alias_schema::PartialDataInput {
+                lax: None,
+                dependent: Some("virtual_value".into()),
             },
-            None,
+            (),
         )
-        .await
-        .ok()
+        .err()
         .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax,
-            lax_1,
-        }
-    );
+    assert!(failed.errors.is_none());
 }
 
-async_test_matrix!(should_properly_handle_grouped_ignore_rule_with_alias_same_as_dependent);
+// -----------------------------------------------------------------------------
+// Schema definitions
+// -----------------------------------------------------------------------------
 
-// grouped ignore_update
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_update_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
 
-async fn should_properly_handle_grouped_ignore_update_rule() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        lax_1: String,
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_update(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
     }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        lax_1: String,
-        virtual_field: String,
-    }
-
-    const DEFAULT_DEPENDENT_VALUE: i32 = 1;
-    const IGNORE: &str = "IGNORE";
-
-    let default_lax_value = "default_lax_value";
-    let default_lax_1_value = "default_lax_1_value";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_DEPENDENT_VALUE)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value.to_string()))
-            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
-            .field(virtual_field("virtual_field").validate(|_, _, _| ready(Ok(None::<String>))))
-        },
-        |o| {
-            o.ignore_update(
-                ["lax", "virtual_field"],
-                |raw_input: PartialDataInput, _, _| ready(raw_input.lax == Some(IGNORE.into())),
-            )
-        },
-    );
-
-    let lax = IGNORE.to_string();
-    let lax_1 = "lax_1".to_string();
-    let virtual_field = "some value".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                virtual_field: Some(virtual_field.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: DEFAULT_DEPENDENT_VALUE + 1,
-            lax,
-            lax_1
-        }
-    );
-
-    let lax = "some lax value".to_string();
-    let lax_1 = "lax_1".to_string();
-    let virtual_field = "some value".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                virtual_field: Some(virtual_field.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: DEFAULT_DEPENDENT_VALUE + 1,
-            lax,
-            lax_1,
-        }
-    );
-
-    // updates
-
-    let data = Data {
-        dependent: DEFAULT_DEPENDENT_VALUE,
-        lax: default_lax_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-    };
-
-    let lax = Some(IGNORE.to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_field = Some("updated value".to_string());
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                lax_1: lax_1.clone(),
-                virtual_field,
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: None,
-            lax: None,
-            lax_1,
-        }
-    );
-
-    let lax = Some("some lax value".to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_field = Some("updated value".to_string());
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: lax.clone(),
-                lax_1: lax_1.clone(),
-                virtual_field: virtual_field.clone(),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax,
-            lax_1,
-        }
-    );
 }
 
-async_test_matrix!(should_properly_handle_grouped_ignore_update_rule);
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_ignore_update_schema {
+    struct Fields {
+        #[lax(async |_, _| 10)]
+        pub lax: i32,
 
-async fn should_properly_handle_grouped_ignore_update_rule_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        lax_1: String,
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        #[ignore_update(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
     }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        lax_1: String,
-        virtual_alias: String,
-    }
-
-    const DEFAULT_DEPENDENT_VALUE: i32 = 1;
-    const IGNORE: &str = "IGNORE";
-
-    let default_lax_value = "default_lax_value";
-    let default_lax_1_value = "default_lax_1_value";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_DEPENDENT_VALUE)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value.to_string()))
-            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("virtual_alias")
-                    .validate(|_, _, _| ready(Ok(None::<String>))),
-            )
-        },
-        |o| {
-            o.ignore_update(
-                ["lax", "virtual_field"],
-                |raw_input: PartialDataInput, _, _| ready(raw_input.lax == Some(IGNORE.into())),
-            )
-        },
-    );
-
-    let lax = IGNORE.to_string();
-    let lax_1 = "lax_1".to_string();
-    let virtual_alias = "some value".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                virtual_alias: Some(virtual_alias.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: DEFAULT_DEPENDENT_VALUE + 1,
-            lax,
-            lax_1
-        }
-    );
-
-    let lax = "some lax value".to_string();
-    let lax_1 = "lax_1".to_string();
-    let virtual_alias = "some value".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-                virtual_alias: Some(virtual_alias.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: DEFAULT_DEPENDENT_VALUE + 1,
-            lax,
-            lax_1,
-        }
-    );
-
-    // updates
-
-    let data = Data {
-        dependent: DEFAULT_DEPENDENT_VALUE,
-        lax: default_lax_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-    };
-
-    let lax = Some(IGNORE.to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_alias = Some("updated value".to_string());
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax,
-                lax_1: lax_1.clone(),
-                virtual_alias,
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: None,
-            lax: None,
-            lax_1,
-        }
-    );
-
-    let lax = Some("some lax value".to_string());
-    let lax_1 = Some("lax_1".to_string());
-    let virtual_alias = Some("updated value".to_string());
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: lax.clone(),
-                lax_1: lax_1.clone(),
-                virtual_alias: virtual_alias.clone(),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax,
-            lax_1,
-        }
-    );
 }
 
-async_test_matrix!(should_properly_handle_grouped_ignore_update_rule_with_alias);
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_grouped_ignore_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
 
-async fn should_properly_handle_grouped_ignore_update_rule_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        lax_1: String,
+        #[lax(10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        lax: String,
-        lax_1: String,
-    }
-
-    const DEFAULT_DEPENDENT_VALUE: i32 = 1;
-    const IGNORE: &str = "IGNORE";
-
-    let default_lax_value = "default_lax_value";
-    let default_lax_1_value = "default_lax_1_value";
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_DEPENDENT_VALUE)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value.to_string()))
-            .field(lax_field("lax_1").default(default_lax_1_value.to_string()))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_, _, _| ready(Ok(None::<String>))),
-            )
-        },
-        |o| {
-            o.ignore_update(
-                ["lax", "virtual_field"],
-                |raw_input: PartialDataInput, _, _| ready(raw_input.lax == Some(IGNORE.into())),
-            )
-        },
-    );
-
-    let dependent = "some value".to_string();
-    let lax = IGNORE.to_string();
-    let lax_1 = "lax_1".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(dependent.clone()),
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: DEFAULT_DEPENDENT_VALUE + 1,
-            lax,
-            lax_1
-        }
-    );
-
-    let dependent = "some value".to_string();
-    let lax = "some lax value".to_string();
-    let lax_1 = "lax_1".to_string();
-
-    let (data, _, _) = model
-        .create(
-            &PartialDataInput {
-                dependent: Some(dependent.clone()),
-                lax: Some(lax.clone()),
-                lax_1: Some(lax_1.clone()),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data {
-            dependent: DEFAULT_DEPENDENT_VALUE + 1,
-            lax,
-            lax_1,
-        }
-    );
-
-    // updates
-
-    let data = Data {
-        dependent: DEFAULT_DEPENDENT_VALUE,
-        lax: default_lax_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-    };
-
-    let dependent = Some("updated value".to_string());
-    let lax = Some(IGNORE.to_string());
-    let lax_1 = Some("lax_1".to_string());
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent,
-                lax,
-                lax_1: lax_1.clone(),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: None,
-            lax: None,
-            lax_1,
-        }
-    );
-
-    let dependent = Some("updated value".to_string());
-    let lax = Some("some lax value".to_string());
-    let lax_1 = Some("lax_1".to_string());
-
-    let (updates, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: dependent.clone(),
-                lax: lax.clone(),
-                lax_1: lax_1.clone(),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
-            lax,
-            lax_1,
-        }
-    );
+    #[ignore(["virtual_field", "lax"], |ctx, _| {
+        ctx.input()
+            .virtual_field
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
 }
 
-async_test_matrix!(should_properly_handle_grouped_ignore_update_rule_with_alias_same_as_dependent);
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_grouped_ignore_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| 10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore(["virtual_field", "lax"], async |ctx, _| {
+        ctx.input()
+            .virtual_field
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_grouped_ignore_update_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore_update(["virtual_field", "lax"], |ctx, _| {
+        ctx.input()
+            .virtual_field
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_grouped_ignore_update_schema {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| 10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore_update(["virtual_field", "lax"], async |ctx, _| {
+        ctx.input()
+            .virtual_field
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_update_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_update(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_ignore_update_alias_schema {
+    struct Fields {
+        #[lax(async |_, _| 10)]
+        pub lax: i32,
+
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |_, _, _| Ok(None))]
+        #[ignore_update(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_grouped_ignore_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore(["virtual_field", "lax"], |ctx, _| {
+        ctx.input()
+            .virtual_alias
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_grouped_ignore_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| 10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore(["virtual_field", "lax"], async |ctx, _| {
+        ctx.input()
+            .virtual_alias
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_grouped_ignore_update_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore_update(["virtual_field", "lax"], |ctx, _| {
+        ctx.input()
+            .virtual_alias
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_grouped_ignore_update_alias_schema {
+    struct Fields {
+        #[ivo_virtual("virtual_alias")]
+        #[validate(async |_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(async |_, _| 10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore_update(["virtual_field", "lax"], async |ctx, _| {
+        ctx.input()
+            .virtual_alias
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_dependent_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_init_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_init]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_init_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("virtual_alias")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_init]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_init_dependent_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_init]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_ignore_update_dependent_alias_schema {
+    struct Fields {
+        #[lax(10)]
+        pub lax: i32,
+
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore_update(|_, _| true)]
+        pub virtual_field: String,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_grouped_ignore_dependent_alias_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore(["virtual_field", "lax"], |ctx, _| {
+        ctx.input()
+            .dependent
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_grouped_ignore_update_dependent_alias_schema {
+    struct Fields {
+        #[ivo_virtual("dependent")]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field: String,
+
+        #[lax(10)]
+        pub lax: i32,
+
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+    }
+
+    #[ignore_update(["virtual_field", "lax"], |ctx, _| {
+        ctx.input()
+            .dependent
+            .as_ref()
+            .map(|v| v == "virtual_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
+}

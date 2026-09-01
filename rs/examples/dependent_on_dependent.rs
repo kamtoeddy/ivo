@@ -1,36 +1,113 @@
-use std::{future::ready, sync::LazyLock};
+use std::time::Instant;
 
-use ivo::{dependent_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
+use ivo::ivo_schema;
 
-const DEFAULT_DEPENDENT: i32 = 1;
-const DEFAULT_LAX: &str = "default-lax";
+use data_schema::*;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     should_not_update_if_resolver_was_run_at_creation().await;
     should_reject_update_if_resolver_was_run_during_prior_update().await;
+    timed().await;
+}
+
+#[ivo_schema(input(DataInput), output(Data, derive(Debug, PartialEq)))]
+mod data_schema {
+    #[allow(dead_code)]
+    pub const DEFAULT_DEPENDENT: i32 = 1;
+    pub const DEFAULT_LAX: &str = "default-lax";
+
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(DEFAULT_DEPENDENT)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: dependent = {}", data.dependent);
+        })]
+        pub dependent: i32,
+
+        #[depends_on("dependent")]
+        #[default(DEFAULT_DEPENDENT)]
+        #[resolve(|ctx, _| {ctx.values().dependent + 10})]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: dependent_1 = {}", ctx.values().dependent_1);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: dependent_1 = {}", data.dependent_1);
+        })]
+        pub dependent_1: i32,
+
+        #[lax(String::from(DEFAULT_LAX))]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: lax = {}", ctx.values().lax);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: lax = {}", data.lax);
+        })]
+        pub lax: String,
+
+        #[lax(DEFAULT_LAX.to_string())]
+        #[on_success(async |ctx, _| {
+            println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: lax_1 = {}", data.lax_1);
+        })]
+        pub lax_1: String,
+    }
+}
+
+async fn timed() {
+    let timer = Instant::now();
+
+    let created = DataModel
+        .create(PartialDataInput::new().with_lax("lol".into()), ())
+        .unwrap();
+
+    let data = created.data.clone();
+    println!("\ncreated: {:#?}", data);
+
+    println!("\nCreate duration: {:?}", timer.elapsed());
+
+    let _ = created.handle_success().await;
+
+    println!("\nCreate duration handle_success: {:?}", timer.elapsed());
+
+    let timer = Instant::now();
+
+    let updated = DataModel
+        .update(data, PartialDataInput::new().with_lax("lolol".into()), ())
+        .unwrap();
+    println!("\nupdate: {:#?}", updated.data);
+    println!("\nUpdate duration: {:?}", timer.elapsed());
+
+    let _ = updated.handle_success().await;
+
+    println!("\nUpdate duration handle_success: {:?}", timer.elapsed());
 }
 
 async fn should_not_update_if_resolver_was_run_at_creation() {
     let lax_1 = "john-doe".to_string();
     let lax_1_input_value = Some(lax_1.clone());
 
-    let (data, handle_success, _) = DATA_MODEL
+    let created = DataModel
         .create(
-            &PartialDataInput {
+            PartialDataInput {
                 lax: None,
                 lax_1: lax_1_input_value,
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     assert_eq!(
-        data,
+        created.data,
         Data {
             dependent: DEFAULT_DEPENDENT,
             dependent_1: DEFAULT_DEPENDENT,
@@ -39,29 +116,28 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         }
     );
 
-    handle_success().await;
+    created.handle_success().await;
 
     let lax = "john-doe".to_string();
     let lax_input_value = Some(lax.clone());
 
-    let (data, handle_success, _) = DATA_MODEL
+    let created = DataModel
         .create(
-            &PartialDataInput {
+            PartialDataInput {
                 lax: lax_input_value,
                 lax_1: None,
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     let dependent = DEFAULT_DEPENDENT + 1;
 
     assert_eq!(
-        data,
+        created.data,
         Data {
             dependent,
             dependent_1: dependent + 10,
@@ -70,31 +146,30 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         }
     );
 
-    handle_success().await;
+    created.handle_success().await;
 
     let lax = "john-doe".to_string();
     let lax_input_value = Some(lax.clone());
     let lax_1 = "jane-doe".to_string();
     let lax_1_input_value = Some(lax_1.clone());
 
-    let (data, handle_success, _) = DATA_MODEL
+    let created = DataModel
         .create(
-            &PartialDataInput {
+            PartialDataInput {
                 lax: lax_input_value,
                 lax_1: lax_1_input_value,
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     let dependent = DEFAULT_DEPENDENT + 1;
 
     assert_eq!(
-        data,
+        created.data,
         Data {
             dependent,
             dependent_1: dependent + 10,
@@ -103,7 +178,7 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         }
     );
 
-    handle_success().await;
+    created.handle_success().await;
 }
 
 async fn should_reject_update_if_resolver_was_run_during_prior_update() {
@@ -116,21 +191,20 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
 
     let updated_lax = Some("jane-doe".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updates = DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            PartialDataInput {
                 lax: None,
                 lax_1: updated_lax.clone(),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
+        updates.data,
         PartialData {
             dependent: None,
             dependent_1: None,
@@ -139,32 +213,33 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         }
     );
 
-    handle_success().await;
+    let data_1 = updates.data.clone();
 
-    let data_1 = data.clone_with_updates(&updates);
+    updates.handle_success().await;
 
-    DATA_MODEL.delete(&data_1, None).await;
+    let data_1 = data.clone_with_updates(&data_1);
+
+    DataModel.delete(&data_1, ());
 
     let updated_lax = Some("jane-doe".to_string());
     let updated_lax_1 = Some("james-doe".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updates = DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            PartialDataInput {
                 lax: updated_lax.clone(),
                 lax_1: updated_lax_1.clone(),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     let dependent = Some(data.dependent + 1);
 
     assert_eq!(
-        updates,
+        updates.data,
         PartialData {
             dependent: dependent.clone(),
             dependent_1: dependent.map(|v| v + 10),
@@ -173,31 +248,32 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         }
     );
 
-    handle_success().await;
+    let data_1 = updates.data.clone();
 
-    let data_1 = data.clone_with_updates(&updates);
+    updates.handle_success().await;
 
-    DATA_MODEL.delete(&data_1, None).await;
+    let data_1 = data.clone_with_updates(&data_1);
+
+    DataModel.delete(&data_1, ());
 
     let updated_lax = Some("jane-doe".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updates = DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            PartialDataInput {
                 lax: updated_lax.clone(),
                 lax_1: None,
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     let dependent = Some(data.dependent + 1);
 
     assert_eq!(
-        updates,
+        updates.data,
         PartialData {
             dependent: dependent.clone(),
             dependent_1: dependent.map(|v| v + 10),
@@ -206,97 +282,11 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         }
     );
 
-    handle_success().await;
+    let data_1 = updates.data.clone();
 
-    let data = data.clone_with_updates(&updates);
+    updates.handle_success().await;
 
-    DATA_MODEL.delete(&data, None).await;
+    let data_1 = data.clone_with_updates(&data_1);
+
+    DataModel.delete(&data_1, ());
 }
-
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    lax: String,
-    lax_1: String,
-}
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    dependent: i32,
-    dependent_1: i32,
-    lax: String,
-    lax_1: String,
-}
-
-type Ctx = IvoContext<DataInput, Data>;
-
-pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(DEFAULT_DEPENDENT)
-                    .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
-                    .on_success(|ctx: Ctx, _| {
-                        println!(
-                            "\n[on_success]: dependent = {}",
-                            ctx.values().dependent.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: dependent = {}", data.dependent);
-
-                        ready(())
-                    }),
-            )
-            .field(
-                dependent_field("dependent_1", ["dependent"])
-                    .default(DEFAULT_DEPENDENT)
-                    .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 10))
-                    .on_success(|ctx: Ctx, _| {
-                        println!(
-                            "\n[on_success]: dependent_1 = {}",
-                            ctx.values().dependent_1.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: dependent_1 = {}", data.dependent_1);
-
-                        ready(())
-                    }),
-            )
-            .field(
-                lax_field("lax")
-                    .default_fn(|_, _| ready(DEFAULT_LAX.to_string()))
-                    .on_success(|ctx: Ctx, _| {
-                        println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: lax = {}", data.lax);
-
-                        ready(())
-                    }),
-            )
-            .field(
-                lax_field("lax_1")
-                    .default_fn(|_, _| ready(DEFAULT_LAX.to_string()))
-                    .on_success(|ctx: Ctx, _| {
-                        println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1.unwrap());
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: lax_1 = {}", data.lax_1);
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    )
-});
