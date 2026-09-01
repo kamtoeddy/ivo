@@ -38,8 +38,7 @@ runtime branch for schemas that don't use a given feature.
    resolved dependent values via `ctx.values()`.
 10. **Attach timestamps** -- `#[created_at]`/`#[updated_at]`, after constants. The shared resolver
     is called at most once.
-11. Prepare `on_success`/`on_failure` triggers for the returned tuple (see
-    [Life Cycles - Triggering handlers](./life-cycles.md#triggering-handlers)).
+11. Prepare `on_success`/`on_failure` triggers for the returned handle.
 
 ## `update`
 
@@ -65,8 +64,7 @@ runtime branch for schemas that don't use a given feature.
 11. **Nothing-to-update checkpoint 3** -- if the change set is still empty after dependent
     resolution, fail with "nothing to update".
 12. **Attach timestamps** -- `#[updated_at]`/`#[optional_updated_at]`.
-13. Prepare `on_success`/`on_failure` triggers for the returned tuple (see
-    [Life Cycles - Triggering handlers](./life-cycles.md#triggering-handlers)).
+13. Prepare `on_success`/`on_failure` triggers for the returned handle.
 
 ## Why three "nothing to update" checkpoints?
 
@@ -74,10 +72,10 @@ Each catches a different way an update can turn out to be a no-op: submitting on
 filtered out before validation even starts (checkpoint 1), submitting a field with its current,
 unchanged value (checkpoint 2), or submitting a virtual field whose dependent resolves back to the
 value it already had (checkpoint 3, since a virtual field's relevance can't be known until its
-dependent actually resolves). All three surface the same way: `update`'s `Err` payload is `None`
--- not a validation failure, just nothing to do.
+dependent actually resolves). All three surface the same way: `update` returns an error whose
+`errors` field is `None` -- not a validation failure, just nothing to do.
 
 ```rust
-let (err, _ctx_options) = DataInputModel.update(existing, updates, ()).unwrap_err();
-assert!(err.is_none()); // "nothing to update", not a validation error
+let err = DataInputModel.update(existing, updates, ()).unwrap_err();
+assert!(err.errors.is_none()); // "nothing to update", not a validation error
 ```

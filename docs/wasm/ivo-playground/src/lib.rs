@@ -35,12 +35,12 @@ pub async fn constants_create(input_json: String) -> Result<String, JsValue> {
     match constants_schema::ConstantsDataModel
         .create(constants_schema::PartialConstantsInput { username }, ())
     {
-        Ok(handle) => Ok(serde_json::json!({
-            "data": { "id": handle.data.id, "username": handle.data.username },
+        Ok((data, _ctx_options)) => Ok(serde_json::json!({
+            "data": { "id": data.id, "username": data.username },
             "error": null,
         })
         .to_string()),
-        Err(handle) => Ok(error_response(handle.errors)),
+        Err((errors, _ctx_options)) => Ok(error_response(errors)),
     }
 }
 
@@ -62,12 +62,12 @@ pub async fn lax_defaults_create(input_json: String) -> Result<String, JsValue> 
         lax_defaults_schema::PartialLaxDefaultsInput { username },
         (),
     ) {
-        Ok(handle) => Ok(serde_json::json!({
-            "data": { "username": handle.data.username },
+        Ok((data, _ctx_options)) => Ok(serde_json::json!({
+            "data": { "username": data.username },
             "error": null,
         })
         .to_string()),
-        Err(handle) => Ok(error_response(handle.errors)),
+        Err((errors, _ctx_options)) => Ok(error_response(errors)),
     }
 }
 
@@ -89,12 +89,12 @@ pub async fn required_create(input_json: String) -> Result<String, JsValue> {
     match required_schema::RequiredInputModel
         .create(required_schema::PartialRequiredInput { username }, ())
     {
-        Ok(handle) => Ok(serde_json::json!({
-            "data": { "username": handle.data.username },
+        Ok((data, _ctx_options)) => Ok(serde_json::json!({
+            "data": { "username": data.username },
             "error": null,
         })
         .to_string()),
-        Err(handle) => Ok(error_response(handle.errors)),
+        Err((errors, _ctx_options)) => Ok(error_response(errors)),
     }
 }
 
@@ -131,12 +131,12 @@ pub async fn virtuals_create(input_json: String) -> Result<String, JsValue> {
     match virtuals_schema::VirtualsDataModel
         .create(virtuals_schema::PartialVirtualsInput { virtual_field }, ())
     {
-        Ok(handle) => Ok(serde_json::json!({
-            "data": { "dependent": handle.data.dependent },
+        Ok((data, _ctx_options)) => Ok(serde_json::json!({
+            "data": { "dependent": data.dependent },
             "error": null,
         })
         .to_string()),
-        Err(handle) => Ok(error_response(handle.errors)),
+        Err((errors, _ctx_options)) => Ok(error_response(errors)),
     }
 }
 
@@ -165,12 +165,12 @@ pub async fn dependents_create(input_json: String) -> Result<String, JsValue> {
     match dependents_schema::DependentsDataModel
         .create(dependents_schema::PartialDependentsInput { value }, ())
     {
-        Ok(handle) => Ok(serde_json::json!({
-            "data": { "value": handle.data.value, "computed": handle.data.computed },
+        Ok((data, _ctx_options)) => Ok(serde_json::json!({
+            "data": { "value": data.value, "computed": data.computed },
             "error": null,
         })
         .to_string()),
-        Err(handle) => Ok(error_response(handle.errors)),
+        Err((errors, _ctx_options)) => Ok(error_response(errors)),
     }
 }
 
@@ -207,16 +207,16 @@ pub async fn timestamps_create(input_json: String) -> Result<String, JsValue> {
     match timestamps_schema::TimestampsDataModel
         .create(timestamps_schema::PartialTimestampsInput { username }, ())
     {
-        Ok(handle) => Ok(serde_json::json!({
+        Ok((data, _ctx_options)) => Ok(serde_json::json!({
             "data": {
-                "username": handle.data.username,
-                "created_at": handle.data.created_at.to_rfc3339(),
-                "updated_at": handle.data.updated_at.to_rfc3339(),
+                "username": data.username,
+                "created_at": data.created_at.to_rfc3339(),
+                "updated_at": data.updated_at.to_rfc3339(),
             },
             "error": null,
         })
         .to_string()),
-        Err(handle) => Ok(error_response(handle.errors)),
+        Err((errors, _ctx_options)) => Ok(error_response(errors)),
     }
 }
 

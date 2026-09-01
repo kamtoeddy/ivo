@@ -5,7 +5,7 @@ slug: /
 
 # Démarrage
 
-Cette documentation couvre `ivo` pour Rust **v0.6.0**.
+Cette documentation couvre `ivo` pour Rust **v0.5.0**.
 
 Les schémas se déclarent, ils ne se construisent pas de façon impérative : une seule macro
 d'attribut, `#[ivo_schema(...)]`, prend un module contenant vos déclarations de champs et génère
@@ -64,7 +64,7 @@ mod post_schema {
 use post_schema::{PartialPostInput, PostModel};
 
 fn main() {
-    let (post, _ctx_options) = PostModel
+    let created = PostModel
         .create(
             PartialPostInput {
                 title: Some("Hello, ivo!".into()),
@@ -74,11 +74,11 @@ fn main() {
         )
         .unwrap();
 
-    println!("{:#?}", post); // -> Post { id, created_at, updated_at, title, body }
+    println!("{:#?}", created.data); // -> Post { id, created_at, updated_at, title, body }
 
-    let (updated, _ctx_options) = PostModel
+    let updated = PostModel
         .update(
-            post,
+            created.data,
             PartialPostInput {
                 title: None,
                 body: Some("Edited.".into()),
@@ -87,7 +87,7 @@ fn main() {
         )
         .unwrap();
 
-    println!("{:#?}", updated); // -> PartialPost { body: Some("Edited."), .. le reste à None }
+    println!("{:#?}", updated.data); // -> PartialPost { body: Some("Edited."), .. le reste à None }
 }
 ```
 
@@ -101,12 +101,8 @@ fn main() {
 - La macro génère une valeur unité `{OutputName}Model` (ou `{InputName}Model` pour un schéma à une
   seule struct) -- `post_schema::PostModel.create(...)` fonctionne directement, sans `::new()`.
 - `create`/`update`/`delete` ne sont `async` que si au moins un gestionnaire qu'ils invoquent est
-  asynchrone -- sinon, la méthode générée est purement synchrone, sans imposer de dépendance à un
-  runtime.
-- `create`/`update` retournent `(data, ctx_options)` lorsque le schéma n'a aucun gestionnaire
-  `on_success`/`on_failure` sur ce chemin, comme ci-dessus -- voir
-  [Cycles de vie](./life-cycles.md#déclencher-les-gestionnaires) pour la forme à 3 éléments
-  retournée quand ce n'est pas le cas.
+  asynchrone -- sinon, la méthode générée (et tout `handle_success`/`handle_failure` qu'elle
+  retourne) est purement synchrone, sans imposer de dépendance à un runtime.
 
 ## Définir un schéma
 

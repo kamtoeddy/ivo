@@ -46,7 +46,7 @@ mod virtuals_schema {
 }
 
 fn main() {
-    let (created, _ctx_options) = virtuals_schema::DataModel
+    let created = virtuals_schema::DataModel
         .create(
             virtuals_schema::PartialDataInput {
                 trigger: Some("hello".into()),
@@ -55,8 +55,8 @@ fn main() {
         )
         .unwrap();
 
-    assert_eq!(created.computed, "hello");
-    println!("{:?}", created); // Data { computed: "hello" }
+    assert_eq!(created.data.computed, "hello");
+    println!("{:?}", created.data); // Data { computed: "hello" }
 }
 ```
 

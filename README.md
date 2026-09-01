@@ -70,24 +70,34 @@ While typical struct validators only check isolated field constraints, ivo allow
   // };
   ```
 
-  In Rust, this is achieved by deriving the `IvoInputStruct` or `IvoStruct` proc-macro. IvoStruct expects a struct that implements the `Clone` and `PartialEq` traits. More on this [here](./rs/README.md#how-to-use).
+  In Rust, this is generated automatically by the `#[ivo_schema(...)]` attribute macro: every field
+  declared on a schema's input struct gets a corresponding optional field on a `Partial{InputName}`
+  struct the macro generates alongside it. More on this [here](./rs/README.md).
 
   ```rs
-  use ivo::{IvoInputStruct, IvoStruct};
+  use ivo::ivo_schema;
 
-  #[derive(Clone, PartailEq, IvoInputStruct)]
-  struct UserInput {
-    email: Option<String>,
-    phone_number: Option<String>,
-    username: String,
+  #[ivo_schema(input(UserInput, derive(Debug, Clone, PartialEq)))]
+  mod user_schema {
+      struct Fields {
+          #[lax(None)]
+          pub email: Option<String>,
+
+          #[lax(None)]
+          pub phone_number: Option<String>,
+
+          #[required]
+          #[validate(|v: String, _, _| Ok(Some(v)))]
+          pub username: String,
+      }
   }
 
-  // 👇 generated PartialUserInput
-  struct PartialUserInput {
-    email: Option<Option<String>>,
-    phone_number: Option<Option<String>>,
-    username: Option<String>,
-  }
+  // 👇 generated alongside `UserInput`
+  // struct PartialUserInput {
+  //   email: Option<Option<String>>,
+  //   phone_number: Option<Option<String>>,
+  //   username: Option<String>,
+  // }
   ```
 
 ## Schema
@@ -120,26 +130,46 @@ type User = {
 
 ```rs
 use chrono::{DateTime, Utc};
-use ivo::{IvoInputStruct, IvoStruct};
-
-#[derive(Clone, PartailEq, IvoInputStruct)]
-struct UserInput {
-  email: Option<String>,
-  phone_number: Option<String>,
-  username: String,
-}
+use ivo::ivo_schema;
 
 type Timestamp = DateTime<Utc>;
 
-#[derive(Clone, PartailEq, IvoStruct)]
-struct User {
-  id: String,
-  created_at: Timestamp,
-  email: Option<String>,
-  phone_number: Option<String>,
-  updated_at: Option<Timestamp>,
-  username: String,
-  username_last_updated_at: Option<Timestamp>,
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq))
+)]
+mod user_schema {
+    use super::Timestamp;
+    use chrono::Utc;
+
+    struct Fields {
+        #[constant(|_, _| "usr_001".to_string())]
+        pub id: String,
+
+        #[created_at]
+        pub created_at: Timestamp,
+
+        #[lax(None)]
+        pub email: Option<String>,
+
+        #[lax(None)]
+        pub phone_number: Option<String>,
+
+        #[optional_updated_at]
+        pub updated_at: Option<Timestamp>,
+
+        #[required]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
+        pub username: String,
+
+        #[depends_on("username")]
+        #[default(None)]
+        #[resolve(|_ctx, _| Some(Utc::now()))]
+        pub username_last_updated_at: Option<Timestamp>,
+    }
+
+    #[timestamps(Utc::now)]
+    const _: () = ();
 }
 ```
 

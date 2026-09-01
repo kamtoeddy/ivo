@@ -38,12 +38,12 @@ mod required_schema {
 }
 
 fn main() {
-    let (err, _ctx_options) = required_schema::DataInputModel
+    let err = required_schema::DataInputModel
         .create(required_schema::PartialDataInput { username: None }, ())
         .unwrap_err();
-    println!("{:?}", err.get("username").unwrap().reason); // "field is required"
+    println!("{:?}", err.errors.get("username").unwrap().reason); // "field is required"
 
-    let (created, _ctx_options) = required_schema::DataInputModel
+    let created = required_schema::DataInputModel
         .create(
             required_schema::PartialDataInput {
                 username: Some("jane".into()),
@@ -51,7 +51,7 @@ fn main() {
             (),
         )
         .unwrap();
-    println!("{:?}", created); // DataInput { username: "jane" }
+    println!("{:?}", created.data); // DataInput { username: "jane" }
 }
 ```
 
