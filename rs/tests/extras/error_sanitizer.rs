@@ -14,8 +14,8 @@ async fn should_respect_custom_error_sanitizer() {
     );
 
     match r {
-        Err(handle) => {
-            let errors = handle.errors.get("coordinates").unwrap();
+        Err((errors, ..)) => {
+            let errors = errors.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
             assert!(errors.contains(&customize("InvalidNumber")));
@@ -34,8 +34,8 @@ async fn should_respect_custom_error_sanitizer() {
     );
 
     match r {
-        Err(handle) => {
-            let errors = handle.errors.get("coordinates").unwrap();
+        Err((errors, ..)) => {
+            let errors = errors.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
             assert!(errors.contains(&customize("Out of range error")));
@@ -64,8 +64,8 @@ async fn should_respect_custom_error_sanitizer() {
     );
 
     match r {
-        Err(handle) => {
-            let errors = handle.errors.as_ref().unwrap().get("coordinates").unwrap();
+        Err((errors, ..)) => {
+            let errors = errors.as_ref().unwrap().get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
             assert!(errors.contains(&customize("InvalidNumber")));
@@ -85,8 +85,8 @@ async fn should_respect_custom_error_sanitizer() {
     );
 
     match r {
-        Err(handle) => {
-            let errors = handle.errors.as_ref().unwrap().get("coordinates").unwrap();
+        Err((errors, ..)) => {
+            let errors = errors.as_ref().unwrap().get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
             assert!(errors.contains(&customize("Out of range error")));
@@ -101,7 +101,7 @@ async fn should_respect_custom_error_sanitizer() {
         lon: data.coordinates.lon,
     };
 
-    let updated = place_schema::PlaceInputModel
+    let (updated, ..) = place_schema::PlaceInputModel
         .update(
             data.clone(),
             place_schema::PartialPlaceInput {
@@ -113,15 +113,15 @@ async fn should_respect_custom_error_sanitizer() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         place_schema::PartialPlaceInput {
             coordinates: Some(updated_coords)
         }
     );
 
-    let data = data.clone_with_updates(&updated.data);
+    let data = data.clone_with_updates(&updated);
 
-    let failed = place_schema::PlaceInputModel
+    let (failed, ..) = place_schema::PlaceInputModel
         .update(
             data.clone(),
             place_schema::PartialPlaceInput {
@@ -132,7 +132,7 @@ async fn should_respect_custom_error_sanitizer() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_respect_custom_error_sanitizer);

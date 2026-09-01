@@ -94,12 +94,12 @@ mod allow_constant_and_dependents_on_success_schema {
 async fn should_allow_constant_and_dependents_in_fields_array() {
     let input = allow_constant_and_dependents_on_success_schema::DataInput { lax: 5678 };
 
-    let created = allow_constant_and_dependents_on_success_schema::DataModel
+    let (created, ..) = allow_constant_and_dependents_on_success_schema::DataModel
         .create(input, ())
         .unwrap();
 
-    assert_eq!(created.data.id, 1234);
-    assert_eq!(created.data.dependent, 5679);
+    assert_eq!(created.id, 1234);
+    assert_eq!(created.dependent, 5679);
 }
 
 // -----------------------------------------------------------------------------
@@ -111,7 +111,7 @@ fn should_allow_named_consts_as_grouped_option_anchors() {
     // A named const (used here for its own stable identifier, matching
     // GOAL.md §10's `NAME_EMAIL_REQUIRED` example) must work exactly like the
     // anonymous `const _: () = ();` default.
-    let errors = named_const_option_schema::DataInputModel
+    let (errors, ..) = named_const_option_schema::DataInputModel
         .create(
             named_const_option_schema::PartialDataInput {
                 email: None,
@@ -119,12 +119,12 @@ fn should_allow_named_consts_as_grouped_option_anchors() {
             },
             (),
         )
-        .unwrap_err();
+        .err().unwrap();
 
-    assert!(errors.errors.get("email").is_some());
-    assert!(errors.errors.get("phone_number").is_some());
+    assert!(errors.get("email").is_some());
+    assert!(errors.get("phone_number").is_some());
 
-    let created = named_const_option_schema::DataInputModel
+    let (created, ..) = named_const_option_schema::DataInputModel
         .create(
             named_const_option_schema::PartialDataInput {
                 email: Some(Some("a@b.com".to_string())),
@@ -134,7 +134,7 @@ fn should_allow_named_consts_as_grouped_option_anchors() {
         )
         .unwrap();
 
-    assert_eq!(created.data.email.as_deref(), Some("a@b.com"));
+    assert_eq!(created.email.as_deref(), Some("a@b.com"));
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]

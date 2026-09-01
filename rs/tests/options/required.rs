@@ -19,7 +19,7 @@ async fn should_evaluate_field_level_and_grouped_required_resolvers_concurrently
     // `evaluate_missing_required_fields`), regardless of which kind of
     // required option they came from. `rendezvous()` only returns once
     // *both* have started.
-    let created = async_parallel_required_create_schema::DataInputModel
+    let (created, ..) = async_parallel_required_create_schema::DataInputModel
         .create(
             async_parallel_required_create_schema::PartialDataInput {
                 field_a: None,
@@ -33,7 +33,7 @@ async fn should_evaluate_field_level_and_grouped_required_resolvers_concurrently
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_parallel_required_create_schema::DataInput {
             field_a: None,
             field_b: None,
@@ -86,7 +86,7 @@ async fn should_evaluate_field_level_and_grouped_required_resolvers_concurrently
         field_c: None,
     };
 
-    let updated = async_parallel_required_update_schema::DataInputModel
+    let (updated, ..) = async_parallel_required_update_schema::DataInputModel
         .update(
             existing,
             async_parallel_required_update_schema::PartialDataInput {
@@ -101,7 +101,7 @@ async fn should_evaluate_field_level_and_grouped_required_resolvers_concurrently
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_parallel_required_update_schema::PartialDataInput {
             field_a: Some(Some("a".to_string())),
             field_b: None,
@@ -168,7 +168,7 @@ fn should_properly_handle_grouped_required_errors() {
     const DEFAULT_LAX_2_VALUE: &str = "default_lax_2_value";
 
     // create: same-error shortcut (lax_2 == IGNORE_WITH_SAME_ERROR)
-    let err = grouped_required_errors_schema::DataInputModel
+    let (err, ..) = grouped_required_errors_schema::DataInputModel
         .create(
             grouped_required_errors_schema::PartialDataInput {
                 lax: None,
@@ -180,15 +180,15 @@ fn should_properly_handle_grouped_required_errors() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_2").is_none());
-    assert_eq!(err.errors.get("lax").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
+    assert!(err.get("lax_2").is_none());
+    assert_eq!(err.get("lax").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.get("lax_1").unwrap().reason,
         EXPECTED_LAX_OR_LAX_1
     );
 
     // create: distinct-errors-per-field path (lax_2 == IGNORE_WITH_DIFFERENT_ERRORS)
-    let err = grouped_required_errors_schema::DataInputModel
+    let (err, ..) = grouped_required_errors_schema::DataInputModel
         .create(
             grouped_required_errors_schema::PartialDataInput {
                 lax: None,
@@ -200,9 +200,9 @@ fn should_properly_handle_grouped_required_errors() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_2").is_none());
-    assert_eq!(err.errors.get("lax").unwrap().reason, LAX_IS_MISSING);
-    assert_eq!(err.errors.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
+    assert!(err.get("lax_2").is_none());
+    assert_eq!(err.get("lax").unwrap().reason, LAX_IS_MISSING);
+    assert_eq!(err.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
 
     // updates
 
@@ -213,7 +213,7 @@ fn should_properly_handle_grouped_required_errors() {
     };
 
     // update: same-error shortcut
-    let err = grouped_required_errors_schema::DataInputModel
+    let (err, ..) = grouped_required_errors_schema::DataInputModel
         .update(
             data.clone(),
             grouped_required_errors_schema::PartialDataInput {
@@ -226,13 +226,13 @@ fn should_properly_handle_grouped_required_errors() {
         .err()
         .unwrap();
 
-    let payload = err.errors.as_ref().unwrap();
+    let payload = err.as_ref().unwrap();
     assert!(payload.get("lax_2").is_none());
     assert_eq!(payload.get("lax").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
     assert_eq!(payload.get("lax_1").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
 
     // update: distinct-errors-per-field path
-    let err = grouped_required_errors_schema::DataInputModel
+    let (err, ..) = grouped_required_errors_schema::DataInputModel
         .update(
             data,
             grouped_required_errors_schema::PartialDataInput {
@@ -245,7 +245,7 @@ fn should_properly_handle_grouped_required_errors() {
         .err()
         .unwrap();
 
-    let payload = err.errors.as_ref().unwrap();
+    let payload = err.as_ref().unwrap();
     assert!(payload.get("lax_2").is_none());
     assert_eq!(payload.get("lax").unwrap().reason, LAX_IS_MISSING);
     assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);

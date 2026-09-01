@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
-use std::task::{Context, Poll};
 
 // Error handling
 
@@ -494,169 +493,40 @@ impl<CtxOptions> fmt::Debug for IvoRwCtxOptions<CtxOptions> {
     }
 }
 
-/// A `Debug`-friendly wrapper around a trigger future so the returned
-/// `(result, trigger, ctx_options)` tuple can be unwrapped in tests and user code.
-pub struct IvoTriggerFuture<F>(F);
+/// The third element of a `create`/`update` success/failure tuple when the
+/// schema has at least one `on_success`/`on_failure`/... handler for that
+/// path and every one of them is synchronous. Call it directly: `handle()`.
+///
+/// This -- rather than a bare `impl FnOnce() + Send` -- has to be boxed:
+/// `create`/`update` each have several independent early-return points (one
+/// per validation phase), and every one of them builds its own trigger
+/// closure literal. Rust gives every closure literal a distinct, unnameable
+/// type even when their bodies are identical, so a single `-> impl Trait`
+/// return type can't unify them -- only type erasure can. Boxing here is the
+/// same reason `v0.4` boxed its trigger, just with the sync/async split
+/// resolved once at macro-expansion time instead of behind a runtime enum
+/// match.
+pub type IvoSyncTrigger = Box<dyn FnOnce() + Send>;
 
-impl<F> IvoTriggerFuture<F> {
-    pub fn new(future: F) -> Self {
-        Self(future)
-    }
-}
+/// `wasm32`/native-agnostic counterpart of [`IvoSyncTrigger`] for when at
+/// least one captured handler is asynchronous. Call it to get the future,
+/// then await that: `handle().await`.
+pub type IvoAsyncTrigger = Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send>;
 
-impl<F> fmt::Debug for IvoTriggerFuture<F> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("IvoTriggerFuture").finish()
-    }
-}
-
-impl<F: Future> Future for IvoTriggerFuture<F> {
-    type Output = F::Output;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        // SAFETY: projection to the inner field is structural for this wrapper.
-        unsafe { Pin::map_unchecked_mut(self, |s| &mut s.0) }.poll(cx)
-    }
-}
-
-/// Type-erased trigger future stored inside `IvoTriggerFn::Async`.
-pub type IvoTrigger = IvoTriggerFuture<Pin<Box<dyn Future<Output = ()> + Send>>>;
-
-/// A trigger that is either a synchronous closure or an asynchronous future.
-pub enum IvoTriggerFn {
-    Sync(Box<dyn FnOnce() + Send>),
-    Async(IvoTrigger),
-}
-
-impl fmt::Debug for IvoTriggerFn {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            IvoTriggerFn::Sync(_) => f.debug_struct("SyncTrigger").finish(),
-            IvoTriggerFn::Async(_) => f.debug_struct("AsyncTrigger").finish(),
-        }
-    }
-}
-
-/// Wrap a synchronous trigger closure.
-pub fn ivo_sync_trigger<F>(handler: F) -> IvoTriggerFn
+/// Wrap a synchronous trigger closure for the third element of a
+/// `create`/`update` tuple.
+pub fn ivo_sync_trigger<F>(handler: F) -> IvoSyncTrigger
 where
     F: FnOnce() + Send + 'static,
 {
-    IvoTriggerFn::Sync(Box::new(handler))
+    Box::new(handler)
 }
 
-/// Wrap an asynchronous trigger future.
-pub fn ivo_trigger<F>(future: F) -> IvoTriggerFn
+/// Wrap an asynchronous trigger future for the third element of a
+/// `create`/`update` tuple.
+pub fn ivo_trigger<F>(future: F) -> IvoAsyncTrigger
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    IvoTriggerFn::Async(IvoTriggerFuture::new(Box::pin(future)))
-}
-
-/// Handle returned on a successful `create`/`update`.
-///
-/// Call `handle_success` to run the `on_success` triggers that were captured for
-/// this operation. If all captured handlers are synchronous (or there are none),
-/// `handle_success` is synchronous. If any captured handler is asynchronous,
-/// `handle_success` is asynchronous.
-pub struct IvoSuccessHandle<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> {
-    pub data: O,
-    pub ctx_options: IvoCtxOptions<CtxOptions>,
-    trigger: IvoTriggerFn,
-}
-
-impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool>
-    IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
-{
-    pub fn new(data: O, ctx_options: IvoCtxOptions<CtxOptions>, trigger: IvoTriggerFn) -> Self {
-        Self {
-            data,
-            ctx_options,
-            trigger,
-        }
-    }
-}
-
-impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, false, true> {
-    pub fn handle_success(self) {
-        match self.trigger {
-            IvoTriggerFn::Sync(f) => f(),
-            IvoTriggerFn::Async(_) => unreachable!(),
-        }
-    }
-}
-
-impl<O, CtxOptions> IvoSuccessHandle<O, CtxOptions, true, true> {
-    pub async fn handle_success(self) {
-        match self.trigger {
-            IvoTriggerFn::Async(t) => t.await,
-            IvoTriggerFn::Sync(_) => unreachable!(),
-        }
-    }
-}
-
-impl<O: fmt::Debug, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> fmt::Debug
-    for IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("IvoSuccessHandle")
-            .field("data", &self.data)
-            .finish()
-    }
-}
-
-/// Handle returned on a failed `create`/`update`.
-///
-/// Call `handle_failure` to run the `on_failure` triggers that were captured for
-/// this operation. If all captured handlers are synchronous (or there are none),
-/// `handle_failure` is synchronous. If any captured handler is asynchronous,
-/// `handle_failure` is asynchronous.
-pub struct IvoFailureHandle<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> {
-    pub errors: Payload,
-    pub ctx_options: IvoCtxOptions<CtxOptions>,
-    trigger: IvoTriggerFn,
-}
-
-impl<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool>
-    IvoFailureHandle<Payload, CtxOptions, ASYNC, HAS_FAILURE>
-{
-    pub fn new(
-        errors: Payload,
-        ctx_options: IvoCtxOptions<CtxOptions>,
-        trigger: IvoTriggerFn,
-    ) -> Self {
-        Self {
-            errors,
-            ctx_options,
-            trigger,
-        }
-    }
-}
-
-impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, false, true> {
-    pub fn handle_failure(self) {
-        match self.trigger {
-            IvoTriggerFn::Sync(f) => f(),
-            IvoTriggerFn::Async(_) => unreachable!(),
-        }
-    }
-}
-
-impl<Payload, CtxOptions> IvoFailureHandle<Payload, CtxOptions, true, true> {
-    pub async fn handle_failure(self) {
-        match self.trigger {
-            IvoTriggerFn::Async(t) => t.await,
-            IvoTriggerFn::Sync(_) => unreachable!(),
-        }
-    }
-}
-
-impl<Payload: fmt::Debug, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> fmt::Debug
-    for IvoFailureHandle<Payload, CtxOptions, ASYNC, HAS_FAILURE>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("IvoFailureHandle")
-            .field("errors", &self.errors)
-            .finish()
-    }
+    Box::new(move || Box::pin(future) as Pin<Box<dyn Future<Output = ()> + Send>>)
 }

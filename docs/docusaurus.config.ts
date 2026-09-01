@@ -149,8 +149,12 @@ const config: Config = {
         lastVersion: "current",
         versions: {
           current: {
-            label: "0.5.0",
+            label: "0.6.0",
             path: "",
+          },
+          "0.5.0": {
+            label: "0.5.0",
+            path: "0.5.0",
           },
           "0.4.2": {
             label: "0.4.2",

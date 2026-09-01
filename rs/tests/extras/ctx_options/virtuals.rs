@@ -21,7 +21,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
 ) {
     use required_create_schema::{DataModel, PartialDataInput, MESSAGE, REQUIRED_ERROR};
 
-    let failed = DataModel
+    let (failed, ctx_options) = DataModel
         .create(
             PartialDataInput {
                 virtual_field: None,
@@ -33,11 +33,8 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .err()
         .unwrap();
 
-    assert_eq!(
-        failed.errors.get("virtual_field").unwrap().reason,
-        REQUIRED_ERROR
-    );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.get("virtual_field").unwrap().reason, REQUIRED_ERROR);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
@@ -84,7 +81,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         Data, DataModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, REQUIRED_ERROR,
     };
 
-    let failed = DataModel
+    let (errors, ctx_options) = DataModel
         .update(
             Data {
                 dependent: DEFAULT_VALUE,
@@ -100,8 +97,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .unwrap();
 
     assert_eq!(
-        failed
-            .errors
+        errors
             .as_ref()
             .unwrap()
             .get("virtual_field")
@@ -109,7 +105,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
             .reason,
         REQUIRED_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
@@ -161,7 +157,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
 
     let value = Some(data.dependent + 1);
 
-    let updated = ignore_update_schema::DataModel
+    let (updated, ctx_options, handle_success) = ignore_update_schema::DataModel
         .update(
             data.clone(),
             ignore_update_schema::PartialDataInput {
@@ -174,14 +170,14 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         ignore_update_schema::PartialData {
             dependent: value.map(|v| v + 1)
         }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    updated.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(
@@ -224,7 +220,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 ) {
     use validate_create_schema::{DataModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    let failed = DataModel
+    let (errors, ctx_options, handle_failure) = DataModel
         .create(
             PartialDataInput {
                 virtual_field: Some(String::from(" ")),
@@ -236,12 +232,12 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .unwrap();
 
     assert_eq!(
-        failed.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -292,9 +288,11 @@ mod validate_create_schema {
 
 async fn should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
 ) {
-    use validate_update_schema::{Data, DataModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, MIN_LENGTH_ERROR};
+    use validate_update_schema::{
+        Data, DataModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, MIN_LENGTH_ERROR,
+    };
 
-    let failed = DataModel
+    let (errors, ctx_options, handle_failure) = DataModel
         .update(
             Data {
                 dependent: DEFAULT_VALUE.into(),
@@ -309,8 +307,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .unwrap();
 
     assert_eq!(
-        failed
-            .errors
+        errors
             .as_ref()
             .unwrap()
             .get("virtual_field")
@@ -318,9 +315,9 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
             .reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -373,7 +370,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 ) {
     use re_validate_create_schema::{DataModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    let failed = DataModel
+    let (failed, ctx_options, handle_failure) = DataModel
         .create(
             PartialDataInput {
                 virtual_field: Some(String::from(" ")),
@@ -385,12 +382,12 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .unwrap();
 
     assert_eq!(
-        failed.errors.get("virtual_field").unwrap().reason,
+        failed.get("virtual_field").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -442,9 +439,11 @@ mod re_validate_create_schema {
 
 async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
 ) {
-    use re_validate_update_schema::{Data, DataModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, MIN_LENGTH_ERROR};
+    use re_validate_update_schema::{
+        Data, DataModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, MIN_LENGTH_ERROR,
+    };
 
-    let failed = DataModel
+    let (failed, ctx_options, handle_failure) = DataModel
         .update(
             Data {
                 dependent: DEFAULT_VALUE.into(),
@@ -460,7 +459,6 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     assert_eq!(
         failed
-            .errors
             .as_ref()
             .unwrap()
             .get("virtual_field")
@@ -468,9 +466,9 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
             .reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -531,7 +529,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
 
     let virtual_value = "virtual_value".to_string();
 
-    let created = sanitize_create_schema::DataModel
+    let (created, ctx_options, handle_success) = sanitize_create_schema::DataModel
         .create(
             sanitize_create_schema::PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
@@ -543,20 +541,20 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sanitize_create_schema::Data {
             dependent: sanitize(&virtual_value)
         }
     );
     assert_ne!(
-        created.data,
+        created,
         sanitize_create_schema::Data {
             dependent: virtual_value
         }
     );
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    created.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(
@@ -609,7 +607,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
 
     let updated_virtual_value = "updated_virtual_value".to_string();
 
-    let updated = sanitize_update_schema::DataModel
+    let (updated, ctx_options, handle_success) = sanitize_update_schema::DataModel
         .update(
             data.clone(),
             sanitize_update_schema::PartialDataInput {
@@ -622,20 +620,20 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sanitize_update_schema::PartialData {
             dependent: Some(sanitize(&updated_virtual_value))
         }
     );
     assert_ne!(
-        updated.data,
+        updated,
         sanitize_update_schema::PartialData {
             dependent: Some(updated_virtual_value)
         }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    updated.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(
@@ -681,7 +679,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let value = DEFAULT_VALUE + 1;
 
-    let created = post_validate_create_schema::DataModel
+    let (created, ctx_options, handle_success) = post_validate_create_schema::DataModel
         .create(
             post_validate_create_schema::PartialDataInput {
                 virtual_field: Some(value),
@@ -694,12 +692,12 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         post_validate_create_schema::Data { dependent: value }
     );
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -753,7 +751,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let value = Some(data.dependent + 1);
 
-    let updated = post_validate_update_schema::DataModel
+    let (updated, ctx_options, handle_success) = post_validate_update_schema::DataModel
         .update(
             data.clone(),
             post_validate_update_schema::PartialDataInput {
@@ -767,12 +765,12 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         post_validate_update_schema::PartialData { dependent: value }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(

@@ -41,7 +41,7 @@ mod item_schema {
 }
 
 fn main() {
-    let created = item_schema::ItemModel
+    let (created, _ctx_options) = item_schema::ItemModel
         .create(
             item_schema::PartialItemInput {
                 name: Some("widget".into()),
@@ -50,10 +50,10 @@ fn main() {
         )
         .unwrap();
 
-    assert_eq!(created.data.id, 1234);
-    assert_eq!(created.data.label, "generated");
+    assert_eq!(created.id, 1234);
+    assert_eq!(created.label, "generated");
 
-    println!("{:#?}", created.data);
+    println!("{:#?}", created);
     // Item { id: 1234, label: "generated", name: "widget" }
 }
 ```

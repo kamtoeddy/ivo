@@ -18,7 +18,7 @@ async fn should_properly_create_and_update() {
     let username = "john-doe".to_string();
     let datetime_before = Utc::now();
 
-    let created = DataModel
+    let (created, _ctx_options) = DataModel
         .create(
             PartialDataInput {
                 username: Some(username.clone()),
@@ -27,21 +27,21 @@ async fn should_properly_create_and_update() {
         )
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
-    assert_eq!(created.data.username, username);
+    assert_eq!(created.username, username);
     assert_eq!(
-        created.data.custom_created_at,
-        created.data.custom_updated_at
+        created.custom_created_at,
+        created.custom_updated_at
     );
-    assert!(created.data.custom_created_at > datetime_before);
-    assert!(created.data.custom_updated_at > datetime_before);
+    assert!(created.custom_created_at > datetime_before);
+    assert!(created.custom_updated_at > datetime_before);
 
     let username = "jane-doe".to_string();
 
-    let updated = DataModel
+    let (updated, _ctx_options) = DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             PartialDataInput {
                 username: Some(username.clone()),
             },
@@ -49,18 +49,18 @@ async fn should_properly_create_and_update() {
         )
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
-    assert_eq!(updated.data.username, Some(username));
-    assert!(updated.data.custom_created_at.is_none());
-    assert!(updated.data.custom_updated_at.is_some());
+    assert_eq!(updated.username, Some(username));
+    assert!(updated.custom_created_at.is_none());
+    assert!(updated.custom_updated_at.is_some());
 }
 
 async fn should_properly_create_and_update_with_optional_updated_at() {
     let username = "john-doe".to_string();
     let datetime_before = Utc::now();
 
-    let created = DataWithOptionalUpdatedAtModel
+    let (created, _ctx_options) = DataWithOptionalUpdatedAtModel
         .create(
             OptionalUpdatedAtPartialDataInput {
                 username: Some(username.clone()),
@@ -69,17 +69,17 @@ async fn should_properly_create_and_update_with_optional_updated_at() {
         )
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
-    assert_eq!(created.data.username, username);
-    assert!(created.data.custom_created_at > datetime_before);
-    assert!(created.data.custom_updated_at.is_none());
+    assert_eq!(created.username, username);
+    assert!(created.custom_created_at > datetime_before);
+    assert!(created.custom_updated_at.is_none());
 
     let username = "jane-doe".to_string();
 
-    let updated = DataWithOptionalUpdatedAtModel
+    let (updated, _ctx_options) = DataWithOptionalUpdatedAtModel
         .update(
-            created.data.clone(),
+            created.clone(),
             OptionalUpdatedAtPartialDataInput {
                 username: Some(username.clone()),
             },
@@ -87,11 +87,11 @@ async fn should_properly_create_and_update_with_optional_updated_at() {
         )
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
-    assert_eq!(updated.data.username, Some(username));
-    assert!(updated.data.custom_created_at.is_none());
-    assert!(updated.data.custom_updated_at.unwrap().is_some());
+    assert_eq!(updated.username, Some(username));
+    assert!(updated.custom_created_at.is_none());
+    assert!(updated.custom_updated_at.unwrap().is_some());
 }
 
 pub use custom_name_schema::{Data, DataModel, PartialData, PartialDataInput};

@@ -25,7 +25,7 @@ macro_rules! rendezvous_fn {
 async fn should_run_independent_on_success_hooks_concurrently_on_create() {
     on_success_create_schema::STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let created = on_success_create_schema::DataInputModel
+    let (created, _ctx_options, handle_success) = on_success_create_schema::DataInputModel
         .create(
             on_success_create_schema::DataInput {
                 field_a: "a".into(),
@@ -33,10 +33,11 @@ async fn should_run_independent_on_success_hooks_concurrently_on_create() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
-    assert_eq!(created.data.field_a, "a");
-    created.handle_success().await;
+    assert_eq!(created.field_a, "a");
+    handle_success().await;
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -62,7 +63,7 @@ mod on_success_create_schema {
 async fn should_run_independent_on_failure_hooks_concurrently_on_create() {
     on_failure_create_schema::STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let failed = on_failure_create_schema::DataInputModel
+    let (.., handle_failure) = on_failure_create_schema::DataInputModel
         .create(
             on_failure_create_schema::PartialDataInput {
                 field_a: None,
@@ -70,9 +71,10 @@ async fn should_run_independent_on_failure_hooks_concurrently_on_create() {
             },
             (),
         )
-        .unwrap_err();
+        .err()
+        .unwrap();
 
-    failed.handle_failure().await;
+    handle_failure().await;
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -103,7 +105,7 @@ async fn should_run_independent_on_success_hooks_concurrently_on_update() {
         field_b: "b".into(),
     };
 
-    let updated = on_success_update_schema::DataInputModel
+    let (.., handle_success) = on_success_update_schema::DataInputModel
         .update(
             existing,
             on_success_update_schema::PartialDataInput {
@@ -112,9 +114,10 @@ async fn should_run_independent_on_success_hooks_concurrently_on_update() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]

@@ -9,7 +9,7 @@ fn main() {
 }
 
 fn virtual_with_validator() {
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialDataInput {
                 virtual_field: None,
@@ -19,23 +19,23 @@ fn virtual_with_validator() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             dependent: DEFAULT_DEPENDENT_VALUE.to_string()
         }
     );
 
-    let created_data = created.data.clone();
-    created.handle_success();
+    let created_data = created.clone();
+    handle_success();
 
     data_schema::DataModel.delete(&created_data, ());
 
     let value = "some value".to_string();
 
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialDataInput {
                 virtual_field: Some(value.clone()),
@@ -45,12 +45,12 @@ fn virtual_with_validator() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
-    assert_eq!(created.data, data_schema::Data { dependent: value });
+    assert_eq!(created, data_schema::Data { dependent: value });
 
-    let created_data = created.data.clone();
-    created.handle_success();
+    let created_data = created.clone();
+    handle_success();
 
     data_schema::DataModel.delete(&created_data, ());
 
@@ -60,7 +60,7 @@ fn virtual_with_validator() {
 
     let updated_value = Some("updated value".to_string());
 
-    let updated = data_schema::DataModel
+    let (updated, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialDataInput {
@@ -71,17 +71,17 @@ fn virtual_with_validator() {
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
     assert_eq!(
-        updated.data,
+        updated,
         data_schema::PartialData {
             dependent: updated_value
         }
     );
 
-    let updated_data = updated.data.clone();
-    updated.handle_success();
+    let updated_data = updated.clone();
+    handle_success();
 
     let data = data.clone_with_updates(&updated_data);
 

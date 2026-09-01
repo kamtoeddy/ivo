@@ -40,12 +40,12 @@ mod lax_schema {
 }
 
 fn main() {
-    let created = lax_schema::DataInputModel
+    let (created, _ctx_options) = lax_schema::DataInputModel
         .create(lax_schema::PartialDataInput { bio: None }, ())
         .unwrap();
 
-    assert_eq!(created.data.bio, "default_bio");
-    println!("{:?}", created.data); // DataInput { bio: "default_bio" }
+    assert_eq!(created.bio, "default_bio");
+    println!("{:?}", created); // DataInput { bio: "default_bio" }
 }
 ```
 

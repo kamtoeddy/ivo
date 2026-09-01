@@ -44,33 +44,69 @@ fn main() {
 ## `onFailure`
 
 `#[on_failure(|ctx, opts| { ... })]` -- registered on a field that has a validator, triggered by
-calling `handle_failure()` on the `IvoFailureHandle` returned from an unsuccessful `create` or
-`update`.
-
-```rust
-let failed = DataInputModel.create(input, ()).unwrap_err();
-println!("{:?}", failed.errors);
-failed.handle_failure(); // runs any matching on_failure triggers; async if any handler is
-```
+calling the handle returned as the third element of the `Err` tuple from an unsuccessful `create`
+or `update`.
 
 ## `onSuccess`
 
 `#[on_success(|ctx, opts| { ... })]` -- registered on any individual field, or for
 [a group of fields via the schema option](./options.md#on_success) (the bare, arrayless form fires
-on every success regardless of which fields changed). Triggered by calling `handle_success()` on
-the `IvoSuccessHandle` returned from a successful `create` or `update`.
+on every success regardless of which fields changed). Triggered by calling the handle returned as
+the third element of the `Ok` tuple from a successful `create` or `update`.
+
+## Triggering handlers
+
+`create`/`update` return `(data, ctx_options)` when the schema has no matching `on_success`/
+`on_failure` handler anywhere, and `(data, ctx_options, handle)` when it does -- calling `handle`
+runs every matching trigger for that call. `handle` is a plain `FnOnce()` if every captured handler
+is sync, or `FnOnce() -> impl Future<Output = ()>` (call it, then `.await` the result) if any is
+async -- resolved once per schema at compile time, not behind a runtime check.
 
 ```rust
-let created = DataInputModel.create(input, ()).unwrap();
-println!("{:?}", created.data);
-created.handle_success(); // fires any on_success handler(s) whose fields actually changed
+use ivo::ivo_schema;
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod notify_schema {
+    struct Fields {
+        #[required]
+        #[validate(|v: String, _, _| {
+            if v.is_empty() {
+                return Err(("username must not be empty".into(), None));
+            }
+            Ok(Some(v))
+        })]
+        #[on_success(|ctx, _| {
+            println!("[username]: on_success: {}", ctx.values().username);
+        })]
+        #[on_failure(|ctx, _| {
+            println!("[username]: on_failure: {:?}", ctx.input().username);
+        })]
+        pub username: String,
+    }
+}
+
+fn main() {
+    let (created, _ctx_options, handle_success) = notify_schema::DataInputModel
+        .create(notify_schema::DataInput { username: "jane".into() }, ())
+        .ok()
+        .unwrap();
+    println!("{:?}", created);
+    handle_success(); // runs the matching on_success trigger
+
+    let (errors, _ctx_options, handle_failure) = notify_schema::DataInputModel
+        .create(notify_schema::DataInput { username: "".into() }, ())
+        .err()
+        .unwrap();
+    println!("{:?}", errors);
+    handle_failure(); // runs the matching on_failure trigger
+}
 ```
 
-`handle_success`/`handle_failure` only exist on the returned handle at all when the schema
-declares at least one matching `on_success`/`on_failure` handler *somewhere* -- calling one on a
-schema with none is a compile error (the method isn't generated), not a silent no-op. Once it does
-exist, it's still safe to call unconditionally: a grouped `on_success` whose fields didn't change
-this call simply doesn't fire, without you having to check first.
+`Result::unwrap()`/`unwrap_err()` require `Debug` on the *other* arm of the `Result`, which the
+trigger closure can't provide -- use `.ok().unwrap()` / `.err().unwrap()` instead
+(`Option::unwrap()` has no such bound). When a schema has neither `on_success` nor `on_failure`
+handlers, the tuple has no trigger element and plain `.unwrap()`/`.unwrap_err()` work fine, as in
+the [Getting Started](./index.md#quickstart) example.
 
 ## Custom context options
 

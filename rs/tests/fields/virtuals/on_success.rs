@@ -3,7 +3,7 @@ use ivo::ivo_schema;
 #[should_panic(expected = "[virtual_field]: on_success triggered with value: virtual_value")]
 #[test]
 fn should_trigger_sync_creation_provided() {
-    let created = sync_creation_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_provided_schema::DataModel
         .create(
             sync_creation_provided_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -14,16 +14,16 @@ fn should_trigger_sync_creation_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_provided_schema::Data {
+    assert_eq!(created, sync_creation_provided_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_creation_provided() {
-    let created = async_creation_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_provided_schema::DataModel
         .create(
             async_creation_provided_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -34,12 +34,12 @@ async fn should_trigger_async_creation_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_provided_schema::Data {
+    assert_eq!(created, async_creation_provided_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -50,7 +50,7 @@ async_test_matrix!(
 #[should_panic(expected = "[virtual_field]: on_success triggered with value: virtual_value")]
 #[test]
 fn should_trigger_sync_update_provided() {
-    let updated = sync_update_provided_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_provided_schema::DataModel
         .update(
             sync_update_provided_schema::Data {
                 lax: 10,
@@ -66,18 +66,18 @@ fn should_trigger_sync_update_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_provided_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_update_provided() {
-    let updated = async_update_provided_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_provided_schema::DataModel
         .update(
             async_update_provided_schema::Data {
                 lax: 10,
@@ -93,14 +93,14 @@ async fn should_trigger_async_update_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_provided_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -110,7 +110,7 @@ async_test_matrix!(
 
 #[test]
 fn should_not_trigger_sync_creation_not_provided() {
-    let created = sync_creation_not_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_not_provided_schema::DataModel
         .create(
             sync_creation_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -121,15 +121,15 @@ fn should_not_trigger_sync_creation_not_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_not_provided_schema::Data {
+    assert_eq!(created, sync_creation_not_provided_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_creation_not_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_not_provided_schema::DataModel
         .create(
             sync_creation_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -140,16 +140,16 @@ fn should_not_trigger_sync_creation_not_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_not_provided_schema::Data {
+    assert_eq!(created, sync_creation_not_provided_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_creation_not_provided() {
-    let created = async_creation_not_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_not_provided_schema::DataModel
         .create(
             async_creation_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -160,15 +160,15 @@ async fn should_not_trigger_async_creation_not_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_not_provided_schema::Data {
+    assert_eq!(created, async_creation_not_provided_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_creation_not_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_not_provided_schema::DataModel
         .create(
             async_creation_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -179,19 +179,19 @@ async fn should_not_trigger_async_creation_not_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_not_provided_schema::Data {
+    assert_eq!(created, async_creation_not_provided_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_creation_not_provided);
 
 #[test]
 fn should_not_trigger_sync_update_not_provided() {
-    let updated = sync_update_not_provided_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_not_provided_schema::DataModel
         .update(
             sync_update_not_provided_schema::Data {
                 lax: 10,
@@ -207,18 +207,18 @@ fn should_not_trigger_sync_update_not_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_not_provided_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_update_not_provided() {
-    let updated = async_update_not_provided_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_not_provided_schema::DataModel
         .update(
             async_update_not_provided_schema::Data {
                 lax: 10,
@@ -234,21 +234,21 @@ async fn should_not_trigger_async_update_not_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_not_provided_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_update_not_provided);
 
 #[test]
 fn should_not_trigger_sync_creation_ignored_by_ignore() {
-    let created = sync_creation_ignored_by_ignore_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -259,15 +259,15 @@ fn should_not_trigger_sync_creation_ignored_by_ignore() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_creation_ignored_by_ignore_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -278,16 +278,16 @@ fn should_not_trigger_sync_creation_ignored_by_ignore() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_creation_ignored_by_ignore() {
-    let created = async_creation_ignored_by_ignore_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -298,15 +298,15 @@ async fn should_not_trigger_async_creation_ignored_by_ignore() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_creation_ignored_by_ignore_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -317,19 +317,19 @@ async fn should_not_trigger_async_creation_ignored_by_ignore() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_creation_ignored_by_ignore);
 
 #[test]
 fn should_not_trigger_sync_update_ignored_by_ignore() {
-    let updated = sync_update_ignored_by_ignore_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_ignored_by_ignore_schema::DataModel
         .update(
             sync_update_ignored_by_ignore_schema::Data {
                 lax: 10,
@@ -345,18 +345,18 @@ fn should_not_trigger_sync_update_ignored_by_ignore() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_ignored_by_ignore_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_update_ignored_by_ignore() {
-    let updated = async_update_ignored_by_ignore_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_ignored_by_ignore_schema::DataModel
         .update(
             async_update_ignored_by_ignore_schema::Data {
                 lax: 10,
@@ -372,21 +372,21 @@ async fn should_not_trigger_async_update_ignored_by_ignore() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_ignored_by_ignore_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_update_ignored_by_ignore);
 
 #[test]
 fn should_not_trigger_sync_creation_ignored_by_ignore_init() {
-    let created = sync_creation_ignored_by_ignore_init_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_init_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -397,15 +397,15 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_init() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_init_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_init_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_creation_ignored_by_ignore_init_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_init_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -416,16 +416,16 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_init() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_init_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_init_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_creation_ignored_by_ignore_init() {
-    let created = async_creation_ignored_by_ignore_init_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_init_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -436,15 +436,15 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_init() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_init_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_init_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_creation_ignored_by_ignore_init_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_init_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -455,19 +455,19 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_init() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_init_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_init_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_creation_ignored_by_ignore_init);
 
 #[test]
 fn should_not_trigger_sync_update_ignored_by_ignore_update() {
-    let updated = sync_update_ignored_by_ignore_update_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_ignored_by_ignore_update_schema::DataModel
         .update(
             sync_update_ignored_by_ignore_update_schema::Data {
                 lax: 10,
@@ -483,18 +483,18 @@ fn should_not_trigger_sync_update_ignored_by_ignore_update() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_ignored_by_ignore_update_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_update_ignored_by_ignore_update() {
-    let updated = async_update_ignored_by_ignore_update_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_ignored_by_ignore_update_schema::DataModel
         .update(
             async_update_ignored_by_ignore_update_schema::Data {
                 lax: 10,
@@ -510,14 +510,14 @@ async fn should_not_trigger_async_update_ignored_by_ignore_update() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_ignored_by_ignore_update_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_update_ignored_by_ignore_update);
@@ -525,7 +525,7 @@ async_test_matrix!(should_not_trigger_async_update_ignored_by_ignore_update);
 #[should_panic(expected = "[virtual_field]: on_success triggered with value: virtual_value")]
 #[test]
 fn should_trigger_sync_creation_provided_with_alias() {
-    let created = sync_creation_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_provided_alias_schema::DataModel
         .create(
             sync_creation_provided_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -536,16 +536,16 @@ fn should_trigger_sync_creation_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_provided_alias_schema::Data {
+    assert_eq!(created, sync_creation_provided_alias_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_creation_provided_with_alias() {
-    let created = async_creation_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_provided_alias_schema::DataModel
         .create(
             async_creation_provided_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -556,12 +556,12 @@ async fn should_trigger_async_creation_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_provided_alias_schema::Data {
+    assert_eq!(created, async_creation_provided_alias_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -572,7 +572,7 @@ async_test_matrix!(
 #[should_panic(expected = "[virtual_field]: on_success triggered with value: virtual_value")]
 #[test]
 fn should_trigger_sync_update_provided_with_alias() {
-    let updated = sync_update_provided_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_provided_alias_schema::DataModel
         .update(
             sync_update_provided_alias_schema::Data {
                 lax: 10,
@@ -588,18 +588,18 @@ fn should_trigger_sync_update_provided_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_provided_alias_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_update_provided_with_alias() {
-    let updated = async_update_provided_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_provided_alias_schema::DataModel
         .update(
             async_update_provided_alias_schema::Data {
                 lax: 10,
@@ -615,14 +615,14 @@ async fn should_trigger_async_update_provided_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_provided_alias_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -632,7 +632,7 @@ async_test_matrix!(
 
 #[test]
 fn should_not_trigger_sync_creation_not_provided_with_alias() {
-    let created = sync_creation_not_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_not_provided_alias_schema::DataModel
         .create(
             sync_creation_not_provided_alias_schema::PartialDataInput {
                 virtual_alias: None,
@@ -643,15 +643,15 @@ fn should_not_trigger_sync_creation_not_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_not_provided_alias_schema::Data {
+    assert_eq!(created, sync_creation_not_provided_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_creation_not_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_not_provided_alias_schema::DataModel
         .create(
             sync_creation_not_provided_alias_schema::PartialDataInput {
                 virtual_alias: None,
@@ -662,16 +662,16 @@ fn should_not_trigger_sync_creation_not_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_not_provided_alias_schema::Data {
+    assert_eq!(created, sync_creation_not_provided_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_creation_not_provided_with_alias() {
-    let created = async_creation_not_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_not_provided_alias_schema::DataModel
         .create(
             async_creation_not_provided_alias_schema::PartialDataInput {
                 virtual_alias: None,
@@ -682,15 +682,15 @@ async fn should_not_trigger_async_creation_not_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_not_provided_alias_schema::Data {
+    assert_eq!(created, async_creation_not_provided_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_creation_not_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_not_provided_alias_schema::DataModel
         .create(
             async_creation_not_provided_alias_schema::PartialDataInput {
                 virtual_alias: None,
@@ -701,19 +701,19 @@ async fn should_not_trigger_async_creation_not_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_not_provided_alias_schema::Data {
+    assert_eq!(created, async_creation_not_provided_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_creation_not_provided_with_alias);
 
 #[test]
 fn should_not_trigger_sync_update_not_provided_with_alias() {
-    let updated = sync_update_not_provided_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_not_provided_alias_schema::DataModel
         .update(
             sync_update_not_provided_alias_schema::Data {
                 lax: 10,
@@ -729,18 +729,18 @@ fn should_not_trigger_sync_update_not_provided_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_not_provided_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_update_not_provided_with_alias() {
-    let updated = async_update_not_provided_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_not_provided_alias_schema::DataModel
         .update(
             async_update_not_provided_alias_schema::Data {
                 lax: 10,
@@ -756,21 +756,21 @@ async fn should_not_trigger_async_update_not_provided_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_not_provided_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_update_not_provided_with_alias);
 
 #[test]
 fn should_not_trigger_sync_creation_ignored_by_ignore_with_alias() {
-    let created = sync_creation_ignored_by_ignore_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_alias_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -781,15 +781,15 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_alias_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_creation_ignored_by_ignore_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_alias_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -800,16 +800,16 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_alias_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_creation_ignored_by_ignore_with_alias() {
-    let created = async_creation_ignored_by_ignore_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_alias_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -820,15 +820,15 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_alias_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_creation_ignored_by_ignore_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_alias_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -839,19 +839,19 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_alias_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_creation_ignored_by_ignore_with_alias);
 
 #[test]
 fn should_not_trigger_sync_update_ignored_by_ignore_with_alias() {
-    let updated = sync_update_ignored_by_ignore_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_ignored_by_ignore_alias_schema::DataModel
         .update(
             sync_update_ignored_by_ignore_alias_schema::Data {
                 lax: 10,
@@ -867,18 +867,18 @@ fn should_not_trigger_sync_update_ignored_by_ignore_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_ignored_by_ignore_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_update_ignored_by_ignore_with_alias() {
-    let updated = async_update_ignored_by_ignore_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_ignored_by_ignore_alias_schema::DataModel
         .update(
             async_update_ignored_by_ignore_alias_schema::Data {
                 lax: 10,
@@ -894,21 +894,21 @@ async fn should_not_trigger_async_update_ignored_by_ignore_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_ignored_by_ignore_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_update_ignored_by_ignore_with_alias);
 
 #[test]
 fn should_not_trigger_sync_creation_ignored_by_ignore_init_with_alias() {
-    let created = sync_creation_ignored_by_ignore_init_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_init_alias_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -919,15 +919,15 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_init_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_init_alias_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_init_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_creation_ignored_by_ignore_init_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_init_alias_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -938,16 +938,16 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_init_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_init_alias_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_init_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_creation_ignored_by_ignore_init_with_alias() {
-    let created = async_creation_ignored_by_ignore_init_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_init_alias_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -958,15 +958,15 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_init_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_init_alias_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_init_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_creation_ignored_by_ignore_init_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_init_alias_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -977,19 +977,19 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_init_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_init_alias_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_init_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_creation_ignored_by_ignore_init_with_alias);
 
 #[test]
 fn should_not_trigger_sync_update_ignored_by_ignore_update_with_alias() {
-    let updated = sync_update_ignored_by_ignore_update_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_ignored_by_ignore_update_alias_schema::DataModel
         .update(
             sync_update_ignored_by_ignore_update_alias_schema::Data {
                 lax: 10,
@@ -1005,18 +1005,18 @@ fn should_not_trigger_sync_update_ignored_by_ignore_update_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_ignored_by_ignore_update_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_update_ignored_by_ignore_update_with_alias() {
-    let updated = async_update_ignored_by_ignore_update_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_ignored_by_ignore_update_alias_schema::DataModel
         .update(
             async_update_ignored_by_ignore_update_alias_schema::Data {
                 lax: 10,
@@ -1032,14 +1032,14 @@ async fn should_not_trigger_async_update_ignored_by_ignore_update_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_ignored_by_ignore_update_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_update_ignored_by_ignore_update_with_alias);
@@ -1047,7 +1047,7 @@ async_test_matrix!(should_not_trigger_async_update_ignored_by_ignore_update_with
 #[should_panic(expected = "[virtual_field]: on_success triggered with value: virtual_value")]
 #[test]
 fn should_trigger_sync_creation_provided_with_alias_as_dependent() {
-    let created = sync_creation_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_provided_alias_as_dependent_schema::DataModel
         .create(
             sync_creation_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1058,16 +1058,16 @@ fn should_trigger_sync_creation_provided_with_alias_as_dependent() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_creation_provided_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_creation_provided_with_alias_as_dependent() {
-    let created = async_creation_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_provided_alias_as_dependent_schema::DataModel
         .create(
             async_creation_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1078,12 +1078,12 @@ async fn should_trigger_async_creation_provided_with_alias_as_dependent() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_creation_provided_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1094,7 +1094,7 @@ async_test_matrix!(
 #[should_panic(expected = "[virtual_field]: on_success triggered with value: virtual_value")]
 #[test]
 fn should_trigger_sync_update_provided_with_alias_as_dependent() {
-    let updated = sync_update_provided_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_provided_alias_as_dependent_schema::DataModel
         .update(
             sync_update_provided_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -1110,18 +1110,18 @@ fn should_trigger_sync_update_provided_with_alias_as_dependent() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_provided_alias_as_dependent_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_update_provided_with_alias_as_dependent() {
-    let updated = async_update_provided_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_provided_alias_as_dependent_schema::DataModel
         .update(
             async_update_provided_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -1137,14 +1137,14 @@ async fn should_trigger_async_update_provided_with_alias_as_dependent() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_provided_alias_as_dependent_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1154,7 +1154,7 @@ async_test_matrix!(
 
 #[test]
 fn should_not_trigger_sync_creation_not_provided_with_alias_as_dependent() {
-    let created = sync_creation_not_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_not_provided_alias_as_dependent_schema::DataModel
         .create(
             sync_creation_not_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: None,
@@ -1165,15 +1165,15 @@ fn should_not_trigger_sync_creation_not_provided_with_alias_as_dependent() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_not_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_creation_not_provided_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_creation_not_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_not_provided_alias_as_dependent_schema::DataModel
         .create(
             sync_creation_not_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: None,
@@ -1184,16 +1184,16 @@ fn should_not_trigger_sync_creation_not_provided_with_alias_as_dependent() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_not_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_creation_not_provided_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_creation_not_provided_with_alias_as_dependent() {
-    let created = async_creation_not_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_not_provided_alias_as_dependent_schema::DataModel
         .create(
             async_creation_not_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: None,
@@ -1204,15 +1204,15 @@ async fn should_not_trigger_async_creation_not_provided_with_alias_as_dependent(
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_not_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_creation_not_provided_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_creation_not_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_not_provided_alias_as_dependent_schema::DataModel
         .create(
             async_creation_not_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: None,
@@ -1223,19 +1223,19 @@ async fn should_not_trigger_async_creation_not_provided_with_alias_as_dependent(
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_not_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_creation_not_provided_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_creation_not_provided_with_alias_as_dependent);
 
 #[test]
 fn should_not_trigger_sync_update_not_provided_with_alias_as_dependent() {
-    let updated = sync_update_not_provided_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_not_provided_alias_as_dependent_schema::DataModel
         .update(
             sync_update_not_provided_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -1251,18 +1251,18 @@ fn should_not_trigger_sync_update_not_provided_with_alias_as_dependent() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_not_provided_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_update_not_provided_with_alias_as_dependent() {
-    let updated = async_update_not_provided_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_not_provided_alias_as_dependent_schema::DataModel
         .update(
             async_update_not_provided_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -1278,21 +1278,21 @@ async fn should_not_trigger_async_update_not_provided_with_alias_as_dependent() 
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_not_provided_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_update_not_provided_with_alias_as_dependent);
 
 #[test]
 fn should_not_trigger_sync_creation_ignored_by_ignore_with_alias_as_dependent() {
-    let created = sync_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1303,15 +1303,15 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_with_alias_as_dependent() 
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1322,16 +1322,16 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_with_alias_as_dependent() 
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_creation_ignored_by_ignore_with_alias_as_dependent() {
-    let created = async_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1342,15 +1342,15 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_with_alias_as_depen
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1361,19 +1361,19 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_with_alias_as_depen
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_creation_ignored_by_ignore_with_alias_as_dependent);
 
 #[test]
 fn should_not_trigger_sync_update_ignored_by_ignore_with_alias_as_dependent() {
-    let updated = sync_update_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .update(
             sync_update_ignored_by_ignore_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -1389,18 +1389,18 @@ fn should_not_trigger_sync_update_ignored_by_ignore_with_alias_as_dependent() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_ignored_by_ignore_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_update_ignored_by_ignore_with_alias_as_dependent() {
-    let updated = async_update_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .update(
             async_update_ignored_by_ignore_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -1416,21 +1416,21 @@ async fn should_not_trigger_async_update_ignored_by_ignore_with_alias_as_depende
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_ignored_by_ignore_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_update_ignored_by_ignore_with_alias_as_dependent);
 
 #[test]
 fn should_not_trigger_sync_creation_ignored_by_ignore_init_with_alias_as_dependent() {
-    let created = sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1441,15 +1441,15 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_init_with_alias_as_depende
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
         .create(
             sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1460,16 +1460,16 @@ fn should_not_trigger_sync_creation_ignored_by_ignore_init_with_alias_as_depende
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_creation_ignored_by_ignore_init_with_alias_as_dependent() {
-    let created = async_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1480,15 +1480,15 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_init_with_alias_as_
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
         .create(
             async_creation_ignored_by_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -1499,19 +1499,19 @@ async fn should_not_trigger_async_creation_ignored_by_ignore_init_with_alias_as_
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_creation_ignored_by_ignore_init_with_alias_as_dependent);
 
 #[test]
 fn should_not_trigger_sync_update_ignored_by_ignore_update_with_alias_as_dependent() {
-    let updated = sync_update_ignored_by_ignore_update_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_update_ignored_by_ignore_update_alias_as_dependent_schema::DataModel
         .update(
             sync_update_ignored_by_ignore_update_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -1527,18 +1527,18 @@ fn should_not_trigger_sync_update_ignored_by_ignore_update_with_alias_as_depende
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_update_ignored_by_ignore_update_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_update_ignored_by_ignore_update_with_alias_as_dependent() {
-    let updated = async_update_ignored_by_ignore_update_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_update_ignored_by_ignore_update_alias_as_dependent_schema::DataModel
         .update(
             async_update_ignored_by_ignore_update_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -1554,14 +1554,14 @@ async fn should_not_trigger_async_update_ignored_by_ignore_update_with_alias_as_
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_update_ignored_by_ignore_update_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_update_ignored_by_ignore_update_with_alias_as_dependent);
@@ -1569,7 +1569,7 @@ async_test_matrix!(should_not_trigger_async_update_ignored_by_ignore_update_with
 #[should_panic(expected = "[options.on_success]: on_success triggered")]
 #[test]
 fn should_trigger_sync_grouped_creation_provided() {
-    let created = sync_grouped_creation_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_provided_schema::DataModel
         .create(
             sync_grouped_creation_provided_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -1580,16 +1580,16 @@ fn should_trigger_sync_grouped_creation_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_provided_schema::Data {
+    assert_eq!(created, sync_grouped_creation_provided_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_grouped_creation_provided() {
-    let created = async_grouped_creation_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_provided_schema::DataModel
         .create(
             async_grouped_creation_provided_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -1600,12 +1600,12 @@ async fn should_trigger_async_grouped_creation_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_provided_schema::Data {
+    assert_eq!(created, async_grouped_creation_provided_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1616,7 +1616,7 @@ async_test_matrix!(
 #[should_panic(expected = "[options.on_success]: on_success triggered")]
 #[test]
 fn should_trigger_sync_grouped_update_provided() {
-    let updated = sync_grouped_update_provided_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_grouped_update_provided_schema::DataModel
         .update(
             sync_grouped_update_provided_schema::Data {
                 lax: 10,
@@ -1632,18 +1632,18 @@ fn should_trigger_sync_grouped_update_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_update_provided_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_grouped_update_provided() {
-    let updated = async_grouped_update_provided_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_grouped_update_provided_schema::DataModel
         .update(
             async_grouped_update_provided_schema::Data {
                 lax: 10,
@@ -1659,14 +1659,14 @@ async fn should_trigger_async_grouped_update_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_update_provided_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1676,7 +1676,7 @@ async_test_matrix!(
 
 #[test]
 fn should_not_trigger_sync_grouped_creation_not_provided() {
-    let created = sync_grouped_creation_not_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_not_provided_schema::DataModel
         .create(
             sync_grouped_creation_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -1687,15 +1687,15 @@ fn should_not_trigger_sync_grouped_creation_not_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_not_provided_schema::Data {
+    assert_eq!(created, sync_grouped_creation_not_provided_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_grouped_creation_not_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_not_provided_schema::DataModel
         .create(
             sync_grouped_creation_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -1706,16 +1706,16 @@ fn should_not_trigger_sync_grouped_creation_not_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_not_provided_schema::Data {
+    assert_eq!(created, sync_grouped_creation_not_provided_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_creation_not_provided() {
-    let created = async_grouped_creation_not_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_not_provided_schema::DataModel
         .create(
             async_grouped_creation_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -1726,15 +1726,15 @@ async fn should_not_trigger_async_grouped_creation_not_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_not_provided_schema::Data {
+    assert_eq!(created, async_grouped_creation_not_provided_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_grouped_creation_not_provided_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_not_provided_schema::DataModel
         .create(
             async_grouped_creation_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -1745,19 +1745,19 @@ async fn should_not_trigger_async_grouped_creation_not_provided() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_not_provided_schema::Data {
+    assert_eq!(created, async_grouped_creation_not_provided_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_creation_not_provided);
 
 #[test]
 fn should_not_trigger_sync_grouped_update_not_provided() {
-    let updated = sync_grouped_update_not_provided_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_grouped_update_not_provided_schema::DataModel
         .update(
             sync_grouped_update_not_provided_schema::Data {
                 lax: 10,
@@ -1773,18 +1773,18 @@ fn should_not_trigger_sync_grouped_update_not_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_update_not_provided_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_update_not_provided() {
-    let updated = async_grouped_update_not_provided_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_grouped_update_not_provided_schema::DataModel
         .update(
             async_grouped_update_not_provided_schema::Data {
                 lax: 10,
@@ -1800,21 +1800,21 @@ async fn should_not_trigger_async_grouped_update_not_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_update_not_provided_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_update_not_provided);
 
 #[test]
 fn should_not_trigger_sync_grouped_creation_ignored_by_ignore() {
-    let created = sync_grouped_creation_ignored_by_ignore_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -1825,15 +1825,15 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_grouped_creation_ignored_by_ignore_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -1844,16 +1844,16 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_creation_ignored_by_ignore() {
-    let created = async_grouped_creation_ignored_by_ignore_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -1864,15 +1864,15 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_grouped_creation_ignored_by_ignore_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -1883,19 +1883,19 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_creation_ignored_by_ignore);
 
 #[test]
 fn should_not_trigger_sync_grouped_update_ignored_by_ignore_update() {
-    let updated = sync_grouped_update_ignored_by_ignore_update_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_grouped_update_ignored_by_ignore_update_schema::DataModel
         .update(
             sync_grouped_update_ignored_by_ignore_update_schema::Data {
                 lax: 10,
@@ -1911,18 +1911,18 @@ fn should_not_trigger_sync_grouped_update_ignored_by_ignore_update() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_update_ignored_by_ignore_update_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_update_ignored_by_ignore_update() {
-    let updated = async_grouped_update_ignored_by_ignore_update_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_grouped_update_ignored_by_ignore_update_schema::DataModel
         .update(
             async_grouped_update_ignored_by_ignore_update_schema::Data {
                 lax: 10,
@@ -1938,21 +1938,21 @@ async fn should_not_trigger_async_grouped_update_ignored_by_ignore_update() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_update_ignored_by_ignore_update_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_update_ignored_by_ignore_update);
 
 #[test]
 fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_init() {
-    let created = sync_grouped_creation_ignored_by_ignore_init_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_init_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -1963,15 +1963,15 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_init() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_init_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_init_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_grouped_creation_ignored_by_ignore_init_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_init_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -1982,16 +1982,16 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_init() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_init_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_init_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_init() {
-    let created = async_grouped_creation_ignored_by_ignore_init_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_init_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -2002,15 +2002,15 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_init() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_init_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_init_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_grouped_creation_ignored_by_ignore_init_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_init_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_init_schema::PartialDataInput {
                 virtual_field: Some("virtual_value".into()),
@@ -2021,12 +2021,12 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_init() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_init_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_init_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_creation_ignored_by_ignore_init);
@@ -2034,7 +2034,7 @@ async_test_matrix!(should_not_trigger_async_grouped_creation_ignored_by_ignore_i
 #[should_panic(expected = "[options.on_success]: on_success triggered")]
 #[test]
 fn should_trigger_sync_grouped_creation_provided_with_alias() {
-    let created = sync_grouped_creation_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_provided_alias_schema::DataModel
         .create(
             sync_grouped_creation_provided_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2045,16 +2045,16 @@ fn should_trigger_sync_grouped_creation_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_provided_alias_schema::Data {
+    assert_eq!(created, sync_grouped_creation_provided_alias_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_grouped_creation_provided_with_alias() {
-    let created = async_grouped_creation_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_provided_alias_schema::DataModel
         .create(
             async_grouped_creation_provided_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2065,12 +2065,12 @@ async fn should_trigger_async_grouped_creation_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_provided_alias_schema::Data {
+    assert_eq!(created, async_grouped_creation_provided_alias_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -2081,7 +2081,7 @@ async_test_matrix!(
 #[should_panic(expected = "[options.on_success]: on_success triggered")]
 #[test]
 fn should_trigger_sync_grouped_update_provided_with_alias() {
-    let updated = sync_grouped_update_provided_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_grouped_update_provided_alias_schema::DataModel
         .update(
             sync_grouped_update_provided_alias_schema::Data {
                 lax: 10,
@@ -2097,18 +2097,18 @@ fn should_trigger_sync_grouped_update_provided_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_update_provided_alias_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_grouped_update_provided_with_alias() {
-    let updated = async_grouped_update_provided_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_grouped_update_provided_alias_schema::DataModel
         .update(
             async_grouped_update_provided_alias_schema::Data {
                 lax: 10,
@@ -2124,14 +2124,14 @@ async fn should_trigger_async_grouped_update_provided_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_update_provided_alias_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -2141,7 +2141,7 @@ async_test_matrix!(
 
 #[test]
 fn should_not_trigger_sync_grouped_creation_not_provided_with_alias() {
-    let created = sync_grouped_creation_not_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_not_provided_alias_schema::DataModel
         .create(
             sync_grouped_creation_not_provided_alias_schema::PartialDataInput {
                 virtual_alias: None,
@@ -2152,15 +2152,15 @@ fn should_not_trigger_sync_grouped_creation_not_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_not_provided_alias_schema::Data {
+    assert_eq!(created, sync_grouped_creation_not_provided_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_grouped_creation_not_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_not_provided_alias_schema::DataModel
         .create(
             sync_grouped_creation_not_provided_alias_schema::PartialDataInput {
                 virtual_alias: None,
@@ -2171,16 +2171,16 @@ fn should_not_trigger_sync_grouped_creation_not_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_not_provided_alias_schema::Data {
+    assert_eq!(created, sync_grouped_creation_not_provided_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_creation_not_provided_with_alias() {
-    let created = async_grouped_creation_not_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_not_provided_alias_schema::DataModel
         .create(
             async_grouped_creation_not_provided_alias_schema::PartialDataInput {
                 virtual_alias: None,
@@ -2191,15 +2191,15 @@ async fn should_not_trigger_async_grouped_creation_not_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_not_provided_alias_schema::Data {
+    assert_eq!(created, async_grouped_creation_not_provided_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_grouped_creation_not_provided_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_not_provided_alias_schema::DataModel
         .create(
             async_grouped_creation_not_provided_alias_schema::PartialDataInput {
                 virtual_alias: None,
@@ -2210,19 +2210,19 @@ async fn should_not_trigger_async_grouped_creation_not_provided_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_not_provided_alias_schema::Data {
+    assert_eq!(created, async_grouped_creation_not_provided_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_creation_not_provided_with_alias);
 
 #[test]
 fn should_not_trigger_sync_grouped_update_not_provided_with_alias() {
-    let updated = sync_grouped_update_not_provided_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_grouped_update_not_provided_alias_schema::DataModel
         .update(
             sync_grouped_update_not_provided_alias_schema::Data {
                 lax: 10,
@@ -2238,18 +2238,18 @@ fn should_not_trigger_sync_grouped_update_not_provided_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_update_not_provided_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_update_not_provided_with_alias() {
-    let updated = async_grouped_update_not_provided_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_grouped_update_not_provided_alias_schema::DataModel
         .update(
             async_grouped_update_not_provided_alias_schema::Data {
                 lax: 10,
@@ -2265,21 +2265,21 @@ async fn should_not_trigger_async_grouped_update_not_provided_with_alias() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_update_not_provided_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_update_not_provided_with_alias);
 
 #[test]
 fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_with_alias() {
-    let created = sync_grouped_creation_ignored_by_ignore_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_alias_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2290,15 +2290,15 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_alias_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_grouped_creation_ignored_by_ignore_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_alias_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2309,16 +2309,16 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_with_alias() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_alias_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_with_alias() {
-    let created = async_grouped_creation_ignored_by_ignore_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_alias_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2329,15 +2329,15 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_with_alias(
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_alias_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_grouped_creation_ignored_by_ignore_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_alias_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2348,19 +2348,19 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_with_alias(
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_alias_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_creation_ignored_by_ignore_with_alias);
 
 #[test]
 fn should_not_trigger_sync_grouped_update_ignored_by_ignore_update_with_alias() {
-    let updated = sync_grouped_update_ignored_by_ignore_update_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_grouped_update_ignored_by_ignore_update_alias_schema::DataModel
         .update(
             sync_grouped_update_ignored_by_ignore_update_alias_schema::Data {
                 lax: 10,
@@ -2376,18 +2376,18 @@ fn should_not_trigger_sync_grouped_update_ignored_by_ignore_update_with_alias() 
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_update_ignored_by_ignore_update_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_update_ignored_by_ignore_update_with_alias() {
-    let updated = async_grouped_update_ignored_by_ignore_update_alias_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_grouped_update_ignored_by_ignore_update_alias_schema::DataModel
         .update(
             async_grouped_update_ignored_by_ignore_update_alias_schema::Data {
                 lax: 10,
@@ -2403,21 +2403,21 @@ async fn should_not_trigger_async_grouped_update_ignored_by_ignore_update_with_a
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_update_ignored_by_ignore_update_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_update_ignored_by_ignore_update_with_alias);
 
 #[test]
 fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_init_with_alias() {
-    let created = sync_grouped_creation_ignored_by_ignore_init_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_init_alias_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2428,15 +2428,15 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_init_with_alias() 
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_init_alias_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_init_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_grouped_creation_ignored_by_ignore_init_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_init_alias_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2447,16 +2447,16 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_init_with_alias() 
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_init_alias_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_init_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_init_with_alias() {
-    let created = async_grouped_creation_ignored_by_ignore_init_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_init_alias_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2467,15 +2467,15 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_init_with_a
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_init_alias_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_init_alias_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_grouped_creation_ignored_by_ignore_init_alias_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_init_alias_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_init_alias_schema::PartialDataInput {
                 virtual_alias: Some("virtual_value".into()),
@@ -2486,12 +2486,12 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_init_with_a
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_init_alias_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_init_alias_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_creation_ignored_by_ignore_init_with_alias);
@@ -2499,7 +2499,7 @@ async_test_matrix!(should_not_trigger_async_grouped_creation_ignored_by_ignore_i
 #[should_panic(expected = "[options.on_success]: on_success triggered")]
 #[test]
 fn should_trigger_sync_grouped_creation_provided_with_alias_as_dependent() {
-    let created = sync_grouped_creation_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_provided_alias_as_dependent_schema::DataModel
         .create(
             sync_grouped_creation_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2510,16 +2510,16 @@ fn should_trigger_sync_grouped_creation_provided_with_alias_as_dependent() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_grouped_creation_provided_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_grouped_creation_provided_with_alias_as_dependent() {
-    let created = async_grouped_creation_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_provided_alias_as_dependent_schema::DataModel
         .create(
             async_grouped_creation_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2530,12 +2530,12 @@ async fn should_trigger_async_grouped_creation_provided_with_alias_as_dependent(
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_grouped_creation_provided_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 2,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -2546,7 +2546,7 @@ async_test_matrix!(
 #[should_panic(expected = "[options.on_success]: on_success triggered")]
 #[test]
 fn should_trigger_sync_grouped_update_provided_with_alias_as_dependent() {
-    let updated = sync_grouped_update_provided_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_grouped_update_provided_alias_as_dependent_schema::DataModel
         .update(
             sync_grouped_update_provided_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -2562,18 +2562,18 @@ fn should_trigger_sync_grouped_update_provided_with_alias_as_dependent() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_update_provided_alias_as_dependent_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_grouped_update_provided_with_alias_as_dependent() {
-    let updated = async_grouped_update_provided_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_grouped_update_provided_alias_as_dependent_schema::DataModel
         .update(
             async_grouped_update_provided_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -2589,14 +2589,14 @@ async fn should_trigger_async_grouped_update_provided_with_alias_as_dependent() 
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_update_provided_alias_as_dependent_schema::PartialData {
             lax: None,
             dependent: Some(2),
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -2606,7 +2606,7 @@ async_test_matrix!(
 
 #[test]
 fn should_not_trigger_sync_grouped_creation_not_provided_with_alias_as_dependent() {
-    let created = sync_grouped_creation_not_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_not_provided_alias_as_dependent_schema::DataModel
         .create(
             sync_grouped_creation_not_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: None,
@@ -2617,15 +2617,15 @@ fn should_not_trigger_sync_grouped_creation_not_provided_with_alias_as_dependent
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_not_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_grouped_creation_not_provided_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_grouped_creation_not_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_not_provided_alias_as_dependent_schema::DataModel
         .create(
             sync_grouped_creation_not_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: None,
@@ -2636,16 +2636,16 @@ fn should_not_trigger_sync_grouped_creation_not_provided_with_alias_as_dependent
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_not_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_grouped_creation_not_provided_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_creation_not_provided_with_alias_as_dependent() {
-    let created = async_grouped_creation_not_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_not_provided_alias_as_dependent_schema::DataModel
         .create(
             async_grouped_creation_not_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: None,
@@ -2656,15 +2656,15 @@ async fn should_not_trigger_async_grouped_creation_not_provided_with_alias_as_de
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_not_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_grouped_creation_not_provided_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_grouped_creation_not_provided_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_not_provided_alias_as_dependent_schema::DataModel
         .create(
             async_grouped_creation_not_provided_alias_as_dependent_schema::PartialDataInput {
                 dependent: None,
@@ -2675,19 +2675,19 @@ async fn should_not_trigger_async_grouped_creation_not_provided_with_alias_as_de
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_not_provided_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_grouped_creation_not_provided_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_creation_not_provided_with_alias_as_dependent);
 
 #[test]
 fn should_not_trigger_sync_grouped_update_not_provided_with_alias_as_dependent() {
-    let updated = sync_grouped_update_not_provided_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_grouped_update_not_provided_alias_as_dependent_schema::DataModel
         .update(
             sync_grouped_update_not_provided_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -2703,18 +2703,18 @@ fn should_not_trigger_sync_grouped_update_not_provided_with_alias_as_dependent()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_update_not_provided_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_update_not_provided_with_alias_as_dependent() {
-    let updated = async_grouped_update_not_provided_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_grouped_update_not_provided_alias_as_dependent_schema::DataModel
         .update(
             async_grouped_update_not_provided_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -2730,21 +2730,21 @@ async fn should_not_trigger_async_grouped_update_not_provided_with_alias_as_depe
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_update_not_provided_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_update_not_provided_with_alias_as_dependent);
 
 #[test]
 fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_with_alias_as_dependent() {
-    let created = sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2755,15 +2755,15 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_with_alias_as_depe
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2774,16 +2774,16 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_with_alias_as_depe
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_with_alias_as_dependent() {
-    let created = async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2794,15 +2794,15 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_with_alias_
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2813,19 +2813,19 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_with_alias_
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_creation_ignored_by_ignore_with_alias_as_dependent);
 
 #[test]
 fn should_not_trigger_sync_grouped_update_ignored_by_ignore_update_with_alias_as_dependent() {
-    let updated = sync_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema::DataModel
         .update(
             sync_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -2841,18 +2841,18 @@ fn should_not_trigger_sync_grouped_update_ignored_by_ignore_update_with_alias_as
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_update_ignored_by_ignore_update_with_alias_as_dependent() {
-    let updated = async_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema::DataModel
         .update(
             async_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema::Data {
                 lax: 10,
@@ -2868,21 +2868,21 @@ async fn should_not_trigger_async_grouped_update_ignored_by_ignore_update_with_a
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_update_ignored_by_ignore_update_with_alias_as_dependent);
 
 #[test]
 fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_init_with_alias_as_dependent() {
-    let created = sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2893,15 +2893,15 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_init_with_alias_as
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 
 
-    let created = sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
         .create(
             sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2912,16 +2912,16 @@ fn should_not_trigger_sync_grouped_creation_ignored_by_ignore_init_with_alias_as
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
+    assert_eq!(created, sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_init_with_alias_as_dependent() {
-    let created = async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2932,15 +2932,15 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_init_with_a
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
             lax: 10,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 
 
-    let created = async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::DataModel
         .create(
             async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("virtual_value".into()),
@@ -2951,12 +2951,12 @@ async fn should_not_trigger_async_grouped_creation_ignored_by_ignore_init_with_a
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
+    assert_eq!(created, async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema::Data {
             lax: 20,
             dependent: 1,
         });
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_async_grouped_creation_ignored_by_ignore_init_with_alias_as_dependent);

@@ -65,7 +65,7 @@ mod post_schema {
 use post_schema::{PartialPostInput, PostModel};
 
 fn main() {
-    let created = PostModel
+    let (post, _ctx_options) = PostModel
         .create(
             PartialPostInput {
                 title: Some("Hello, ivo!".into()),
@@ -75,11 +75,11 @@ fn main() {
         )
         .unwrap();
 
-    println!("{:#?}", created.data); // -> Post { id, created_at, updated_at, title, body }
+    println!("{:#?}", post); // -> Post { id, created_at, updated_at, title, body }
 
-    let updated = PostModel
+    let (updated, _ctx_options) = PostModel
         .update(
-            created.data,
+            post,
             PartialPostInput {
                 title: None,
                 body: Some("Edited.".into()),
@@ -88,13 +88,20 @@ fn main() {
         )
         .unwrap();
 
-    println!("{:#?}", updated.data); // -> PartialPost { body: Some("Edited."), .. rest None }
+    println!("{:#?}", updated); // -> PartialPost { body: Some("Edited."), .. rest None }
 }
 ```
 
 `create`/`update`/`delete` are `async` only if at least one handler they invoke is async --
-otherwise the generated method (and any `handle_success`/`handle_failure` it returns) is plain
-sync, with no runtime dependency forced on you.
+otherwise the generated method is plain sync, with no runtime dependency forced on you.
+
+`create`/`update` return `(data, ctx_options)` when the schema has no `on_success`/`on_failure`
+handlers on that path, as above. If it does, a third element is appended -- a trigger you call to
+run them: `(data, ctx_options, handle)`, where `handle` is `FnOnce()` if every captured handler is
+sync, or `FnOnce() -> impl Future<Output = ()>` (call it, then `.await` the result) if any is
+async. `Result::unwrap()`/`unwrap_err()` require `Debug` on the *other* arm, which a trigger
+closure can't provide -- use `.ok().unwrap()` / `.err().unwrap()` instead (`Option::unwrap()` has
+no such bound), matching every example under [`examples/`](./examples).
 
 # Field types
 

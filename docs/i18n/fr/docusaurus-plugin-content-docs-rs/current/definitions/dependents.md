@@ -48,27 +48,27 @@ fn main() {
     // `value` prend la valeur par défaut 0 -- mais la valeur par défaut d'un champ lax compte
     // tout de même comme "fournie" pour sa propre résolution, donc `computed` se résout quand
     // même une fois : 0 + 1 = 1.
-    let created = dependents_schema::DataModel
+    let (created, _ctx_options) = dependents_schema::DataModel
         .create(dependents_schema::PartialDataInput { value: None }, ())
         .unwrap();
-    println!("{:?}", created.data); // Data { value: 0, computed: 1 }
+    println!("{:?}", created); // Data { value: 0, computed: 1 }
 
-    let created = dependents_schema::DataModel
+    let (created, _ctx_options) = dependents_schema::DataModel
         .create(
             dependents_schema::PartialDataInput { value: Some(5) },
             (),
         )
         .unwrap();
-    println!("{:?}", created.data); // Data { value: 5, computed: 6 }
+    println!("{:?}", created); // Data { value: 5, computed: 6 }
 
-    let updated = dependents_schema::DataModel
+    let (updated, _ctx_options) = dependents_schema::DataModel
         .update(
-            created.data,
+            created,
             dependents_schema::PartialDataInput { value: Some(10) },
             (),
         )
         .unwrap();
-    println!("{:?}", updated.data); // PartialData { value: Some(10), computed: Some(11) }
+    println!("{:?}", updated); // PartialData { value: Some(10), computed: Some(11) }
 }
 ```
 

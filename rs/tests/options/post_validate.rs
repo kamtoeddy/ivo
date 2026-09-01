@@ -9,7 +9,7 @@ use ivo::ivo_schema;
 
 #[test]
 fn should_not_run_main_validate_once_pre_validate_has_failed() {
-    let errors = pre_validate_aborts_main_schema::DataInputModel
+    let (errors, ..) = pre_validate_aborts_main_schema::DataInputModel
         .create(
             pre_validate_aborts_main_schema::PartialDataInput {
                 field_a: Some("fail-pre".into()),
@@ -17,9 +17,9 @@ fn should_not_run_main_validate_once_pre_validate_has_failed() {
             },
             (),
         )
-        .unwrap_err();
+        .err().unwrap();
 
-    assert_eq!(errors.errors.get("field_a").unwrap().reason, "pre failed");
+    assert_eq!(errors.get("field_a").unwrap().reason, "pre failed");
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -62,7 +62,7 @@ fn should_not_let_one_group_see_another_groups_pre_validate_updates() {
     // reads `shared` and records what it saw. Since both groups' pre_validate
     // handlers are batched against the same pre-phase snapshot, group_b must
     // see the *original* value, not group_a's update.
-    let created = independent_post_validate_groups_schema::DataInputModel
+    let (created, ..) = independent_post_validate_groups_schema::DataInputModel
         .create(
             independent_post_validate_groups_schema::PartialDataInput {
                 shared: Some("original".into()),
@@ -75,8 +75,8 @@ fn should_not_let_one_group_see_another_groups_pre_validate_updates() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.shared, "from-a");
-    assert_eq!(created.data.seen_by_b, "original");
+    assert_eq!(created.shared, "from-a");
+    assert_eq!(created.seen_by_b, "original");
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -129,7 +129,7 @@ async fn should_run_independent_groups_main_validate_concurrently() {
     async_parallel_post_validate_groups_schema::STARTED
         .store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let created = async_parallel_post_validate_groups_schema::DataInputModel
+    let (created, ..) = async_parallel_post_validate_groups_schema::DataInputModel
         .create(
             async_parallel_post_validate_groups_schema::DataInput {
                 field_a: "a".into(),
@@ -141,8 +141,8 @@ async fn should_run_independent_groups_main_validate_concurrently() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.field_a, "a");
-    assert_eq!(created.data.field_b, "b");
+    assert_eq!(created.field_a, "a");
+    assert_eq!(created.field_b, "b");
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]

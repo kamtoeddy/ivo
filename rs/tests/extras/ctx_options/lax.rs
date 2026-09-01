@@ -22,7 +22,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in default value resolver";
 
-    let created = default_fn_schema::DataInputModel
+    let (data, ctx_options, handle_success) = default_fn_schema::DataInputModel
         .create(
             default_fn_schema::PartialDataInput { lax: None },
             CtxOptions::new(),
@@ -31,13 +31,10 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
         .ok()
         .unwrap();
 
-    assert_eq!(
-        created.data,
-        default_fn_schema::DataInput { lax: DEFAULT_VALUE }
-    );
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(data, default_fn_schema::DataInput { lax: DEFAULT_VALUE });
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    created.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(
@@ -76,7 +73,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
 
     let lax = DEFAULT_VALUE + 1;
 
-    let created = ignore_create_schema::DataInputModel
+    let (data, ctx_options, handle_success) = ignore_create_schema::DataInputModel
         .create(
             ignore_create_schema::PartialDataInput { lax: Some(lax) },
             CtxOptions::new(),
@@ -85,10 +82,10 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, ignore_create_schema::DataInput { lax });
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(data, ignore_create_schema::DataInput { lax });
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    created.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(
@@ -130,7 +127,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
 
     let lax = Some(data.lax + 1);
 
-    let updated = ignore_update_schema::DataInputModel
+    let (updates, ctx_options, handle_success) = ignore_update_schema::DataInputModel
         .update(
             data.clone(),
             ignore_update_schema::PartialDataInput { lax },
@@ -140,10 +137,10 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
         .ok()
         .unwrap();
 
-    assert_eq!(updated.data, ignore_update_schema::PartialDataInput { lax });
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(updates, ignore_update_schema::PartialDataInput { lax });
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    updated.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(
@@ -180,7 +177,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
 ) {
     use required_create_schema::{DataInputModel, MESSAGE, REQUIRED_ERROR};
 
-    let failed = DataInputModel
+    let (errors, ctx_options) = DataInputModel
         .create(
             required_create_schema::PartialDataInput { lax: None },
             CtxOptions::new(),
@@ -189,8 +186,8 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .err()
         .unwrap();
 
-    assert_eq!(failed.errors.get("lax").unwrap().reason, REQUIRED_ERROR);
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(errors.get("lax").unwrap().reason, REQUIRED_ERROR);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
@@ -226,7 +223,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         DataInput, DataInputModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, REQUIRED_ERROR,
     };
 
-    let failed = DataInputModel
+    let (errors, ctx_options) = DataInputModel
         .update(
             DataInput {
                 lax: DEFAULT_VALUE,
@@ -243,10 +240,10 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .unwrap();
 
     assert_eq!(
-        failed.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        errors.as_ref().unwrap().get("lax").unwrap().reason,
         REQUIRED_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
@@ -283,7 +280,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 ) {
     use validate_create_schema::{DataInputModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    let failed = DataInputModel
+    let (errors, ctx_options, handle_failure) = DataInputModel
         .create(
             PartialDataInput {
                 lax: Some(String::from(" ")),
@@ -294,10 +291,10 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .err()
         .unwrap();
 
-    assert_eq!(failed.errors.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(errors.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -346,7 +343,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     const MESSAGE: &str = "ctx_options updated in validator";
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let failed = validate_update_schema::DataInputModel
+    let (failed, ctx_options, handle_failure) = validate_update_schema::DataInputModel
         .update(
             validate_update_schema::DataInput {
                 lax: DEFAULT_VALUE.into(),
@@ -361,12 +358,12 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .unwrap();
 
     assert_eq!(
-        failed.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        failed.as_ref().unwrap().get("lax").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -409,7 +406,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 ) {
     use re_validate_create_schema::{DataInputModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    let failed = DataInputModel
+    let (failed, ctx_options, handle_failure) = DataInputModel
         .create(
             PartialDataInput {
                 lax: Some(String::from(" ")),
@@ -420,10 +417,10 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .err()
         .unwrap();
 
-    assert_eq!(failed.errors.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -473,7 +470,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     const MESSAGE: &str = "ctx_options updated in re_validator";
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let failed = re_validate_update_schema::DataInputModel
+    let (failed, ctx_options, handle_failure) = re_validate_update_schema::DataInputModel
         .update(
             re_validate_update_schema::DataInput {
                 lax: DEFAULT_VALUE.into(),
@@ -488,12 +485,12 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .unwrap();
 
     assert_eq!(
-        failed.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        failed.as_ref().unwrap().get("lax").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -540,7 +537,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let lax = DEFAULT_VALUE + 1;
 
-    let created = post_validate_create_schema::DataInputModel
+    let (created, ctx_options, handle_success) = post_validate_create_schema::DataInputModel
         .create(
             post_validate_create_schema::PartialDataInput {
                 lax: Some(lax),
@@ -553,15 +550,15 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         post_validate_create_schema::DataInput {
             lax,
             lax_1: DEFAULT_VALUE
         }
     );
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -610,7 +607,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let lax = Some(data.lax + 1);
 
-    let updated = post_validate_update_schema::DataInputModel
+    let (updates, ctx_options, handle_success) = post_validate_update_schema::DataInputModel
         .update(
             data.clone(),
             post_validate_update_schema::PartialDataInput { lax, lax_1: None },
@@ -621,12 +618,12 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updates,
         post_validate_update_schema::PartialDataInput { lax, lax_1: None }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(

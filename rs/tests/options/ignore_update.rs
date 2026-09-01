@@ -32,11 +32,11 @@ async fn should_respect_option_to_ignore_updates_with_empty_fields_array() {
         lax: Some("ignore_value".to_string()),
     };
 
-    let err = empty_grouped_ignore_update_schema::DataInputModel
+    let (err, ..) = empty_grouped_ignore_update_schema::DataInputModel
         .update(existing, updates, ())
         .err()
         .unwrap();
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 
     let existing = empty_grouped_ignore_update_schema::DataInput {
         lax: "lax_value".to_string(),
@@ -47,12 +47,12 @@ async fn should_respect_option_to_ignore_updates_with_empty_fields_array() {
         lax: Some(lax_update.clone()),
     };
 
-    let updated = empty_grouped_ignore_update_schema::DataInputModel
+    let (updated, ..) = empty_grouped_ignore_update_schema::DataInputModel
         .update(existing, updates, ())
         .ok()
         .unwrap();
 
-    assert_eq!(updated.data.lax, Some(lax_update));
+    assert_eq!(updated.lax, Some(lax_update));
 }
 
 async_test_matrix!(should_respect_option_to_ignore_updates_with_empty_fields_array);

@@ -30,7 +30,7 @@ mod re_validate_schema {
 }
 
 fn main() {
-    let created = re_validate_schema::DataInputModel
+    let (created, _ctx_options) = re_validate_schema::DataInputModel
         .create(
             re_validate_schema::PartialDataInput {
                 username: Some("jane".into()),
@@ -39,7 +39,7 @@ fn main() {
         )
         .unwrap();
 
-    println!("{:?}", created.data); // DataInput { username: "revalidated-jane" }
+    println!("{:?}", created); // DataInput { username: "revalidated-jane" }
 }
 ```
 

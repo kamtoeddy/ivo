@@ -32,7 +32,7 @@ async fn should_re_validate_independent_fields_concurrently() {
     // Two required fields' re-validators must be polled concurrently (not one
     // `.await` at a time). `rendezvous()` only returns once *both* have
     // started.
-    let created = async_parallel_re_validate_schema::DataInputModel
+    let (created, ..) = async_parallel_re_validate_schema::DataInputModel
         .create(
             async_parallel_re_validate_schema::PartialDataInput {
                 field_a: Some("a".into()),
@@ -45,7 +45,7 @@ async fn should_re_validate_independent_fields_concurrently() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_parallel_re_validate_schema::DataInput {
             field_a: "revalidated-a".into(),
             field_b: "revalidated-b".into(),
@@ -105,7 +105,7 @@ async fn should_validate_independent_updated_fields_concurrently() {
 
     async_parallel_update_validate_schema::STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let updated = async_parallel_update_validate_schema::DataInputModel
+    let (updated, ..) = async_parallel_update_validate_schema::DataInputModel
         .update(
             existing,
             async_parallel_update_validate_schema::PartialDataInput {
@@ -119,7 +119,7 @@ async fn should_validate_independent_updated_fields_concurrently() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_parallel_update_validate_schema::PartialDataInput {
             field_a: Some("validated-aa".into()),
             field_b: Some("validated-bb".into()),
@@ -172,7 +172,7 @@ async fn should_validate_independent_fields_concurrently_on_create() {
     // returns once *both* have started.
     async_parallel_create_validate_schema::STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let created = async_parallel_create_validate_schema::DataInputModel
+    let (created, ..) = async_parallel_create_validate_schema::DataInputModel
         .create(
             async_parallel_create_validate_schema::PartialDataInput {
                 field_a: Some("a".into()),
@@ -185,7 +185,7 @@ async fn should_validate_independent_fields_concurrently_on_create() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_parallel_create_validate_schema::DataInput {
             field_a: "validated-a".into(),
             field_b: "validated-b".into(),

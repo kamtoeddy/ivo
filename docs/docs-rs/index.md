@@ -5,7 +5,7 @@ slug: /
 
 # Getting Started
 
-These docs cover `ivo` for Rust **v0.5.0**.
+These docs cover `ivo` for Rust **v0.6.0**.
 
 Schemas are declared, not built imperatively: a single attribute macro, `#[ivo_schema(...)]`,
 takes a module containing your field declarations and generates the input/output structs, their
@@ -64,7 +64,7 @@ mod post_schema {
 use post_schema::{PartialPostInput, PostModel};
 
 fn main() {
-    let created = PostModel
+    let (post, _ctx_options) = PostModel
         .create(
             PartialPostInput {
                 title: Some("Hello, ivo!".into()),
@@ -74,11 +74,11 @@ fn main() {
         )
         .unwrap();
 
-    println!("{:#?}", created.data); // -> Post { id, created_at, updated_at, title, body }
+    println!("{:#?}", post); // -> Post { id, created_at, updated_at, title, body }
 
-    let updated = PostModel
+    let (updated, _ctx_options) = PostModel
         .update(
-            created.data,
+            post,
             PartialPostInput {
                 title: None,
                 body: Some("Edited.".into()),
@@ -87,7 +87,7 @@ fn main() {
         )
         .unwrap();
 
-    println!("{:#?}", updated.data); // -> PartialPost { body: Some("Edited."), .. rest None }
+    println!("{:#?}", updated); // -> PartialPost { body: Some("Edited."), .. rest None }
 }
 ```
 
@@ -100,8 +100,10 @@ fn main() {
 - The macro generates a `{OutputName}Model` unit value (or `{InputName}Model` for a single-struct
   schema) -- `post_schema::PostModel.create(...)` works directly, no `::new()` needed.
 - `create`/`update`/`delete` are `async` only if at least one handler they invoke is async --
-  otherwise the generated method (and any `handle_success`/`handle_failure` it returns) is plain
-  sync, with no runtime dependency forced on you.
+  otherwise the generated method is plain sync, with no runtime dependency forced on you.
+- `create`/`update` return `(data, ctx_options)` when the schema has no `on_success`/`on_failure`
+  handlers on that path, as above -- see [Life Cycles](./life-cycles.md#triggering-handlers) for
+  the 3-element form returned when it does.
 
 ## Defining a schema
 

@@ -75,8 +75,14 @@ test.describe("ivo docs site", () => {
       await expect(page.locator("text=Rust").first()).toBeVisible();
     });
 
-    test("default landing version is v0.5.0", async ({ page }) => {
+    test("default landing version is v0.6.0", async ({ page }) => {
       await page.goto("/docs/rs");
+      await expect(page.locator("text=Getting Started").first()).toBeVisible();
+      await expect(page.locator("text=0.6.0").first()).toBeVisible();
+    });
+
+    test("v0.5.0 archive is accessible", async ({ page }) => {
+      await page.goto("/docs/rs/0.5.0");
       await expect(page.locator("text=Getting Started").first()).toBeVisible();
       await expect(page.locator("text=0.5.0").first()).toBeVisible();
     });

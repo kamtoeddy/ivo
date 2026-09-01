@@ -36,7 +36,7 @@ fn should_not_run_validate_re_validate_post_validate_or_dependent_resolution_for
         trigger: "old".into(),
     };
 
-    let updated = update_relevance_schema::DataModel
+    let (updated, ..) = update_relevance_schema::DataModel
         .update(
             data,
             update_relevance_schema::PartialDataInput {
@@ -50,7 +50,7 @@ fn should_not_run_validate_re_validate_post_validate_or_dependent_resolution_for
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         update_relevance_schema::PartialData {
             name: None,
             other: None,
@@ -126,7 +126,7 @@ fn should_correctly_gate_unrelated_fields_when_the_relevant_trigger_is_an_unalia
         trigger_dependent: "old".into(),
     };
 
-    let updated = update_relevance_virtual_no_alias_schema::DataModel
+    let (updated, ..) = update_relevance_virtual_no_alias_schema::DataModel
         .update(
             data,
             update_relevance_virtual_no_alias_schema::PartialDataInput {
@@ -140,7 +140,7 @@ fn should_correctly_gate_unrelated_fields_when_the_relevant_trigger_is_an_unalia
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         update_relevance_virtual_no_alias_schema::PartialData {
             name: None,
             other: None,
@@ -213,7 +213,7 @@ fn should_correctly_gate_unrelated_fields_when_the_relevant_trigger_is_a_virtual
         trigger_dependent: "old".into(),
     };
 
-    let updated = update_relevance_virtual_alias_schema::DataModel
+    let (updated, ..) = update_relevance_virtual_alias_schema::DataModel
         .update(
             data,
             update_relevance_virtual_alias_schema::PartialDataInput {
@@ -227,7 +227,7 @@ fn should_correctly_gate_unrelated_fields_when_the_relevant_trigger_is_a_virtual
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         update_relevance_virtual_alias_schema::PartialData {
             name: None,
             other: None,
@@ -299,7 +299,7 @@ fn should_correctly_gate_unrelated_fields_when_the_relevant_trigger_is_a_virtual
         touch_count: "old".into(),
     };
 
-    let updated = update_relevance_virtual_alias_same_as_dependent_schema::DataModel
+    let (updated, ..) = update_relevance_virtual_alias_same_as_dependent_schema::DataModel
         .update(
             data,
             update_relevance_virtual_alias_same_as_dependent_schema::PartialDataInput {
@@ -313,7 +313,7 @@ fn should_correctly_gate_unrelated_fields_when_the_relevant_trigger_is_a_virtual
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         update_relevance_virtual_alias_same_as_dependent_schema::PartialData {
             name: None,
             other: None,

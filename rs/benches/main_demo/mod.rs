@@ -372,7 +372,7 @@ fn bench_main_demo(c: &mut Criterion) {
                 .with_username("user-10".into());
 
             match UserModel.create(input, UserCtxOptions::new()).await {
-                Ok(handle) => handle.data,
+                Ok(r) => r.0,
                 Err(_) => panic!("main_demo create failed"),
             }
         });
@@ -440,7 +440,7 @@ fn bench_main_demo(c: &mut Criterion) {
                 .with_username("user-10".into());
 
             match UserModel.create(input, UserCtxOptions::new()).await {
-                Ok(handle) => handle.data,
+                Ok(r) => r.0,
                 Err(_) => panic!("main_demo create failed"),
             }
         });

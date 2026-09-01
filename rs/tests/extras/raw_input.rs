@@ -16,7 +16,7 @@ use ivo::ivo_schema;
 
 #[test]
 fn should_expose_the_original_raw_input_distinct_from_current_input_during_create() {
-    let created = raw_input_create_schema::DataModel
+    let (created, ..) = raw_input_create_schema::DataModel
         .create(
             raw_input_create_schema::PartialDataInput {
                 virtual_field: Some("original".into()),
@@ -26,7 +26,7 @@ fn should_expose_the_original_raw_input_distinct_from_current_input_during_creat
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.dependent, "REWRITTEN-original");
+    assert_eq!(created.dependent, "REWRITTEN-original");
 }
 
 #[ivo_schema(
@@ -66,7 +66,7 @@ fn should_expose_the_original_raw_input_distinct_from_current_input_during_updat
         dependent: "old".into(),
     };
 
-    let updated = raw_input_update_schema::DataModel
+    let (updated, ..) = raw_input_update_schema::DataModel
         .update(
             data,
             raw_input_update_schema::PartialDataInput {
@@ -78,7 +78,7 @@ fn should_expose_the_original_raw_input_distinct_from_current_input_during_updat
         .unwrap();
 
     assert_eq!(
-        updated.data.dependent,
+        updated.dependent,
         Some("REWRITTEN-original-update".to_string())
     );
 }
@@ -127,9 +127,8 @@ mod raw_input_update_schema {
 // -----------------------------------------------------------------------------
 
 #[test]
-fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_triggers_during_create()
-{
-    let created = raw_input_trigger_create_schema::DataModel
+fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_triggers_during_create() {
+    let (_, _ctx_options, handle_success) = raw_input_trigger_create_schema::DataModel
         .create(
             raw_input_trigger_create_schema::PartialDataInput {
                 virtual_field: Some("original".into()),
@@ -139,7 +138,7 @@ fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_trigge
         .ok()
         .unwrap();
 
-    created.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(
@@ -175,13 +174,12 @@ mod raw_input_trigger_create_schema {
 }
 
 #[test]
-fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_triggers_during_update()
-{
+fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_triggers_during_update() {
     let data = raw_input_trigger_update_schema::Data {
         dependent: "old".into(),
     };
 
-    let updated = raw_input_trigger_update_schema::DataModel
+    let (_, _ctx_options, handle_success) = raw_input_trigger_update_schema::DataModel
         .update(
             data,
             raw_input_trigger_update_schema::PartialDataInput {
@@ -192,7 +190,7 @@ fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_trigge
         .ok()
         .unwrap();
 
-    updated.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(

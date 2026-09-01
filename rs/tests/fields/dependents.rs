@@ -7,7 +7,7 @@ fn should_use_sync_static_default_value_of_dependent_if_resolver_is_not_run_at_c
     let dependent = 1234;
     let lax = 20;
 
-    let created = sync_static_default_schema::DataModel
+    let (created, ..) = sync_static_default_schema::DataModel
         .create(
             sync_static_default_schema::PartialDataInput { lax: None },
             (),
@@ -16,7 +16,7 @@ fn should_use_sync_static_default_value_of_dependent_if_resolver_is_not_run_at_c
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_static_default_schema::Data { dependent, lax }
     );
 }
@@ -25,7 +25,7 @@ async fn should_use_async_static_default_value_of_dependent_if_resolver_is_not_r
     let dependent = 1234;
     let lax = 20;
 
-    let created = async_static_default_schema::DataModel
+    let (created, ..) = async_static_default_schema::DataModel
         .create(
             async_static_default_schema::PartialDataInput { lax: None },
             (),
@@ -35,7 +35,7 @@ async fn should_use_async_static_default_value_of_dependent_if_resolver_is_not_r
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_static_default_schema::Data { dependent, lax }
     );
 }
@@ -51,7 +51,7 @@ fn should_use_sync_computed_default_value_of_dependent_if_resolver_is_not_run_at
     let dependent = 1234;
     let lax = 20;
 
-    let created = sync_computed_default_schema::DataModel
+    let (created, ..) = sync_computed_default_schema::DataModel
         .create(
             sync_computed_default_schema::PartialDataInput { lax: None },
             (),
@@ -60,7 +60,7 @@ fn should_use_sync_computed_default_value_of_dependent_if_resolver_is_not_run_at
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_computed_default_schema::Data { dependent, lax }
     );
 }
@@ -69,7 +69,7 @@ async fn should_use_async_computed_default_value_of_dependent_if_resolver_is_not
     let dependent = 1234;
     let lax = 20;
 
-    let created = async_computed_default_schema::DataModel
+    let (created, ..) = async_computed_default_schema::DataModel
         .create(
             async_computed_default_schema::PartialDataInput { lax: None },
             (),
@@ -79,7 +79,7 @@ async fn should_use_async_computed_default_value_of_dependent_if_resolver_is_not
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_computed_default_schema::Data { dependent, lax }
     );
 }
@@ -95,7 +95,7 @@ fn should_properly_run_sync_dependent_resolver() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = sync_resolver_schema::DataModel
+    let (created, ..) = sync_resolver_schema::DataModel
         .create(
             sync_resolver_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -106,7 +106,7 @@ fn should_properly_run_sync_dependent_resolver() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_resolver_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value
@@ -115,7 +115,7 @@ fn should_properly_run_sync_dependent_resolver() {
 
     let lax = 700;
 
-    let created = sync_resolver_schema::DataModel
+    let (created, ..) = sync_resolver_schema::DataModel
         .create(
             sync_resolver_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -124,7 +124,7 @@ fn should_properly_run_sync_dependent_resolver() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_resolver_schema::Data {
             dependent: default_dependent_value + 1,
             lax
@@ -133,9 +133,9 @@ fn should_properly_run_sync_dependent_resolver() {
 
     let lax = Some(200);
 
-    let updated = sync_resolver_schema::DataModel
+    let (updated, ..) = sync_resolver_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_resolver_schema::PartialDataInput { lax },
             (),
         )
@@ -143,9 +143,9 @@ fn should_properly_run_sync_dependent_resolver() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_resolver_schema::PartialData {
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
             lax
         }
     );
@@ -155,7 +155,7 @@ async fn should_properly_run_async_dependent_resolver() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = async_resolver_schema::DataModel
+    let (created, ..) = async_resolver_schema::DataModel
         .create(
             async_resolver_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -167,7 +167,7 @@ async fn should_properly_run_async_dependent_resolver() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_resolver_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value
@@ -176,7 +176,7 @@ async fn should_properly_run_async_dependent_resolver() {
 
     let lax = 700;
 
-    let created = async_resolver_schema::DataModel
+    let (created, ..) = async_resolver_schema::DataModel
         .create(
             async_resolver_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -186,7 +186,7 @@ async fn should_properly_run_async_dependent_resolver() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_resolver_schema::Data {
             dependent: default_dependent_value + 1,
             lax
@@ -195,9 +195,9 @@ async fn should_properly_run_async_dependent_resolver() {
 
     let lax = Some(200);
 
-    let updated = async_resolver_schema::DataModel
+    let (updated, ..) = async_resolver_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_resolver_schema::PartialDataInput { lax },
             (),
         )
@@ -206,9 +206,9 @@ async fn should_properly_run_async_dependent_resolver() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_resolver_schema::PartialData {
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
             lax
         }
     );
@@ -221,7 +221,7 @@ fn should_properly_run_sync_dependent_resolver_even_with_multiple_parents() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = sync_multiple_parents_schema::DataModel
+    let (created, ..) = sync_multiple_parents_schema::DataModel
         .create(
             sync_multiple_parents_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -233,7 +233,7 @@ fn should_properly_run_sync_dependent_resolver_even_with_multiple_parents() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_multiple_parents_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value,
@@ -243,7 +243,7 @@ fn should_properly_run_sync_dependent_resolver_even_with_multiple_parents() {
 
     let lax = 700;
 
-    let created = sync_multiple_parents_schema::DataModel
+    let (created, ..) = sync_multiple_parents_schema::DataModel
         .create(
             sync_multiple_parents_schema::PartialDataInput {
                 lax: Some(lax),
@@ -255,7 +255,7 @@ fn should_properly_run_sync_dependent_resolver_even_with_multiple_parents() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_multiple_parents_schema::Data {
             dependent: default_dependent_value + 1,
             lax,
@@ -265,9 +265,9 @@ fn should_properly_run_sync_dependent_resolver_even_with_multiple_parents() {
 
     let lax = Some(200);
 
-    let updated = sync_multiple_parents_schema::DataModel
+    let (updated, ..) = sync_multiple_parents_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_multiple_parents_schema::PartialDataInput { lax, lax_1: None },
             (),
         )
@@ -275,9 +275,9 @@ fn should_properly_run_sync_dependent_resolver_even_with_multiple_parents() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_multiple_parents_schema::PartialData {
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
             lax,
             lax_1: None
         }
@@ -288,7 +288,7 @@ async fn should_properly_run_async_dependent_resolver_even_with_multiple_parents
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = async_multiple_parents_schema::DataModel
+    let (created, ..) = async_multiple_parents_schema::DataModel
         .create(
             async_multiple_parents_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -301,7 +301,7 @@ async fn should_properly_run_async_dependent_resolver_even_with_multiple_parents
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_multiple_parents_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value,
@@ -311,7 +311,7 @@ async fn should_properly_run_async_dependent_resolver_even_with_multiple_parents
 
     let lax = 700;
 
-    let created = async_multiple_parents_schema::DataModel
+    let (created, ..) = async_multiple_parents_schema::DataModel
         .create(
             async_multiple_parents_schema::PartialDataInput {
                 lax: Some(lax),
@@ -324,7 +324,7 @@ async fn should_properly_run_async_dependent_resolver_even_with_multiple_parents
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_multiple_parents_schema::Data {
             dependent: default_dependent_value + 1,
             lax,
@@ -334,9 +334,9 @@ async fn should_properly_run_async_dependent_resolver_even_with_multiple_parents
 
     let lax = Some(200);
 
-    let updated = async_multiple_parents_schema::DataModel
+    let (updated, ..) = async_multiple_parents_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_multiple_parents_schema::PartialDataInput { lax, lax_1: None },
             (),
         )
@@ -345,9 +345,9 @@ async fn should_properly_run_async_dependent_resolver_even_with_multiple_parents
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_multiple_parents_schema::PartialData {
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
             lax,
             lax_1: None
         }
@@ -361,7 +361,7 @@ fn should_properly_run_sync_dependent_resolver_even_with_dependency_on_other_dep
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = sync_dependent_on_dependent_schema::DataModel
+    let (created, ..) = sync_dependent_on_dependent_schema::DataModel
         .create(
             sync_dependent_on_dependent_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -376,7 +376,7 @@ fn should_properly_run_sync_dependent_resolver_even_with_dependency_on_other_dep
     let dependent_1 = dependent + 10;
 
     assert_eq!(
-        created.data,
+        created,
         sync_dependent_on_dependent_schema::Data {
             dependent,
             dependent_1,
@@ -387,7 +387,7 @@ fn should_properly_run_sync_dependent_resolver_even_with_dependency_on_other_dep
 
     let lax = 700;
 
-    let created = sync_dependent_on_dependent_schema::DataModel
+    let (created, ..) = sync_dependent_on_dependent_schema::DataModel
         .create(
             sync_dependent_on_dependent_schema::PartialDataInput {
                 lax: Some(lax),
@@ -402,7 +402,7 @@ fn should_properly_run_sync_dependent_resolver_even_with_dependency_on_other_dep
     let dependent_1 = dependent + 10;
 
     assert_eq!(
-        created.data,
+        created,
         sync_dependent_on_dependent_schema::Data {
             dependent,
             dependent_1,
@@ -413,20 +413,20 @@ fn should_properly_run_sync_dependent_resolver_even_with_dependency_on_other_dep
 
     let lax = Some(200);
 
-    let updated = sync_dependent_on_dependent_schema::DataModel
+    let (updated, ..) = sync_dependent_on_dependent_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_dependent_on_dependent_schema::PartialDataInput { lax, lax_1: None },
             (),
         )
         .ok()
         .unwrap();
 
-    let dependent = created.data.dependent + 1;
+    let dependent = created.dependent + 1;
     let dependent_1 = dependent + 10;
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_dependent_on_dependent_schema::PartialData {
             dependent: Some(dependent),
             dependent_1: Some(dependent_1),
@@ -440,7 +440,7 @@ async fn should_properly_run_async_dependent_resolver_even_with_dependency_on_ot
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = async_dependent_on_dependent_schema::DataModel
+    let (created, ..) = async_dependent_on_dependent_schema::DataModel
         .create(
             async_dependent_on_dependent_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -456,7 +456,7 @@ async fn should_properly_run_async_dependent_resolver_even_with_dependency_on_ot
     let dependent_1 = dependent + 10;
 
     assert_eq!(
-        created.data,
+        created,
         async_dependent_on_dependent_schema::Data {
             dependent,
             dependent_1,
@@ -467,7 +467,7 @@ async fn should_properly_run_async_dependent_resolver_even_with_dependency_on_ot
 
     let lax = 700;
 
-    let created = async_dependent_on_dependent_schema::DataModel
+    let (created, ..) = async_dependent_on_dependent_schema::DataModel
         .create(
             async_dependent_on_dependent_schema::PartialDataInput {
                 lax: Some(lax),
@@ -483,7 +483,7 @@ async fn should_properly_run_async_dependent_resolver_even_with_dependency_on_ot
     let dependent_1 = dependent + 10;
 
     assert_eq!(
-        created.data,
+        created,
         async_dependent_on_dependent_schema::Data {
             dependent,
             dependent_1,
@@ -494,9 +494,9 @@ async fn should_properly_run_async_dependent_resolver_even_with_dependency_on_ot
 
     let lax = Some(200);
 
-    let updated = async_dependent_on_dependent_schema::DataModel
+    let (updated, ..) = async_dependent_on_dependent_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_dependent_on_dependent_schema::PartialDataInput { lax, lax_1: None },
             (),
         )
@@ -504,11 +504,11 @@ async fn should_properly_run_async_dependent_resolver_even_with_dependency_on_ot
         .ok()
         .unwrap();
 
-    let dependent = created.data.dependent + 1;
+    let dependent = created.dependent + 1;
     let dependent_1 = dependent + 10;
 
     assert_eq!(
-        updated.data,
+        updated,
         async_dependent_on_dependent_schema::PartialData {
             dependent: Some(dependent),
             dependent_1: Some(dependent_1),
@@ -532,7 +532,7 @@ fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_d
 
     let lax = default_lax_value;
 
-    let created = sync_readonly_schema::DataModel
+    let (created, ..) = sync_readonly_schema::DataModel
         .create(
             sync_readonly_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -541,7 +541,7 @@ fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_d
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_readonly_schema::Data {
             dependent: default_dependent_value + 1,
             lax
@@ -550,9 +550,9 @@ fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_d
 
     let lax = Some(200);
 
-    let updated = sync_readonly_schema::DataModel
+    let (updated, ..) = sync_readonly_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_readonly_schema::PartialDataInput { lax },
             (),
         )
@@ -560,7 +560,7 @@ fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_d
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_readonly_schema::PartialData {
             dependent: None,
             lax
@@ -568,13 +568,13 @@ fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_d
         "update should be successful, but dependent resolver should not anymore"
     );
 
-    let created = sync_readonly_schema::DataModel
+    let (created, ..) = sync_readonly_schema::DataModel
         .create(sync_readonly_schema::PartialDataInput { lax: None }, ())
         .ok()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_readonly_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value
@@ -583,9 +583,9 @@ fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_d
 
     let lax = Some(201);
 
-    let updated = sync_readonly_schema::DataModel
+    let (updated, ..) = sync_readonly_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_readonly_schema::PartialDataInput { lax },
             (),
         )
@@ -593,18 +593,18 @@ fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_d
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_readonly_schema::PartialData {
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
             lax
         }
     );
 
-    let data = created.data.clone_with_updates(&updated.data);
+    let data = created.clone_with_updates(&updated);
 
     let lax = Some(3001);
 
-    let updated = sync_readonly_schema::DataModel
+    let (updated, ..) = sync_readonly_schema::DataModel
         .update(
             data.clone(),
             sync_readonly_schema::PartialDataInput { lax },
@@ -614,7 +614,7 @@ fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_d
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_readonly_schema::PartialData {
             dependent: None,
             lax
@@ -630,7 +630,7 @@ async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_val
 
     let lax = default_lax_value;
 
-    let created = async_readonly_schema::DataModel
+    let (created, ..) = async_readonly_schema::DataModel
         .create(
             async_readonly_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -640,7 +640,7 @@ async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_val
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_readonly_schema::Data {
             dependent: default_dependent_value + 1,
             lax
@@ -649,9 +649,9 @@ async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_val
 
     let lax = Some(200);
 
-    let updated = async_readonly_schema::DataModel
+    let (updated, ..) = async_readonly_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_readonly_schema::PartialDataInput { lax },
             (),
         )
@@ -660,7 +660,7 @@ async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_val
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_readonly_schema::PartialData {
             dependent: None,
             lax
@@ -668,14 +668,14 @@ async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_val
         "update should be successful, but dependent resolver should not anymore"
     );
 
-    let created = async_readonly_schema::DataModel
+    let (created, ..) = async_readonly_schema::DataModel
         .create(async_readonly_schema::PartialDataInput { lax: None }, ())
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_readonly_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value
@@ -684,9 +684,9 @@ async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_val
 
     let lax = Some(201);
 
-    let updated = async_readonly_schema::DataModel
+    let (updated, ..) = async_readonly_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_readonly_schema::PartialDataInput { lax },
             (),
         )
@@ -695,18 +695,18 @@ async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_val
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_readonly_schema::PartialData {
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
             lax
         }
     );
 
-    let data = created.data.clone_with_updates(&updated.data);
+    let data = created.clone_with_updates(&updated);
 
     let lax = Some(3001);
 
-    let updated = async_readonly_schema::DataModel
+    let (updated, ..) = async_readonly_schema::DataModel
         .update(
             data.clone(),
             async_readonly_schema::PartialDataInput { lax },
@@ -717,7 +717,7 @@ async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_val
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_readonly_schema::PartialData {
             dependent: None,
             lax
@@ -798,7 +798,7 @@ fn should_trigger_sync_on_success_handlers_if_resolver_is_run_at_creation() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = sync_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_on_success_schema::DataModel
         .create(
             sync_on_success_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -809,21 +809,21 @@ fn should_trigger_sync_on_success_handlers_if_resolver_is_run_at_creation() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_on_success_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_on_success_handlers_if_resolver_is_run_at_creation() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = async_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_on_success_schema::DataModel
         .create(
             async_on_success_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -835,14 +835,14 @@ async fn should_trigger_async_on_success_handlers_if_resolver_is_run_at_creation
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_on_success_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -856,7 +856,7 @@ fn should_trigger_sync_on_success_handlers_even_if_resolver_is_not_run_at_creati
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = sync_on_success_multiple_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_on_success_multiple_schema::DataModel
         .create(
             sync_on_success_multiple_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -867,21 +867,21 @@ fn should_trigger_sync_on_success_handlers_even_if_resolver_is_not_run_at_creati
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_on_success_multiple_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_on_success_handlers_even_if_resolver_is_not_run_at_creation() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = async_on_success_multiple_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_on_success_multiple_schema::DataModel
         .create(
             async_on_success_multiple_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -893,14 +893,14 @@ async fn should_trigger_async_on_success_handlers_even_if_resolver_is_not_run_at
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_on_success_multiple_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -914,7 +914,7 @@ fn should_trigger_sync_on_success_handlers_if_resolver_is_run_during_updates() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = sync_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_on_success_schema::DataModel
         .create(
             sync_on_success_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -925,21 +925,21 @@ fn should_trigger_sync_on_success_handlers_if_resolver_is_run_during_updates() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_on_success_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_on_success_handlers_if_resolver_is_run_during_updates() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = async_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_on_success_schema::DataModel
         .create(
             async_on_success_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -951,14 +951,14 @@ async fn should_trigger_async_on_success_handlers_if_resolver_is_run_during_upda
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_on_success_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -972,7 +972,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = grouped_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = grouped_on_success_schema::DataModel
         .create(
             grouped_on_success_schema::PartialDataInput {
                 lax: Some(default_lax_value),
@@ -984,14 +984,14 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         grouped_on_success_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value,
         }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1003,7 +1003,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = grouped_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = grouped_on_success_schema::DataModel
         .create(
             grouped_on_success_schema::PartialDataInput { lax: None },
             (),
@@ -1013,14 +1013,14 @@ async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         grouped_on_success_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value,
         }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1033,7 +1033,7 @@ async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
     let default_lax_value = 20;
     let lax = Some(default_lax_value + 1);
 
-    let updated = grouped_on_success_schema::DataModel
+    let (updated, _ctx_options, handle_success) = grouped_on_success_schema::DataModel
         .update(
             grouped_on_success_schema::Data {
                 dependent: default_dependent_value,
@@ -1047,14 +1047,14 @@ async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         grouped_on_success_schema::PartialData {
             dependent: Some(default_dependent_value + 1),
             lax,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1068,7 +1068,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_be
     let default_lax_value = 20;
     let lax = Some(default_lax_value + 1);
 
-    let updated = grouped_on_success_readonly_schema::DataModel
+    let (updated, _ctx_options, handle_success) = grouped_on_success_readonly_schema::DataModel
         .update(
             grouped_on_success_readonly_schema::Data {
                 dependent: default_dependent_value + 1,
@@ -1082,14 +1082,14 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_be
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         grouped_on_success_readonly_schema::PartialData {
             dependent: None,
             lax,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1101,7 +1101,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() 
     let default_lax_value = 20;
     let lax_1 = Some(default_lax_value + 1);
 
-    let updated = grouped_on_success_unrelated_schema::DataModel
+    let (updated, _ctx_options, handle_success) = grouped_on_success_unrelated_schema::DataModel
         .update(
             grouped_on_success_unrelated_schema::Data {
                 dependent: default_dependent_value + 1,
@@ -1116,7 +1116,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() 
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         grouped_on_success_unrelated_schema::PartialData {
             dependent: None,
             lax: None,
@@ -1124,7 +1124,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() 
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_grouped_on_success_during_updates_if_not_resolved);
@@ -1133,7 +1133,7 @@ async fn should_trigger_entity_level_on_success_handlers_at_creation_and_during_
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let created = entity_level_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = entity_level_on_success_schema::DataModel
         .create(
             entity_level_on_success_schema::PartialDataInput { lax: None },
             (),
@@ -1143,14 +1143,14 @@ async fn should_trigger_entity_level_on_success_handlers_at_creation_and_during_
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         entity_level_on_success_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value,
         }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1643,7 +1643,7 @@ mod entity_level_on_success_schema {
 #[test]
 #[should_panic(expected = "[entity.on_success]: no-args on_success triggered")]
 fn should_trigger_sync_entity_level_on_success_with_no_args() {
-    let created = entity_level_on_success_no_args_schema::DataModel
+    let (created, _ctx_options, handle_success) = entity_level_on_success_no_args_schema::DataModel
         .create(
             entity_level_on_success_no_args_schema::PartialDataInput { lax: None },
             (),
@@ -1652,14 +1652,14 @@ fn should_trigger_sync_entity_level_on_success_with_no_args() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         entity_level_on_success_no_args_schema::Data {
             dependent: 1234,
             lax: 20,
         }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(

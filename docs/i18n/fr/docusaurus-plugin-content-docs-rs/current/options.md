@@ -36,7 +36,7 @@ mod ignore_group_schema {
 }
 
 fn main() {
-    let created = ignore_group_schema::DataInputModel
+    let (created, _ctx_options) = ignore_group_schema::DataInputModel
         .create(
             ignore_group_schema::PartialDataInput {
                 email: Some("skip".into()),
@@ -46,7 +46,7 @@ fn main() {
         )
         .unwrap();
 
-    println!("{:?}", created.data); // DataInput { email: "", phone: "" } -- les deux ignorés, valeurs par défaut utilisées
+    println!("{:?}", created); // DataInput { email: "", phone: "" } -- les deux ignorés, valeurs par défaut utilisées
 }
 ```
 
@@ -84,7 +84,7 @@ fn main() {
     let data = ignore_update_group_schema::DataInput { a: 42, b: 1 };
 
     // les deux champs ignorés -> rien ne change réellement -> "rien à mettre à jour"
-    let err = ignore_update_group_schema::DataInputModel
+    let (err, _ctx_options) = ignore_update_group_schema::DataInputModel
         .update(
             data,
             ignore_update_group_schema::PartialDataInput {
@@ -95,7 +95,7 @@ fn main() {
         )
         .unwrap_err();
 
-    assert!(err.errors.is_none()); // `errors` à `None` signifie "rien à mettre à jour", pas un échec de validation
+    assert!(err.is_none()); // `err` à `None` signifie "rien à mettre à jour", pas un échec de validation
 }
 ```
 
@@ -137,7 +137,7 @@ mod required_group_schema {
 }
 
 fn main() {
-    let err = required_group_schema::DataInputModel
+    let (err, _ctx_options) = required_group_schema::DataInputModel
         .create(
             required_group_schema::PartialDataInput {
                 email: None,
@@ -147,7 +147,7 @@ fn main() {
         )
         .unwrap_err();
 
-    println!("{:?}", err.errors); // "email" et "phone_number" portent tous deux la même raison
+    println!("{:?}", err); // "email" et "phone_number" portent tous deux la même raison
 }
 ```
 
@@ -190,7 +190,7 @@ mod post_validate_schema {
 }
 
 fn main() {
-    let err = post_validate_schema::DataInputModel
+    let (err, _ctx_options) = post_validate_schema::DataInputModel
         .create(
             post_validate_schema::PartialDataInput {
                 password: Some("a".into()),
@@ -200,7 +200,7 @@ fn main() {
         )
         .unwrap_err();
 
-    println!("{:?}", err.errors); // {"confirm_password": "passwords do not match"}
+    println!("{:?}", err); // {"confirm_password": "passwords do not match"}
 }
 ```
 
@@ -209,10 +209,12 @@ Voir la validation transversale dans
 
 ## `on_success`
 
-Enregistre un gestionnaire qui s'exécute après un `create` ou `update` réussi, via `handle_success()`
-sur le handle retourné. La forme nue, sans tableau, se déclenche à chaque succès ;
-`#[on_success([...], handler)]` nécessite au moins un champ et se déclenche lorsqu'au moins un des
-champs listés fait partie du payload de succès.
+Enregistre un gestionnaire qui s'exécute après un `create` ou `update` réussi, via le déclencheur
+retourné comme troisième élément du tuple `Ok` (voir
+[Cycles de vie - Déclencher les gestionnaires](./life-cycles.md#déclencher-les-gestionnaires)). La
+forme nue, sans tableau, se déclenche à chaque succès ; `#[on_success([...], handler)]` nécessite
+au moins un champ et se déclenche lorsqu'au moins un des champs listés fait partie du payload de
+succès.
 
 ```rust
 use ivo::ivo_schema;
@@ -239,7 +241,7 @@ mod hooks_schema {
 }
 
 fn main() {
-    let created = hooks_schema::DataInputModel
+    let (created, _ctx_options, handle_success) = hooks_schema::DataInputModel
         .create(
             hooks_schema::PartialDataInput {
                 a: Some(1),
@@ -247,9 +249,11 @@ fn main() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
-    created.handle_success(); // affiche les deux lignes ci-dessus
+    println!("{:?}", created);
+    handle_success(); // affiche les deux lignes ci-dessus
 }
 ```
 
@@ -296,7 +300,7 @@ utilisent `opts.read().await`/`opts.write().await` ; les gestionnaires synchrone
 ```rust
 use ivo::ivo_schema;
 
-#[derive(Clone, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct AppCtxOptions {
     pub calls: u32,
 }
@@ -319,7 +323,7 @@ mod ctx_options_schema {
 }
 
 fn main() {
-    let created = ctx_options_schema::DataInputModel
+    let (created, ctx_options) = ctx_options_schema::DataInputModel
         .create(
             ctx_options_schema::PartialDataInput {
                 name: Some("jane".into()),
@@ -328,14 +332,14 @@ fn main() {
         )
         .unwrap();
 
-    println!(
-        "name={:?} calls={}",
-        created.data.name,
-        created.ctx_options.read_sync().calls
-    );
+    println!("name={:?} calls={}", created.name, ctx_options.calls);
 }
 ```
 
+Le `ctx_options` retourné aux côtés de `data` est la valeur finale, brute -- aucun verrou ni
+accesseur nécessaire ; `opts.write_sync()`/`opts.read_sync()` (et leurs équivalents asynchrones,
+`opts.write()`/`opts.read()`) ne servent qu'aux *gestionnaires*, qui s'exécutent en parallèle les
+uns des autres pendant l'appel et voient donc la valeur à travers un verrou lecture/écriture.
 Passez `()` lorsqu'un schéma ne déclare aucune `ctx_options(...)`, comme dans tous les autres
 exemples de cette page. Voir
 [`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs)
@@ -392,7 +396,7 @@ mod sanitized_schema {
 }
 
 fn main() {
-    let err = sanitized_schema::DataInputModel
+    let (err, _ctx_options) = sanitized_schema::DataInputModel
         .create(
             sanitized_schema::PartialDataInput {
                 username: Some("ab".into()),
@@ -401,7 +405,7 @@ fn main() {
         )
         .unwrap_err();
 
-    println!("{:?}", err.errors); // {"username": ["too short", "min length is 3"]}
+    println!("{:?}", err); // {"username": ["too short", "min length is 3"]}
 }
 ```
 

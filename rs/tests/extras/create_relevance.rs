@@ -12,7 +12,7 @@ use ivo::ivo_schema;
 
 #[test]
 fn should_not_run_post_validate_group_at_creation_when_none_of_its_fields_were_submitted() {
-    let created = create_relevance_schema::DataInputModel
+    let (data, ..) = create_relevance_schema::DataInputModel
         .create(
             create_relevance_schema::PartialDataInput {
                 a: None,
@@ -24,9 +24,9 @@ fn should_not_run_post_validate_group_at_creation_when_none_of_its_fields_were_s
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.a, 0);
-    assert_eq!(created.data.b, 0);
-    assert_eq!(created.data.trigger, "x");
+    assert_eq!(data.a, 0);
+    assert_eq!(data.b, 0);
+    assert_eq!(data.trigger, "x");
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -60,7 +60,7 @@ mod create_relevance_schema {
 
 #[test]
 fn should_run_post_validate_group_at_creation_when_one_of_its_fields_was_submitted() {
-    let created = create_relevance_positive_schema::DataInputModel
+    let (data, ..) = create_relevance_positive_schema::DataInputModel
         .create(
             create_relevance_positive_schema::PartialDataInput {
                 a: None,
@@ -74,8 +74,8 @@ fn should_run_post_validate_group_at_creation_when_one_of_its_fields_was_submitt
 
     // `b` alone was submitted; the group must still run and its `validate`
     // handler unconditionally overwrites `a` to prove it fired.
-    assert_eq!(created.data.a, 999);
-    assert_eq!(created.data.b, 7);
+    assert_eq!(data.a, 999);
+    assert_eq!(data.b, 7);
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -111,7 +111,7 @@ mod create_relevance_positive_schema {
 
 #[test]
 fn should_not_run_post_validate_group_at_creation_when_its_only_virtual_field_was_not_provided() {
-    let created = create_relevance_virtual_schema::DataModel
+    let (data, ..) = create_relevance_virtual_schema::DataModel
         .create(
             create_relevance_virtual_schema::PartialDataInput {
                 a: None,
@@ -123,13 +123,13 @@ fn should_not_run_post_validate_group_at_creation_when_its_only_virtual_field_wa
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.a, 0);
-    assert_eq!(created.data.trigger, "x");
+    assert_eq!(data.a, 0);
+    assert_eq!(data.trigger, "x");
 }
 
 #[test]
 fn should_run_post_validate_group_at_creation_when_its_virtual_field_was_provided() {
-    let created = create_relevance_virtual_schema::DataModel
+    let (created, ..) = create_relevance_virtual_schema::DataModel
         .create(
             create_relevance_virtual_schema::PartialDataInput {
                 a: None,
@@ -141,7 +141,7 @@ fn should_run_post_validate_group_at_creation_when_its_virtual_field_was_provide
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.a, 999);
+    assert_eq!(created.a, 999);
 }
 
 #[ivo_schema(

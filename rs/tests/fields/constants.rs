@@ -5,7 +5,7 @@ fn should_respect_sync_constants_with_static_values() {
     let constant = 1234;
     let lax = 400;
 
-    let created = sync_static_constant_schema::DataModel
+    let (created, ..) = sync_static_constant_schema::DataModel
         .create(
             sync_static_constant_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -14,13 +14,13 @@ fn should_respect_sync_constants_with_static_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_static_constant_schema::Data { constant, lax }
     );
 
     let lax = 700;
 
-    let created = sync_static_constant_schema::DataModel
+    let (created, ..) = sync_static_constant_schema::DataModel
         .create(
             sync_static_constant_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -29,15 +29,15 @@ fn should_respect_sync_constants_with_static_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_static_constant_schema::Data { constant, lax }
     );
 
     let lax = Some(200);
 
-    let updated = sync_static_constant_schema::DataModel
+    let (updated, ..) = sync_static_constant_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_static_constant_schema::PartialDataInput { lax },
             (),
         )
@@ -45,7 +45,7 @@ fn should_respect_sync_constants_with_static_values() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_static_constant_schema::PartialData {
             constant: None,
             lax
@@ -57,7 +57,7 @@ async fn should_respect_async_constants_with_static_values() {
     let constant = 1234;
     let lax = 400;
 
-    let created = async_static_constant_schema::DataModel
+    let (created, ..) = async_static_constant_schema::DataModel
         .create(
             async_static_constant_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -67,13 +67,13 @@ async fn should_respect_async_constants_with_static_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_static_constant_schema::Data { constant, lax }
     );
 
     let lax = 700;
 
-    let created = async_static_constant_schema::DataModel
+    let (created, ..) = async_static_constant_schema::DataModel
         .create(
             async_static_constant_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -83,15 +83,15 @@ async fn should_respect_async_constants_with_static_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_static_constant_schema::Data { constant, lax }
     );
 
     let lax = Some(200);
 
-    let updated = async_static_constant_schema::DataModel
+    let (updated, ..) = async_static_constant_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_static_constant_schema::PartialDataInput { lax },
             (),
         )
@@ -99,7 +99,7 @@ async fn should_respect_async_constants_with_static_values() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_static_constant_schema::PartialData {
             constant: None,
             lax
@@ -114,7 +114,7 @@ fn should_respect_sync_constants_with_computed_values() {
     let constant = 1234;
     let lax = 400;
 
-    let created = sync_dynamic_constant_schema::DataModel
+    let (created, ..) = sync_dynamic_constant_schema::DataModel
         .create(
             sync_dynamic_constant_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -123,13 +123,13 @@ fn should_respect_sync_constants_with_computed_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_dynamic_constant_schema::Data { constant, lax }
     );
 
     let lax = 700;
 
-    let created = sync_dynamic_constant_schema::DataModel
+    let (created, ..) = sync_dynamic_constant_schema::DataModel
         .create(
             sync_dynamic_constant_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -138,15 +138,15 @@ fn should_respect_sync_constants_with_computed_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_dynamic_constant_schema::Data { constant, lax }
     );
 
     let lax = Some(200);
 
-    let updated = sync_dynamic_constant_schema::DataModel
+    let (updated, ..) = sync_dynamic_constant_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_dynamic_constant_schema::PartialDataInput { lax },
             (),
         )
@@ -154,7 +154,7 @@ fn should_respect_sync_constants_with_computed_values() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_dynamic_constant_schema::PartialData {
             constant: None,
             lax
@@ -166,7 +166,7 @@ async fn should_respect_async_constants_with_computed_values() {
     let constant = 1234;
     let lax = 400;
 
-    let created = async_dynamic_constant_schema::DataModel
+    let (created, ..) = async_dynamic_constant_schema::DataModel
         .create(
             async_dynamic_constant_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -176,13 +176,13 @@ async fn should_respect_async_constants_with_computed_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_dynamic_constant_schema::Data { constant, lax }
     );
 
     let lax = 700;
 
-    let created = async_dynamic_constant_schema::DataModel
+    let (created, ..) = async_dynamic_constant_schema::DataModel
         .create(
             async_dynamic_constant_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -192,15 +192,15 @@ async fn should_respect_async_constants_with_computed_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_dynamic_constant_schema::Data { constant, lax }
     );
 
     let lax = Some(200);
 
-    let updated = async_dynamic_constant_schema::DataModel
+    let (updated, ..) = async_dynamic_constant_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_dynamic_constant_schema::PartialDataInput { lax },
             (),
         )
@@ -208,7 +208,7 @@ async fn should_respect_async_constants_with_computed_values() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_dynamic_constant_schema::PartialData {
             constant: None,
             lax
@@ -282,7 +282,7 @@ fn should_trigger_sync_on_success_handlers_with_static_values() {
     let constant = 1234;
     let lax = 400;
 
-    let created = sync_static_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_static_on_success_schema::DataModel
         .create(
             sync_static_on_success_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -291,18 +291,18 @@ fn should_trigger_sync_on_success_handlers_with_static_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_static_on_success_schema::Data { constant, lax }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_on_success_handlers_with_static_values() {
     let constant = 1234;
     let lax = 400;
 
-    let created = async_static_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_static_on_success_schema::DataModel
         .create(
             async_static_on_success_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -312,11 +312,11 @@ async fn should_trigger_async_on_success_handlers_with_static_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_static_on_success_schema::Data { constant, lax }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -330,7 +330,7 @@ fn should_trigger_sync_on_success_handlers_with_computed_values() {
     let constant = 1234;
     let lax = 400;
 
-    let created = sync_dynamic_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_dynamic_on_success_schema::DataModel
         .create(
             sync_dynamic_on_success_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -339,18 +339,18 @@ fn should_trigger_sync_on_success_handlers_with_computed_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_dynamic_on_success_schema::Data { constant, lax }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 async fn should_trigger_async_on_success_handlers_with_computed_values() {
     let constant = 1234;
     let lax = 400;
 
-    let created = async_dynamic_on_success_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_dynamic_on_success_schema::DataModel
         .create(
             async_dynamic_on_success_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -360,11 +360,11 @@ async fn should_trigger_async_on_success_handlers_with_computed_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_dynamic_on_success_schema::Data { constant, lax }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -585,7 +585,7 @@ fn should_attach_constants_after_dependents_have_resolved() {
     // Per GOAL.md §17, constants (step 9) are attached after dependents
     // resolve (step 8), so a constant's resolver may read an already-resolved
     // dependent's value via `ctx.values()`.
-    let created = constant_reads_dependent_schema::DataModel
+    let (created, ..) = constant_reads_dependent_schema::DataModel
         .create(
             constant_reads_dependent_schema::PartialDataInput { name: Some("abc".into()) },
             (),
@@ -593,8 +593,8 @@ fn should_attach_constants_after_dependents_have_resolved() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.dependent, "abc");
-    assert_eq!(created.data.constant, "constant-saw-abc".to_string());
+    assert_eq!(created.dependent, "abc");
+    assert_eq!(created.constant, "constant-saw-abc".to_string());
 }
 
 #[ivo_schema(
@@ -624,14 +624,14 @@ mod constant_reads_dependent_schema {
 async fn should_resolve_independent_constants_concurrently() {
     // Two constants' resolvers must be polled concurrently (not one `.await`
     // at a time). `rendezvous()` only returns once *both* have started.
-    let created = async_parallel_constants_schema::DataModel
+    let (created, ..) = async_parallel_constants_schema::DataModel
         .create(async_parallel_constants_schema::PartialDataInput { lax: Some(1) }, ())
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.constant_a, 1234);
-    assert_eq!(created.data.constant_b, 5678);
+    assert_eq!(created.constant_a, 1234);
+    assert_eq!(created.constant_b, 5678);
 }
 
 #[ivo_schema(
@@ -681,7 +681,7 @@ fn should_attach_constants_before_timestamps() {
     // Per GOAL.md §17, constants (step 9) are attached before timestamps
     // (step 10), so a constant's resolver observes the timestamp field still
     // at its default (unset) value.
-    let created = constant_runs_before_timestamps_schema::DataModel
+    let (created, ..) = constant_runs_before_timestamps_schema::DataModel
         .create(
             constant_runs_before_timestamps_schema::PartialDataInput { lax: Some(1) },
             (),
@@ -689,8 +689,8 @@ fn should_attach_constants_before_timestamps() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.constant, "constant-saw-created_at=0");
-    assert_eq!(created.data.created_at, 1234);
+    assert_eq!(created.constant, "constant-saw-created_at=0");
+    assert_eq!(created.created_at, 1234);
 }
 
 #[ivo_schema(

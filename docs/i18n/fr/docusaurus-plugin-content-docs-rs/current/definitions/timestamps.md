@@ -49,11 +49,11 @@ mod timestamps_schema {
 }
 
 fn main() {
-    let created = timestamps_schema::DataModel
+    let (created, _ctx_options) = timestamps_schema::DataModel
         .create(timestamps_schema::PartialDataInput { username: None }, ())
         .unwrap();
 
-    println!("{:#?}", created.data);
+    println!("{:#?}", created);
     // Data { username: "default_username", created_at: ..., updated_at: ... }
     // created_at == updated_at juste après la création
 }

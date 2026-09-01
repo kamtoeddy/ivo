@@ -1,6 +1,5 @@
 use ivo::ivo_schema;
 
-
 #[derive(Clone)]
 struct CtxOptions {
     messages: Vec<String>,
@@ -24,7 +23,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in default value resolver";
 
-    let created = default_fn_schema::DataModel
+    let (data, ctx_options, handle_success) = default_fn_schema::DataModel
         .create(
             default_fn_schema::PartialDataInput { lax: None },
             CtxOptions::new(),
@@ -34,16 +33,16 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
         .unwrap();
 
     assert_eq!(
-        created.data,
+        data,
         default_fn_schema::Data {
             dependent: DEFAULT_DEPENDENT_VALUE,
             lax: DEFAULT_LAX_VALUE
         }
     );
 
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    created.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(
@@ -87,7 +86,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in value resolver";
 
-    let created = resolver_create_schema::DataModel
+    let (data, ctx_options, handle_success) = resolver_create_schema::DataModel
         .create(
             resolver_create_schema::PartialDataInput {
                 lax: Some(DEFAULT_LAX_VALUE + 1),
@@ -99,16 +98,16 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
         .unwrap();
 
     assert_eq!(
-        created.data,
+        data,
         resolver_create_schema::Data {
             dependent: DEFAULT_DEPENDENT_VALUE + 1,
             lax: DEFAULT_LAX_VALUE + 1
         }
     );
 
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    created.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(
@@ -159,7 +158,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
 
     let lax = Some(data.lax + 1);
 
-    let updated = resolver_update_schema::DataModel
+    let (updates, ctx_options, handle_success) = resolver_update_schema::DataModel
         .update(
             data.clone(),
             resolver_update_schema::PartialDataInput { lax },
@@ -170,16 +169,16 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updates,
         resolver_update_schema::PartialData {
             dependent: Some(data.dependent + 1),
             lax
         }
     );
 
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    updated.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(

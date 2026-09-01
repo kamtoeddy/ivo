@@ -9,7 +9,7 @@ fn should_allow_constant_fields_with_static_and_dynamic_values() {
 
 #[tokio::test]
 async fn should_resolve_async_dynamic_constant_value() {
-    let created = async_dynamic_constant_schema::DataModel
+    let (created, ..) = async_dynamic_constant_schema::DataModel
         .create(
             async_dynamic_constant_schema::DataInput {
                 name: String::from("test"),
@@ -20,7 +20,7 @@ async fn should_resolve_async_dynamic_constant_value() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.id, 1234);
+    assert_eq!(created.id, 1234);
 }
 
 #[ivo_schema(

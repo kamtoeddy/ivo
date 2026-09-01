@@ -2,18 +2,19 @@ use ivo::ivo_schema;
 
 #[async_std::main]
 async fn main() {
-    let errors = DataModel
+    let (errors, _ctx_options, handle_failure) = DataModel
         .create(PartialData { username: None }, ())
-        .unwrap_err();
+        .err()
+        .unwrap();
 
-    println!("\nfailed to create: {:#?}", errors.errors);
+    println!("\nfailed to create: {:#?}", errors);
 
     assert_eq!(
-        errors.errors.get("username").unwrap().reason,
+        errors.get("username").unwrap().reason,
         "\"username\" was not provided!"
     );
 
-    errors.handle_failure();
+    handle_failure();
 
     let data = Data {
         username: "john-doe".to_string(),
@@ -21,7 +22,7 @@ async fn main() {
 
     let updated_username = Some("ignore-update".to_string());
 
-    let handle = DataModel
+    let (handle, _ctx_options, handle_failure) = DataModel
         .update(
             data.clone(),
             PartialData {
@@ -29,13 +30,14 @@ async fn main() {
             },
             (),
         )
-        .unwrap_err();
+        .err()
+        .unwrap();
 
-    assert!(handle.errors.is_none());
+    assert!(handle.is_none());
 
     println!("\nNothing to update");
 
-    handle.handle_failure();
+    handle_failure();
 
     let updated_username = Some("james-doe".to_string());
 
@@ -43,7 +45,7 @@ async fn main() {
         username: "john-doe".to_string(),
     };
 
-    let updated = DataModel
+    let (updated, _ctx_options, handle_success) = DataModel
         .update(
             data.clone(),
             PartialData {
@@ -51,18 +53,19 @@ async fn main() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         PartialData {
             username: updated_username
         }
     );
 
-    let updated_data = updated.data.clone();
+    let updated_data = updated.clone();
 
-    updated.handle_success();
+    handle_success();
 
     let data = data.clone_with_updates(&updated_data);
 

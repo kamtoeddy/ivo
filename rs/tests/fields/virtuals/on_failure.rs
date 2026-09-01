@@ -3,7 +3,7 @@ use ivo::ivo_schema;
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
 #[test]
 fn should_trigger_sync_on_failure_handlers_at_creation() {
-    let errors = sync_on_failure_creation_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_creation_schema::DataModel
         .create(
             sync_on_failure_creation_schema::PartialDataInput {
                 virtual_field: Some("fail_validation".into()),
@@ -15,15 +15,15 @@ fn should_trigger_sync_on_failure_handlers_at_creation() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_at_creation() {
-    let errors = async_on_failure_creation_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_creation_schema::DataModel
         .create(
             async_on_failure_creation_schema::PartialDataInput {
                 virtual_field: Some("fail_validation".into()),
@@ -36,11 +36,11 @@ async fn should_trigger_async_on_failure_handlers_at_creation() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -51,7 +51,7 @@ async_test_matrix!(
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates() {
-    let errors = sync_on_failure_update_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_update_schema::DataModel
         .update(
             sync_on_failure_update_schema::Data {
                 lax_field: "ok".into(),
@@ -68,7 +68,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates() {
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -77,11 +76,11 @@ fn should_trigger_sync_on_failure_handlers_during_updates() {
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates() {
-    let errors = async_on_failure_update_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_update_schema::DataModel
         .update(
             async_on_failure_update_schema::Data {
                 lax_field: "ok".into(),
@@ -99,7 +98,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates() {
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -108,7 +106,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates() {
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -119,7 +117,7 @@ async_test_matrix!(
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
 #[test]
 fn should_trigger_sync_on_failure_handlers_at_creation_with_alias() {
-    let errors = sync_on_failure_creation_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_creation_alias_schema::DataModel
         .create(
             sync_on_failure_creation_alias_schema::PartialDataInput {
                 virtual_alias: Some("fail_validation".into()),
@@ -131,15 +129,15 @@ fn should_trigger_sync_on_failure_handlers_at_creation_with_alias() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_alias").unwrap().reason,
+        errors.get("virtual_alias").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_at_creation_with_alias() {
-    let errors = async_on_failure_creation_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_creation_alias_schema::DataModel
         .create(
             async_on_failure_creation_alias_schema::PartialDataInput {
                 virtual_alias: Some("fail_validation".into()),
@@ -152,11 +150,11 @@ async fn should_trigger_async_on_failure_handlers_at_creation_with_alias() {
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("virtual_alias").unwrap().reason,
+        errors.get("virtual_alias").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -167,7 +165,7 @@ async_test_matrix!(
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_with_alias() {
-    let errors = sync_on_failure_update_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_update_alias_schema::DataModel
         .update(
             sync_on_failure_update_alias_schema::Data {
                 lax_field: "ok".into(),
@@ -184,7 +182,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_with_alias() {
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -193,11 +190,11 @@ fn should_trigger_sync_on_failure_handlers_during_updates_with_alias() {
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_with_alias() {
-    let errors = async_on_failure_update_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_update_alias_schema::DataModel
         .update(
             async_on_failure_update_alias_schema::Data {
                 lax_field: "ok".into(),
@@ -215,7 +212,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_with_alias() {
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -224,7 +220,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_with_alias() {
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -235,7 +231,7 @@ async_test_matrix!(
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
 #[test]
 fn should_trigger_sync_on_failure_handlers_at_creation_with_alias_as_dependent() {
-    let errors = sync_on_failure_creation_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_creation_alias_as_dependent_schema::DataModel
         .create(
             sync_on_failure_creation_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("fail_validation".into()),
@@ -247,15 +243,15 @@ fn should_trigger_sync_on_failure_handlers_at_creation_with_alias_as_dependent()
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("dependent").unwrap().reason,
+        errors.get("dependent").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_at_creation_with_alias_as_dependent() {
-    let errors = async_on_failure_creation_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_creation_alias_as_dependent_schema::DataModel
         .create(
             async_on_failure_creation_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("fail_validation".into()),
@@ -268,11 +264,11 @@ async fn should_trigger_async_on_failure_handlers_at_creation_with_alias_as_depe
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("dependent").unwrap().reason,
+        errors.get("dependent").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -283,7 +279,7 @@ async_test_matrix!(
 #[should_panic(expected = "[virtual_field]: on_failure triggered with value: fail_validation")]
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_with_alias_as_dependent() {
-    let errors = sync_on_failure_update_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_update_alias_as_dependent_schema::DataModel
         .update(
             sync_on_failure_update_alias_as_dependent_schema::Data {
                 lax_field: "ok".into(),
@@ -300,7 +296,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_with_alias_as_dependen
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -309,11 +304,11 @@ fn should_trigger_sync_on_failure_handlers_during_updates_with_alias_as_dependen
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_with_alias_as_dependent() {
-    let errors = async_on_failure_update_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_update_alias_as_dependent_schema::DataModel
         .update(
             async_on_failure_update_alias_as_dependent_schema::Data {
                 lax_field: "ok".into(),
@@ -331,7 +326,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_with_alias_as_d
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -340,7 +334,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_with_alias_as_d
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -352,7 +346,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation(
 ) {
-    let errors = sync_on_failure_ignore_at_creation_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_at_creation_schema::DataModel
         .create(
             sync_on_failure_ignore_at_creation_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
@@ -364,16 +358,16 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("lax_field").unwrap().reason,
+        errors.get("lax_field").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation(
 ) {
-    let errors = async_on_failure_ignore_at_creation_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_at_creation_schema::DataModel
         .create(
             async_on_failure_ignore_at_creation_schema::PartialDataInput {
                 virtual_field: Some("update to be ignored".into()),
@@ -386,11 +380,11 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("lax_field").unwrap().reason,
+        errors.get("lax_field").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -402,7 +396,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates(
 ) {
-    let errors = sync_on_failure_ignore_during_update_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_during_update_schema::DataModel
         .update(
             sync_on_failure_ignore_during_update_schema::Data {
                 lax_field: "ok".into(),
@@ -419,7 +413,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -428,12 +421,12 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates(
 ) {
-    let errors = async_on_failure_ignore_during_update_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_during_update_schema::DataModel
         .update(
             async_on_failure_ignore_during_update_schema::Data {
                 lax_field: "ok".into(),
@@ -451,7 +444,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -460,7 +452,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -472,7 +464,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn(
 ) {
-    let errors = sync_on_failure_ignore_init_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_init_schema::DataModel
         .update(
             sync_on_failure_ignore_init_schema::Data {
                 lax_field: "ok".into(),
@@ -489,7 +481,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -498,12 +489,12 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn(
 ) {
-    let errors = async_on_failure_ignore_init_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_init_schema::DataModel
         .update(
             async_on_failure_ignore_init_schema::Data {
                 lax_field: "ok".into(),
@@ -521,7 +512,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -530,7 +520,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -542,7 +532,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn(
 ) {
-    let errors = sync_on_failure_ignore_update_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_update_schema::DataModel
         .update(
             sync_on_failure_ignore_update_schema::Data {
                 lax_field: "ok".into(),
@@ -559,7 +549,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -568,12 +557,12 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn(
 ) {
-    let errors = async_on_failure_ignore_update_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_update_schema::DataModel
         .update(
             async_on_failure_ignore_update_schema::Data {
                 lax_field: "ok".into(),
@@ -591,7 +580,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -600,7 +588,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -612,7 +600,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias(
 ) {
-    let errors = sync_on_failure_ignore_at_creation_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_at_creation_alias_schema::DataModel
         .create(
             sync_on_failure_ignore_at_creation_alias_schema::PartialDataInput {
                 virtual_alias: Some("update to be ignored".into()),
@@ -624,16 +612,16 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("lax_field").unwrap().reason,
+        errors.get("lax_field").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias(
 ) {
-    let errors = async_on_failure_ignore_at_creation_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_at_creation_alias_schema::DataModel
         .create(
             async_on_failure_ignore_at_creation_alias_schema::PartialDataInput {
                 virtual_alias: Some("update to be ignored".into()),
@@ -646,11 +634,11 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("lax_field").unwrap().reason,
+        errors.get("lax_field").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -662,7 +650,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias(
 ) {
-    let errors = sync_on_failure_ignore_during_update_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_during_update_alias_schema::DataModel
         .update(
             sync_on_failure_ignore_during_update_alias_schema::Data {
                 lax_field: "ok".into(),
@@ -679,7 +667,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -688,12 +675,12 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias(
 ) {
-    let errors = async_on_failure_ignore_during_update_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_during_update_alias_schema::DataModel
         .update(
             async_on_failure_ignore_during_update_alias_schema::Data {
                 lax_field: "ok".into(),
@@ -711,7 +698,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -720,7 +706,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -732,7 +718,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias(
 ) {
-    let errors = sync_on_failure_ignore_init_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_init_alias_schema::DataModel
         .update(
             sync_on_failure_ignore_init_alias_schema::Data {
                 lax_field: "ok".into(),
@@ -749,7 +735,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -758,12 +743,12 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias(
 ) {
-    let errors = async_on_failure_ignore_init_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_init_alias_schema::DataModel
         .update(
             async_on_failure_ignore_init_alias_schema::Data {
                 lax_field: "ok".into(),
@@ -781,7 +766,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -790,7 +774,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -802,7 +786,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias(
 ) {
-    let errors = sync_on_failure_ignore_update_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_update_alias_schema::DataModel
         .update(
             sync_on_failure_ignore_update_alias_schema::Data {
                 lax_field: "ok".into(),
@@ -819,7 +803,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -828,12 +811,12 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias(
 ) {
-    let errors = async_on_failure_ignore_update_alias_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_update_alias_schema::DataModel
         .update(
             async_on_failure_ignore_update_alias_schema::Data {
                 lax_field: "ok".into(),
@@ -851,7 +834,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -860,7 +842,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -872,7 +854,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_as_dependent(
 ) {
-    let errors = sync_on_failure_ignore_at_creation_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_at_creation_alias_as_dependent_schema::DataModel
         .create(
             sync_on_failure_ignore_at_creation_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("update to be ignored".into()),
@@ -884,16 +866,16 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("lax_field").unwrap().reason,
+        errors.get("lax_field").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_at_creation_with_alias_as_dependent(
 ) {
-    let errors = async_on_failure_ignore_at_creation_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_at_creation_alias_as_dependent_schema::DataModel
         .create(
             async_on_failure_ignore_at_creation_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some("update to be ignored".into()),
@@ -906,11 +888,11 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         .unwrap();
 
     assert_eq!(
-        errors.errors.get("lax_field").unwrap().reason,
+        errors.get("lax_field").unwrap().reason,
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -922,7 +904,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_as_dependent(
 ) {
-    let errors = sync_on_failure_ignore_during_update_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_during_update_alias_as_dependent_schema::DataModel
         .update(
             sync_on_failure_ignore_during_update_alias_as_dependent_schema::Data {
                 lax_field: "ok".into(),
@@ -939,7 +921,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -948,12 +929,12 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_fn_during_updates_with_alias_as_dependent(
 ) {
-    let errors = async_on_failure_ignore_during_update_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_during_update_alias_as_dependent_schema::DataModel
         .update(
             async_on_failure_ignore_during_update_alias_as_dependent_schema::Data {
                 lax_field: "ok".into(),
@@ -971,7 +952,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -980,7 +960,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -992,7 +972,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_as_dependent(
 ) {
-    let errors = sync_on_failure_ignore_init_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_init_alias_as_dependent_schema::DataModel
         .update(
             sync_on_failure_ignore_init_alias_as_dependent_schema::Data {
                 lax_field: "ok".into(),
@@ -1009,7 +989,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -1018,12 +997,12 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_init_fn_with_alias_as_dependent(
 ) {
-    let errors = async_on_failure_ignore_init_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_init_alias_as_dependent_schema::DataModel
         .update(
             async_on_failure_ignore_init_alias_as_dependent_schema::Data {
                 lax_field: "ok".into(),
@@ -1041,7 +1020,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -1050,7 +1028,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -1062,7 +1040,7 @@ async_test_matrix!(
 #[test]
 fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent(
 ) {
-    let errors = sync_on_failure_ignore_update_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = sync_on_failure_ignore_update_alias_as_dependent_schema::DataModel
         .update(
             sync_on_failure_ignore_update_alias_as_dependent_schema::Data {
                 lax_field: "ok".into(),
@@ -1079,7 +1057,6 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -1088,12 +1065,12 @@ fn should_trigger_sync_on_failure_handlers_during_updates_even_if_provided_and_i
         "validation failed"
     );
 
-    errors.handle_failure();
+    handle_failure();
 }
 
 async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provided_and_ignored_by_ignore_update_fn_with_alias_as_dependent(
 ) {
-    let errors = async_on_failure_ignore_update_alias_as_dependent_schema::DataModel
+    let (errors, _ctx_options, handle_failure) = async_on_failure_ignore_update_alias_as_dependent_schema::DataModel
         .update(
             async_on_failure_ignore_update_alias_as_dependent_schema::Data {
                 lax_field: "ok".into(),
@@ -1111,7 +1088,6 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("lax_field")
@@ -1120,7 +1096,7 @@ async fn should_trigger_async_on_failure_handlers_during_updates_even_if_provide
         "validation failed"
     );
 
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(

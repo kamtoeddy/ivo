@@ -6,7 +6,7 @@ use ivo::ivo_schema;
 fn should_reject_updates_if_no_value_has_changed() {
     let value = 24;
 
-    let err = no_change_sync_schema::DataInputModel
+    let (err, ..) = no_change_sync_schema::DataInputModel
         .update(
             no_change_sync_schema::DataInput { lax: value },
             no_change_sync_schema::PartialDataInput { lax: Some(value) },
@@ -15,13 +15,13 @@ fn should_reject_updates_if_no_value_has_changed() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 async fn should_reject_updates_if_no_value_has_changed_async() {
     let value = 24;
 
-    let err = no_change_async_schema::DataInputModel
+    let (err, ..) = no_change_async_schema::DataInputModel
         .update(
             no_change_async_schema::DataInput { lax: value },
             no_change_async_schema::PartialDataInput { lax: Some(value) },
@@ -30,7 +30,7 @@ async fn should_reject_updates_if_no_value_has_changed_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_async);
@@ -39,7 +39,7 @@ async_test_matrix!(should_reject_updates_if_no_value_has_changed_async);
 fn should_reject_updates_if_no_value_has_changed_after_validation() {
     const DEFAULT_VALUE: i32 = 1;
 
-    let err = no_change_after_validation_sync_schema::DataInputModel
+    let (err, ..) = no_change_after_validation_sync_schema::DataInputModel
         .update(
             no_change_after_validation_sync_schema::DataInput { lax: DEFAULT_VALUE },
             no_change_after_validation_sync_schema::PartialDataInput { lax: Some(24) },
@@ -48,13 +48,13 @@ fn should_reject_updates_if_no_value_has_changed_after_validation() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 async fn should_reject_updates_if_no_value_has_changed_after_validation_async() {
     const DEFAULT_VALUE: i32 = 1;
 
-    let err = no_change_after_validation_async_schema::DataInputModel
+    let (err, ..) = no_change_after_validation_async_schema::DataInputModel
         .update(
             no_change_after_validation_async_schema::DataInput { lax: DEFAULT_VALUE },
             no_change_after_validation_async_schema::PartialDataInput { lax: Some(24) },
@@ -64,7 +64,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation_async() 
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_validation_async);
@@ -73,7 +73,7 @@ async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_validatio
 fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
     const DEFAULT_VALUE: i32 = 1;
 
-    let err = no_change_after_re_validation_sync_schema::DataInputModel
+    let (err, ..) = no_change_after_re_validation_sync_schema::DataInputModel
         .update(
             no_change_after_re_validation_sync_schema::DataInput { lax: DEFAULT_VALUE },
             no_change_after_re_validation_sync_schema::PartialDataInput { lax: Some(24) },
@@ -82,13 +82,13 @@ fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 async fn should_reject_updates_if_no_value_has_changed_after_re_validation_async() {
     const DEFAULT_VALUE: i32 = 1;
 
-    let err = no_change_after_re_validation_async_schema::DataInputModel
+    let (err, ..) = no_change_after_re_validation_async_schema::DataInputModel
         .update(
             no_change_after_re_validation_async_schema::DataInput { lax: DEFAULT_VALUE },
             no_change_after_re_validation_async_schema::PartialDataInput { lax: Some(24) },
@@ -98,7 +98,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation_async
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_re_validation_async);
@@ -109,7 +109,7 @@ fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
     const RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR";
     const RESET_TO_PREV_VALUE_IN_POST_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_POST_VALIDATOR";
 
-    let err = no_change_after_post_validation_sync_schema::DataInputModel
+    let (err, ..) = no_change_after_post_validation_sync_schema::DataInputModel
         .update(
             no_change_after_post_validation_sync_schema::DataInput {
                 lax: DEFAULT_VALUE.into(),
@@ -124,9 +124,9 @@ fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 
-    let err = no_change_after_post_validation_sync_schema::DataInputModel
+    let (err, ..) = no_change_after_post_validation_sync_schema::DataInputModel
         .update(
             no_change_after_post_validation_sync_schema::DataInput {
                 lax: DEFAULT_VALUE.into(),
@@ -141,7 +141,7 @@ fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 async fn should_reject_updates_if_no_value_has_changed_after_post_validation_async() {
@@ -149,7 +149,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation_asy
     const RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR";
     const RESET_TO_PREV_VALUE_IN_POST_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_POST_VALIDATOR";
 
-    let err = no_change_after_post_validation_async_schema::DataInputModel
+    let (err, ..) = no_change_after_post_validation_async_schema::DataInputModel
         .update(
             no_change_after_post_validation_async_schema::DataInput {
                 lax: DEFAULT_VALUE.into(),
@@ -165,9 +165,9 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation_asy
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 
-    let err = no_change_after_post_validation_async_schema::DataInputModel
+    let (err, ..) = no_change_after_post_validation_async_schema::DataInputModel
         .update(
             no_change_after_post_validation_async_schema::DataInput {
                 lax: DEFAULT_VALUE.into(),
@@ -183,7 +183,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation_asy
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_post_validation_async);
@@ -344,7 +344,7 @@ mod no_change_after_post_validation_async_schema {
 fn should_properly_use_default_value_of_missing_fields_at_creation() {
     let default_value = 1;
 
-    let created = default_value_sync_schema::DataInputModel
+    let (created, ..) = default_value_sync_schema::DataInputModel
         .create(
             default_value_sync_schema::PartialDataInput { lax: None },
             (),
@@ -353,7 +353,7 @@ fn should_properly_use_default_value_of_missing_fields_at_creation() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         default_value_sync_schema::DataInput { lax: default_value }
     );
 }
@@ -361,7 +361,7 @@ fn should_properly_use_default_value_of_missing_fields_at_creation() {
 async fn should_properly_use_default_value_of_missing_fields_at_creation_async() {
     let default_value = 1;
 
-    let created = default_value_async_schema::DataInputModel
+    let (created, ..) = default_value_async_schema::DataInputModel
         .create(
             default_value_async_schema::PartialDataInput { lax: None },
             (),
@@ -371,7 +371,7 @@ async fn should_properly_use_default_value_of_missing_fields_at_creation_async()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         default_value_async_schema::DataInput { lax: default_value }
     );
 }
@@ -382,13 +382,13 @@ async_test_matrix!(should_properly_use_default_value_of_missing_fields_at_creati
 fn should_properly_resolve_default_values_of_missing_fields_at_creation() {
     const DEFAULT_VALUE: i32 = 1_000;
 
-    let created = default_fn_sync_schema::DataInputModel
+    let (created, ..) = default_fn_sync_schema::DataInputModel
         .create(default_fn_sync_schema::PartialDataInput { lax: None }, ())
         .ok()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         default_fn_sync_schema::DataInput { lax: DEFAULT_VALUE }
     );
 }
@@ -396,14 +396,14 @@ fn should_properly_resolve_default_values_of_missing_fields_at_creation() {
 async fn should_properly_resolve_default_values_of_missing_fields_at_creation_async() {
     const DEFAULT_VALUE: i32 = 1_000;
 
-    let created = default_fn_async_schema::DataInputModel
+    let (created, ..) = default_fn_async_schema::DataInputModel
         .create(default_fn_async_schema::PartialDataInput { lax: None }, ())
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         default_fn_async_schema::DataInput { lax: DEFAULT_VALUE }
     );
 }
@@ -412,7 +412,7 @@ async_test_matrix!(should_properly_resolve_default_values_of_missing_fields_at_c
 
 #[test]
 fn should_properly_use_lax_input_values_as_output_values_if_no_validator_is_provided() {
-    let created = lax_input_as_output_sync_schema::DataInputModel
+    let (created, ..) = lax_input_as_output_sync_schema::DataInputModel
         .create(
             lax_input_as_output_sync_schema::PartialDataInput { lax: Some(34) },
             (),
@@ -421,15 +421,15 @@ fn should_properly_use_lax_input_values_as_output_values_if_no_validator_is_prov
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         lax_input_as_output_sync_schema::DataInput { lax: 34 }
     );
 
     let lax_update = 30;
 
-    let updated = lax_input_as_output_sync_schema::DataInputModel
+    let (updated, ..) = lax_input_as_output_sync_schema::DataInputModel
         .update(
-            created.data,
+            created,
             lax_input_as_output_sync_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
@@ -439,7 +439,7 @@ fn should_properly_use_lax_input_values_as_output_values_if_no_validator_is_prov
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         lax_input_as_output_sync_schema::PartialDataInput {
             lax: Some(lax_update)
         }
@@ -447,7 +447,7 @@ fn should_properly_use_lax_input_values_as_output_values_if_no_validator_is_prov
 }
 
 async fn should_properly_use_lax_input_values_as_output_values_if_no_validator_is_provided_async() {
-    let created = lax_input_as_output_async_schema::DataInputModel
+    let (created, ..) = lax_input_as_output_async_schema::DataInputModel
         .create(
             lax_input_as_output_async_schema::PartialDataInput { lax: Some(34) },
             (),
@@ -457,15 +457,15 @@ async fn should_properly_use_lax_input_values_as_output_values_if_no_validator_i
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         lax_input_as_output_async_schema::DataInput { lax: 34 }
     );
 
     let lax_update = 30;
 
-    let updated = lax_input_as_output_async_schema::DataInputModel
+    let (updated, ..) = lax_input_as_output_async_schema::DataInputModel
         .update(
-            created.data,
+            created,
             lax_input_as_output_async_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
@@ -475,7 +475,7 @@ async fn should_properly_use_lax_input_values_as_output_values_if_no_validator_i
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         lax_input_as_output_async_schema::PartialDataInput {
             lax: Some(lax_update)
         }
@@ -544,7 +544,7 @@ mod lax_input_as_output_async_schema {
 fn should_respect_the_required_rule() {
     let default_lax_value = "default_lax_value";
 
-    let err = required_sync_schema::DataInputModel
+    let (err, ..) = required_sync_schema::DataInputModel
         .create(
             required_sync_schema::PartialDataInput {
                 lax: None,
@@ -556,13 +556,13 @@ fn should_respect_the_required_rule() {
         .unwrap();
 
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         "lax is required to create at this time"
     );
 
     let other_value = "require_lax_for_update".to_string();
 
-    let created = required_sync_schema::DataInputModel
+    let (created, ..) = required_sync_schema::DataInputModel
         .create(
             required_sync_schema::PartialDataInput {
                 lax: None,
@@ -574,16 +574,16 @@ fn should_respect_the_required_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         required_sync_schema::DataInput {
             lax: default_lax_value.to_string(),
             other: other_value
         }
     );
 
-    let err = required_sync_schema::DataInputModel
+    let (err, ..) = required_sync_schema::DataInputModel
         .update(
-            created.data.clone(),
+            created.clone(),
             required_sync_schema::PartialDataInput {
                 lax: None,
                 other: Some("some update".into()),
@@ -594,7 +594,7 @@ fn should_respect_the_required_rule() {
         .unwrap();
 
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        err.as_ref().unwrap().get("lax").unwrap().reason,
         "lax is required for this update"
     );
 }
@@ -602,7 +602,7 @@ fn should_respect_the_required_rule() {
 async fn should_respect_the_required_rule_async() {
     let default_lax_value = "default_lax_value";
 
-    let err = required_async_schema::DataInputModel
+    let (err, ..) = required_async_schema::DataInputModel
         .create(
             required_async_schema::PartialDataInput {
                 lax: None,
@@ -615,13 +615,13 @@ async fn should_respect_the_required_rule_async() {
         .unwrap();
 
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         "lax is required to create at this time"
     );
 
     let other_value = "require_lax_for_update".to_string();
 
-    let created = required_async_schema::DataInputModel
+    let (created, ..) = required_async_schema::DataInputModel
         .create(
             required_async_schema::PartialDataInput {
                 lax: None,
@@ -634,16 +634,16 @@ async fn should_respect_the_required_rule_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         required_async_schema::DataInput {
             lax: default_lax_value.to_string(),
             other: other_value
         }
     );
 
-    let err = required_async_schema::DataInputModel
+    let (err, ..) = required_async_schema::DataInputModel
         .update(
-            created.data.clone(),
+            created.clone(),
             required_async_schema::PartialDataInput {
                 lax: None,
                 other: Some("some update".into()),
@@ -655,7 +655,7 @@ async fn should_respect_the_required_rule_async() {
         .unwrap();
 
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        err.as_ref().unwrap().get("lax").unwrap().reason,
         "lax is required for this update"
     );
 }
@@ -736,7 +736,7 @@ fn should_not_create_if_primary_validation_fails() {
     ];
 
     for lax_value in lax_values {
-        let err = primary_validation_sync_schema::DataInputModel
+        let (err, ..) = primary_validation_sync_schema::DataInputModel
             .create(
                 primary_validation_sync_schema::PartialDataInput {
                     lax: Some(lax_value),
@@ -746,13 +746,13 @@ fn should_not_create_if_primary_validation_fails() {
             .err()
             .unwrap();
 
-        assert_eq!(err.errors.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
+        assert_eq!(err.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
     }
 
     let lax_values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
 
     for lax_value in lax_values {
-        let created = primary_validation_sync_schema::DataInputModel
+        let (created, ..) = primary_validation_sync_schema::DataInputModel
             .create(
                 primary_validation_sync_schema::PartialDataInput {
                     lax: Some(lax_value.clone()),
@@ -762,7 +762,7 @@ fn should_not_create_if_primary_validation_fails() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.lax, lax_value);
+        assert_eq!(created.lax, lax_value);
     }
 }
 
@@ -777,7 +777,7 @@ async fn should_not_create_if_primary_validation_fails_async() {
     ];
 
     for lax_value in lax_values {
-        let err = primary_validation_async_schema::DataInputModel
+        let (err, ..) = primary_validation_async_schema::DataInputModel
             .create(
                 primary_validation_async_schema::PartialDataInput {
                     lax: Some(lax_value),
@@ -788,13 +788,13 @@ async fn should_not_create_if_primary_validation_fails_async() {
             .err()
             .unwrap();
 
-        assert_eq!(err.errors.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
+        assert_eq!(err.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
     }
 
     let lax_values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
 
     for lax_value in lax_values {
-        let created = primary_validation_async_schema::DataInputModel
+        let (created, ..) = primary_validation_async_schema::DataInputModel
             .create(
                 primary_validation_async_schema::PartialDataInput {
                     lax: Some(lax_value.clone()),
@@ -805,7 +805,7 @@ async fn should_not_create_if_primary_validation_fails_async() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.lax, lax_value);
+        assert_eq!(created.lax, lax_value);
     }
 }
 
@@ -821,7 +821,7 @@ fn should_not_update_if_primary_validation_fails() {
     let lax_values = [-1, 0, LAX_VALUE_RANGE.max().unwrap() + 1];
 
     for lax_value in lax_values {
-        let err = primary_update_validation_sync_schema::DataModel
+        let (err, ..) = primary_update_validation_sync_schema::DataModel
             .update(
                 data.clone(),
                 primary_update_validation_sync_schema::PartialDataInput {
@@ -833,7 +833,7 @@ fn should_not_update_if_primary_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+            err.as_ref().unwrap().get("lax").unwrap().reason,
             LAX_OUT_OF_RANGE_ERROR
         );
     }
@@ -843,7 +843,7 @@ fn should_not_update_if_primary_validation_fails() {
             continue;
         }
 
-        let updated = primary_update_validation_sync_schema::DataModel
+        let (updated, ..) = primary_update_validation_sync_schema::DataModel
             .update(
                 data.clone(),
                 primary_update_validation_sync_schema::PartialDataInput {
@@ -855,7 +855,7 @@ fn should_not_update_if_primary_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            updated.data,
+            updated,
             primary_update_validation_sync_schema::PartialData {
                 id: None,
                 lax: Some(updated_value),
@@ -873,7 +873,7 @@ async fn should_not_update_if_primary_validation_fails_async() {
     let lax_values = [-1, 0, LAX_VALUE_RANGE.max().unwrap() + 1];
 
     for lax_value in lax_values {
-        let err = primary_update_validation_async_schema::DataModel
+        let (err, ..) = primary_update_validation_async_schema::DataModel
             .update(
                 data.clone(),
                 primary_update_validation_async_schema::PartialDataInput {
@@ -886,7 +886,7 @@ async fn should_not_update_if_primary_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+            err.as_ref().unwrap().get("lax").unwrap().reason,
             LAX_OUT_OF_RANGE_ERROR
         );
     }
@@ -896,7 +896,7 @@ async fn should_not_update_if_primary_validation_fails_async() {
             continue;
         }
 
-        let updated = primary_update_validation_async_schema::DataModel
+        let (updated, ..) = primary_update_validation_async_schema::DataModel
             .update(
                 data.clone(),
                 primary_update_validation_async_schema::PartialDataInput {
@@ -909,7 +909,7 @@ async fn should_not_update_if_primary_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            updated.data,
+            updated,
             primary_update_validation_async_schema::PartialData {
                 id: None,
                 lax: Some(updated_value),
@@ -925,7 +925,7 @@ fn should_properly_use_input_values_as_output_values_if_validator_does_not_retur
 ) {
     let value = 1;
 
-    let created = primary_validation_none_sync_schema::DataInputModel
+    let (created, ..) = primary_validation_none_sync_schema::DataInputModel
         .create(
             primary_validation_none_sync_schema::PartialDataInput { lax: Some(value) },
             (),
@@ -934,13 +934,13 @@ fn should_properly_use_input_values_as_output_values_if_validator_does_not_retur
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         primary_validation_none_sync_schema::DataInput { lax: value }
     );
 
     let value = 2;
 
-    let updated = primary_validation_none_sync_schema::DataInputModel
+    let (updated, ..) = primary_validation_none_sync_schema::DataInputModel
         .update(
             primary_validation_none_sync_schema::DataInput { lax: value - 1 },
             primary_validation_none_sync_schema::PartialDataInput { lax: Some(value) },
@@ -950,7 +950,7 @@ fn should_properly_use_input_values_as_output_values_if_validator_does_not_retur
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         primary_validation_none_sync_schema::PartialDataInput { lax: Some(value) }
     );
 }
@@ -959,7 +959,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 ) {
     let value = 1;
 
-    let created = primary_validation_none_async_schema::DataInputModel
+    let (created, ..) = primary_validation_none_async_schema::DataInputModel
         .create(
             primary_validation_none_async_schema::PartialDataInput { lax: Some(value) },
             (),
@@ -969,13 +969,13 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         primary_validation_none_async_schema::DataInput { lax: value }
     );
 
     let value = 2;
 
-    let updated = primary_validation_none_async_schema::DataInputModel
+    let (updated, ..) = primary_validation_none_async_schema::DataInputModel
         .update(
             primary_validation_none_async_schema::DataInput { lax: value - 1 },
             primary_validation_none_async_schema::PartialDataInput { lax: Some(value) },
@@ -986,7 +986,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         primary_validation_none_async_schema::PartialDataInput { lax: Some(value) }
     );
 }
@@ -1111,7 +1111,7 @@ fn should_not_create_if_re_validation_fails() {
     ];
 
     for lax_value in lax_values {
-        let err = re_validation_sync_schema::DataInputModel
+        let (err, ..) = re_validation_sync_schema::DataInputModel
             .create(
                 re_validation_sync_schema::PartialDataInput {
                     lax: Some(lax_value),
@@ -1122,7 +1122,7 @@ fn should_not_create_if_re_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            err.errors.get("lax").unwrap().reason,
+            err.get("lax").unwrap().reason,
             MIN_REVALIDATION_LENGTH_ERROR
         );
     }
@@ -1130,7 +1130,7 @@ fn should_not_create_if_re_validation_fails() {
     let lax_values = [String::from("1".repeat(4)), String::from("1".repeat(5))];
 
     for lax_value in lax_values {
-        let created = re_validation_sync_schema::DataInputModel
+        let (created, ..) = re_validation_sync_schema::DataInputModel
             .create(
                 re_validation_sync_schema::PartialDataInput {
                     lax: Some(lax_value.clone()),
@@ -1140,7 +1140,7 @@ fn should_not_create_if_re_validation_fails() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.lax, lax_value);
+        assert_eq!(created.lax, lax_value);
     }
 }
 
@@ -1155,7 +1155,7 @@ async fn should_not_create_if_re_validation_fails_async() {
     ];
 
     for lax_value in lax_values {
-        let err = re_validation_async_schema::DataInputModel
+        let (err, ..) = re_validation_async_schema::DataInputModel
             .create(
                 re_validation_async_schema::PartialDataInput {
                     lax: Some(lax_value),
@@ -1167,7 +1167,7 @@ async fn should_not_create_if_re_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            err.errors.get("lax").unwrap().reason,
+            err.get("lax").unwrap().reason,
             MIN_REVALIDATION_LENGTH_ERROR
         );
     }
@@ -1175,7 +1175,7 @@ async fn should_not_create_if_re_validation_fails_async() {
     let lax_values = [String::from("1".repeat(4)), String::from("1".repeat(5))];
 
     for lax_value in lax_values {
-        let created = re_validation_async_schema::DataInputModel
+        let (created, ..) = re_validation_async_schema::DataInputModel
             .create(
                 re_validation_async_schema::PartialDataInput {
                     lax: Some(lax_value.clone()),
@@ -1186,7 +1186,7 @@ async fn should_not_create_if_re_validation_fails_async() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.lax, lax_value);
+        assert_eq!(created.lax, lax_value);
     }
 }
 
@@ -1206,7 +1206,7 @@ fn should_not_update_if_re_validation_fails() {
     ];
 
     for lax_value in lax_values {
-        let err = re_validation_update_sync_schema::DataModel
+        let (err, ..) = re_validation_update_sync_schema::DataModel
             .update(
                 data.clone(),
                 re_validation_update_sync_schema::PartialDataInput {
@@ -1218,7 +1218,7 @@ fn should_not_update_if_re_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+            err.as_ref().unwrap().get("lax").unwrap().reason,
             REVALIDATED_LAX_OUT_OF_RANGE_ERROR
         );
     }
@@ -1228,7 +1228,7 @@ fn should_not_update_if_re_validation_fails() {
             continue;
         }
 
-        let updated = re_validation_update_sync_schema::DataModel
+        let (updated, ..) = re_validation_update_sync_schema::DataModel
             .update(
                 data.clone(),
                 re_validation_update_sync_schema::PartialDataInput {
@@ -1240,7 +1240,7 @@ fn should_not_update_if_re_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            updated.data,
+            updated,
             re_validation_update_sync_schema::PartialData {
                 id: None,
                 lax: Some(updated_value),
@@ -1262,7 +1262,7 @@ async fn should_not_update_if_re_validation_fails_async() {
     ];
 
     for lax_value in lax_values {
-        let err = re_validation_update_async_schema::DataModel
+        let (err, ..) = re_validation_update_async_schema::DataModel
             .update(
                 data.clone(),
                 re_validation_update_async_schema::PartialDataInput {
@@ -1275,7 +1275,7 @@ async fn should_not_update_if_re_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+            err.as_ref().unwrap().get("lax").unwrap().reason,
             REVALIDATED_LAX_OUT_OF_RANGE_ERROR
         );
     }
@@ -1285,7 +1285,7 @@ async fn should_not_update_if_re_validation_fails_async() {
             continue;
         }
 
-        let updated = re_validation_update_async_schema::DataModel
+        let (updated, ..) = re_validation_update_async_schema::DataModel
             .update(
                 data.clone(),
                 re_validation_update_async_schema::PartialDataInput {
@@ -1298,7 +1298,7 @@ async fn should_not_update_if_re_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            updated.data,
+            updated,
             re_validation_update_async_schema::PartialData {
                 id: None,
                 lax: Some(updated_value),
@@ -1313,7 +1313,7 @@ async_test_matrix!(should_not_update_if_re_validation_fails_async);
 fn should_properly_use_re_validated_values() {
     let value = 1;
 
-    let created = re_validated_values_sync_schema::DataInputModel
+    let (created, ..) = re_validated_values_sync_schema::DataInputModel
         .create(
             re_validated_values_sync_schema::PartialDataInput { lax: Some(value) },
             (),
@@ -1322,13 +1322,13 @@ fn should_properly_use_re_validated_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         re_validated_values_sync_schema::DataInput { lax: value + 1 }
     );
 
     let value = 2;
 
-    let updated = re_validated_values_sync_schema::DataInputModel
+    let (updated, ..) = re_validated_values_sync_schema::DataInputModel
         .update(
             re_validated_values_sync_schema::DataInput { lax: value - 1 },
             re_validated_values_sync_schema::PartialDataInput { lax: Some(value) },
@@ -1338,7 +1338,7 @@ fn should_properly_use_re_validated_values() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         re_validated_values_sync_schema::PartialDataInput {
             lax: Some(value + 1)
         }
@@ -1348,7 +1348,7 @@ fn should_properly_use_re_validated_values() {
 async fn should_properly_use_re_validated_values_async() {
     let value = 1;
 
-    let created = re_validated_values_async_schema::DataInputModel
+    let (created, ..) = re_validated_values_async_schema::DataInputModel
         .create(
             re_validated_values_async_schema::PartialDataInput { lax: Some(value) },
             (),
@@ -1358,13 +1358,13 @@ async fn should_properly_use_re_validated_values_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         re_validated_values_async_schema::DataInput { lax: value + 1 }
     );
 
     let value = 2;
 
-    let updated = re_validated_values_async_schema::DataInputModel
+    let (updated, ..) = re_validated_values_async_schema::DataInputModel
         .update(
             re_validated_values_async_schema::DataInput { lax: value - 1 },
             re_validated_values_async_schema::PartialDataInput { lax: Some(value) },
@@ -1375,7 +1375,7 @@ async fn should_properly_use_re_validated_values_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         re_validated_values_async_schema::PartialDataInput {
             lax: Some(value + 1)
         }
@@ -1389,7 +1389,7 @@ fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_re
 ) {
     let value = 1;
 
-    let created = re_validation_none_sync_schema::DataInputModel
+    let (created, ..) = re_validation_none_sync_schema::DataInputModel
         .create(
             re_validation_none_sync_schema::PartialDataInput { lax: Some(value) },
             (),
@@ -1398,13 +1398,13 @@ fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_re
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         re_validation_none_sync_schema::DataInput { lax: value + 1 }
     );
 
     let value = 2;
 
-    let updated = re_validation_none_sync_schema::DataInputModel
+    let (updated, ..) = re_validation_none_sync_schema::DataInputModel
         .update(
             re_validation_none_sync_schema::DataInput { lax: value - 1 },
             re_validation_none_sync_schema::PartialDataInput { lax: Some(value) },
@@ -1414,7 +1414,7 @@ fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_re
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         re_validation_none_sync_schema::PartialDataInput {
             lax: Some(value + 1)
         }
@@ -1425,7 +1425,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 ) {
     let value = 1;
 
-    let created = re_validation_none_async_schema::DataInputModel
+    let (created, ..) = re_validation_none_async_schema::DataInputModel
         .create(
             re_validation_none_async_schema::PartialDataInput { lax: Some(value) },
             (),
@@ -1435,13 +1435,13 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         re_validation_none_async_schema::DataInput { lax: value + 1 }
     );
 
     let value = 2;
 
-    let updated = re_validation_none_async_schema::DataInputModel
+    let (updated, ..) = re_validation_none_async_schema::DataInputModel
         .update(
             re_validation_none_async_schema::DataInput { lax: value - 1 },
             re_validation_none_async_schema::PartialDataInput { lax: Some(value) },
@@ -1452,7 +1452,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         re_validation_none_async_schema::PartialDataInput {
             lax: Some(value + 1)
         }
@@ -1646,7 +1646,7 @@ fn should_respect_post_validation_config() {
 
     let lax_2 = "lax_2_provided".to_string();
 
-    let created = post_validation_sync_schema::DataInputModel
+    let (created, ..) = post_validation_sync_schema::DataInputModel
         .create(
             post_validation_sync_schema::PartialDataInput {
                 lax: None,
@@ -1659,7 +1659,7 @@ fn should_respect_post_validation_config() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         post_validation_sync_schema::DataInput {
             lax: default_lax_value.to_string(),
             lax_1: default_lax_1_value.to_string(),
@@ -1670,7 +1670,7 @@ fn should_respect_post_validation_config() {
 
     let lax = LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .create(
             post_validation_sync_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -1682,17 +1682,17 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_1").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from pre-validator in post-validation"
     );
 
     let lax = LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .create(
             post_validation_sync_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -1704,17 +1704,17 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_1").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from post-validator"
     );
 
     let lax_1 = LAX_1_PRE_VALIDATION_FAIL.to_string();
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .create(
             post_validation_sync_schema::PartialDataInput {
                 lax: None,
@@ -1726,17 +1726,17 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.get("lax_1").unwrap().reason,
         lax_1,
         "should not create if one field has an error after pre-validator in post-validation"
     );
 
     let lax = BOTH_PRE_VALIDATION_FAIL.to_string();
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .create(
             post_validation_sync_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -1748,14 +1748,14 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should not create if any field has an error after pre-validator in post-validation"
     );
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.get("lax_1").unwrap().reason,
         lax,
         "should not create if any field has an error after pre-validator in post-validation"
     );
@@ -1763,7 +1763,7 @@ fn should_respect_post_validation_config() {
     let lax = LAX_VALIDATION_FAIL.to_string();
     let lax_2 = "lax_2_provided".to_string();
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .create(
             post_validation_sync_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -1775,10 +1775,10 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_1").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should not create if one field has an error after post-validation"
     );
@@ -1786,7 +1786,7 @@ fn should_respect_post_validation_config() {
     let lax = BOTH_VALIDATION_FAIL.to_string();
     let lax_2 = "lax_2_provided".to_string();
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .create(
             post_validation_sync_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -1798,14 +1798,14 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should not create if any field has an error after post-validation"
     );
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.get("lax_1").unwrap().reason,
         lax,
         "should not create if any field has an error after post-validation"
     );
@@ -1823,7 +1823,7 @@ fn should_respect_post_validation_config() {
         ..data
     };
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .update(
             data.clone(),
             post_validation_sync_schema::PartialDataInput {
@@ -1836,17 +1836,17 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.as_ref().unwrap().get("lax").is_none());
-    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(err.as_ref().unwrap().get("lax").is_none());
+    assert!(err.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        err.as_ref().unwrap().get("lax_1").unwrap().reason,
         lax_1,
         "should not update if one field has an error after pre-validator in post-validation"
     );
 
     let lax = BOTH_PRE_VALIDATION_FAIL.to_string();
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .update(
             data.clone(),
             post_validation_sync_schema::PartialDataInput {
@@ -1859,21 +1859,21 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(err.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        err.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should not update if any field has an error after pre-validator in post-validation"
     );
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        err.as_ref().unwrap().get("lax_1").unwrap().reason,
         lax,
         "should not update if any field has an error after pre-validator in post-validation"
     );
 
     let lax = LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .update(
             data.clone(),
             post_validation_sync_schema::PartialDataInput {
@@ -1886,10 +1886,10 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.as_ref().unwrap().get("lax_1").is_none());
-    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(err.as_ref().unwrap().get("lax_1").is_none());
+    assert!(err.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        err.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from pre-validator in post-validation"
     );
@@ -1901,7 +1901,7 @@ fn should_respect_post_validation_config() {
 
     let lax = LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
-    let err = post_validation_sync_schema::DataInputModel
+    let (err, ..) = post_validation_sync_schema::DataInputModel
         .update(
             data.clone(),
             post_validation_sync_schema::PartialDataInput {
@@ -1914,10 +1914,10 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(err.errors.as_ref().unwrap().get("lax_1").is_none());
-    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(err.as_ref().unwrap().get("lax_1").is_none());
+    assert!(err.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        err.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from post-validator"
     );
@@ -1939,7 +1939,7 @@ async fn should_respect_post_validation_config_async() {
 
     let lax_2 = "lax_2_provided".to_string();
 
-    let created = post_validation_async_schema::DataInputModel
+    let (created, ..) = post_validation_async_schema::DataInputModel
         .create(
             post_validation_async_schema::PartialDataInput {
                 lax: None,
@@ -1953,7 +1953,7 @@ async fn should_respect_post_validation_config_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         post_validation_async_schema::DataInput {
             lax: default_lax_value.to_string(),
             lax_1: default_lax_1_value.to_string(),
@@ -1964,7 +1964,7 @@ async fn should_respect_post_validation_config_async() {
 
     let lax = LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .create(
             post_validation_async_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -1977,17 +1977,17 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_1").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from pre-validator in post-validation"
     );
 
     let lax = LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .create(
             post_validation_async_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -2000,17 +2000,17 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_1").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from post-validator"
     );
 
     let lax_1 = LAX_1_PRE_VALIDATION_FAIL.to_string();
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .create(
             post_validation_async_schema::PartialDataInput {
                 lax: None,
@@ -2023,17 +2023,17 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.get("lax_1").unwrap().reason,
         lax_1,
         "should not create if one field has an error after pre-validator in post-validation"
     );
 
     let lax = BOTH_PRE_VALIDATION_FAIL.to_string();
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .create(
             post_validation_async_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -2046,14 +2046,14 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should not create if any field has an error after pre-validator in post-validation"
     );
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.get("lax_1").unwrap().reason,
         lax,
         "should not create if any field has an error after pre-validator in post-validation"
     );
@@ -2061,7 +2061,7 @@ async fn should_respect_post_validation_config_async() {
     let lax = LAX_VALIDATION_FAIL.to_string();
     let lax_2 = "lax_2_provided".to_string();
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .create(
             post_validation_async_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -2074,10 +2074,10 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_1").is_none());
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_1").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should not create if one field has an error after post-validation"
     );
@@ -2085,7 +2085,7 @@ async fn should_respect_post_validation_config_async() {
     let lax = BOTH_VALIDATION_FAIL.to_string();
     let lax_2 = "lax_2_provided".to_string();
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .create(
             post_validation_async_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -2098,14 +2098,14 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.get("lax_2").is_none());
+    assert!(err.get("lax_2").is_none());
     assert_eq!(
-        err.errors.get("lax").unwrap().reason,
+        err.get("lax").unwrap().reason,
         lax,
         "should not create if any field has an error after post-validation"
     );
     assert_eq!(
-        err.errors.get("lax_1").unwrap().reason,
+        err.get("lax_1").unwrap().reason,
         lax,
         "should not create if any field has an error after post-validation"
     );
@@ -2123,7 +2123,7 @@ async fn should_respect_post_validation_config_async() {
         ..data
     };
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .update(
             data.clone(),
             post_validation_async_schema::PartialDataInput {
@@ -2137,17 +2137,17 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.as_ref().unwrap().get("lax").is_none());
-    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(err.as_ref().unwrap().get("lax").is_none());
+    assert!(err.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        err.as_ref().unwrap().get("lax_1").unwrap().reason,
         lax_1,
         "should not update if one field has an error after pre-validator in post-validation"
     );
 
     let lax = BOTH_PRE_VALIDATION_FAIL.to_string();
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .update(
             data.clone(),
             post_validation_async_schema::PartialDataInput {
@@ -2161,21 +2161,21 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(err.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        err.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should not update if any field has an error after pre-validator in post-validation"
     );
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        err.as_ref().unwrap().get("lax_1").unwrap().reason,
         lax,
         "should not update if any field has an error after pre-validator in post-validation"
     );
 
     let lax = LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .update(
             data.clone(),
             post_validation_async_schema::PartialDataInput {
@@ -2189,10 +2189,10 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.as_ref().unwrap().get("lax_1").is_none());
-    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(err.as_ref().unwrap().get("lax_1").is_none());
+    assert!(err.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        err.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from pre-validator in post-validation"
     );
@@ -2204,7 +2204,7 @@ async fn should_respect_post_validation_config_async() {
 
     let lax = LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
-    let err = post_validation_async_schema::DataInputModel
+    let (err, ..) = post_validation_async_schema::DataInputModel
         .update(
             data.clone(),
             post_validation_async_schema::PartialDataInput {
@@ -2218,10 +2218,10 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(err.errors.as_ref().unwrap().get("lax_1").is_none());
-    assert!(err.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(err.as_ref().unwrap().get("lax_1").is_none());
+    assert!(err.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
-        err.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        err.as_ref().unwrap().get("lax").unwrap().reason,
         lax,
         "should ignore unrelated errors returned from post-validator"
     );
@@ -2242,7 +2242,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
 
     let lax = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let created = post_validate_updates_sync_schema::DataInputModel
+    let (created, ..) = post_validate_updates_sync_schema::DataInputModel
         .create(
             post_validate_updates_sync_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -2255,7 +2255,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         post_validate_updates_sync_schema::DataInput {
             lax: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
             lax_1: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
@@ -2265,7 +2265,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
 
     let lax = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let created = post_validate_updates_sync_schema::DataInputModel
+    let (created, ..) = post_validate_updates_sync_schema::DataInputModel
         .create(
             post_validate_updates_sync_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -2278,7 +2278,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         post_validate_updates_sync_schema::DataInput {
             lax: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
             lax_1: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
@@ -2294,7 +2294,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
 
     let lax = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let updated = post_validate_updates_sync_schema::DataInputModel
+    let (updated, ..) = post_validate_updates_sync_schema::DataInputModel
         .update(
             data.clone(),
             post_validate_updates_sync_schema::PartialDataInput {
@@ -2308,7 +2308,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         post_validate_updates_sync_schema::PartialDataInput {
             lax: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
             lax_1: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
@@ -2318,7 +2318,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
 
     let lax = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let updated = post_validate_updates_sync_schema::DataInputModel
+    let (updated, ..) = post_validate_updates_sync_schema::DataInputModel
         .update(
             data.clone(),
             post_validate_updates_sync_schema::PartialDataInput {
@@ -2332,7 +2332,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         post_validate_updates_sync_schema::PartialDataInput {
             lax: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
             lax_1: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
@@ -2354,7 +2354,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let lax = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let created = post_validate_updates_async_schema::DataInputModel
+    let (created, ..) = post_validate_updates_async_schema::DataInputModel
         .create(
             post_validate_updates_async_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -2368,7 +2368,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         post_validate_updates_async_schema::DataInput {
             lax: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
             lax_1: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
@@ -2378,7 +2378,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let lax = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let created = post_validate_updates_async_schema::DataInputModel
+    let (created, ..) = post_validate_updates_async_schema::DataInputModel
         .create(
             post_validate_updates_async_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -2392,7 +2392,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         post_validate_updates_async_schema::DataInput {
             lax: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
             lax_1: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
@@ -2408,7 +2408,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let lax = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let updated = post_validate_updates_async_schema::DataInputModel
+    let (updated, ..) = post_validate_updates_async_schema::DataInputModel
         .update(
             data.clone(),
             post_validate_updates_async_schema::PartialDataInput {
@@ -2423,7 +2423,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         post_validate_updates_async_schema::PartialDataInput {
             lax: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
             lax_1: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
@@ -2433,7 +2433,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let lax = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let updated = post_validate_updates_async_schema::DataInputModel
+    let (updated, ..) = post_validate_updates_async_schema::DataInputModel
         .update(
             data.clone(),
             post_validate_updates_async_schema::PartialDataInput {
@@ -2448,7 +2448,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         post_validate_updates_async_schema::PartialDataInput {
             lax: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
             lax_1: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
@@ -2765,7 +2765,7 @@ mod respect_ignore_rule_schema {
 fn should_respect_the_ignore_rule() {
     let other_value = "ignore_lax_for_init".to_string();
 
-    let created = respect_ignore_rule_schema::DataInputModel
+    let (created, ..) = respect_ignore_rule_schema::DataInputModel
         .create(
             respect_ignore_rule_schema::PartialDataInput {
                 lax: Some("value to be ignored".into()),
@@ -2776,7 +2776,7 @@ fn should_respect_the_ignore_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         respect_ignore_rule_schema::DataInput {
             lax: "default_lax_value".to_string(),
             other: other_value,
@@ -2786,9 +2786,9 @@ fn should_respect_the_ignore_rule() {
     let updated_lax_value = "updated_lax_value".to_string();
     let other_value = "ignore_lax_for_update".to_string();
 
-    let updated = respect_ignore_rule_schema::DataInputModel
+    let (updated, ..) = respect_ignore_rule_schema::DataInputModel
         .update(
-            created.data.clone(),
+            created.clone(),
             respect_ignore_rule_schema::PartialDataInput {
                 lax: Some(updated_lax_value.clone()),
                 other: Some(other_value.clone()),
@@ -2798,18 +2798,18 @@ fn should_respect_the_ignore_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         respect_ignore_rule_schema::PartialDataInput {
             lax: Some(updated_lax_value),
             other: Some(other_value),
         }
     );
 
-    let data = created.data.clone_with_updates(&updated.data);
+    let data = created.clone_with_updates(&updated);
 
     let other_value = "some other update".to_string();
 
-    let updated = respect_ignore_rule_schema::DataInputModel
+    let (updated, ..) = respect_ignore_rule_schema::DataInputModel
         .update(
             data,
             respect_ignore_rule_schema::PartialDataInput {
@@ -2821,7 +2821,7 @@ fn should_respect_the_ignore_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         respect_ignore_rule_schema::PartialDataInput {
             lax: None,
             other: Some(other_value),
@@ -2847,7 +2847,7 @@ mod respect_ignore_init_rule_schema {
 fn should_respect_the_ignore_init_rule() {
     let other_value = "some other value".to_string();
 
-    let created = respect_ignore_init_rule_schema::DataInputModel
+    let (created, ..) = respect_ignore_init_rule_schema::DataInputModel
         .create(
             respect_ignore_init_rule_schema::PartialDataInput {
                 lax: Some("value to be ignored".into()),
@@ -2858,7 +2858,7 @@ fn should_respect_the_ignore_init_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         respect_ignore_init_rule_schema::DataInput {
             lax: "default_lax_value".to_string(),
             other: other_value,
@@ -2868,9 +2868,9 @@ fn should_respect_the_ignore_init_rule() {
     let updated_lax_value = "updated_lax_value".to_string();
     let other_value = "updated_other_value".to_string();
 
-    let updated = respect_ignore_init_rule_schema::DataInputModel
+    let (updated, ..) = respect_ignore_init_rule_schema::DataInputModel
         .update(
-            created.data,
+            created,
             respect_ignore_init_rule_schema::PartialDataInput {
                 lax: Some(updated_lax_value.clone()),
                 other: Some(other_value.clone()),
@@ -2880,7 +2880,7 @@ fn should_respect_the_ignore_init_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         respect_ignore_init_rule_schema::PartialDataInput {
             lax: Some(updated_lax_value),
             other: Some(other_value),
@@ -2907,7 +2907,7 @@ fn should_respect_the_ignore_update_rule() {
     let lax_value = "lax value".to_string();
     let other_value = "other value".to_string();
 
-    let created = respect_ignore_update_rule_schema::DataInputModel
+    let (created, ..) = respect_ignore_update_rule_schema::DataInputModel
         .create(
             respect_ignore_update_rule_schema::PartialDataInput {
                 lax: Some(lax_value.clone()),
@@ -2918,7 +2918,7 @@ fn should_respect_the_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         respect_ignore_update_rule_schema::DataInput {
             lax: lax_value,
             other: other_value,
@@ -2928,9 +2928,9 @@ fn should_respect_the_ignore_update_rule() {
     let updated_lax_value = "lax value to be ignored".to_string();
     let other_value = "updated other value".to_string();
 
-    let updated = respect_ignore_update_rule_schema::DataInputModel
+    let (updated, ..) = respect_ignore_update_rule_schema::DataInputModel
         .update(
-            created.data,
+            created,
             respect_ignore_update_rule_schema::PartialDataInput {
                 lax: Some(updated_lax_value.clone()),
                 other: Some(other_value.clone()),
@@ -2940,7 +2940,7 @@ fn should_respect_the_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         respect_ignore_update_rule_schema::PartialDataInput {
             lax: None,
             other: Some(other_value),
@@ -2967,7 +2967,7 @@ mod grouped_ignore_rule_schema {
 
 #[test]
 fn should_properly_handle_grouped_ignore_rule() {
-    let created = grouped_ignore_rule_schema::DataInputModel
+    let (created, ..) = grouped_ignore_rule_schema::DataInputModel
         .create(
             grouped_ignore_rule_schema::PartialDataInput {
                 lax: Some("IGNORE".into()),
@@ -2979,7 +2979,7 @@ fn should_properly_handle_grouped_ignore_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         grouped_ignore_rule_schema::DataInput {
             lax: "default_lax_value".to_string(),
             lax_1: "default_lax_1_value".to_string(),
@@ -2987,7 +2987,7 @@ fn should_properly_handle_grouped_ignore_rule() {
         }
     );
 
-    let created = grouped_ignore_rule_schema::DataInputModel
+    let (created, ..) = grouped_ignore_rule_schema::DataInputModel
         .create(
             grouped_ignore_rule_schema::PartialDataInput {
                 lax: Some("some lax value".into()),
@@ -2999,7 +2999,7 @@ fn should_properly_handle_grouped_ignore_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         grouped_ignore_rule_schema::DataInput {
             lax: "some lax value".to_string(),
             lax_1: "lax_1".to_string(),
@@ -3013,7 +3013,7 @@ fn should_properly_handle_grouped_ignore_rule() {
         lax_2: "default_lax_2_value".to_string(),
     };
 
-    let updated = grouped_ignore_rule_schema::DataInputModel
+    let (updated, ..) = grouped_ignore_rule_schema::DataInputModel
         .update(
             data.clone(),
             grouped_ignore_rule_schema::PartialDataInput {
@@ -3026,7 +3026,7 @@ fn should_properly_handle_grouped_ignore_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         grouped_ignore_rule_schema::PartialDataInput {
             lax: None,
             lax_1: None,
@@ -3034,7 +3034,7 @@ fn should_properly_handle_grouped_ignore_rule() {
         }
     );
 
-    let updated = grouped_ignore_rule_schema::DataInputModel
+    let (updated, ..) = grouped_ignore_rule_schema::DataInputModel
         .update(
             data,
             grouped_ignore_rule_schema::PartialDataInput {
@@ -3047,7 +3047,7 @@ fn should_properly_handle_grouped_ignore_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         grouped_ignore_rule_schema::PartialDataInput {
             lax: Some("some lax value".to_string()),
             lax_1: Some("lax_1".to_string()),
@@ -3075,7 +3075,7 @@ mod grouped_ignore_update_rule_schema {
 
 #[test]
 fn should_properly_handle_grouped_ignore_update_rule() {
-    let created = grouped_ignore_update_rule_schema::DataInputModel
+    let (created, ..) = grouped_ignore_update_rule_schema::DataInputModel
         .create(
             grouped_ignore_update_rule_schema::PartialDataInput {
                 lax: Some("IGNORE".into()),
@@ -3087,7 +3087,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         grouped_ignore_update_rule_schema::DataInput {
             lax: "IGNORE".to_string(),
             lax_1: "lax_1".to_string(),
@@ -3101,7 +3101,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
         lax_2: "default_lax_2_value".to_string(),
     };
 
-    let updated = grouped_ignore_update_rule_schema::DataInputModel
+    let (updated, ..) = grouped_ignore_update_rule_schema::DataInputModel
         .update(
             data.clone(),
             grouped_ignore_update_rule_schema::PartialDataInput {
@@ -3114,7 +3114,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         grouped_ignore_update_rule_schema::PartialDataInput {
             lax: None,
             lax_1: None,
@@ -3122,7 +3122,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
         }
     );
 
-    let updated = grouped_ignore_update_rule_schema::DataInputModel
+    let (updated, ..) = grouped_ignore_update_rule_schema::DataInputModel
         .update(
             data,
             grouped_ignore_update_rule_schema::PartialDataInput {
@@ -3135,7 +3135,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         grouped_ignore_update_rule_schema::PartialDataInput {
             lax: Some("some lax value".to_string()),
             lax_1: Some("lax_1".to_string()),
@@ -3155,7 +3155,7 @@ mod readonly_after_creation_schema {
 
 #[test]
 fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default_after_creation() {
-    let created = readonly_after_creation_schema::DataInputModel
+    let (created, ..) = readonly_after_creation_schema::DataInputModel
         .create(
             readonly_after_creation_schema::PartialDataInput { lax: Some(40) },
             (),
@@ -3163,20 +3163,20 @@ fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         readonly_after_creation_schema::DataInput { lax: 40 }
     );
 
-    let err = readonly_after_creation_schema::DataInputModel
+    let (err, ..) = readonly_after_creation_schema::DataInputModel
         .update(
-            created.data,
+            created,
             readonly_after_creation_schema::PartialDataInput { lax: Some(2) },
             (),
         )
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3190,7 +3190,7 @@ mod readonly_after_updates_schema {
 
 #[test]
 fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default_after_updates() {
-    let created = readonly_after_updates_schema::DataInputModel
+    let (created, ..) = readonly_after_updates_schema::DataInputModel
         .create(
             readonly_after_updates_schema::PartialDataInput { lax: None },
             (),
@@ -3198,28 +3198,28 @@ fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         readonly_after_updates_schema::DataInput { lax: 1 }
     );
 
-    let updated = readonly_after_updates_schema::DataInputModel
+    let (updated, ..) = readonly_after_updates_schema::DataInputModel
         .update(
-            created.data.clone(),
+            created.clone(),
             readonly_after_updates_schema::PartialDataInput { lax: Some(2) },
             (),
         )
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         readonly_after_updates_schema::PartialDataInput { lax: Some(2) }
     );
 
-    let data = created.data.clone_with_updates(&updated.data);
+    let data = created.clone_with_updates(&updated);
 
     assert_eq!(data, readonly_after_updates_schema::DataInput { lax: 2 });
 
-    let err = readonly_after_updates_schema::DataInputModel
+    let (err, ..) = readonly_after_updates_schema::DataInputModel
         .update(
             data,
             readonly_after_updates_schema::PartialDataInput { lax: Some(3) },
@@ -3228,7 +3228,7 @@ fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 // Section: on_delete
@@ -3302,12 +3302,12 @@ fn should_trigger_on_failure_handlers_at_creation() {
         (),
     );
 
-    let errors = result.unwrap_err();
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("lax").unwrap().reason,
+        errors.get("lax").unwrap().reason,
         "validation failed"
     );
-    errors.handle_failure();
+    handle_failure();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3348,13 +3348,13 @@ fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ignored()
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("lax").is_none());
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
+    assert!(errors.get("lax").is_none());
     assert_eq!(
-        errors.errors.get("lax2").unwrap().reason,
+        errors.get("lax2").unwrap().reason,
         "validation failed"
     );
-    errors.handle_failure();
+    handle_failure();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3395,12 +3395,12 @@ fn should_trigger_on_failure_handlers_during_updates() {
         (),
     );
 
-    let errors = result.unwrap_err();
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        errors.as_ref().unwrap().get("lax").unwrap().reason,
         "validation failed"
     );
-    errors.handle_failure();
+    handle_failure();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3444,9 +3444,9 @@ fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.is_none());
-    errors.handle_failure();
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
+    assert!(errors.is_none());
+    handle_failure();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3500,13 +3500,13 @@ fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignore
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("lax").is_none());
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("lax").is_none());
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax2").unwrap().reason,
+        errors.as_ref().unwrap().get("lax2").unwrap().reason,
         "validation failed"
     );
-    errors.handle_failure();
+    handle_failure();
 }
 
 // Section: on_success
@@ -3557,7 +3557,7 @@ fn should_trigger_on_success_handlers_at_creation_if_provided() {
         lax: "lax".into(),
     };
 
-    let created = lax_on_success_creation_schema::DataInputModel
+    let (created, _ctx_options, handle_success) = lax_on_success_creation_schema::DataInputModel
         .create(
             lax_on_success_creation_schema::PartialDataInput {
                 lax: Some(data.lax.clone()),
@@ -3565,10 +3565,11 @@ fn should_trigger_on_success_handlers_at_creation_if_provided() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
-    assert_eq!(created.data, data);
-    created.handle_success();
+    assert_eq!(created, data);
+    handle_success();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3608,7 +3609,7 @@ mod lax_on_success_creation_default_schema {
 fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
     let lax_1 = "lax_1".to_string();
 
-    let created = lax_on_success_creation_default_schema::DataInputModel
+    let (created, _ctx_options, handle_success) = lax_on_success_creation_default_schema::DataInputModel
         .create(
             lax_on_success_creation_default_schema::PartialDataInput {
                 lax: None,
@@ -3616,17 +3617,18 @@ fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         lax_on_success_creation_default_schema::DataInput {
             lax: "default_lax_value".to_string(),
             lax_1,
         }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3667,7 +3669,7 @@ fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ignored()
     let lax_value = "lax_value".to_string();
     let lax_1_value = "lax_1_value".to_string();
 
-    let created = lax_on_success_creation_ignored_schema::DataInputModel
+    let (created, _ctx_options, handle_success) = lax_on_success_creation_ignored_schema::DataInputModel
         .create(
             lax_on_success_creation_ignored_schema::PartialDataInput {
                 lax: Some(lax_value),
@@ -3675,17 +3677,18 @@ fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ignored()
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         lax_on_success_creation_ignored_schema::DataInput {
             lax: "default_lax_value".to_string(),
             lax_1: lax_1_value,
         }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3731,7 +3734,7 @@ fn should_trigger_on_success_handlers_during_updates_if_provided() {
 
     let updated_lax_value = "updated_lax_value".to_string();
 
-    let updated = lax_on_success_update_schema::DataInputModel
+    let (updated, _ctx_options, handle_success) = lax_on_success_update_schema::DataInputModel
         .update(
             data,
             lax_on_success_update_schema::PartialDataInput {
@@ -3740,17 +3743,18 @@ fn should_trigger_on_success_handlers_during_updates_if_provided() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         lax_on_success_update_schema::PartialDataInput {
             lax: Some(updated_lax_value),
             lax_1: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3795,7 +3799,7 @@ fn should_not_trigger_on_success_handlers_during_updates_if_not_provided() {
 
     let updated_lax_1_value = "updated_lax_1_value".to_string();
 
-    let updated = lax_on_success_update_not_provided_schema::DataInputModel
+    let (updated, _ctx_options, handle_success) = lax_on_success_update_not_provided_schema::DataInputModel
         .update(
             data,
             lax_on_success_update_not_provided_schema::PartialDataInput {
@@ -3804,17 +3808,18 @@ fn should_not_trigger_on_success_handlers_during_updates_if_not_provided() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         lax_on_success_update_not_provided_schema::PartialDataInput {
             lax_1: Some(updated_lax_1_value),
             lax: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3861,7 +3866,7 @@ fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored
     let updated_lax_value = "updated_lax_value".to_string();
     let updated_lax_1_value = "updated_lax_1_value".to_string();
 
-    let updated = lax_on_success_update_ignored_schema::DataInputModel
+    let (updated, _ctx_options, handle_success) = lax_on_success_update_ignored_schema::DataInputModel
         .update(
             data,
             lax_on_success_update_ignored_schema::PartialDataInput {
@@ -3870,17 +3875,18 @@ fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         lax_on_success_update_ignored_schema::PartialDataInput {
             lax: None,
             lax_1: Some(updated_lax_1_value),
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3904,22 +3910,23 @@ mod lax_on_success_empty_creation_schema {
 )]
 #[test]
 fn should_trigger_success_handlers_with_empty_fields_array_each_time_creation_is_successful() {
-    let created = lax_on_success_empty_creation_schema::DataInputModel
+    let (created, _ctx_options, handle_success) = lax_on_success_empty_creation_schema::DataInputModel
         .create(
             lax_on_success_empty_creation_schema::PartialDataInput::new(),
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         lax_on_success_empty_creation_schema::DataInput {
             lax: 1234,
             lax_1: 5678,
         }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -3950,7 +3957,7 @@ fn should_trigger_success_handlers_with_empty_fields_array_each_time_update_is_s
 
     let updated_lax_1 = data.lax_1 + 1;
 
-    let updated = lax_on_success_empty_update_schema::DataInputModel
+    let (updated, _ctx_options, handle_success) = lax_on_success_empty_update_schema::DataInputModel
         .update(
             data,
             lax_on_success_empty_update_schema::PartialDataInput {
@@ -3959,15 +3966,16 @@ fn should_trigger_success_handlers_with_empty_fields_array_each_time_update_is_s
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         lax_on_success_empty_update_schema::PartialDataInput {
             lax: None,
             lax_1: Some(updated_lax_1),
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }

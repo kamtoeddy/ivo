@@ -44,27 +44,27 @@ mod dependents_schema {
 fn main() {
     // `value` defaults to 0 -- but a lax field's default still counts as "provided" for its
     // own resolution, so `computed` still resolves once: 0 + 1 = 1.
-    let created = dependents_schema::DataModel
+    let (created, _ctx_options) = dependents_schema::DataModel
         .create(dependents_schema::PartialDataInput { value: None }, ())
         .unwrap();
-    println!("{:?}", created.data); // Data { value: 0, computed: 1 }
+    println!("{:?}", created); // Data { value: 0, computed: 1 }
 
-    let created = dependents_schema::DataModel
+    let (created, _ctx_options) = dependents_schema::DataModel
         .create(
             dependents_schema::PartialDataInput { value: Some(5) },
             (),
         )
         .unwrap();
-    println!("{:?}", created.data); // Data { value: 5, computed: 6 }
+    println!("{:?}", created); // Data { value: 5, computed: 6 }
 
-    let updated = dependents_schema::DataModel
+    let (updated, _ctx_options) = dependents_schema::DataModel
         .update(
-            created.data,
+            created,
             dependents_schema::PartialDataInput { value: Some(10) },
             (),
         )
         .unwrap();
-    println!("{:?}", updated.data); // PartialData { value: Some(10), computed: Some(11) }
+    println!("{:?}", updated); // PartialData { value: Some(10), computed: Some(11) }
 }
 ```
 

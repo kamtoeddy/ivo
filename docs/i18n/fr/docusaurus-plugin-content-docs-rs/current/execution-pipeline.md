@@ -40,7 +40,8 @@ fonctionnalité donnée.
    résolveur de constante puisse lire les valeurs dépendantes résolues via `ctx.values()`.
 10. **Attachement des horodatages** -- `#[created_at]`/`#[updated_at]`, après les constantes. Le
     résolveur partagé n'est appelé qu'une seule fois au maximum.
-11. Préparation des déclencheurs `on_success`/`on_failure` pour le handle retourné.
+11. Préparation des déclencheurs `on_success`/`on_failure` pour le tuple retourné (voir
+    [Cycles de vie - Déclencher les gestionnaires](./life-cycles.md#déclencher-les-gestionnaires)).
 
 ## `update`
 
@@ -67,7 +68,8 @@ fonctionnalité donnée.
 11. **Point de contrôle "rien à mettre à jour" 3** -- si l'ensemble des changements est encore vide
     après la résolution des dépendants, échoue avec "rien à mettre à jour".
 12. **Attachement des horodatages** -- `#[updated_at]`/`#[optional_updated_at]`.
-13. Préparation des déclencheurs `on_success`/`on_failure` pour le handle retourné.
+13. Préparation des déclencheurs `on_success`/`on_failure` pour le tuple retourné (voir
+    [Cycles de vie - Déclencher les gestionnaires](./life-cycles.md#déclencher-les-gestionnaires)).
 
 ## Pourquoi trois points de contrôle "rien à mettre à jour" ?
 
@@ -76,10 +78,10 @@ que des champs filtrés avant même le début de la validation (point de contrô
 champ avec sa valeur actuelle inchangée (point de contrôle 2), ou soumettre un champ virtuel dont
 le dépendant se résout à la valeur qu'il avait déjà (point de contrôle 3, car la pertinence d'un
 champ virtuel ne peut être connue qu'une fois son dépendant réellement résolu). Les trois se
-manifestent de la même façon : `update` retourne une erreur dont le champ `errors` vaut `None` --
-ce n'est pas un échec de validation, il n'y a simplement rien à faire.
+manifestent de la même façon : le payload `Err` d'`update` vaut `None` -- ce n'est pas un échec de
+validation, il n'y a simplement rien à faire.
 
 ```rust
-let err = DataInputModel.update(existing, updates, ()).unwrap_err();
-assert!(err.errors.is_none()); // "rien à mettre à jour", pas une erreur de validation
+let (err, _ctx_options) = DataInputModel.update(existing, updates, ()).unwrap_err();
+assert!(err.is_none()); // "rien à mettre à jour", pas une erreur de validation
 ```

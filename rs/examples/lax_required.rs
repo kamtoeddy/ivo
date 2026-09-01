@@ -6,7 +6,7 @@ const REQUIRED_TRIGGER_VALUE: &str = "REQUIRED_TRIGGER_VALUE";
 const USERNAME_REQUIRED_ERROR: &str = "username is required at this time";
 
 fn main() {
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialData {
                 lax: None,
@@ -17,24 +17,24 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             lax: DEFAULT_LAX_VALUE.to_string(),
             username: DEFAULT_USERNAME.to_string()
         }
     );
 
-    let created_data = created.data.clone();
-    created.handle_success();
+    let created_data = created.clone();
+    handle_success();
 
     data_schema::DataModel.delete(&created_data, ());
 
     let username = "some username".to_string();
 
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialData {
                 lax: Some(REQUIRED_TRIGGER_VALUE.to_string()),
@@ -45,22 +45,22 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             lax: REQUIRED_TRIGGER_VALUE.to_string(),
             username
         }
     );
 
-    let created_data = created.data.clone();
-    created.handle_success();
+    let created_data = created.clone();
+    handle_success();
 
     data_schema::DataModel.delete(&created_data, ());
 
-    let failed = data_schema::DataModel
+    let (failed, _ctx_options, handle_failure) = data_schema::DataModel
         .create(
             data_schema::PartialData {
                 lax: Some(REQUIRED_TRIGGER_VALUE.to_string()),
@@ -71,21 +71,21 @@ fn main() {
         .err()
         .unwrap();
 
-    println!("\nfailed to create: {:#?}", failed.errors);
+    println!("\nfailed to create: {:#?}", failed);
 
     assert_eq!(
-        failed.errors.get("username").unwrap().reason,
+        failed.get("username").unwrap().reason,
         USERNAME_REQUIRED_ERROR
     );
 
-    failed.handle_failure();
+    handle_failure();
 
     let data = data_schema::Data {
         lax: DEFAULT_LAX_VALUE.into(),
         username: DEFAULT_USERNAME.into(),
     };
 
-    let failed = data_schema::DataModel
+    let (failed, _ctx_options, handle_failure) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialData {
@@ -97,11 +97,10 @@ fn main() {
         .err()
         .unwrap();
 
-    println!("\nfailed to update: {:#?}", failed.errors);
+    println!("\nfailed to update: {:#?}", failed);
 
     assert_eq!(
         failed
-            .errors
             .as_ref()
             .unwrap()
             .get("username")
@@ -110,14 +109,14 @@ fn main() {
         USERNAME_REQUIRED_ERROR
     );
 
-    failed.handle_failure();
+    handle_failure();
 
     let data = data_schema::Data {
         lax: REQUIRED_TRIGGER_VALUE.into(),
         username: DEFAULT_USERNAME.into(),
     };
 
-    let failed = data_schema::DataModel
+    let (failed, _ctx_options, handle_failure) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialData {
@@ -129,11 +128,10 @@ fn main() {
         .err()
         .unwrap();
 
-    println!("\nfailed to update: {:#?}", failed.errors);
+    println!("\nfailed to update: {:#?}", failed);
 
     assert_eq!(
         failed
-            .errors
             .as_ref()
             .unwrap()
             .get("username")
@@ -142,7 +140,7 @@ fn main() {
         USERNAME_REQUIRED_ERROR
     );
 
-    failed.handle_failure();
+    handle_failure();
 
     let data = data_schema::Data {
         lax: DEFAULT_LAX_VALUE.into(),
@@ -151,7 +149,7 @@ fn main() {
 
     let updated_username = Some("james-doe".to_string());
 
-    let updated = data_schema::DataModel
+    let (updated, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialData {
@@ -163,18 +161,18 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
     assert_eq!(
-        updated.data,
+        updated,
         data_schema::PartialData {
             lax: None,
             username: updated_username
         }
     );
 
-    let updated_data = updated.data.clone();
-    updated.handle_success();
+    let updated_data = updated.clone();
+    handle_success();
 
     let data = data.clone_with_updates(&updated_data);
 
@@ -188,7 +186,7 @@ fn main() {
     let updated_lax = Some(REQUIRED_TRIGGER_VALUE.to_string());
     let updated_username = Some("james-doe".to_string());
 
-    let updated = data_schema::DataModel
+    let (updated, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialData {
@@ -200,18 +198,18 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
     assert_eq!(
-        updated.data,
+        updated,
         data_schema::PartialData {
             lax: updated_lax,
             username: updated_username
         }
     );
 
-    let updated_data = updated.data.clone();
-    updated.handle_success();
+    let updated_data = updated.clone();
+    handle_success();
 
     let data = data.clone_with_updates(&updated_data);
 
@@ -224,7 +222,7 @@ fn main() {
 
     let updated_username = Some("james-doe".to_string());
 
-    let updated = data_schema::DataModel
+    let (updated, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialData {
@@ -236,18 +234,18 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
     assert_eq!(
-        updated.data,
+        updated,
         data_schema::PartialData {
             lax: None,
             username: updated_username
         }
     );
 
-    let updated_data = updated.data.clone();
-    updated.handle_success();
+    let updated_data = updated.clone();
+    handle_success();
 
     let data = data.clone_with_updates(&updated_data);
 
