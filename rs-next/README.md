@@ -6,151 +6,168 @@
 
 This is the documentation of the Rust implementation of ivo.
 
+Schemas are declared, not built imperatively: a single attribute macro, `#[ivo_schema(...)]`,
+takes a module containing your field declarations and generates the input/output structs, their
+partial/error counterparts, and a typed, schema-specific model with `create`/`update`/`delete`
+methods.
+
 # Installation
 
 ```bash
 $ cargo add ivo
 ```
 
-# How to use
+# Quickstart
 
-ivo expects you to define your data model with structs that implement `IvoInputStruct` (required for input structs) and `IvoStruct` and this can be done via their respective derive macros as shown below.
-
-```rs
+```rust
 use chrono::{DateTime, Utc};
-use ivo::{IvoInputStruct, IvoStruct};
-
-#[derive(Clone, PartailEq, IvoInputStruct)]
-struct UserInput {
-    email: Option<String>,
-    phone_number: Option<String>,
-    username: String,
-}
+use ivo::ivo_schema;
 
 type Timestamp = DateTime<Utc>;
 
-#[derive(Clone, PartailEq, IvoStruct)]
-struct User {
-    id: String,
-    created_at: Timestamp,
-    email: Option<String>,
-    phone_number: Option<String>,
-    updated_at: Option<Timestamp>,
-    username: String,
-    username_last_updated_at: Option<Timestamp>,
+#[ivo_schema(
+    input(PostInput, derive(Debug, Clone, PartialEq)),
+    output(Post, derive(Debug, Clone, PartialEq))
+)]
+mod post_schema {
+    use super::Timestamp;
+    use chrono::Utc;
+
+    struct Fields {
+        #[constant(1)]
+        pub id: i32,
+
+        #[created_at]
+        pub created_at: Timestamp,
+
+        #[updated_at]
+        pub updated_at: Timestamp,
+
+        #[required]
+        #[validate(|title, _, _| {
+            let validated = title.trim();
+            if validated.len() < 3 {
+                return Err(("title must be at least 3 characters long".into(), None));
+            }
+
+            Ok(Some(title.trim().to_string()))
+        })]
+        pub title: String,
+
+        #[lax(String::new())]
+        pub body: String,
+    }
+
+    #[timestamps(Utc::now)]
+    const _: () = ();
+}
+
+use post_schema::{PartialPostInput, PostModel};
+
+fn main() {
+    let created = PostModel
+        .create(
+            PartialPostInput {
+                title: Some("Hello, ivo!".into()),
+                body: Some("My first post.".into()),
+            },
+            (), // ctx_options -- `()` when the schema declares none
+        )
+        .unwrap();
+
+    println!("{:#?}", created.data); // -> Post { id, created_at, updated_at, title, body }
+
+    let updated = PostModel
+        .update(
+            created.data,
+            PartialPostInput {
+                title: None,
+                body: Some("Edited.".into()),
+            },
+            (),
+        )
+        .unwrap();
+
+    println!("{:#?}", updated.data); // -> PartialPost { body: Some("Edited."), .. rest None }
 }
 ```
 
-## IvoStruct
+`create`/`update`/`delete` are `async` only if at least one handler they invoke is async --
+otherwise the generated method (and any `handle_success`/`handle_failure` it returns) is plain
+sync, with no runtime dependency forced on you.
 
-Deriving `IvoStruct` on **User** generates a struct called **`PartialUser`** together some helper methods for **User** and **PartialUser**.
+# Field types
 
-- **User** gets three helper methods with the following signatures:
+Every field on `struct Fields { ... }` is declared with exactly one field-type attribute:
 
-  ```rs
-  impl IvoStruct for User {
-      fn append_updates(&mut self, updates: &Self::Partial);
+| Attribute                                    | Meaning                                                                                                                                    |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --- | ---------------- |
+| `#[required]`                                | Must be provided at creation; optional (and immutable unless allowed) thereafter.                                                          |
+| `#[lax(default_or_resolver)]`                | Optional; falls back to a static or resolved default when missing.                                                                         |
+| `#[constant(value_or_resolver)]`             | Output-only; computed once at creation, never accepted from input.                                                                         |
+| `#[depends_on("parent", ...)]`               | Output-only; recomputed via `#[resolve(...)]` whenever a listed parent field changes.                                                      |
+| `#[ivo_virtual]` / `#[ivo_virtual("alias")]` | Input-only; validated/sanitized like a real field but never stored on the output directly -- typically feeds a `#[depends_on(...)]` field. |
+| `#[created_at]` / `#[updated_at]`            | Output-only timestamp fields, populated by a schema-level `#[timestamps(                                                                   |     | ...)]` resolver. |
 
-      // and
-      fn clone_with_updates(&self, updates: &Self::Partial) -> Self;
-  }
+Each accepts its own set of behavior attributes -- `#[validate]`, `#[re_validate]`, `#[sanitize]`,
+`#[ignore]` / `#[ignore_init]` / `#[ignore_update]`, `#[readonly]`, `#[required(...)]` (conditional,
+distinct from the `#[required]` field type), `#[on_success]` / `#[on_failure]` / `#[on_delete]`,
+and more. See [`GOAL.md`](./GOAL.md) for the full attribute matrix and every allowed combination,
+or the runnable examples under [`examples/`](./examples) and [`tests/fields/`](./tests/fields).
 
-  impl From<User> for PartialUser {
-      fn from(value: User) -> PartialUser;
-  }
-  ```
+# Schema options
 
-- **PartialUser** has the signature:
+Attached to an anonymous `const _: () = ();` item inside the schema module, not chained onto the
+macro call:
 
-  ```rs
-  struct PartialUser {
-    id: Option<String>,
-    created_at: Option<Timestamp>,
-    email: Option<String>,
-    phone_number: Option<Option<String>>,
-    updated_at: Option<Option<Timestamp>>,
-    username: Option<String>,
-    username_last_updated_at: Option<Option<Timestamp>>,
-  }
+```rust
+// illustrative -- not a continuation of the `post_schema` example above
+#[ivo_schema(input(ContactInput, derive(Debug, Clone, PartialEq)))]
+mod contact_schema {
+    struct Fields {
+        #[lax(None)]
+        pub email: Option<String>,
 
-  impl PartialUser {
-    // the constructor
-    fn new() -> Self;
+        #[lax(None)]
+        pub phone_number: Option<String>,
+    }
 
-    // you also get two types of builder methods for each field
-    fn set_id(&mut self, value: String) -> &mut Self;
-    fn with_id(mut self, value: String) -> Self;
+    #[required(["email", "phone_number"], |ctx, _opts| {
+        if ctx.input().email.is_some() || ctx.input().phone_number.is_some() {
+            return None;
+        }
+        let mut errors = ContactInputErrors::new();
+        errors.set_email("either \"email\" or \"phone_number\" is required", None);
+        Some(errors)
+    })]
+    const _: () = ();
+}
+```
 
-    // ... more builder methods for the other fields
+- **`#[ignore([...], handler)]`** -- skip a group of `#[lax]`/`#[ivo_virtual]` fields together.
+- **`#[ignore_update([...], handler)]`** -- same, but update only (or entity-wide with the bare,
+  arrayless form).
+- **`#[required([...], handler)]`** -- cross-field "at least one of these" requirement checks.
+- **`#[post_validate([...], validate = ..., pre_validate = ...)]`** -- cross-field validation that
+  can also return updated values for the group's own fields.
+- **`#[on_success(...)]`** / **`#[on_delete(...)]`** -- grouped or entity-wide lifecycle triggers.
+- **`#[timestamps(|| ...)]`** -- the shared, synchronous resolver for `#[created_at]`/`#[updated_at]`.
 
-    fn set_username_last_updated_at(&mut self, value: Option<Timestamp>) -> &mut Self;
-    fn with_username_last_updated_at(mut self, value: Option<Timestamp>) -> Self;
+See [`GOAL.md` §19](./GOAL.md) for the full reference, including minimum field counts and which
+field types each option accepts.
 
-    // you also get a method to unset (or set value to None) for each field
-    fn unset_id(&mut self) -> &mut Self;
+# Context options and error sanitizing
 
-    // converts PartialUser to Some(Self) if at least one field is_some, otherwise none
-    fn into_option(self) -> Option<Self>;
+`ctx_options(YourType)` in the macro call threads a value of your own type (dependency injection,
+caching, request-scoped data, ...) through every handler in a `create`/`update` call, wrapped in a
+read/write lock so concurrent handlers can share and mutate it safely -- see
+[`examples/main_demo`](./examples/main_demo) for a full demo. Pass `()` when a schema declares
+none, as in the quickstart above.
 
-    // returns true if every field in PartialUser is_none, otherwise false
-    fn is_empty(&self) -> bool;
-  }
-  ```
+`error_sanitizer(YourSanitizer)` lets you customize the shape of the error payload returned on
+failure by implementing `IvoErrorSanitizer` -- see
+[`tests/extras/error_sanitizer.rs`](./tests/extras/error_sanitizer.rs).
 
-- The `#[ivo(...)]` attribute can be used to customize PartialStructs and their fields.
-
-  ```rs
-  #[derive(Clone, PartailEq, IvoInputStruct)]
-  #[ivo(derive(Serialize, Deserialize))]
-  struct UserInput {
-      email: Option<String>,
-      #[ivo(serde(skip_serializing_if = "Option::is_none"))]
-      phone_number: Option<String>,
-      username: String,
-  }
-
-  #[derive(Serialize, Deserialize)] // 👈 because it was provided above
-  struct PartialUserInput {
-      email: Option<Option<String>>,
-      #[serde(skip_serializing_if = "Option::is_none")] // 👈 because it was provided above
-      phone_number: Option<Option<String>>,
-      username: Option<String>,
-  }
-  ```
-
-## IvoInputStruct
-
-Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` and generates two structs: **`PartialUserInput`** and **`UserInputErrors`**.
-
-- **UserInputErrors** is used to return errors from post-validators and grouped required resolvers and has the signature:
-
-  ```rs
-  struct UserInputErrors {
-    email: Option<Option<String>>,
-    phone_number: Option<Option<String>>,
-    username: Option<String>,
-  }
-
-  impl UserInputErrors {
-    // the constructor
-    fn new() -> Self;
-
-    // you also get two types of builder methods for each field
-    fn set_email(&mut self, reason: &str, metadata: Option<IvoErrorSanitizer::Metadata>) -> &mut Self;
-    fn with_email(mut self, reason: &str, metadata: Option<IvoErrorSanitizer::Metadata>) -> Self;
-    // ... more builder methods for the other fields
-
-    // you also get a method to unset (or set value to None) for each field
-    fn unset_email(&mut self) -> &mut Self;
-
-    // converts UserInputErrors to Some(Self) if at least one field is_some, otherwise none
-    fn into_option(self) -> Option<Self>;
-
-    // returns true if every field in UserInputErrors is_none, otherwise false
-    fn is_empty(&self) -> bool;
-  }
-  ```
-
-## Docs
+# Docs
 
 [Read the docs](https://ivo.kamtoeddy.com/docs/rs)
