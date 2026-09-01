@@ -1,10 +1,5 @@
-use std::future::ready;
+use ivo::ivo_schema;
 
-use ivo::{
-    constant_field, lax_field, IvoCtxOptions, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoStruct,
-};
-
-use crate::async_test_matrix;
 
 #[derive(Clone)]
 struct CtxOptions {
@@ -23,70 +18,57 @@ impl CtxOptions {
 
 async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provide_those_updates_in_on_success_handlers(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
     const CONSTANT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in constant value resolver";
 
-    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
-        |f| {
-            f.field(
-                constant_field("id")
-                    .value_fn(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        CONSTANT_VALUE
-                    })
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_success]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(
-                lax_field("lax")
-                    .default(2)
-                    .validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
-        |o| o,
-    );
-
-    let value = 2;
-
-    let (data, handle_success, ctx_options) = model
-        .create(&PartialDataInput { lax: Some(value) }, CtxOptions::new())
+    let created = data_schema::DataModel
+        .create(
+            data_schema::PartialDataInput { lax: Some(2) },
+            CtxOptions::new(),
+        )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        data_schema::Data {
             id: CONSTANT_VALUE,
-            lax: value
+            lax: 2
         }
     );
 
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_success().await;
+    created.handle_success();
 }
 
 async_test_matrix!(
     "[on_success]: ctx_options updated in constant value resolver",
     should_properly_update_ctx_options_in_constant_value_resolver_and_provide_those_updates_in_on_success_handlers
 );
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod data_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[constant(async |_, opts| {
+            opts.write().await.add_message("ctx_options updated in constant value resolver");
+            1
+        })]
+        #[on_success(|_, opts| {
+            if true {
+                panic!("[on_success]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub id: i32,
+
+        #[lax(2)]
+        pub lax: i32,
+    }
+}

@@ -1,176 +1,113 @@
-use std::future::ready;
-
-use ivo::{dependent_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
-
-use crate::async_test_matrix;
-
-// TODO:
-// [x] default
-// [x] default_fn
-// [x] readonly
-// [x] resolver
-// [x] dependent depending on other dependents
-// [x] on_delete
-// [x] on_success
-// [x] o.on_success
+use ivo::ivo_schema;
 
 // default
 
-async fn should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_creation() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
+#[test]
+fn should_use_sync_static_default_value_of_dependent_if_resolver_is_not_run_at_creation() {
     let dependent = 1234;
     let lax = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(dependent)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(lax))
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: None }, None)
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(data, Data { dependent, lax });
-}
-
-async_test_matrix!(should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_creation);
-
-// default_fn
-
-async fn should_use_computed_default_value_of_dependent_if_resolver_is_not_run_at_creation() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let dependent = 1234;
-    let lax = 20;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default_fn(move |_, _| ready(dependent))
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(lax))
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: None }, None)
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(data, Data { dependent, lax });
-
-    // let lax = 700;
-
-    // let (data, _,_) = model
-    //     .create(&PartialDataInput { lax: Some(lax) }, None)
-    //     .await
-    //     .ok()
-    //     .unwrap();
-
-    // assert_eq!(data, Data { dependent, lax });
-
-    // let lax = Some(200);
-
-    // let (updates, _,_) = model
-    //     .update(&data, &PartialDataInput { lax }, None)
-    //     .await
-    //     .ok()
-    //     .unwrap();
-
-    // assert_eq!(
-    //     updates,
-    //     PartialData {
-    //         dependent: None,
-    //         lax
-    //     }
-    // );
-}
-
-async_test_matrix!(
-    should_use_computed_default_value_of_dependent_if_resolver_is_not_run_at_creation
-);
-
-// resolver
-
-async fn should_properly_run_dependent_resolver() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let default_dependent_value = 1234;
-    let default_lax_value = 20;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
+    let created = sync_static_default_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: Some(default_lax_value),
-            },
-            None,
+            sync_static_default_schema::PartialDataInput { lax: None },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_static_default_schema::Data { dependent, lax }
+    );
+}
+
+async fn should_use_async_static_default_value_of_dependent_if_resolver_is_not_run_at_creation() {
+    let dependent = 1234;
+    let lax = 20;
+
+    let created = async_static_default_schema::DataModel
+        .create(
+            async_static_default_schema::PartialDataInput { lax: None },
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        async_static_default_schema::Data { dependent, lax }
+    );
+}
+
+async_test_matrix!(
+    should_use_async_static_default_value_of_dependent_if_resolver_is_not_run_at_creation
+);
+
+// default_fn
+
+#[test]
+fn should_use_sync_computed_default_value_of_dependent_if_resolver_is_not_run_at_creation() {
+    let dependent = 1234;
+    let lax = 20;
+
+    let created = sync_computed_default_schema::DataModel
+        .create(
+            sync_computed_default_schema::PartialDataInput { lax: None },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_computed_default_schema::Data { dependent, lax }
+    );
+}
+
+async fn should_use_async_computed_default_value_of_dependent_if_resolver_is_not_run_at_creation() {
+    let dependent = 1234;
+    let lax = 20;
+
+    let created = async_computed_default_schema::DataModel
+        .create(
+            async_computed_default_schema::PartialDataInput { lax: None },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_computed_default_schema::Data { dependent, lax }
+    );
+}
+
+async_test_matrix!(
+    should_use_async_computed_default_value_of_dependent_if_resolver_is_not_run_at_creation
+);
+
+// resolver
+
+#[test]
+fn should_properly_run_sync_dependent_resolver() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let created = sync_resolver_schema::DataModel
+        .create(
+            sync_resolver_schema::PartialDataInput {
+                lax: Some(default_lax_value),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_resolver_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
@@ -178,15 +115,17 @@ async fn should_properly_run_dependent_resolver() {
 
     let lax = 700;
 
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
-        .await
+    let created = sync_resolver_schema::DataModel
+        .create(
+            sync_resolver_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        sync_resolver_schema::Data {
             dependent: default_dependent_value + 1,
             lax
         }
@@ -194,70 +133,108 @@ async fn should_properly_run_dependent_resolver() {
 
     let lax = Some(200);
 
-    let (updates, _, _) = model
-        .update(&data, &PartialDataInput { lax }, None)
-        .await
+    let updated = sync_resolver_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_resolver_schema::PartialDataInput { lax },
+            (),
+        )
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
+        updated.data,
+        sync_resolver_schema::PartialData {
+            dependent: Some(created.data.dependent + 1),
             lax
         }
     );
 }
 
-async_test_matrix!(should_properly_run_dependent_resolver);
-
-async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
+async fn should_properly_run_async_dependent_resolver() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "lax_1"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(lax_field("lax_1").default(default_lax_value))
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
+    let created = async_resolver_schema::DataModel
         .create(
-            &PartialDataInput {
+            async_resolver_schema::PartialDataInput {
                 lax: Some(default_lax_value),
-                lax_1: Some(default_lax_value + 1),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        async_resolver_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value
+        }
+    );
+
+    let lax = 700;
+
+    let created = async_resolver_schema::DataModel
+        .create(
+            async_resolver_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_resolver_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax
+        }
+    );
+
+    let lax = Some(200);
+
+    let updated = async_resolver_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_resolver_schema::PartialDataInput { lax },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_resolver_schema::PartialData {
+            dependent: Some(created.data.dependent + 1),
+            lax
+        }
+    );
+}
+
+async_test_matrix!(should_properly_run_async_dependent_resolver);
+
+#[test]
+fn should_properly_run_sync_dependent_resolver_even_with_multiple_parents() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let created = sync_multiple_parents_schema::DataModel
+        .create(
+            sync_multiple_parents_schema::PartialDataInput {
+                lax: Some(default_lax_value),
+                lax_1: Some(default_lax_value + 1),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_multiple_parents_schema::Data {
             dependent: default_dependent_value + 1,
             lax: default_lax_value,
             lax_1: default_lax_value + 1
@@ -266,21 +243,20 @@ async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
 
     let lax = 700;
 
-    let (data, _, _) = model
+    let created = sync_multiple_parents_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_multiple_parents_schema::PartialDataInput {
                 lax: Some(lax),
                 lax_1: Some(lax),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        sync_multiple_parents_schema::Data {
             dependent: default_dependent_value + 1,
             lax,
             lax_1: lax
@@ -289,73 +265,110 @@ async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
 
     let lax = Some(200);
 
-    let (updates, _, _) = model
-        .update(&data, &PartialDataInput { lax, lax_1: None }, None)
-        .await
+    let updated = sync_multiple_parents_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_multiple_parents_schema::PartialDataInput { lax, lax_1: None },
+            (),
+        )
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
+        updated.data,
+        sync_multiple_parents_schema::PartialData {
+            dependent: Some(created.data.dependent + 1),
             lax,
             lax_1: None
         }
     );
 }
 
-async_test_matrix!(should_properly_run_dependent_resolver_even_with_multiple_parents);
-
-async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_dependents() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        dependent_1: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
+async fn should_properly_run_async_dependent_resolver_even_with_multiple_parents() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "lax_1"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(
-                dependent_field("dependent_1", ["dependent"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 10)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(lax_field("lax_1").default(default_lax_value))
-        },
-        |o| o,
-    );
-
-    let (data, _, _) = model
+    let created = async_multiple_parents_schema::DataModel
         .create(
-            &PartialDataInput {
+            async_multiple_parents_schema::PartialDataInput {
                 lax: Some(default_lax_value),
                 lax_1: Some(default_lax_value + 1),
             },
-            None,
+            (),
         )
         .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_multiple_parents_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value,
+            lax_1: default_lax_value + 1
+        }
+    );
+
+    let lax = 700;
+
+    let created = async_multiple_parents_schema::DataModel
+        .create(
+            async_multiple_parents_schema::PartialDataInput {
+                lax: Some(lax),
+                lax_1: Some(lax),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_multiple_parents_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax,
+            lax_1: lax
+        }
+    );
+
+    let lax = Some(200);
+
+    let updated = async_multiple_parents_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_multiple_parents_schema::PartialDataInput { lax, lax_1: None },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_multiple_parents_schema::PartialData {
+            dependent: Some(created.data.dependent + 1),
+            lax,
+            lax_1: None
+        }
+    );
+}
+
+async_test_matrix!(should_properly_run_async_dependent_resolver_even_with_multiple_parents);
+
+#[test]
+fn should_properly_run_sync_dependent_resolver_even_with_dependency_on_other_dependents() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let created = sync_dependent_on_dependent_schema::DataModel
+        .create(
+            sync_dependent_on_dependent_schema::PartialDataInput {
+                lax: Some(default_lax_value),
+                lax_1: Some(default_lax_value + 1),
+            },
+            (),
+        )
         .ok()
         .unwrap();
 
@@ -363,8 +376,8 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
     let dependent_1 = dependent + 10;
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        sync_dependent_on_dependent_schema::Data {
             dependent,
             dependent_1,
             lax: default_lax_value,
@@ -374,15 +387,14 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
 
     let lax = 700;
 
-    let (data, _, _) = model
+    let created = sync_dependent_on_dependent_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_dependent_on_dependent_schema::PartialDataInput {
                 lax: Some(lax),
                 lax_1: Some(lax),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
@@ -390,8 +402,8 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
     let dependent_1 = dependent + 10;
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        sync_dependent_on_dependent_schema::Data {
             dependent,
             dependent_1,
             lax,
@@ -401,18 +413,21 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
 
     let lax = Some(200);
 
-    let (updates, _, _) = model
-        .update(&data, &PartialDataInput { lax, lax_1: None }, None)
-        .await
+    let updated = sync_dependent_on_dependent_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_dependent_on_dependent_schema::PartialDataInput { lax, lax_1: None },
+            (),
+        )
         .ok()
         .unwrap();
 
-    let dependent = data.dependent + 1;
+    let dependent = created.data.dependent + 1;
     let dependent_1 = dependent + 10;
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        sync_dependent_on_dependent_schema::PartialData {
             dependent: Some(dependent),
             dependent_1: Some(dependent_1),
             lax,
@@ -421,52 +436,113 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
     );
 }
 
-async_test_matrix!(should_properly_run_dependent_resolver_even_with_dependency_on_other_dependents);
-
-// readonly
-
-async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_different_from_default_value(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
+async fn should_properly_run_async_dependent_resolver_even_with_dependency_on_other_dependents() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    })
-                    .readonly(),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-        },
-        |o| o,
-    );
-
-    let lax = default_lax_value;
-
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
+    let created = async_dependent_on_dependent_schema::DataModel
+        .create(
+            async_dependent_on_dependent_schema::PartialDataInput {
+                lax: Some(default_lax_value),
+                lax_1: Some(default_lax_value + 1),
+            },
+            (),
+        )
         .await
         .ok()
         .unwrap();
 
+    let dependent = default_dependent_value + 1;
+    let dependent_1 = dependent + 10;
+
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        async_dependent_on_dependent_schema::Data {
+            dependent,
+            dependent_1,
+            lax: default_lax_value,
+            lax_1: default_lax_value + 1
+        }
+    );
+
+    let lax = 700;
+
+    let created = async_dependent_on_dependent_schema::DataModel
+        .create(
+            async_dependent_on_dependent_schema::PartialDataInput {
+                lax: Some(lax),
+                lax_1: Some(lax),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    let dependent = default_dependent_value + 1;
+    let dependent_1 = dependent + 10;
+
+    assert_eq!(
+        created.data,
+        async_dependent_on_dependent_schema::Data {
+            dependent,
+            dependent_1,
+            lax,
+            lax_1: lax
+        }
+    );
+
+    let lax = Some(200);
+
+    let updated = async_dependent_on_dependent_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_dependent_on_dependent_schema::PartialDataInput { lax, lax_1: None },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    let dependent = created.data.dependent + 1;
+    let dependent_1 = dependent + 10;
+
+    assert_eq!(
+        updated.data,
+        async_dependent_on_dependent_schema::PartialData {
+            dependent: Some(dependent),
+            dependent_1: Some(dependent_1),
+            lax,
+            lax_1: None
+        }
+    );
+}
+
+async_test_matrix!(
+    should_properly_run_async_dependent_resolver_even_with_dependency_on_other_dependents
+);
+
+// readonly
+
+#[test]
+fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_different_from_default_value(
+) {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let lax = default_lax_value;
+
+    let created = sync_readonly_schema::DataModel
+        .create(
+            sync_readonly_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_readonly_schema::Data {
             dependent: default_dependent_value + 1,
             lax
         }
@@ -474,30 +550,32 @@ async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_
 
     let lax = Some(200);
 
-    let (updates, _, _) = model
-        .update(&data, &PartialDataInput { lax }, None)
-        .await
+    let updated = sync_readonly_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_readonly_schema::PartialDataInput { lax },
+            (),
+        )
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        sync_readonly_schema::PartialData {
             dependent: None,
             lax
         },
         "update should be successful, but dependent resolver should not anymore"
     );
 
-    let (data, _, _) = model
-        .create(&PartialDataInput { lax: None }, None)
-        .await
+    let created = sync_readonly_schema::DataModel
+        .create(sync_readonly_schema::PartialDataInput { lax: None }, ())
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        sync_readonly_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value
         }
@@ -505,33 +583,39 @@ async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_
 
     let lax = Some(201);
 
-    let (updates, _, _) = model
-        .update(&data, &PartialDataInput { lax }, None)
-        .await
+    let updated = sync_readonly_schema::DataModel
+        .update(
+            created.data.clone(),
+            sync_readonly_schema::PartialDataInput { lax },
+            (),
+        )
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
-            dependent: Some(data.dependent + 1),
+        updated.data,
+        sync_readonly_schema::PartialData {
+            dependent: Some(created.data.dependent + 1),
             lax
-        },
+        }
     );
 
-    let data = data.clone_with_updates(&updates);
+    let data = created.data.clone_with_updates(&updated.data);
 
     let lax = Some(3001);
 
-    let (updates, _, _) = model
-        .update(&data, &PartialDataInput { lax }, None)
-        .await
+    let updated = sync_readonly_schema::DataModel
+        .update(
+            data.clone(),
+            sync_readonly_schema::PartialDataInput { lax },
+            (),
+        )
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        sync_readonly_schema::PartialData {
             dependent: None,
             lax
         },
@@ -539,462 +623,375 @@ async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_
     );
 }
 
-async_test_matrix!(should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_different_from_default_value);
+async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_value_is_different_from_default_value(
+) {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
 
-// on_delele
+    let lax = default_lax_value;
 
-async fn should_trigger_on_delete_handlers_with_static_default_values() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
+    let created = async_readonly_schema::DataModel
+        .create(
+            async_readonly_schema::PartialDataInput { lax: Some(lax) },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let dependent = 1234;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(dependent)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        if true {
-                            panic!(
-                                "[dependent]: on_delete triggered with value: {}",
-                                data.dependent
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(lax_field("lax").default(20))
-        },
-        |o| o,
+    assert_eq!(
+        created.data,
+        async_readonly_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax
+        }
     );
 
-    model
-        .delete(
-            &Data {
-                dependent,
-                lax: 400,
-            },
-            None,
+    let lax = Some(200);
+
+    let updated = async_readonly_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_readonly_schema::PartialDataInput { lax },
+            (),
         )
-        .await;
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_readonly_schema::PartialData {
+            dependent: None,
+            lax
+        },
+        "update should be successful, but dependent resolver should not anymore"
+    );
+
+    let created = async_readonly_schema::DataModel
+        .create(async_readonly_schema::PartialDataInput { lax: None }, ())
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_readonly_schema::Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value
+        }
+    );
+
+    let lax = Some(201);
+
+    let updated = async_readonly_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_readonly_schema::PartialDataInput { lax },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_readonly_schema::PartialData {
+            dependent: Some(created.data.dependent + 1),
+            lax
+        }
+    );
+
+    let data = created.data.clone_with_updates(&updated.data);
+
+    let lax = Some(3001);
+
+    let updated = async_readonly_schema::DataModel
+        .update(
+            data.clone(),
+            async_readonly_schema::PartialDataInput { lax },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_readonly_schema::PartialData {
+            dependent: None,
+            lax
+        },
+        "update should be successful, but dependent resolver should not anymore"
+    );
 }
 
 async_test_matrix!(
-    "[dependent]: on_delete triggered with value: 1234",
-    should_trigger_on_delete_handlers_with_static_default_values
+    should_not_run_async_dependent_resolver_if_readonly_is_provided_and_value_is_different_from_default_value
 );
 
-async fn should_trigger_on_delete_handlers_with_computed_default_values() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
+// on_delete
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    let dependent = 1234;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(dependent)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        if true {
-                            panic!(
-                                "[dependent]: on_delete triggered with value: {}",
-                                data.dependent
-                            );
-                        }
-
-                        ready(())
-                    })
-                    .on_delete(async |_, _| ()),
-            )
-            .field(lax_field("lax").default(20))
+#[should_panic(expected = "[dependent]: on_delete triggered with value: 1234")]
+#[test]
+fn should_trigger_sync_on_delete_handlers_with_static_default_values() {
+    sync_on_delete_static_default_schema::DataModel.delete(
+        &sync_on_delete_static_default_schema::Data {
+            dependent: 1234,
+            lax: 400,
         },
-        |o| o,
+        (),
     );
+}
 
-    model
+async fn should_trigger_async_on_delete_handlers_with_static_default_values() {
+    async_on_delete_static_default_schema::DataModel
         .delete(
-            &Data {
-                dependent,
+            &async_on_delete_static_default_schema::Data {
+                dependent: 1234,
                 lax: 400,
             },
-            None,
+            (),
         )
         .await;
 }
 
 async_test_matrix!(
     "[dependent]: on_delete triggered with value: 1234",
-    should_trigger_on_delete_handlers_with_computed_default_values
+    should_trigger_async_on_delete_handlers_with_static_default_values
+);
+
+#[should_panic(expected = "[dependent]: on_delete triggered with value: 1234")]
+#[test]
+fn should_trigger_sync_on_delete_handlers_with_computed_default_values() {
+    sync_on_delete_computed_default_schema::DataModel.delete(
+        &sync_on_delete_computed_default_schema::Data {
+            dependent: 1234,
+            lax: 400,
+        },
+        (),
+    );
+}
+
+async fn should_trigger_async_on_delete_handlers_with_computed_default_values() {
+    async_on_delete_computed_default_schema::DataModel
+        .delete(
+            &async_on_delete_computed_default_schema::Data {
+                dependent: 1234,
+                lax: 400,
+            },
+            (),
+        )
+        .await;
+}
+
+async_test_matrix!(
+    "[dependent]: on_delete triggered with value: 1234",
+    should_trigger_async_on_delete_handlers_with_computed_default_values
 );
 
 // on_success
 
-async fn should_trigger_on_success_handlers_if_resolver_is_run_at_creation() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
+#[should_panic(expected = "[dependent]: on_success triggered with value: 1235")]
+#[test]
+fn should_trigger_sync_on_success_handlers_if_resolver_is_run_at_creation() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[dependent]: on_success triggered with value: {}",
-                                ctx.values().dependent.unwrap()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-        },
-        |o| o,
-    );
-
-    let (data, handle_success, _) = model
+    let created = sync_on_success_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_on_success_schema::PartialDataInput {
                 lax: Some(default_lax_value),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    let resolved_value = default_dependent_value + 1;
-
     assert_eq!(
-        data,
-        Data {
-            dependent: resolved_value,
+        created.data,
+        sync_on_success_schema::Data {
+            dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
     );
 
-    handle_success().await;
+    created.handle_success();
 }
 
-async_test_matrix!(
-    "[dependent]: on_success triggered with value: 1235",
-    should_trigger_on_success_handlers_if_resolver_is_run_at_creation
-);
-
-async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creation() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
+async fn should_trigger_async_on_success_handlers_if_resolver_is_run_at_creation() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[dependent]: on_success triggered with value: {}",
-                                ctx.values().dependent.unwrap()
-                            );
-                        }
-
-                        ready(())
-                    })
-                    .on_success(async |_, _| ()),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-        },
-        |o| o,
-    );
-
-    let (data, handle_success, _) = model
+    let created = async_on_success_schema::DataModel
         .create(
-            &PartialDataInput {
+            async_on_success_schema::PartialDataInput {
                 lax: Some(default_lax_value),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
-    let resolved_value = default_dependent_value + 1;
-
     assert_eq!(
-        data,
-        Data {
-            dependent: resolved_value,
+        created.data,
+        async_on_success_schema::Data {
+            dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
     );
 
-    handle_success().await;
+    created.handle_success().await;
 }
 
 async_test_matrix!(
     "[dependent]: on_success triggered with value: 1235",
-    should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creation
+    should_trigger_async_on_success_handlers_if_resolver_is_run_at_creation
 );
 
-async fn should_trigger_on_success_handlers_if_resolver_is_run_during_updates() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
+#[should_panic(expected = "[dependent]: on_success triggered with value: 1235")]
+#[test]
+fn should_trigger_sync_on_success_handlers_even_if_resolver_is_not_run_at_creation() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[dependent]: on_success triggered with value: {}",
-                                ctx.values().dependent.unwrap()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-        },
-        |o| o,
-    );
-
-    let (data, handle_success, _) = model
+    let created = sync_on_success_multiple_schema::DataModel
         .create(
-            &PartialDataInput {
+            sync_on_success_multiple_schema::PartialDataInput {
                 lax: Some(default_lax_value),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    let resolved_value = default_dependent_value + 1;
-
     assert_eq!(
-        data,
-        Data {
-            dependent: resolved_value,
+        created.data,
+        sync_on_success_multiple_schema::Data {
+            dependent: default_dependent_value + 1,
             lax: default_lax_value
         }
     );
 
-    handle_success().await;
+    created.handle_success();
 }
 
-async_test_matrix!(
-    "[dependent]: on_success triggered with value: 1235",
-    should_trigger_on_success_handlers_if_resolver_is_run_during_updates
-);
-
-async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_updates() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
+async fn should_trigger_async_on_success_handlers_even_if_resolver_is_not_run_at_creation() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        if true {
-                            panic!(
-                                "[dependent]: on_success triggered with value: {}",
-                                ctx.values().dependent.unwrap()
-                            );
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(lax_field("lax_1").default(default_lax_value))
-        },
-        |o| o,
-    );
-
-    let updated_lax_1 = default_dependent_value + 1;
-
-    let (data, handle_success, _) = model
-        .update(
-            &Data {
-                dependent: default_dependent_value,
-                lax: default_lax_value,
-                lax_1: default_lax_value,
+    let created = async_on_success_multiple_schema::DataModel
+        .create(
+            async_on_success_multiple_schema::PartialDataInput {
+                lax: Some(default_lax_value),
             },
-            &PartialDataInput {
-                lax: None,
-                lax_1: Some(updated_lax_1),
-            },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        PartialData {
-            dependent: None,
-            lax: None,
-            lax_1: Some(updated_lax_1)
+        created.data,
+        async_on_success_multiple_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value
         }
     );
 
-    handle_success().await;
+    created.handle_success().await;
 }
 
-async_test_matrix!(should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_updates);
+async_test_matrix!(
+    "[dependent]: on_success triggered with value: 1235",
+    should_trigger_async_on_success_handlers_even_if_resolver_is_not_run_at_creation
+);
+
+#[should_panic(expected = "[dependent]: on_success triggered with value: 1235")]
+#[test]
+fn should_trigger_sync_on_success_handlers_if_resolver_is_run_during_updates() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let created = sync_on_success_schema::DataModel
+        .create(
+            sync_on_success_schema::PartialDataInput {
+                lax: Some(default_lax_value),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        sync_on_success_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value
+        }
+    );
+
+    created.handle_success();
+}
+
+async fn should_trigger_async_on_success_handlers_if_resolver_is_run_during_updates() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let created = async_on_success_schema::DataModel
+        .create(
+            async_on_success_schema::PartialDataInput {
+                lax: Some(default_lax_value),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        async_on_success_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value
+        }
+    );
+
+    created.handle_success().await;
+}
+
+async_test_matrix!(
+    "[dependent]: on_success triggered with value: 1235",
+    should_trigger_async_on_success_handlers_if_resolver_is_run_during_updates
+);
+
+// grouped on_success + conditional on_success triggering
 
 async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-        },
-        |o| {
-            o.on_success(["dependent"], |s| {
-                s.handle(|_, _| {
-                    if true {
-                        panic!("[options.on_success]: on_success triggered for dependent")
-                    }
-
-                    ready(())
-                })
-            })
-        },
-    );
-
-    let (data, handle_success, _) = model
+    let created = grouped_on_success_schema::DataModel
         .create(
-            &PartialDataInput {
+            grouped_on_success_schema::PartialDataInput {
                 lax: Some(default_lax_value),
             },
-            None,
+            (),
         )
         .await
         .ok()
         .unwrap();
 
-    let resolved_value = default_dependent_value + 1;
-
     assert_eq!(
-        data,
-        Data {
-            dependent: resolved_value,
-            lax: default_lax_value
+        created.data,
+        grouped_on_success_schema::Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value,
         }
     );
 
-    handle_success().await;
+    created.handle_success().await;
 }
 
 async_test_matrix!(
@@ -1003,61 +1000,27 @@ async_test_matrix!(
 );
 
 async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-        },
-        |o| {
-            o.on_success(["dependent"], |s| {
-                s.handle(|_, _| {
-                    if true {
-                        panic!("[options.on_success]: on_success triggered for dependent")
-                    }
-
-                    ready(())
-                })
-            })
-        },
-    );
-
-    let (data, handle_success, _) = model
-        .create(&PartialDataInput { lax: None }, None)
+    let created = grouped_on_success_schema::DataModel
+        .create(
+            grouped_on_success_schema::PartialDataInput { lax: None },
+            (),
+        )
         .await
         .ok()
         .unwrap();
 
-    let resolved_value = default_dependent_value;
-
     assert_eq!(
-        data,
-        Data {
-            dependent: resolved_value,
-            lax: default_lax_value
+        created.data,
+        grouped_on_success_schema::Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value,
         }
     );
 
-    handle_success().await;
+    created.handle_success().await;
 }
 
 async_test_matrix!(
@@ -1066,70 +1029,32 @@ async_test_matrix!(
 );
 
 async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
     let default_dependent_value = 1234;
     let default_lax_value = 20;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-        },
-        |o| {
-            o.on_success(["dependent"], |s| {
-                s.handle(|_, _| {
-                    if true {
-                        panic!("[options.on_success]: on_success triggered for dependent")
-                    }
-
-                    ready(())
-                })
-            })
-        },
-    );
-
     let lax = Some(default_lax_value + 1);
 
-    let (data, handle_success, _) = model
+    let updated = grouped_on_success_schema::DataModel
         .update(
-            &Data {
+            grouped_on_success_schema::Data {
                 dependent: default_dependent_value,
                 lax: default_lax_value,
             },
-            &PartialDataInput { lax },
-            None,
+            grouped_on_success_schema::PartialDataInput { lax },
+            (),
         )
         .await
         .ok()
         .unwrap();
 
-    let resolved_value = default_dependent_value + 1;
-
     assert_eq!(
-        data,
-        PartialData {
-            dependent: Some(resolved_value),
-            lax
+        updated.data,
+        grouped_on_success_schema::PartialData {
+            dependent: Some(default_dependent_value + 1),
+            lax,
         }
     );
 
-    handle_success().await;
+    updated.handle_success().await;
 }
 
 async_test_matrix!(
@@ -1139,69 +1064,32 @@ async_test_matrix!(
 
 async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_because_it_is_readonly(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
     let default_dependent_value = 1234;
     let default_lax_value = 20;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    })
-                    .readonly(),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-        },
-        |o| {
-            o.on_success(["dependent"], |s| {
-                s.handle(|_, _| {
-                    if true {
-                        panic!("[options.on_success]: on_success triggered for dependent")
-                    }
-
-                    ready(())
-                })
-            })
-        },
-    );
-
     let lax = Some(default_lax_value + 1);
 
-    let (data, handle_success, _) = model
+    let updated = grouped_on_success_readonly_schema::DataModel
         .update(
-            &Data {
+            grouped_on_success_readonly_schema::Data {
                 dependent: default_dependent_value + 1,
                 lax: default_lax_value,
             },
-            &PartialDataInput { lax },
-            None,
+            grouped_on_success_readonly_schema::PartialDataInput { lax },
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        PartialData {
+        updated.data,
+        grouped_on_success_readonly_schema::PartialData {
             dependent: None,
-            lax
+            lax,
         }
     );
 
-    handle_success().await;
+    updated.handle_success().await;
 }
 
 async_test_matrix!(
@@ -1209,73 +1097,590 @@ async_test_matrix!(
 );
 
 async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
     let default_dependent_value = 1234;
     let default_lax_value = 20;
-
-    let model: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(default_dependent_value)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.values().dependent.unwrap() + 1)
-                    }),
-            )
-            .field(lax_field("lax").default(default_lax_value))
-            .field(lax_field("lax_1").default(default_lax_value))
-        },
-        |o| {
-            o.on_success(["dependent"], |s| {
-                s.handle(|_, _| {
-                    if true {
-                        panic!("[options.on_success]: on_success triggered for dependent")
-                    }
-
-                    ready(())
-                })
-            })
-        },
-    );
-
     let lax_1 = Some(default_lax_value + 1);
 
-    let (data, handle_success, _) = model
+    let updated = grouped_on_success_unrelated_schema::DataModel
         .update(
-            &Data {
+            grouped_on_success_unrelated_schema::Data {
                 dependent: default_dependent_value + 1,
                 lax: default_lax_value,
                 lax_1: default_lax_value,
             },
-            &PartialDataInput { lax: None, lax_1 },
-            None,
+            grouped_on_success_unrelated_schema::PartialDataInput { lax: None, lax_1 },
+            (),
         )
         .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        data,
-        PartialData {
+        updated.data,
+        grouped_on_success_unrelated_schema::PartialData {
             dependent: None,
             lax: None,
-            lax_1
+            lax_1,
         }
     );
 
-    handle_success().await;
+    updated.handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_grouped_on_success_during_updates_if_not_resolved);
+
+async fn should_trigger_entity_level_on_success_handlers_at_creation_and_during_updates() {
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let created = entity_level_on_success_schema::DataModel
+        .create(
+            entity_level_on_success_schema::PartialDataInput { lax: None },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        entity_level_on_success_schema::Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value,
+        }
+    );
+
+    created.handle_success().await;
+}
+
+async_test_matrix!(
+    "[entity.on_success]: entity-level on_success triggered",
+    should_trigger_entity_level_on_success_handlers_at_creation_and_during_updates
+);
+
+// schemas
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod grouped_on_success_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+
+    #[on_success(["dependent"], async |_, _| {
+        if true {
+            panic!("[options.on_success]: on_success triggered for dependent");
+        }
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod grouped_on_success_readonly_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[readonly]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+
+    #[on_success(["dependent"], async |_, _| {
+        if true {
+            panic!("[options.on_success]: on_success triggered for dependent");
+        }
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod grouped_on_success_unrelated_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax_1: i32,
+    }
+
+    #[on_success(["dependent"], async |_, _| {
+        if true {
+            panic!("[options.on_success]: on_success triggered for dependent");
+        }
+    })]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_static_default_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_static_default_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_computed_default_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(|_, _| 1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_computed_default_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(async |_, _| 1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_resolver_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_resolver_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_multiple_parents_schema {
+    struct Fields {
+        #[depends_on("lax", "lax_1")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+
+        #[lax(20)]
+        pub lax_1: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_multiple_parents_schema {
+    struct Fields {
+        #[depends_on("lax", "lax_1")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax_1: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_dependent_on_dependent_schema {
+    struct Fields {
+        #[depends_on("lax", "lax_1")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[depends_on("dependent")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 10)]
+        pub dependent_1: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+
+        #[lax(20)]
+        pub lax_1: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_dependent_on_dependent_schema {
+    struct Fields {
+        #[depends_on("lax", "lax_1")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[depends_on("dependent")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 10)]
+        pub dependent_1: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax_1: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_readonly_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[readonly]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_readonly_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[readonly]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_delete_static_default_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[on_delete(|data, _| {
+            panic!("[dependent]: on_delete triggered with value: {}", data.dependent);
+        })]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_delete_static_default_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[on_delete(async |data, _| {
+            panic!("[dependent]: on_delete triggered with value: {}", data.dependent);
+        })]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_delete_computed_default_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[on_delete(|data, _| {
+            panic!("[dependent]: on_delete triggered with value: {}", data.dependent);
+        })]
+        #[on_delete(|_, _| {})]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_delete_computed_default_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[on_delete(async |data, _| {
+            panic!("[dependent]: on_delete triggered with value: {}", data.dependent);
+        })]
+        #[on_delete(async |_, _| {})]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_success_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[on_success(|ctx, _| {
+            panic!(
+                "[dependent]: on_success triggered with value: {}",
+                ctx.values().dependent
+            );
+        })]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_success_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[on_success(async |ctx, _| {
+            panic!(
+                "[dependent]: on_success triggered with value: {}",
+                ctx.values().dependent
+            );
+        })]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod sync_on_success_multiple_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[on_success(|ctx, _| {
+            panic!(
+                "[dependent]: on_success triggered with value: {}",
+                ctx.values().dependent
+            );
+        })]
+        #[on_success(|_, _| {})]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_on_success_multiple_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[on_success(async |ctx, _| {
+            panic!(
+                "[dependent]: on_success triggered with value: {}",
+                ctx.values().dependent
+            );
+        })]
+        #[on_success(async |_, _| {})]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod entity_level_on_success_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(async |_, _| 20)]
+        pub lax: i32,
+    }
+
+    #[on_success(async |_, _| {
+        if true {
+            panic!("[entity.on_success]: entity-level on_success triggered");
+        }
+    })]
+    const _: () = ();
+}
+
+#[test]
+#[should_panic(expected = "[entity.on_success]: no-args on_success triggered")]
+fn should_trigger_sync_entity_level_on_success_with_no_args() {
+    let created = entity_level_on_success_no_args_schema::DataModel
+        .create(
+            entity_level_on_success_no_args_schema::PartialDataInput { lax: None },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        created.data,
+        entity_level_on_success_no_args_schema::Data {
+            dependent: 1234,
+            lax: 20,
+        }
+    );
+
+    created.handle_success();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod entity_level_on_success_no_args_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1234)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(20)]
+        pub lax: i32,
+    }
+
+    #[on_success(|| {
+        if true {
+            panic!("[entity.on_success]: no-args on_success triggered");
+        }
+    })]
+    const _: () = ();
+}

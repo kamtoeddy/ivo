@@ -1,0 +1,47 @@
+error: duplicate virtual alias `shared`
+  --> tests/field_configs/compile_fail/virtuals.rs:15:13
+   |
+15 |         pub virtual_b: String,
+   |             ^^^^^^^^^
+
+error: virtual alias `virtual_field` collides with an existing field or timestamp name
+  --> tests/field_configs/compile_fail/virtuals.rs:27:13
+   |
+27 |         pub virtual_field: String,
+   |             ^^^^^^^^^^^^^
+
+error: virtual alias `name` collides with an existing field or timestamp name
+  --> tests/field_configs/compile_fail/virtuals.rs:42:13
+   |
+42 |         pub virtual_field: String,
+   |             ^^^^^^^^^^^^^
+
+error: virtual alias `other` collides with an existing field or timestamp name
+  --> tests/field_configs/compile_fail/virtuals.rs:62:13
+   |
+62 |         pub virtual_field: String,
+   |             ^^^^^^^^^^^^^
+
+error: virtual alias `created_at` collides with an existing field or timestamp name
+  --> tests/field_configs/compile_fail/virtuals.rs:80:13
+   |
+80 |         pub virtual_field: String,
+   |             ^^^^^^^^^^^^^
+
+error: virtual alias `custom_created_at` collides with an existing field or timestamp name
+   --> tests/field_configs/compile_fail/virtuals.rs:101:13
+    |
+101 |         pub virtual_field: String,
+    |             ^^^^^^^^^^^^^
+
+error: virtual alias `updated_at` collides with an existing field or timestamp name
+   --> tests/field_configs/compile_fail/virtuals.rs:122:13
+    |
+122 |         pub virtual_field: String,
+    |             ^^^^^^^^^^^^^
+
+error: virtual alias `custom_updated_at` collides with an existing field or timestamp name
+   --> tests/field_configs/compile_fail/virtuals.rs:143:13
+    |
+143 |         pub virtual_field: String,
+    |             ^^^^^^^^^^^^^

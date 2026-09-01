@@ -1,0 +1,130 @@
+error: grouped `#[required([...], handler)]` expects at least 2 fields
+ --> tests/options/compile_fail/required.rs:4:1
+  |
+4 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: grouped `#[required([...], handler)]` expects at least 2 fields
+  --> tests/options/compile_fail/required.rs:19:1
+   |
+19 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: remove duplicates of `lax` in your grouped required config
+  --> tests/options/compile_fail/required.rs:34:1
+   |
+34 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: `invalid_field` does not exist in your schema
+  --> tests/options/compile_fail/required.rs:49:1
+   |
+49 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only lax and virtual fields can belong to grouped required configs; remove `id`
+  --> tests/options/compile_fail/required.rs:64:1
+   |
+64 | / #[ivo_schema(
+65 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+66 | |     output(Data, derive(Debug, Clone, PartialEq))
+67 | | )]
+   | |__^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only lax and virtual fields can belong to grouped required configs; remove `dependent`
+  --> tests/options/compile_fail/required.rs:85:1
+   |
+85 | / #[ivo_schema(
+86 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+87 | |     output(Data, derive(Debug, Clone, PartialEq))
+88 | | )]
+   | |__^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: `output(...)` is not allowed when the schema only contains required and/or lax fields without timestamps
+   --> tests/options/compile_fail/required.rs:108:1
+    |
+108 | / #[ivo_schema(
+109 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+110 | |     output(Data, derive(Debug, Clone, PartialEq))
+111 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only lax and virtual fields can belong to grouped required configs; remove `dependent`
+   --> tests/options/compile_fail/required.rs:130:1
+    |
+130 | / #[ivo_schema(
+131 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+132 | |     output(Data, derive(Debug, Clone, PartialEq))
+133 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: `alias` does not exist in your schema
+   --> tests/options/compile_fail/required.rs:157:1
+    |
+157 | / #[ivo_schema(
+158 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+159 | |     output(Data, derive(Debug, Clone, PartialEq))
+160 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only lax and virtual fields can belong to grouped required configs; remove `created_at`
+   --> tests/options/compile_fail/required.rs:184:1
+    |
+184 | / #[ivo_schema(
+185 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+186 | |     output(Data, derive(Debug, Clone, PartialEq))
+187 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only lax and virtual fields can belong to grouped required configs; remove `custom_created_at`
+   --> tests/options/compile_fail/required.rs:208:1
+    |
+208 | / #[ivo_schema(
+209 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+210 | |     output(Data, derive(Debug, Clone, PartialEq))
+211 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only lax and virtual fields can belong to grouped required configs; remove `updated_at`
+   --> tests/options/compile_fail/required.rs:232:1
+    |
+232 | / #[ivo_schema(
+233 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+234 | |     output(Data, derive(Debug, Clone, PartialEq))
+235 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only lax and virtual fields can belong to grouped required configs; remove `custom_updated_at`
+   --> tests/options/compile_fail/required.rs:256:1
+    |
+256 | / #[ivo_schema(
+257 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+258 | |     output(Data, derive(Debug, Clone, PartialEq))
+259 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)

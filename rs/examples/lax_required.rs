@@ -1,180 +1,186 @@
-use std::{future::ready, sync::LazyLock};
-
-use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
+use ivo::ivo_schema;
 
 const DEFAULT_LAX_VALUE: &str = "DEFAULT_LAX_VALUE";
 const DEFAULT_USERNAME: &str = "DEFAULT_USERNAME";
 const REQUIRED_TRIGGER_VALUE: &str = "REQUIRED_TRIGGER_VALUE";
 const USERNAME_REQUIRED_ERROR: &str = "username is required at this time";
 
-#[async_std::main]
-async fn main() {
-    let (data, handle_success, _) = DATA_MODEL
+fn main() {
+    let created = data_schema::DataModel
         .create(
-            &PartialDataInput {
+            data_schema::PartialData {
                 lax: None,
                 username: None,
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        data_schema::Data {
             lax: DEFAULT_LAX_VALUE.to_string(),
             username: DEFAULT_USERNAME.to_string()
         }
     );
 
-    handle_success().await;
+    let created_data = created.data.clone();
+    created.handle_success();
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&created_data, ());
 
     let username = "some username".to_string();
 
-    let (data, handle_success, _) = DATA_MODEL
+    let created = data_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: Some(REQUIRED_TRIGGER_VALUE.into()),
+            data_schema::PartialData {
+                lax: Some(REQUIRED_TRIGGER_VALUE.to_string()),
                 username: Some(username.clone()),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        data_schema::Data {
             lax: REQUIRED_TRIGGER_VALUE.to_string(),
             username
         }
     );
 
-    handle_success().await;
+    let created_data = created.data.clone();
+    created.handle_success();
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&created_data, ());
 
-    let (payload, handle_failure, _) = DATA_MODEL
+    let failed = data_schema::DataModel
         .create(
-            &PartialDataInput {
-                lax: Some(REQUIRED_TRIGGER_VALUE.into()),
+            data_schema::PartialData {
+                lax: Some(REQUIRED_TRIGGER_VALUE.to_string()),
                 username: None,
             },
-            None,
+            (),
         )
-        .await
         .err()
         .unwrap();
 
-    println!("\nfailed to create: {:#?}", payload);
+    println!("\nfailed to create: {:#?}", failed.errors);
 
     assert_eq!(
-        payload.get("username").unwrap().reason,
+        failed.errors.get("username").unwrap().reason,
         USERNAME_REQUIRED_ERROR
     );
 
-    handle_failure().await;
+    failed.handle_failure();
 
-    let data = Data {
+    let data = data_schema::Data {
         lax: DEFAULT_LAX_VALUE.into(),
         username: DEFAULT_USERNAME.into(),
     };
 
-    let (payload, handle_failure, _) = DATA_MODEL
+    let failed = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax: Some(REQUIRED_TRIGGER_VALUE.into()),
+            data.clone(),
+            data_schema::PartialData {
+                lax: Some(REQUIRED_TRIGGER_VALUE.to_string()),
                 username: None,
             },
-            None,
+            (),
         )
-        .await
         .err()
         .unwrap();
 
-    println!("\nfailed to update: {:#?}", payload);
+    println!("\nfailed to update: {:#?}", failed.errors);
 
     assert_eq!(
-        payload.unwrap().get("username").unwrap().reason,
+        failed
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("username")
+            .unwrap()
+            .reason,
         USERNAME_REQUIRED_ERROR
     );
 
-    handle_failure().await;
+    failed.handle_failure();
 
-    let data = Data {
+    let data = data_schema::Data {
         lax: REQUIRED_TRIGGER_VALUE.into(),
         username: DEFAULT_USERNAME.into(),
     };
 
-    let (payload, handle_failure, _) = DATA_MODEL
+    let failed = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                lax: Some("updated lax value".into()),
+            data.clone(),
+            data_schema::PartialData {
+                lax: Some("updated lax value".to_string()),
                 username: None,
             },
-            None,
+            (),
         )
-        .await
         .err()
         .unwrap();
 
-    println!("\nfailed to update: {:#?}", payload);
+    println!("\nfailed to update: {:#?}", failed.errors);
 
     assert_eq!(
-        payload.unwrap().get("username").unwrap().reason,
+        failed
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("username")
+            .unwrap()
+            .reason,
         USERNAME_REQUIRED_ERROR
     );
 
-    handle_failure().await;
+    failed.handle_failure();
 
-    let data = Data {
+    let data = data_schema::Data {
         lax: DEFAULT_LAX_VALUE.into(),
         username: DEFAULT_USERNAME.into(),
     };
 
     let updated_username = Some("james-doe".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updated = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            data_schema::PartialData {
                 lax: None,
                 username: updated_username.clone(),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        data_schema::PartialData {
             lax: None,
             username: updated_username
         }
     );
 
-    handle_success().await;
+    let updated_data = updated.data.clone();
+    updated.handle_success();
 
-    let data = data.clone_with_updates(&updates);
+    let data = data.clone_with_updates(&updated_data);
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&data, ());
 
-    let data = Data {
+    let data = data_schema::Data {
         lax: DEFAULT_LAX_VALUE.into(),
         username: DEFAULT_USERNAME.into(),
     };
@@ -182,152 +188,118 @@ async fn main() {
     let updated_lax = Some(REQUIRED_TRIGGER_VALUE.to_string());
     let updated_username = Some("james-doe".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updated = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            data_schema::PartialData {
                 lax: updated_lax.clone(),
                 username: updated_username.clone(),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        data_schema::PartialData {
             lax: updated_lax,
             username: updated_username
         }
     );
 
-    handle_success().await;
+    let updated_data = updated.data.clone();
+    updated.handle_success();
 
-    let data = data.clone_with_updates(&updates);
+    let data = data.clone_with_updates(&updated_data);
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&data, ());
 
-    let data = Data {
+    let data = data_schema::Data {
         lax: REQUIRED_TRIGGER_VALUE.into(),
         username: DEFAULT_USERNAME.into(),
     };
 
     let updated_username = Some("james-doe".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updated = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            data_schema::PartialData {
                 lax: None,
                 username: updated_username.clone(),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        data_schema::PartialData {
             lax: None,
             username: updated_username
         }
     );
 
-    handle_success().await;
+    let updated_data = updated.data.clone();
+    updated.handle_success();
 
-    let data = data.clone_with_updates(&updates);
+    let data = data.clone_with_updates(&updated_data);
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&data, ());
 }
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub lax: String,
-    pub username: String,
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod data_schema {
+    struct Fields {
+        #[lax(crate::DEFAULT_LAX_VALUE.to_string())]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: lax = {}", ctx.values().lax);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: lax = {}", data.lax);
+        })]
+        #[on_failure(|ctx, _| {
+            println!(
+                "\n[on_failure]: raw lax = {}",
+                ctx.raw_input().lax.as_deref().unwrap_or("(none)")
+            );
+            if let Some(name) = ctx.input().lax.as_ref() {
+                println!("\n[on_failure]: validated lax = {}", name);
+            }
+        })]
+        pub lax: String,
+
+        #[lax(crate::DEFAULT_USERNAME.to_string())]
+        #[required(|ctx, _| {
+            if ctx.input().lax == Some(crate::REQUIRED_TRIGGER_VALUE.to_string())
+                || ctx.values().lax == crate::REQUIRED_TRIGGER_VALUE.to_string()
+            {
+                Some(crate::USERNAME_REQUIRED_ERROR.to_string())
+            } else {
+                None
+            }
+        })]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: username = {}", ctx.values().username);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: username = {}", data.username);
+        })]
+        #[on_failure(|ctx, _| {
+            println!(
+                "\n[on_failure]: raw username = {}",
+                ctx.raw_input().username.as_deref().unwrap_or("(none)")
+            );
+            if let Some(name) = ctx.input().username.as_ref() {
+                println!("\n[on_failure]: validated username = {}", name);
+            }
+        })]
+        pub username: String,
+    }
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub lax: String,
-    pub username: String,
-}
-
-pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_LAX_VALUE.to_string())
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: lax = {}", data.username);
-
-                        ready(())
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!("\n[on_failure]: raw lax = {}", ctx.raw_input().lax.unwrap());
-
-                        if let Some(name) = ctx.input().lax {
-                            println!("\n[on_failure]: validated lax = {}", name);
-                        }
-
-                        ready(())
-                    }),
-            )
-            .field(
-                lax_field("username")
-                    .default(DEFAULT_USERNAME.to_string())
-                    .required(|ctx: IvoContext<DataInput, Data>, _| {
-                        let mut error = None;
-
-                        if ctx.input().lax == Some(REQUIRED_TRIGGER_VALUE.into())
-                            || ctx.previous_values().map(|d| d.lax)
-                                == Some(REQUIRED_TRIGGER_VALUE.into())
-                        {
-                            error = Some(USERNAME_REQUIRED_ERROR.into());
-                        }
-
-                        ready(error)
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_success]: username = {}",
-                            ctx.values().username.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: username = {}", data.username);
-
-                        ready(())
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_failure]: raw username = {}",
-                            ctx.raw_input().username.unwrap()
-                        );
-
-                        if let Some(name) = ctx.input().username {
-                            println!("\n[on_failure]: validated username = {}", name);
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    )
-});

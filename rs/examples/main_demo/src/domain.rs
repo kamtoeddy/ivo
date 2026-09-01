@@ -1,39 +1,11 @@
-use std::{
-    array,
-    collections::HashMap,
-    future::{ready, Future},
-    sync::LazyLock,
-};
+use std::{array, collections::HashMap, sync::LazyLock};
 
 use chrono::{DateTime, Utc};
-use ivo::{
-    constant_field, dependent_field, lax_field, required_field, validate_email, virtual_field,
-    FutureExt, IvoContext, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoShared, IvoStruct,
-};
+use ivo::ivo_schema;
 
-use crate::slugify::{slugify, SlugifiedString};
+use crate::slugify::SlugifiedString;
 
 type Timestamp = DateTime<Utc>;
-
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct UserInput {
-    pub email: Option<String>,
-    pub phone_number: Option<String>,
-    pub username: String,
-    pub slug_id: String, // alias for v_slug
-}
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct User {
-    pub created_at: Timestamp,
-    pub id: i32,
-    pub email: Option<String>,
-    pub phone_number: Option<String>,
-    pub slug_id: SlugifiedString,
-    pub username: String,
-    pub username_last_updated_at: Option<Timestamp>,
-    pub updated_at: Timestamp,
-}
 
 #[derive(Clone)]
 pub struct UserCtxOptions {
@@ -45,230 +17,228 @@ impl UserCtxOptions {
         Self { slug_id: None }
     }
 
-    fn find_user_by_username(
-        &self,
-        username: &str,
-    ) -> impl Future<Output = Option<User>> + use<'_> {
-        ready(USERS_BY_USERNAME.get(username).cloned())
+    pub async fn find_user_by_username(&self, username: &str) -> Option<User> {
+        USERS_BY_USERNAME.get(username).cloned()
     }
 
-    fn find_user_by_slug_id(
-        &self,
-        slug_id: &SlugifiedString,
-    ) -> impl Future<Output = Option<User>> + use<'_> {
-        ready(USERS_BY_SLUG_ID.get(slug_id).cloned())
+    pub async fn find_user_by_slug_id(&self, slug_id: &SlugifiedString) -> Option<User> {
+        USERS_BY_SLUG_ID.get(slug_id).cloned()
     }
 
-    fn update_slug_id(&mut self, slug_id: &SlugifiedString) {
+    pub fn update_slug_id(&mut self, slug_id: &SlugifiedString) {
         self.slug_id = Some(slug_id.clone());
     }
 }
 
-type Ctx = IvoContext<UserInput, User>;
-type RwCtxOptions = IvoRwCtxOptions<UserCtxOptions>;
+#[ivo_schema(
+    input(UserInput, derive(Debug, Clone, PartialEq)),
+    output(User, derive(Debug, Clone, PartialEq)),
+    ctx_options(UserCtxOptions)
+)]
+mod user_schema {
+    use super::{SlugifiedString, Timestamp, UserCtxOptions};
+    use crate::slugify::slugify;
+    use chrono::Utc;
+    use ivo::validate_email;
 
-pub static USER_MODEL: LazyLock<IvoModel<UserInput, User, UserCtxOptions, Timestamp>> =
-    LazyLock::new(|| {
-        IvoModel::new(
-            |f| {
-                f.field(constant_field("id").value_fn(|_, _| ready(1234)))
-                    .field(
-                        lax_field("email")
-                            .default(None)
-                            .validate(|v: Option<String>, _, _| {
-                                if let Some(email) = v {
-                                    let r = validate_email(&email)
-                                        .map(|v| Some(Some(v)))
-                                        .map_err(|e| (e, None));
+    struct Fields {
+        #[constant(1234)]
+        pub id: i32,
 
-                                    return ready(r);
-                                }
+        #[created_at]
+        pub created_at: Timestamp,
 
-                                ready(Ok(None))
-                            }),
-                    )
-                    .field(
-                        lax_field("phone_number")
-                            .default(None::<String>)
-                            .validate(|_, _, _| ready(Ok(None))),
-                    )
-                    .field(
-                        required_field("username")
-                            // .required_error("\"username\" was not provided!")
-                            .required_error_fn(|_, _| {
-                                ready("\"username\" was not provided!".into())
-                            })
-                            .validate(|v: String, _, _| {
-                                const MIN_LEN: usize = 4;
+        #[updated_at]
+        pub updated_at: Timestamp,
 
-                                if v.len() < MIN_LEN {
-                                    return ready(Err((
-                                        format!(
-                                        "\"username\" must be at least {MIN_LEN} characters long"
-                                    ),
-                                        None,
-                                    )));
-                                }
+        #[lax(None)]
+        #[validate(|v, _, _| {
+            if let Some(email) = v {
+                match validate_email(&email) {
+                    Ok(validated) => Ok(Some(Some(validated))),
+                    Err(e) => Err((e, None)),
+                }
+            } else {
+                Ok(None)
+            }
+        })]
+        pub email: Option<String>,
 
-                                ready(Ok(None))
-                            })
-                            .re_validate(async |uname: String, _, o: RwCtxOptions| {
-                                if o.read().await.find_user_by_username(&uname).await.is_some() {
-                                    return Err((
-                                        "username: \"{uname}\" is already taken".into(),
-                                        None,
-                                    ));
-                                }
+        #[lax(None)]
+        pub phone_number: Option<String>,
 
-                                Ok(Some(format!("revalidated-'{}'", uname)))
-                            })
-                            .on_delete(|_, _| {
-                                println!("[username]: on delete 1 handled");
+        #[required]
+        #[required_error(|_, _| "\"username\" was not provided!".to_string())]
+        #[validate(|v, _, _| {
+            const MIN_LEN: usize = 4;
+            if v.len() < MIN_LEN {
+                return Err((
+                    format!("\"username\" must be at least {MIN_LEN} characters long"),
+                    None,
+                ));
+            }
+            Ok(None)
+        })]
+        #[re_validate(async |uname, _, o| {
+            if o.read().await.find_user_by_username(&uname).await.is_some() {
+                return Err(("username: \"{uname}\" is already taken".into(), None));
+            }
+            Ok(Some(format!("revalidated-'{uname}'")))
+        })]
+        #[on_delete(|_, _| {
+            println!("[username]: on delete 1 handled");
+        })]
+        #[on_delete(|_, _| {
+            println!("[username]: on delete 2 handled");
+        })]
+        pub username: String,
 
-                                ready(())
-                            })
-                            .on_delete(|_, _| {
-                                println!("[username]: on delete 2 handled");
+        #[depends_on("username")]
+        #[default(None)]
+        #[resolve(|ctx, _| {
+            if ctx.is_update() {
+                Some(Utc::now())
+            } else {
+                None
+            }
+        })]
+        pub username_last_updated_at: Option<Timestamp>,
 
-                                ready(())
-                            }),
-                    )
-                    .field(
-                        dependent_field("username_last_updated_at", ["username"])
-                            .default(None)
-                            .resolve(|ctx: Ctx, _| {
-                                let value = if ctx.is_update() {
-                                    Some(Utc::now())
-                                } else {
-                                    None
-                                };
+        #[depends_on("username", "v_slug")]
+        #[default(SlugifiedString::from(""))]
+        #[resolve( |_, o| { o.read_sync().slug_id.clone().unwrap() })]
+        #[on_delete(|data, _| {
+            println!("[dependent_slug_id]: on delete: {:?}", data.slug_id);
+        })]
+        pub slug_id: SlugifiedString,
 
-                                ready(value)
-                            }),
-                    )
-                    .field(
-                        dependent_field("slug_id", ["username", "v_slug"])
-                            .default(SlugifiedString::from(""))
-                            .resolve(|_, o: RwCtxOptions| {
-                                o.read().map(|g| g.slug_id.clone().unwrap())
-                            })
-                            .on_delete(|data: IvoShared<User>, _| {
-                                println!("[dependent_slug_id]: on delete: {:?}", data.slug_id);
+        #[ivo_virtual("slug_id")]
+        #[validate(|value, _, _| {
+            println!("[slug_id]: validate: {:?}", value);
+            let validated = value.trim();
+            if validated.len() < 2 {
+                return Err((
+                    "slug ids must be at least 2 characters long".into(),
+                    None,
+                ));
+            }
+            Ok(Some(validated.into()))
+        })]
+        #[sanitize(|v, _, _| format!("sanitized-'{v}'"))]
+        pub v_slug: String,
+    }
 
-                                ready(())
-                            }),
-                    )
-                    .field(
-                        virtual_field("v_slug")
-                            .alias("slug_id")
-                            .validate(|value: String, _, _| {
-                                let validated = value.trim();
+    #[timestamps(Utc::now)]
+    const _: () = ();
 
-                                if validated.len() < 2 {
-                                    return ready(Err((
-                                        "slug ids must be at least 2 characters long".into(),
-                                        None,
-                                    )));
-                                }
+    #[required(["email", "phone_number"], |ctx, _| {
+        if ctx.is_update() {
+            return None;
+        }
+        let error = "provide either an \"email\" or a \"phone number\" to proceed";
 
-                                ready(Ok(Some(validated.into())))
-                            })
-                            .sanitize(|v, _, _| ready(format!("sanitized-'{v}'"))),
-                    )
-                    .timestamps(|t| {
-                        t.resolve(Utc::now)
-                            .created_at(None)
-                            .updated_at(Some("updated_at"))
-                    })
-            },
-            |o| {
-                o.required(["email", "phone_number"], |ctx: Ctx, _| {
-                    if ctx.is_update() {
-                        return ready(None);
-                    }
-
-                    let error = "provide either an \"email\" or a \"phone number\" to proceed";
-
-                    ready(Some(
-                        UserInputErrors::new()
-                            .with_email(error, None)
-                            .with_phone_number(error, None),
-                    ))
-                })
-                    .ignore_update(["username", "v_slug"], |_, user: User, _| {
-                        ready(match user.username_last_updated_at {
-                            Some(dt) => (Utc::now() - dt).num_days() < 30,
-                            _ => false,
-                        })
-                    })
-                    .post_validate(["username", "v_slug"], |b| {
-                        b.validate(async |ctx: Ctx, o: RwCtxOptions| {
-                            let input = ctx.input();
-                            let input_slug_id = ctx.input().slug_id.clone();
-
-                            let slug_string = input_slug_id
-                                .clone()
-                                .unwrap_or_else(|| input.username.clone().unwrap());
-
-                            let slug_id = slugify(&slug_string);
-
-                            println!(
-                                "\npost validating username & v_slug: [slug_string = {}] & [slug_id = {}]",
-                                slug_string, slug_id
-                            );
-
-                            let mut options = o.write().await;
-
-                            if options.find_user_by_slug_id(&slug_id).await.is_none() {
-                                options.update_slug_id(&slug_id);
-
-                                return Ok(None);
-                            }
-
-                            drop(options);
-
-                            let (reason, metadata) = (
-                                &format!("A user with a slug id: \"{slug_id}\" already exists"),
-                                None,
-                            );
-
-                            let mut errors = UserInputErrors::new();
-
-                            if input_slug_id.is_some() {
-                                errors.set_slug_id(reason, metadata);
-                            } else if input.username.is_some() {
-                                errors.set_username(reason, metadata);
-                            }
-
-                            Err(errors)
-                        })
-                    })
-                    .on_success(["email"], |b| {
-                        b.handle(|_, _| {
-                            println!("[options.on_success]: [email]");
-                            ready(())
-                        })
-                    })
-                    .on_success(["username", "v_slug"], |b| {
-                        b.handle(|_, _| {
-                            println!("[options.on_success]: [username, v_slug]");
-
-                            ready(())
-                        })
-                    })
-                    .on_delete(|_, _| {
-                        println!("[options.on_delete]: fn 1");
-
-                        ready(())
-                    })
-                    .on_delete(|_, _| {
-                        println!("[options.on_delete]: fn 2");
-
-                        ready(())
-                    })
-            },
+        Some(UserInputErrors::new()
+            .with_email(error, None)
+            .with_phone_number(error, None)
         )
-    });
+    })]
+    const _: () = ();
+
+    #[post_validate(["email", "phone_number"], validate =  |ctx, _| {
+        if !ctx.is_update() {
+            return Ok(None);
+        }
+
+        let input = ctx.input();
+
+        let is_valid =
+            input.email.as_ref().is_some_and(|e| e.is_some()) ||
+            input.phone_number.as_ref().is_some_and(|p| p.is_some());
+
+        if is_valid {
+            return Ok(None);
+        }
+
+        let error = "provide either an \"email\" or a \"phone number\" to proceed";
+
+        Err(UserInputErrors::new()
+            .with_email(error, None)
+            .with_phone_number(error, None)
+        )
+    })]
+    const _: () = ();
+
+    #[ignore_update(["username", "v_slug"], |ctx, _| {
+        match ctx.values().username_last_updated_at {
+            Some(dt) => (Utc::now() - dt).num_days() < 30,
+            _ => false,
+        }
+    })]
+    const _: () = ();
+
+    #[post_validate(["username", "v_slug"], validate = async |ctx, o| {
+        let input = ctx.input();
+        let input_slug_id = input.slug_id.clone();
+
+        let slug_string = input_slug_id
+            .clone()
+            .unwrap_or_else(|| input.username.clone().unwrap());
+
+        let slug_id = slugify(&slug_string);
+
+        println!(
+            "\npost validating username & v_slug: [slug_string = {}] & [slug_id = {}]",
+            slug_string, slug_id
+        );
+
+        let mut options = o.write().await;
+
+        if options.find_user_by_slug_id(&slug_id).await.is_none() {
+            options.update_slug_id(&slug_id);
+            return Ok(None);
+        }
+
+        drop(options);
+
+        let (reason, metadata) = (
+            &format!("A user with a slug id: \"{slug_id}\" already exists"),
+            None,
+        );
+
+        let mut errors = UserInputErrors::new();
+
+        if input_slug_id.is_some() {
+            errors.set_slug_id(reason, metadata);
+        } else if input.username.is_some() {
+            errors.set_username(reason, metadata);
+        }
+
+        Err(errors)
+    })]
+    const _: () = ();
+
+    #[on_success(["email"], |_, _| {
+        println!("[options.on_success]: [email]");
+    })]
+    const _: () = ();
+
+    #[on_success(["username", "v_slug"],  |_, _| {
+        println!("[options.on_success]: [username, v_slug]");
+    })]
+    const _: () = ();
+
+    #[on_delete(|_, _| {
+        println!("[options.on_delete]: fn 1");
+    })]
+    const _: () = ();
+
+    #[on_delete(|_, _| {
+        println!("[options.on_delete]: fn 2");
+    })]
+    const _: () = ();
+}
+
+pub use user_schema::{PartialUserInput, User, UserModel};
 
 pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
     array::from_fn(|i| {
@@ -278,14 +248,14 @@ pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
         let now = Utc::now();
 
         User {
-            created_at: now,
-            email: Some(format!("user-{id}@mail.com")),
             id,
-            phone_number: None,
-            slug_id: SlugifiedString::from(username.as_str()),
-            username,
-            username_last_updated_at: None,
+            created_at: now,
             updated_at: now,
+            email: Some(format!("user-{id}@mail.com")),
+            phone_number: None,
+            username: username.clone(),
+            username_last_updated_at: None,
+            slug_id: SlugifiedString::from(username.as_str()),
         }
     })
 });

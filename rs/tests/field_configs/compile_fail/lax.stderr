@@ -1,0 +1,5 @@
+error: duplicate field name `lax`
+  --> tests/field_configs/compile_fail/lax.rs:10:13
+   |
+10 |         pub lax: i32,
+   |             ^^^

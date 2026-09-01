@@ -2,7 +2,7 @@
   "name": "ivo",
   "author": "kamtoeddy",
   "description": "The schema valitator that brings user stories to life",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "scripts": {
     "build": "tsdown",
     "build:dev": "tsdown",
@@ -16,13 +16,13 @@
     "typecheck": "clear; tsc --noEmit -p ./tsconfig.json",
     "typecheck:test": "clear; tsc --noEmit -p tests/tsconfig.json"
   },
-  "license": "../LICENSE",
+  "license": "MIT",
   "homepage": "https://ivo.kamtoeddy.com/docs/ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kamtoeddy/ivo.git"
   },
-  "readme": "./README.md",
+  "readme": "README.md",
   "bugs": {
     "url": "https://github.com/kamtoeddy/ivo/issues"
   },
@@ -50,8 +50,8 @@
     "validation"
   ],
   "devDependencies": {
-    "@biomejs/biome": "^2.5.6",
-    "@types/bun": "^1.3.14",
+    "@biomejs/biome": "^2.5.11",
+    "@types/bun": "^1.4.0",
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2"
   }

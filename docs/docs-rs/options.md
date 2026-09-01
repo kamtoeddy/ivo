@@ -5,361 +5,402 @@ sidebar_position: 3
 
 # Schema Options
 
-Schema-wide options are configured in the second closure of `IvoModel::new(..., |o| o...)`. Use them
-when a rule or side effect involves more than one field, or when you want to react to the entity as
-a whole.
+Grouped, cross-field options attach to an anonymous `const _: () = ();` item directly inside the
+schema module -- not chained onto the `#[ivo_schema(...)]` call itself. Use them when a rule or
+side effect involves more than one field, or when you want to react to the entity as a whole.
+Multiple option attributes may be stacked on one const, or spread across several.
+
+## `ignore`
+
+Skip processing for a group of lax or virtual fields together, based on a shared condition.
+Requires at least two fields, and applies to both `create` and `update`.
+
+```rust
+use ivo::ivo_schema;
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod ignore_group_schema {
+    struct Fields {
+        #[lax(String::new())]
+        pub email: String,
+
+        #[lax(String::new())]
+        pub phone: String,
+    }
+
+    #[ignore(["email", "phone"], |ctx, _opts| {
+        ctx.input().email.as_deref() == Some("skip")
+    })]
+    const _: () = ();
+}
+
+fn main() {
+    let created = ignore_group_schema::DataInputModel
+        .create(
+            ignore_group_schema::PartialDataInput {
+                email: Some("skip".into()),
+                phone: Some("123".into()),
+            },
+            (),
+        )
+        .unwrap();
+
+    println!("{:?}", created.data); // DataInput { email: "", phone: "" } -- both ignored, defaults used
+}
+```
+
+See [`lax_with_ignore.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore.rs)
+and field-level `#[ignore]` on virtual fields (Virtual Fields, in the Fields section of the sidebar).
+
+## `ignore_update`
+
+Same idea as `ignore`, but evaluated during updates only. `#[ignore_update([...], handler)]`
+requires at least two fields; to ignore the _entire entity_ on update, omit the array and use the
+bare `#[ignore_update(handler)]` entity-level form instead.
+
+```rust
+use ivo::ivo_schema;
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod ignore_update_group_schema {
+    struct Fields {
+        #[lax(0)]
+        pub a: i32,
+
+        #[lax(0)]
+        pub b: i32,
+    }
+
+    #[ignore_update(["a", "b"], |ctx, _opts| {
+        ctx.input().a == Some(42)
+    })]
+    const _: () = ();
+}
+
+fn main() {
+    let data = ignore_update_group_schema::DataInput { a: 42, b: 1 };
+
+    // both fields ignored -> nothing actually changes -> "nothing to update"
+    let err = ignore_update_group_schema::DataInputModel
+        .update(
+            data,
+            ignore_update_group_schema::PartialDataInput {
+                a: Some(42),
+                b: Some(2),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    assert!(err.errors.is_none()); // `None` errors means "nothing to update", not a validation failure
+}
+```
+
+See [`lax_with_ignore_update.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore_update.rs).
+
+## `required`
+
+Enforces that at least one of the listed lax/virtual fields is provided. The handler runs only
+when _none_ of the listed fields were provided, and returns `Option<{InputName}Errors>` -- `Some`
+merges per-field errors into the payload, `None` means the requirement doesn't apply. Requires at
+least two fields. Commonly used for "provide email or phone" style rules.
+
+```rust
+use ivo::ivo_schema;
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod required_group_schema {
+    struct Fields {
+        #[lax(None)]
+        pub email: Option<String>,
+
+        #[lax(None)]
+        pub phone_number: Option<String>,
+    }
+
+    #[required(["email", "phone_number"], |ctx, _opts| {
+        if ctx.input().email.is_some() || ctx.input().phone_number.is_some() {
+            return None;
+        }
+
+        let reason = "provide either an email or a phone number";
+        let mut errors = DataInputErrors::new();
+        errors.set_email(reason, None);
+        errors.set_phone_number(reason, None);
+        Some(errors)
+    })]
+    const _: () = ();
+}
+
+fn main() {
+    let err = required_group_schema::DataInputModel
+        .create(
+            required_group_schema::PartialDataInput {
+                email: None,
+                phone_number: None,
+            },
+            (),
+        )
+        .unwrap_err();
+
+    println!("{:?}", err.errors); // both "email" and "phone_number" carry the same reason
+}
+```
+
+`DataInputErrors` is generated automatically alongside `DataInput`/`PartialDataInput`. See the same
+pattern in
+[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
+
+## `post_validate`
+
+Cross-field validation that runs after every individual field's `re_validate`. Can also return
+updated values for the group's own fields (`pre_validate` runs first and can feed updated values
+into the main `validate`). Requires at least two fields, from lax, required or virtual fields.
+
+```rust
+use ivo::ivo_schema;
+
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod post_validate_schema {
+    struct Fields {
+        #[lax(String::new())]
+        pub password: String,
+
+        #[lax(String::new())]
+        pub confirm_password: String,
+    }
+
+    #[post_validate(["password", "confirm_password"], validate = |ctx, _opts| {
+        let input = ctx.input();
+
+        if input.password != input.confirm_password {
+            let mut errors = DataInputErrors::new();
+            errors.set_confirm_password("passwords do not match", None);
+            return Err(errors);
+        }
+
+        Ok(None)
+    })]
+    const _: () = ();
+}
+
+fn main() {
+    let err = post_validate_schema::DataInputModel
+        .create(
+            post_validate_schema::PartialDataInput {
+                password: Some("a".into()),
+                confirm_password: Some("b".into()),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    println!("{:?}", err.errors); // {"confirm_password": "passwords do not match"}
+}
+```
+
+See the cross-field validation in
+[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 ## `on_success`
 
-Register a handler that runs after a successful `create` or `update`. An empty fields array means
-"trigger on every success"; otherwise it fires when at least one of the listed fields is part of
-the success payload.
+Register a handler that runs after a successful `create` or `update`, via the returned handle's
+`handle_success()`. The bare, arrayless form fires on every success; `#[on_success([...], handler)]`
+requires at least one field and fires when at least one of the listed fields is part of the
+success payload.
 
 ```rust
-use std::{future::ready, sync::LazyLock};
-use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
+use ivo::ivo_schema;
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-struct DataInput {
-    pub a: i32,
-    pub b: i32,
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod hooks_schema {
+    struct Fields {
+        #[lax(0)]
+        pub a: i32,
+
+        #[lax(0)]
+        pub b: i32,
+    }
+
+    #[on_success(|_ctx, _opts| {
+        println!("[on_success]: entity created or updated");
+    })]
+    const _: () = ();
+
+    #[on_success(["a", "b"], |_ctx, _opts| {
+        println!("[on_success]: a and/or b changed");
+    })]
+    const _: () = ();
 }
 
-#[derive(Clone, Debug, PartialEq, IvoStruct)]
-struct Data {
-    pub a: i32,
-    pub b: i32,
-}
+fn main() {
+    let created = hooks_schema::DataInputModel
+        .create(
+            hooks_schema::PartialDataInput {
+                a: Some(1),
+                b: None,
+            },
+            (),
+        )
+        .unwrap();
 
-static MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(lax_field("a").default(0))
-                .field(lax_field("b").default(0))
-        },
-        |o| {
-            o.on_success([], |b| {
-                b.handle(|_, _| {
-                    println!("entity created or updated");
-                    ready(())
-                })
-            })
-            .on_success(["a", "b"], |b| {
-                b.handle(|_, _| {
-                    println!("a and/or b changed");
-                    ready(())
-                })
-            })
-        },
-    )
-});
+    created.handle_success(); // prints both lines above
+}
 ```
 
-See the runnable [`option_on_success.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/option_on_success.rs)
+See the runnable
+[`option_on_success.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/option_on_success.rs)
 example for more detail, including dependent and virtual fields.
 
 ## `on_delete`
 
-Register one or more handlers that run when `model.delete(&entity, None).await` is invoked. These
-are triggered for the whole entity, in addition to any per-field `on_delete` handlers.
+Register one or more handlers that run when a schema's generated `delete` method is invoked, in
+addition to any per-field `#[on_delete]` handlers -- see the Life Cycles page (onDelete) in the
+sidebar.
 
 ```rust
-use std::{future::ready, sync::LazyLock};
-use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
-
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-struct DataInput {
-    pub a: i32,
-}
-
-#[derive(Clone, Debug, PartialEq, IvoStruct)]
-struct Data {
-    pub a: i32,
-}
-
-static MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| f.field(lax_field("a").default(0)),
-        |o| {
-            o.on_delete(|data, _| {
-                println!("deleting entity with a = {}", data.a);
-                ready(())
-            })
-        },
-    )
-});
+#[on_delete(|data, _opts| {
+    println!("deleting entity with a = {}", data.a);
+})]
+const _: () = ();
 ```
 
-See the `should_properly_trigger_on_delete_handlers` tests in
-[`rs/tests/options/mod.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/options/mod.rs).
+## `timestamps`
 
-## `ignore`
-
-A grouped ignore rule lets you skip processing of multiple lax or virtual fields at once based on a
-shared condition. The resolver receives the input context and returns `true` to ignore the group.
-Requires at least two fields.
+The shared, **synchronous** resolver for `#[created_at]`/`#[updated_at]`/`#[optional_updated_at]`
+fields -- see the Timestamps page in the Fields section of the sidebar for the full picture.
 
 ```rust
-use std::{future::ready, sync::LazyLock};
-use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
-
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-struct DataInput {
-    pub email: String,
-    pub phone: String,
-}
-
-#[derive(Clone, Debug, PartialEq, IvoStruct)]
-struct Data {
-    pub email: String,
-    pub phone: String,
-}
-
-static MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(lax_field("email").default(String::new()))
-                .field(lax_field("phone").default(String::new()))
-        },
-        |o| {
-            o.ignore(["email", "phone"], |ctx: IvoContext<DataInput, Data>, _| {
-                // ignore both when a special flag is present
-                ready(ctx.input().email == "skip")
-            })
-        },
-    )
-});
+#[timestamps(|| chrono::Utc::now())]
+const _: () = ();
 ```
 
-See [`lax_with_ignore.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore.rs)
-and the grouped ignore tests in
-[`rs/tests/options/ignore.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/options/ignore.rs).
-
-## `ignore_update`
-
-Same idea as `ignore`, but only evaluated during updates. An empty fields array applies the rule to
-the whole entity. With two or more fields, it applies to the group.
-
-```rust
-use std::{future::ready, sync::LazyLock};
-use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
-
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-struct DataInput {
-    pub a: i32,
-    pub b: i32,
-}
-
-#[derive(Clone, Debug, PartialEq, IvoStruct)]
-struct Data {
-    pub a: i32,
-    pub b: i32,
-}
-
-static MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(lax_field("a").default(0))
-                .field(lax_field("b").default(0))
-        },
-        |o| {
-            o.ignore_update(["a", "b"], |input: PartialDataInput, _, _| {
-                ready(input.a == Some(42))
-            })
-        },
-    )
-});
-```
-
-See [`lax_with_ignore_update.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/lax_with_ignore_update.rs)
-and the grouped tests in
-[`rs/tests/options/ignore_update.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/options/ignore_update.rs).
-
-## `required`
-
-A grouped required rule enforces that at least one of the listed lax or virtual fields is provided.
-The resolver returns `Some(errors)` when the requirement is not met. It is commonly used for
-"provide email or phone" style rules.
-
-```rust
-use std::{future::ready, sync::LazyLock};
-use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
-
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-struct UserInput {
-    pub email: Option<String>,
-    pub phone_number: Option<String>,
-}
-
-#[derive(Clone, Debug, PartialEq, IvoStruct)]
-struct User {
-    pub email: Option<String>,
-    pub phone_number: Option<String>,
-}
-
-static USER_MODEL: LazyLock<IvoModel<UserInput, User>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(lax_field("email").default(None::<String>))
-                .field(lax_field("phone_number").default(None::<String>))
-        },
-        |o| {
-            o.required(["email", "phone_number"], |ctx: IvoContext<UserInput, User>, _| {
-                if ctx.is_update() || ctx.input().email.is_some() || ctx.input().phone_number.is_some() {
-                    return ready(None);
-                }
-
-                let reason = "provide either an email or a phone number";
-
-                ready(Some(
-                    UserInputErrors::new()
-                        .with_email(reason, None)
-                        .with_phone_number(reason, None),
-                ))
-            })
-        },
-    )
-});
-```
-
-`UserInputErrors` is generated by deriving `IvoInputStruct`. See the same pattern in
-[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs)
-and the grouped tests in
-[`rs/tests/options/required.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/options/required.rs).
-
-## `post_validate`
-
-Cross-field validation runs after individual field validators. Use it to validate combinations of
-lax, required or virtual fields. Requires at least two fields.
-
-```rust
-use std::{future::ready, sync::LazyLock};
-use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
-
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-struct UserInput {
-    pub password: String,
-    pub confirm_password: String,
-}
-
-#[derive(Clone, Debug, PartialEq, IvoStruct)]
-struct User {
-    pub password: String,
-    pub confirm_password: String,
-}
-
-static USER_MODEL: LazyLock<IvoModel<UserInput, User>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(lax_field("password").default(String::new()))
-                .field(lax_field("confirm_password").default(String::new()))
-        },
-        |o| {
-            o.post_validate(["password", "confirm_password"], |b| {
-                b.validate(|ctx: IvoContext<UserInput, User>, _| {
-                    let input = ctx.input();
-
-                    if input.password != input.confirm_password {
-                        let mut errors = UserInputErrors::new();
-                        errors.set_confirm_password("passwords do not match", None);
-                        return ready(Err(errors));
-                    }
-
-                    ready(Ok(None))
-                })
-            })
-        },
-    )
-});
-```
-
-See the cross-field validation in
-[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs)
-and the grouped tests in
-[`rs/tests/options/post_validate.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/options/post_validate.rs).
+Accepts either a zero-arg closure or a bare function path (`#[timestamps(chrono::Utc::now)]`).
 
 ## Custom context options
 
-`IvoModel` accepts a `CtxOptions` type parameter for threading custom data through create, update
-and delete operations (dependency injection, request context, caching, etc.).
+`ctx_options(YourType)` in the macro call threads a value of your own type (dependency injection,
+caching, request-scoped data, ...) through every handler in a `create`/`update` call, wrapped in a
+read/write lock so concurrent handlers can share and mutate it safely. Async handlers use
+`opts.read().await`/`opts.write().await`; sync handlers use `opts.read_sync()`/`opts.write_sync()`.
 
 ```rust
-use ivo::{IvoContext, IvoModel, IvoRwCtxOptions};
+use ivo::ivo_schema;
 
 #[derive(Clone, Default)]
-struct MyCtxOptions {
-    db: Database,
+pub struct AppCtxOptions {
+    pub calls: u32,
 }
 
-type Ctx = IvoContext<Input, Output>;
-type RwCtxOptions = IvoRwCtxOptions<MyCtxOptions>;
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(AppCtxOptions)
+)]
+mod ctx_options_schema {
+    use super::AppCtxOptions;
 
-static MODEL: LazyLock<IvoModel<Input, Output, MyCtxOptions>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| { /* field definitions */ },
-        |o| {
-            o.post_validate(["a", "b"], |b| {
-                b.validate(|ctx: Ctx, options: RwCtxOptions| async move {
-                    let db = &options.read().await.db;
-                    // use db ...
-                    Ok(None)
-                })
-            })
-        },
-    )
-});
+    struct Fields {
+        #[required]
+        #[validate(|v: String, _, opts| {
+            opts.write_sync().calls += 1;
+            Ok(Some(v))
+        })]
+        pub name: String,
+    }
+}
+
+fn main() {
+    let created = ctx_options_schema::DataInputModel
+        .create(
+            ctx_options_schema::PartialDataInput {
+                name: Some("jane".into()),
+            },
+            AppCtxOptions::default(),
+        )
+        .unwrap();
+
+    println!(
+        "name={:?} calls={}",
+        created.data.name,
+        created.ctx_options.read_sync().calls
+    );
+}
 ```
 
+Pass `()` when a schema declares no `ctx_options(...)`, as in every other example on this page.
 See [`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs)
-for a complete working example.
+for a complete, realistic example (dependency lookups, uniqueness checks, and mutation across
+several handlers in the same call).
 
 ## Custom error payloads with `IvoErrorSanitizer`
 
-By default `ivo` returns errors as a `HashMap<String, FieldError<()>>`. You can change the shape of
-the error payload by implementing `IvoErrorSanitizer`:
+By default `ivo` returns errors as `HashMap<String, FieldError<()>>`. Change the shape of the
+error payload by implementing `IvoErrorSanitizer` and passing it via `error_sanitizer(...)`:
 
 ```rust
-use std::{collections::HashMap, future::ready};
-use ivo::{IvoErrorPayload, IvoErrorSanitizer};
-
-#[derive(Clone)]
-struct MyCtxOptions;
+use std::collections::HashMap;
+use ivo::{ivo_schema, IvoErrorPayload, IvoErrorSanitizer};
 
 struct MyErrorSanitizer;
 
-impl IvoErrorSanitizer<MyCtxOptions> for MyErrorSanitizer {
+impl IvoErrorSanitizer<()> for MyErrorSanitizer {
     type Metadata = Vec<String>;
     type Payload = HashMap<String, Vec<String>>;
 
-    fn sanitize(payload: IvoErrorPayload<Self::Metadata>, _o: &MyCtxOptions) -> Self::Payload {
+    fn sanitize(payload: IvoErrorPayload<Self::Metadata>, _opts: &()) -> Self::Payload {
         payload
             .into_iter()
             .map(|(name, err)| {
-                let mut errors = vec![err.reason];
+                let mut messages = vec![err.reason];
                 if let Some(meta) = err.metadata {
-                    errors.extend(meta);
+                    messages.extend(meta);
                 }
-                (name, errors)
+                (name, messages)
             })
             .collect()
     }
 }
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    error_sanitizer(MyErrorSanitizer)
+)]
+mod sanitized_schema {
+    use super::MyErrorSanitizer;
+
+    struct Fields {
+        #[required]
+        #[validate(|v: String, _, _| {
+            if v.len() < 3 {
+                return Err(("too short".into(), Some(vec!["min length is 3".into()])));
+            }
+            Ok(None)
+        })]
+        pub username: String,
+    }
+}
+
+fn main() {
+    let err = sanitized_schema::DataInputModel
+        .create(
+            sanitized_schema::PartialDataInput {
+                username: Some("ab".into()),
+            },
+            (),
+        )
+        .unwrap_err();
+
+    println!("{:?}", err.errors); // {"username": ["too short", "min length is 3"]}
+}
 ```
 
-The sanitizer becomes the fifth type parameter of `IvoModel`:
-
-```rust
-IvoModel<Input, Output, MyCtxOptions, Timestamp, MyErrorSanitizer>
-```
-
-See the full example in
-[`rs/tests/extras/error_sanitizer.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/extras/error_sanitizer.rs),
-and the trait documentation on [docs.rs/crate/ivo](https://docs.rs/crate/ivo).
+See the full example, including a custom `ctx_options` type, in
+[`tests/extras/error_sanitizer.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/extras/error_sanitizer.rs).
 
 ## API reference
 
-For the exhaustive list of option builders and their signatures, see:
+For the exhaustive list of grouped-option signatures and constraints, see:
 
 - **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — hosted rustdoc for the published crate.
-- **Local rustdoc** — run `cargo doc --no-deps --open` from the `rs/` directory to browse the same
-  generated reference locally.
+- **Local rustdoc** — run `cargo doc --no-deps --open` from the `rs/` directory to browse the
+  same generated reference locally.

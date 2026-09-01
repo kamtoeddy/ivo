@@ -4,7 +4,7 @@ use regex::Regex;
 use unicode_normalization::UnicodeNormalization;
 
 // 1. Define the Type-Safe Newtype (equivalent to Nominal in TS)
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct SlugifiedString(String);
 
 // Optional: Implement Display so it prints like a regular string

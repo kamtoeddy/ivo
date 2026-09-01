@@ -7,6 +7,8 @@
     "dev": "docusaurus start",
     "dev:en": "docusaurus start --locale en",
     "dev:fr": "docusaurus start --locale fr",
+    "build:rs": "bash scripts/build-rust-wasm.sh",
+    "build:local": "bun run build:rs && bun run build",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",

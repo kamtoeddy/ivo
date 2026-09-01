@@ -229,8 +229,10 @@ type RequiredOptionHandler<
 > = (
   ctx: IvoContext<Input, Output, CtxOptions> & {},
 ) =>
+  | false
+  | undefined
   | ResponseErrorObject<Metadata, Input>
-  | Promise<undefined | ResponseErrorObject<Metadata, Input>>;
+  | Promise<false | undefined | ResponseErrorObject<Metadata, Input>>;
 
 type PostValidator<
   InputKeys extends KeyOf<Input> | (string & {}),

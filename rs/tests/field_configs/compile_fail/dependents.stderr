@@ -1,0 +1,41 @@
+error: invalid `#[depends_on(...)]`: expected string literal
+  --> tests/field_configs/compile_fail/dependents.rs:15:13
+   |
+15 |         pub dependent: String,
+   |             ^^^^^^^^^
+
+error: expected string literal
+  --> tests/field_configs/compile_fail/dependents.rs:25:23
+   |
+25 |         #[ivo_virtual(alias)]
+   |                       ^^^^^
+
+error: dependent field `dependent` must declare at least one parent via `#[depends_on(...)]`
+  --> tests/field_configs/compile_fail/dependents.rs:48:13
+   |
+48 |         pub dependent: String,
+   |             ^^^^^^^^^
+
+error: field `dependent` cannot depend on itself
+  --> tests/field_configs/compile_fail/dependents.rs:64:13
+   |
+64 |         pub dependent: String,
+   |             ^^^^^^^^^
+
+error: field `dependent` depends on unknown field `ghost`
+  --> tests/field_configs/compile_fail/dependents.rs:80:13
+   |
+80 |         pub dependent: String,
+   |             ^^^^^^^^^
+
+error: duplicate parent `name` in `#[depends_on(...)]` for field `dependent`
+  --> tests/field_configs/compile_fail/dependents.rs:96:13
+   |
+96 |         pub dependent: String,
+   |             ^^^^^^^^^
+
+error: field `dependent` cannot depend on constant or timestamp field `created_at`
+   --> tests/field_configs/compile_fail/dependents.rs:115:13
+    |
+115 |         pub dependent: String,
+    |             ^^^^^^^^^

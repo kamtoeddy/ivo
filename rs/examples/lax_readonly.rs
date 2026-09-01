@@ -1,125 +1,95 @@
-use std::{future::ready, sync::LazyLock};
-
-use ivo::{lax_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
+use ivo::ivo_schema;
 
 const DEFAULT_USERNAME: &str = "DEFAULT_USERNAME";
 
-#[async_std::main]
-async fn main() {
-    let (data, handle_success, _) = DATA_MODEL
-        .create(&PartialDataInput { username: None }, None)
-        .await
+fn main() {
+    let created = data_schema::DataModel
+        .create(data_schema::PartialData::new(), ())
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", data);
+    println!("\ncreated: {:#?}", created.data);
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        data_schema::Data {
             username: DEFAULT_USERNAME.to_string()
         }
     );
 
-    handle_success().await;
+    let data = created.data.clone();
+    created.handle_success();
 
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&data, ());
 
     let updated_username = Some("james-doe".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updated = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            data_schema::PartialData {
                 username: updated_username.clone(),
             },
-            None,
+            (),
         )
-        .await
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        data_schema::PartialData {
             username: updated_username
         }
     );
 
-    handle_success().await;
+    let data = data.clone_with_updates(&updated.data);
+    updated.handle_success();
 
-    let data = data.clone_with_updates(&updates);
-
-    DATA_MODEL.delete(&data, None).await;
+    data_schema::DataModel.delete(&data, ());
 
     let updated_username = Some("jane-doe".to_string());
 
-    let (error, handle_failure, _) = DATA_MODEL
+    let failed = data_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
-                username: updated_username.clone(),
+            data,
+            data_schema::PartialData {
+                username: updated_username,
             },
-            None,
+            (),
         )
-        .await
         .err()
         .unwrap();
 
-    assert!(error.is_none());
+    assert!(failed.errors.is_none());
 
     println!("\nNothing to update");
 
-    handle_failure().await;
+    failed.handle_failure();
 }
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub username: String,
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod data_schema {
+    struct Fields {
+        #[lax(crate::DEFAULT_USERNAME.to_string())]
+        #[readonly]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: username = {}", ctx.values().username);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: username = {}", data.username);
+        })]
+        #[on_failure(|ctx, _| {
+            println!(
+                "\n[on_failure]: raw username = {}",
+                ctx.raw_input().username.as_ref().unwrap()
+            );
+
+            if let Some(name) = ctx.input().username.as_ref() {
+                println!("\n[on_failure]: validated username = {}", name);
+            }
+        })]
+        pub username: String,
+    }
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub username: String,
-}
-
-pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("username")
-                    .default(DEFAULT_USERNAME.to_string())
-                    .validate(|_, _, _| ready(Ok(None::<String>)))
-                    .readonly()
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_success]: username = {}",
-                            ctx.values().username.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: username = {}", data.username);
-
-                        ready(())
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_failure]: raw username = {}",
-                            ctx.raw_input().username.unwrap()
-                        );
-
-                        if let Some(name) = ctx.input().username {
-                            println!("\n[on_failure]: validated username = {}", name);
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    )
-});

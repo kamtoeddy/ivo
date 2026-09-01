@@ -1,911 +1,547 @@
-use ivo::{
-    constant_field, dependent_field, lax_field, required_field, virtual_field, IvoInputStruct,
-    IvoModel, IvoStruct,
-};
-use std::{future::ready, panic};
-
-#[test]
-#[should_panic(expected = "[dependent]: occurs more than once, please remove duplicates")]
-fn should_reject_if_field_name_is_already_set() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", ["lax"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(
-                    dependent_field("dependent", ["lax"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[dependent]: must depend on at least one lax, required, virtual or other dependent field on your schema"
-)]
-fn should_reject_if_parent_array_is_empty() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", [])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
-                .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[dependent]: cannot depend on \"created_at\" because it is the creation timestamp on \u{1b}[1mData"
-)]
-fn should_reject_dependency_of_created_at_field_with_default_name() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        created_at: String,
-        dependent: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
-                .field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", ["lax", "required", "created_at"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
-                .timestamps(|t| {
-                    t.resolve(|| "Date.now()")
-                        .created_at(None)
-                        .optional_updated_at(None)
-                })
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[dependent]: cannot depend on \"custom_created_at\" because it is the creation timestamp on \u{1b}[1mData"
-)]
-fn should_reject_dependency_of_created_at_field_with_custom_name() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        custom_created_at: String,
-        dependent: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
-                .field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", ["lax", "required", "custom_created_at"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
-                .timestamps(|t| {
-                    t.resolve(|| "Date.now()")
-                        .created_at(Some("custom_created_at"))
-                        .optional_updated_at(None)
-                })
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[dependent]: cannot depend on \"updated_at\" because it is the update timestamp on \u{1b}[1mData"
-)]
-fn should_reject_dependency_of_updated_at_field_with_default_name() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        created_at: String,
-        dependent: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
-                .field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", ["lax", "required", "updated_at"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
-                .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[dependent]: cannot depend on \"custom_updated_at\" because it is the update timestamp on \u{1b}[1mData"
-)]
-fn should_reject_dependency_of_updated_at_field_with_custom_name() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        created_at: String,
-        dependent: i32,
-        lax: String,
-        required: String,
-        custom_updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
-                .field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", ["lax", "required", "custom_updated_at"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
-                .timestamps(|t| {
-                    t.resolve(|| "Date.now()")
-                        .created_at(None)
-                        .optional_updated_at(Some("custom_updated_at"))
-                })
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[dependent]: cannot depend on \"lol\" because it is not a field on your schema"
-)]
-fn should_reject_if_any_parent_field_provided_does_not_belong_on_schema() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", ["lax", "required", "lol"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
-                .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(expected = "[dependent]: cannot depend on itself")]
-fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", ["lax", "required", "dependent"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
-                .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(expected = "[dependent]: is an output field. It must be present on \u{1b}[1mData")]
-fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        virtual_field: String,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax"])
-                    .default(1)
-                    .resolve(|_, _| ready(12)),
-            )
-            .field(
-                lax_field("lax")
-                    .default("default".into())
-                    .validate(|v: String, _, _| ready(Ok(Some(v)))),
-            )
-            .field(virtual_field("virtual_field").validate(|v: String, _, _| ready(Ok(Some(v)))))
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[dependent]: \"lax\" has been provided as a parent field multiple times. remove all duplicates to proceed"
-)]
-fn should_reject_if_duplicate_parent_fields_are_provided() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", ["lax", "required", "lax"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
-                .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(expected = "[dependent]: cannot depend on \"id\" because it is a constant")]
-fn should_reject_dependency_of_constant_fields() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        dependent: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value_fn(|_, _| ready(1234)))
-                .field(lax_field("lax").default(1))
-                .field(
-                    dependent_field("dependent", ["lax", "required", "id"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))))
-                .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[a]: should not depend on \"b\" and \"c\" because \"b\" depends on \"c\""
-)]
-fn should_reject_any_redundant_dependencies() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        a: String,
-        b: String,
-        c: String,
-        d: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        c: String,
-        d: String,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("c").default(1))
-                .field(
-                    dependent_field("b", ["c"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(
-                    dependent_field("a", ["c", "d", "b"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(required_field("d").validate(|v: String, _, _| ready(Ok(Some(v)))))
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[a]: should not depend on \"b\" and \"d\" because \"b\" indirectly depends on \"d\""
-)]
-fn should_reject_any_deeply_redundant_dependencies() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        a: String,
-        b: String,
-        c: String,
-        d: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        d: String,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("c", ["d"])
-                    .default(2)
-                    .resolve(|_, _| ready(4)),
-            )
-            .field(
-                dependent_field("b", ["c"])
-                    .default(2)
-                    .resolve(|_, _| ready(4)),
-            )
-            .field(
-                dependent_field("a", ["b", "d"])
-                    .default(2)
-                    .resolve(|_, _| ready(4)),
-            )
-            .field(required_field("d").validate(|v: String, _, _| ready(Ok(Some(v)))))
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(expected = "[a]: circular dependency identified between \"a <-> b\"")]
-fn should_reject_any_circular_dependencies() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        a: String,
-        b: String,
-        c: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        c: String,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("c").default(1))
-                .field(
-                    dependent_field("a", ["b"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-                .field(
-                    dependent_field("b", ["a", "c"])
-                        .default(2)
-                        .resolve(|_, _| ready(4)),
-                )
-        },
-        |o| o,
-    );
-}
-
-#[test]
-#[should_panic(expected = "[a]: circular dependency identified between \"a <-> b <-> c\"")]
-fn should_reject_any_deeply_circular_dependencies() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        a: String,
-        b: String,
-        c: String,
-        d: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        d: String,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("a", ["b"])
-                    .default(2)
-                    .resolve(|_, _| ready(4)),
-            )
-            .field(
-                dependent_field("c", ["a", "d"])
-                    .default(2)
-                    .resolve(|_, _| ready(4)),
-            )
-            .field(
-                dependent_field("b", ["c"])
-                    .default(2)
-                    .resolve(|_, _| ready(4)),
-            )
-            .field(lax_field("d").default(1))
-        },
-        |o| o,
-    );
-}
+use ivo::ivo_schema;
 
 #[test]
 fn should_allow_dependency_on_normal_lax_or_required_fields() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["lax"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["required"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["lax", "required"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
+    // These schemas compile only if dependent fields are permitted to depend on
+    // lax and/or required fields.
+    let _ = dependent_on_lax_schema::DataModel;
+    let _ = dependent_on_required_schema::DataModel;
+    let _ = dependent_on_both_schema::DataModel;
 }
 
 #[test]
 fn should_allow_dependency_on_other_dependent_fields() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        dependent1: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-    }
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["dependent1"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        dependent_field("dependent1", ["lax"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["dependent1", "required"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        dependent_field("dependent1", ["lax"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
+    let _ = dependent_on_dependent_schema::DataModel;
+    let _ = dependent_on_dependent_and_required_schema::DataModel;
 }
 
 #[test]
 fn should_allow_dependency_on_virtual_fields() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-        dependent1: i32,
-        lax: String,
-        required: String,
-        updated_at: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-        required: String,
-        virtual_field: String,
-    }
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["virtual_field"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        dependent_field("dependent1", ["lax"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .field(
-                        virtual_field("virtual_field")
-                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["required", "virtual_field"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        dependent_field("dependent1", ["lax"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .field(
-                        virtual_field("virtual_field")
-                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["dependent1", "virtual_field"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        dependent_field("dependent1", ["lax"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .field(
-                        virtual_field("virtual_field")
-                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
-
-    let result = panic::catch_unwind(|| {
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["virtual_field"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        dependent_field("dependent1", ["lax", "virtual_field"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .field(
-                        virtual_field("virtual_field")
-                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
-            },
-            |o| o,
-        );
-    });
-
-    assert!(result.is_ok());
+    let _ = dependent_on_virtual_schema::DataModel;
+    let _ = dependent_on_virtual_and_required_schema::DataModel;
+    let _ = dependent_on_dependent_and_virtual_schema::DataModel;
+    let _ = chained_dependent_on_virtual_schema::DataModel;
 }
 
 #[test]
 fn should_allow_dependency_on_virtual_fields_with_aliases() {
-    let result = panic::catch_unwind(|| {
-        #[derive(Debug, Clone, PartialEq, IvoStruct)]
-        struct Data {
-            dependent: i32,
-            lax: String,
-            required: String,
-            updated_at: String,
-        }
+    let _ = virtual_alias_schema::DataModel;
+    let _ = virtual_alias_matching_dependent_schema::DataModel;
+}
 
-        #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-        struct DataInput {
-            lax: String,
-            required: String,
-            alias_name: String,
-        }
-
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["virtual_field"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .field(
-                        virtual_field("virtual_field")
-                            .alias("alias_name")
-                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
+#[tokio::test]
+async fn should_resolve_async_dynamic_default_for_dependent_field() {
+    let created = async_dynamic_default_dependent_schema::DataModel
+        .create(
+            async_dynamic_default_dependent_schema::PartialDataInput {
+                lax: None,
+                required: Some(String::from("x")),
             },
-            |o| o,
-        );
-    });
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
 
-    assert!(result.is_ok());
+    assert_eq!(created.data.dependent, 1);
+}
 
-    let result = panic::catch_unwind(|| {
-        #[derive(Debug, Clone, PartialEq, IvoStruct)]
-        struct Data {
-            dependent: i32,
-            lax: String,
-            required: String,
-            updated_at: String,
-        }
-
-        #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-        struct DataInput {
-            lax: String,
-            dependent: String,
-            required: String,
-        }
-
-        let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
-            |f| {
-                f.field(lax_field("lax").default(1))
-                    .field(
-                        dependent_field("dependent", ["virtual_field"])
-                            .default(2)
-                            .resolve(|_, _| ready(4)),
-                    )
-                    .field(
-                        required_field("required").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .field(
-                        virtual_field("virtual_field")
-                            .alias("dependent")
-                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
-                    )
-                    .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
+#[tokio::test]
+async fn should_resolve_async_resolver_for_dependent_field() {
+    let created = async_resolve_dependent_schema::DataModel
+        .create(
+            async_resolve_dependent_schema::PartialDataInput {
+                lax: Some(String::from("x")),
+                required: Some(String::from("x")),
             },
-            |o| o,
-        );
-    });
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
 
-    assert!(result.is_ok());
+    assert_eq!(created.data.dependent, 2);
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dependent_on_lax_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dependent_on_required_schema {
+    struct Fields {
+        #[depends_on("required")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dependent_on_both_schema {
+    struct Fields {
+        #[depends_on("lax", "required")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dependent_on_dependent_schema {
+    struct Fields {
+        #[depends_on("dependent1")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[depends_on("lax")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent1: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dependent_on_dependent_and_required_schema {
+    struct Fields {
+        #[depends_on("dependent1", "required")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[depends_on("lax")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent1: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dependent_on_virtual_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[depends_on("lax")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent1: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[ivo_virtual]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dependent_on_virtual_and_required_schema {
+    struct Fields {
+        #[depends_on("required", "virtual_field")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[depends_on("lax")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent1: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[ivo_virtual]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dependent_on_dependent_and_virtual_schema {
+    struct Fields {
+        #[depends_on("dependent1", "virtual_field")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[depends_on("lax")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent1: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[ivo_virtual]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod chained_dependent_on_virtual_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[depends_on("lax", "virtual_field")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent1: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[ivo_virtual]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod virtual_alias_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[ivo_virtual("alias_name")]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod virtual_alias_matching_dependent_schema {
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(2)]
+        #[resolve(|_, _| 4)]
+        pub dependent: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub required: String,
+
+        #[ivo_virtual("dependent")]
+        #[validate(|v, _, _| Ok(Some(v)))]
+        pub virtual_field: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_dynamic_default_dependent_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(async |_, _| 1)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_resolve_dependent_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(1)]
+        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+// -----------------------------------------------------------------------------
+// Parallel resolution of independent dependents within the same round
+// -----------------------------------------------------------------------------
+
+#[tokio::test]
+async fn should_resolve_independent_async_dependents_of_the_same_round_concurrently() {
+    // Two dependents that both become ready in the same round (both depend
+    // only on `name`, and neither depends on the other) must be polled
+    // concurrently, not one `.await` at a time. `rendezvous()` only returns
+    // once *both* resolvers have started, which can only happen if they are
+    // in flight at the same time.
+    let created = async_parallel_dependents_schema::DataModel
+        .create(
+            async_parallel_dependents_schema::PartialDataInput {
+                name: Some("abc".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(created.data.dependent_a, 3);
+    assert_eq!(created.data.dependent_b, 4);
+
+    async_parallel_dependents_schema::STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
+
+    let updated = async_parallel_dependents_schema::DataModel
+        .update(
+            created.data.clone(),
+            async_parallel_dependents_schema::PartialDataInput {
+                name: Some("abcde".into()),
+            },
+            (),
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updated.data,
+        async_parallel_dependents_schema::PartialData {
+            name: Some("abcde".into()),
+            dependent_a: Some(5),
+            dependent_b: Some(6),
+        }
+    );
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod async_parallel_dependents_schema {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    pub static STARTED: AtomicUsize = AtomicUsize::new(0);
+
+    async fn rendezvous() {
+        STARTED.fetch_add(1, Ordering::SeqCst);
+        for _ in 0..10_000 {
+            if STARTED.load(Ordering::SeqCst) >= 2 {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!(
+            "dependent resolvers were not resolved concurrently: only one of them ever started"
+        );
+    }
+
+    struct Fields {
+        #[required]
+        pub name: String,
+
+        #[depends_on("name")]
+        #[default(0)]
+        #[resolve(async |ctx, _| {
+            rendezvous().await;
+            ctx.values().name.len() as i32
+        })]
+        pub dependent_a: i32,
+
+        #[depends_on("name")]
+        #[default(0)]
+        #[resolve(async |ctx, _| {
+            rendezvous().await;
+            ctx.values().name.len() as i32 + 1
+        })]
+        pub dependent_b: i32,
+    }
 }

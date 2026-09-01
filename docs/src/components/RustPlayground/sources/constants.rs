@@ -1,32 +1,16 @@
-use ivo::{constant_field, lax_field, IvoInputStruct, IvoModel, IvoStruct};
-use std::future::ready;
-use std::sync::LazyLock;
+use ivo::ivo_schema;
 
-const CONSTANT_ID: i32 = 1234;
-const DEFAULT_USERNAME: &str = "default-username";
+#[ivo_schema(
+    input(ConstantsInput, derive(Debug, Clone, PartialEq)),
+    output(ConstantsData, derive(Debug, Clone, PartialEq))
+)]
+mod constants_schema {
+    struct Fields {
+        #[constant(1234)]
+        pub id: i32,
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub username: String,
+        #[lax("default-username".to_string())]
+        #[validate(|_, _, _| Ok(None))]
+        pub username: String,
+    }
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub id: i32,
-    pub username: String,
-}
-
-type DataModel = IvoModel<DataInput, Data>;
-
-static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value(CONSTANT_ID)).field(
-                lax_field("username")
-                    .default(DEFAULT_USERNAME.into())
-                    .validate(|_, _, _| ready(Ok(None::<String>))),
-            )
-        },
-        |o| o,
-    )
-});

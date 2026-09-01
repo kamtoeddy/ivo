@@ -17,14 +17,14 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly timestampsCreate: (a: number, b: number) => any;
-    readonly dependentsCreate: (a: number, b: number) => any;
     readonly constantsCreate: (a: number, b: number) => any;
+    readonly dependentsCreate: (a: number, b: number) => any;
     readonly laxDefaultsCreate: (a: number, b: number) => any;
     readonly requiredCreate: (a: number, b: number) => any;
+    readonly timestampsCreate: (a: number, b: number) => any;
     readonly virtualsCreate: (a: number, b: number) => any;
-    readonly wasm_bindgen_d50cc9a54e05ed87___convert__closures_____invoke___wasm_bindgen_d50cc9a54e05ed87___JsValue__core_9b3796e30d99ddb7___result__Result_____wasm_bindgen_d50cc9a54e05ed87___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_d50cc9a54e05ed87___convert__closures_____invoke___js_sys_887c7349514fc4a3___Function_fn_wasm_bindgen_d50cc9a54e05ed87___JsValue_____wasm_bindgen_d50cc9a54e05ed87___sys__Undefined___js_sys_887c7349514fc4a3___Function_fn_wasm_bindgen_d50cc9a54e05ed87___JsValue_____wasm_bindgen_d50cc9a54e05ed87___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
+    readonly wasm_bindgen_e294186d806bded3___convert__closures_____invoke___wasm_bindgen_e294186d806bded3___JsValue__core_f0fd674eaa06beef___result__Result_____wasm_bindgen_e294186d806bded3___JsError___true_: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e294186d806bded3___convert__closures_____invoke___js_sys_996714aada2304da___Function_fn_wasm_bindgen_e294186d806bded3___JsValue_____wasm_bindgen_e294186d806bded3___sys__Undefined___js_sys_996714aada2304da___Function_fn_wasm_bindgen_e294186d806bded3___JsValue_____wasm_bindgen_e294186d806bded3___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly __wbindgen_exn_store: (a: number) => void;
     readonly __externref_table_alloc: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;

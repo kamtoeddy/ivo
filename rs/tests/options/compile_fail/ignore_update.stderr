@@ -1,0 +1,109 @@
+error: grouped `#[ignore_update([...], handler)]` expects 0 or at least 2 fields
+  --> tests/options/compile_fail/ignore_update.rs:14:5
+   |
+14 |     #[ignore_update(["lax"], |_ctx, _opts| false)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: remove duplicates of `lax` in your grouped ignore_update config
+  --> tests/options/compile_fail/ignore_update.rs:19:1
+   |
+19 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: `invalid_field` does not exist in your schema
+  --> tests/options/compile_fail/ignore_update.rs:34:1
+   |
+34 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only required, lax, and virtual fields can belong to grouped ignore_update configs; remove `id`
+  --> tests/options/compile_fail/ignore_update.rs:49:1
+   |
+49 | / #[ivo_schema(
+50 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+51 | |     output(Data, derive(Debug, Clone, PartialEq))
+52 | | )]
+   | |__^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only required, lax, and virtual fields can belong to grouped ignore_update configs; remove `dependent`
+  --> tests/options/compile_fail/ignore_update.rs:70:1
+   |
+70 | / #[ivo_schema(
+71 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+72 | |     output(Data, derive(Debug, Clone, PartialEq))
+73 | | )]
+   | |__^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only required, lax, and virtual fields can belong to grouped ignore_update configs; remove `dependent`
+  --> tests/options/compile_fail/ignore_update.rs:93:1
+   |
+93 | / #[ivo_schema(
+94 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+95 | |     output(Data, derive(Debug, Clone, PartialEq))
+96 | | )]
+   | |__^
+   |
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: `alias` does not exist in your schema
+   --> tests/options/compile_fail/ignore_update.rs:120:1
+    |
+120 | / #[ivo_schema(
+121 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+122 | |     output(Data, derive(Debug, Clone, PartialEq))
+123 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only required, lax, and virtual fields can belong to grouped ignore_update configs; remove `created_at`
+   --> tests/options/compile_fail/ignore_update.rs:147:1
+    |
+147 | / #[ivo_schema(
+148 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+149 | |     output(Data, derive(Debug, Clone, PartialEq))
+150 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only required, lax, and virtual fields can belong to grouped ignore_update configs; remove `custom_created_at`
+   --> tests/options/compile_fail/ignore_update.rs:171:1
+    |
+171 | / #[ivo_schema(
+172 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+173 | |     output(Data, derive(Debug, Clone, PartialEq))
+174 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only required, lax, and virtual fields can belong to grouped ignore_update configs; remove `updated_at`
+   --> tests/options/compile_fail/ignore_update.rs:195:1
+    |
+195 | / #[ivo_schema(
+196 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+197 | |     output(Data, derive(Debug, Clone, PartialEq))
+198 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only required, lax, and virtual fields can belong to grouped ignore_update configs; remove `custom_updated_at`
+   --> tests/options/compile_fail/ignore_update.rs:219:1
+    |
+219 | / #[ivo_schema(
+220 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+221 | |     output(Data, derive(Debug, Clone, PartialEq))
+222 | | )]
+    | |__^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)

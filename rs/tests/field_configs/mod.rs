@@ -1,3 +1,4 @@
+mod compile_fail;
 mod constants;
 mod dependents;
 mod lax;

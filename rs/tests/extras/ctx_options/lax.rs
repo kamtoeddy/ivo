@@ -1,19 +1,4 @@
-use std::future::ready;
-
-use ivo::{lax_field, IvoCtxOptions, IvoInputStruct, IvoModel, IvoRwCtxOptions, IvoStruct};
-
-use crate::async_test_matrix;
-
-// TODO:
-// [x] default_fn
-// [x] ignore
-// [x] required
-// [x] validate
-// [x] re_validate
-// [x] on_failure
-// [x] on_success
-// [x] o.on_success
-// [x] o.post_validate
+use ivo::ivo_schema;
 
 #[derive(Clone)]
 struct CtxOptions {
@@ -30,57 +15,29 @@ impl CtxOptions {
     }
 }
 
-//  default_fn
+// default_fn
+
 async fn should_properly_update_ctx_options_in_default_resolver_and_provide_those_updates_in_on_success_handlers(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in default value resolver";
 
-    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default_fn(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        DEFAULT_VALUE
-                    })
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_success]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let (data, handle_success, ctx_options) = model
-        .create(&PartialDataInput { lax: None }, CtxOptions::new())
+    let created = default_fn_schema::DataInputModel
+        .create(
+            default_fn_schema::PartialDataInput { lax: None },
+            CtxOptions::new(),
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(data, Data { lax: DEFAULT_VALUE });
+    assert_eq!(
+        created.data,
+        default_fn_schema::DataInput { lax: DEFAULT_VALUE }
+    );
+    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
 
-    assert_eq!(ctx_options.messages[0], MESSAGE);
-
-    handle_success().await;
+    created.handle_success();
 }
 
 async_test_matrix!(
@@ -88,61 +45,50 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_default_resolver_and_provide_those_updates_in_on_success_handlers
 );
 
-// ignore
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod default_fn_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[lax(async |_, opts| {
+            opts.write().await.add_message("ctx_options updated in default value resolver");
+            1
+        })]
+        #[validate(|_, _, _| Ok(None))]
+        #[on_success(|_, opts| {
+            if true {
+                panic!("[on_success]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub lax: i32,
+    }
+}
+
+// ignore at creation
 
 async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those_updates_in_on_success_handlers_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
 
-    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE)
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .ignore(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        false
-                    })
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_success]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
     let lax = DEFAULT_VALUE + 1;
 
-    let (data, handle_success, ctx_options) = model
-        .create(&PartialDataInput { lax: Some(lax) }, CtxOptions::new())
+    let created = ignore_create_schema::DataInputModel
+        .create(
+            ignore_create_schema::PartialDataInput { lax: Some(lax) },
+            CtxOptions::new(),
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(data, Data { lax });
+    assert_eq!(created.data, ignore_create_schema::DataInput { lax });
+    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
 
-    assert_eq!(ctx_options.messages[0], MESSAGE);
-
-    handle_success().await;
+    created.handle_success();
 }
 
 async_test_matrix!(
@@ -150,60 +96,54 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_ignore_resolver_and_provide_those_updates_in_on_success_handlers_at_creation
 );
 
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod ignore_create_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[lax(1)]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore(async |_, opts| {
+            opts.write().await.add_message("ctx_options updated in ignore resolver");
+            false
+        })]
+        #[on_success(|_, opts| {
+            if true {
+                panic!("[on_success]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub lax: i32,
+    }
+}
+
+// ignore during updates
+
 async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those_updates_in_on_success_handlers_during_updates(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
 
-    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE)
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .ignore(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        false
-                    })
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_success]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let data = Data { lax: DEFAULT_VALUE };
+    let data = ignore_update_schema::DataInput { lax: DEFAULT_VALUE };
 
     let lax = Some(data.lax + 1);
 
-    let (data, handle_success, ctx_options) = model
-        .update(&data, &PartialDataInput { lax }, CtxOptions::new())
+    let updated = ignore_update_schema::DataInputModel
+        .update(
+            data.clone(),
+            ignore_update_schema::PartialDataInput { lax },
+            CtxOptions::new(),
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(data, PartialData { lax });
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(updated.data, ignore_update_schema::PartialDataInput { lax });
+    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_success().await;
+    updated.handle_success();
 }
 
 async_test_matrix!(
@@ -211,104 +151,88 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_ignore_resolver_and_provide_those_updates_in_on_success_handlers_during_updates
 );
 
-// required
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod ignore_update_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[lax(1)]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore(async |_, opts| {
+            opts.write().await.add_message("ctx_options updated in ignore resolver");
+            false
+        })]
+        #[on_success(|_, opts| {
+            if true {
+                panic!("[on_success]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub lax: i32,
+    }
+}
+
+// required at creation
 
 async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-    }
+    use required_create_schema::{DataInputModel, MESSAGE, REQUIRED_ERROR};
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    const DEFAULT_VALUE: i32 = 1;
-    const MESSAGE: &str = "ctx_options updated in ignore resolver";
-    const REQUIRED_ERROR: &str = "lax is missing!";
-
-    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE)
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .required(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        Some(REQUIRED_ERROR.into())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let (err, _, ctx_options) = model
-        .create(&PartialDataInput { lax: None }, CtxOptions::new())
+    let failed = DataInputModel
+        .create(
+            required_create_schema::PartialDataInput { lax: None },
+            CtxOptions::new(),
+        )
         .await
         .err()
         .unwrap();
 
-    assert_eq!(err.get("lax").unwrap().reason, REQUIRED_ERROR);
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(failed.errors.get("lax").unwrap().reason, REQUIRED_ERROR);
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
     should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_at_creation
 );
 
-async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_during_updates(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod required_create_schema {
+    use super::CtxOptions;
 
     const DEFAULT_VALUE: i32 = 1;
-    const MESSAGE: &str = "ctx_options updated in ignore resolver";
-    const REQUIRED_ERROR: &str = "lax is missing!";
+    pub const MESSAGE: &str = "ctx_options updated in ignore resolver";
+    pub const REQUIRED_ERROR: &str = "lax is missing!";
 
-    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE)
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .required(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
+    struct Fields {
+        #[lax(DEFAULT_VALUE)]
+        #[required(async |_, opts| {
+            opts.write().await.add_message(MESSAGE.into());
+            Some(REQUIRED_ERROR.into())
+        })]
+        pub lax: i32,
+    }
+}
 
-                        ctx_options.add_message(MESSAGE);
+// required during updates
 
-                        Some(REQUIRED_ERROR.into())
-                    }),
-            )
-            .field(
-                lax_field("lax_1")
-                    .default(DEFAULT_VALUE)
-                    .validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
-        |o| o,
-    );
+async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_during_updates(
+) {
+    use required_update_schema::{
+        DataInput, DataInputModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, REQUIRED_ERROR,
+    };
 
-    let (err, _, ctx_options) = model
+    let failed = DataInputModel
         .update(
-            &Data {
+            DataInput {
                 lax: DEFAULT_VALUE,
                 lax_1: DEFAULT_VALUE,
             },
-            &PartialDataInput {
+            PartialDataInput {
                 lax: None,
                 lax_1: Some(DEFAULT_VALUE + 1),
             },
@@ -318,73 +242,50 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .err()
         .unwrap();
 
-    match err {
-        Some(payload) => {
-            assert_eq!(payload.get("lax").unwrap().reason, REQUIRED_ERROR);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(
+        failed.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        REQUIRED_ERROR
+    );
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
     should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_during_updates
 );
 
-// validate
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod required_update_schema {
+    use super::CtxOptions;
+
+    pub const DEFAULT_VALUE: i32 = 1;
+    pub const MESSAGE: &str = "ctx_options updated in ignore resolver";
+    pub const REQUIRED_ERROR: &str = "lax is missing!";
+
+    struct Fields {
+        #[lax(DEFAULT_VALUE)]
+        #[required(async |_, opts| {
+            opts.write().await.add_message(MESSAGE);
+            Some(REQUIRED_ERROR.into())
+        })]
+        pub lax: i32,
+
+        #[lax(DEFAULT_VALUE)]
+        pub lax_1: i32,
+    }
+}
+
+// validate at creation
 
 async fn should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: String,
-    }
+    use validate_create_schema::{DataInputModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-    }
-
-    const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in validator";
-    const REQUIRED_ERROR: &str = "lax is missing!";
-
-    const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE.into())
-                    .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return Err((MIN_LENGTH_ERROR.into(), None));
-                        }
-
-                        Ok(Some(validated.into()))
-                    })
-                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_failure]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let (err, handle_failure, ctx_options) = model
+    let failed = DataInputModel
         .create(
-            &PartialDataInput {
+            PartialDataInput {
                 lax: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -393,10 +294,10 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .err()
         .unwrap();
 
-    assert_eq!(err.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(failed.errors.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_failure().await;
+    failed.handle_failure();
 }
 
 async_test_matrix!(
@@ -404,60 +305,53 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_at_creation
 );
 
-async fn should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-    }
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod validate_create_schema {
+    use super::CtxOptions;
 
     const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in validator";
-    const REQUIRED_ERROR: &str = "lax is missing!";
+    pub const MESSAGE: &str = "ctx_options updated in validator";
+    pub const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
+    struct Fields {
+        #[lax(DEFAULT_VALUE.into())]
+        #[validate(async |v: String, _, opts| {
+            opts.write().await.add_message(MESSAGE);
+
+            let validated = v.trim();
+
+            if validated.len() < 2 {
+                return Err((MIN_LENGTH_ERROR.into(), None));
+            }
+
+            Ok(Some(validated.into()))
+        })]
+        #[on_failure(|_, opts| {
+            if true {
+                panic!("[on_failure]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub lax: String,
+    }
+}
+
+// validate during updates
+
+async fn should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
+) {
+    const DEFAULT_VALUE: &str = "default_value";
+    const MESSAGE: &str = "ctx_options updated in validator";
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE.into())
-                    .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return Err((MIN_LENGTH_ERROR.into(), None));
-                        }
-
-                        Ok(Some(validated.into()))
-                    })
-                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_failure]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let (err, handle_failure, ctx_options) = model
+    let failed = validate_update_schema::DataInputModel
         .update(
-            &Data {
+            validate_update_schema::DataInput {
                 lax: DEFAULT_VALUE.into(),
             },
-            &PartialDataInput {
+            validate_update_schema::PartialDataInput {
                 lax: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -466,16 +360,13 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .err()
         .unwrap();
 
-    match err {
-        Some(payload) => {
-            assert_eq!(payload.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    assert_eq!(
+        failed.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        MIN_LENGTH_ERROR
+    );
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 
-    assert_eq!(ctx_options.messages[0], MESSAGE);
-
-    handle_failure().await;
+    failed.handle_failure();
 }
 
 async_test_matrix!(
@@ -483,60 +374,44 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_during_updates
 );
 
-// re_validate
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod validate_update_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[lax("default_value".into())]
+        #[validate(async |v: String, _, opts| {
+            opts.write().await.add_message("ctx_options updated in validator");
+
+            let validated = v.trim();
+
+            if validated.len() < 2 {
+                return Err(("expected lax to be at least 2 characters long".into(), None));
+            }
+
+            Ok(Some(validated.into()))
+        })]
+        #[on_failure(|_, opts| {
+            if true {
+                panic!("[on_failure]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub lax: String,
+    }
+}
+
+// re_validate at creation
 
 async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: String,
-    }
+    use re_validate_create_schema::{DataInputModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-    }
-
-    const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in re_validator";
-    const REQUIRED_ERROR: &str = "lax is missing!";
-
-    const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE.into())
-                    .validate(|_, _, _| ready(Ok(None)))
-                    .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return Err((MIN_LENGTH_ERROR.into(), None));
-                        }
-
-                        Ok(Some(validated.into()))
-                    })
-                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_failure]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let (err, handle_failure, ctx_options) = model
+    let failed = DataInputModel
         .create(
-            &PartialDataInput {
+            PartialDataInput {
                 lax: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -545,10 +420,10 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .err()
         .unwrap();
 
-    assert_eq!(err.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(failed.errors.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_failure().await;
+    failed.handle_failure();
 }
 
 async_test_matrix!(
@@ -556,61 +431,54 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_at_creation
 );
 
-async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: String,
-    }
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod re_validate_create_schema {
+    use super::CtxOptions;
 
     const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in re_validator";
-    const REQUIRED_ERROR: &str = "lax is missing!";
+    pub const MESSAGE: &str = "ctx_options updated in re_validator";
+    pub const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
+    struct Fields {
+        #[lax(DEFAULT_VALUE.into())]
+        #[validate(|_, _, _| Ok(None))]
+        #[re_validate(async |v: String, _, opts| {
+            opts.write().await.add_message(MESSAGE);
+
+            let validated = v.trim();
+
+            if validated.len() < 2 {
+                return Err((MIN_LENGTH_ERROR.into(), None));
+            }
+
+            Ok(Some(validated.into()))
+        })]
+        #[on_failure(|_, opts| {
+            if true {
+                panic!("[on_failure]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub lax: String,
+    }
+}
+
+// re_validate during updates
+
+async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
+) {
+    const DEFAULT_VALUE: &str = "default_value";
+    const MESSAGE: &str = "ctx_options updated in re_validator";
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE.into())
-                    .validate(|_, _, _| ready(Ok(None)))
-                    .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return Err((MIN_LENGTH_ERROR.into(), None));
-                        }
-
-                        Ok(Some(validated.into()))
-                    })
-                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_failure]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let (err, handle_failure, ctx_options) = model
+    let failed = re_validate_update_schema::DataInputModel
         .update(
-            &Data {
+            re_validate_update_schema::DataInput {
                 lax: DEFAULT_VALUE.into(),
             },
-            &PartialDataInput {
+            re_validate_update_schema::PartialDataInput {
                 lax: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -619,16 +487,13 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .err()
         .unwrap();
 
-    match err {
-        Some(payload) => {
-            assert_eq!(payload.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    assert_eq!(
+        failed.errors.as_ref().unwrap().get("lax").unwrap().reason,
+        MIN_LENGTH_ERROR
+    );
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 
-    assert_eq!(ctx_options.messages[0], MESSAGE);
-
-    handle_failure().await;
+    failed.handle_failure();
 }
 
 async_test_matrix!(
@@ -636,68 +501,48 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_during_updates
 );
 
-// o.post_validate & o.on_success
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod re_validate_update_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[lax("default_value".into())]
+        #[validate(|_, _, _| Ok(None))]
+        #[re_validate(async |v: String, _, opts| {
+            opts.write().await.add_message("ctx_options updated in re_validator");
+
+            let validated = v.trim();
+
+            if validated.len() < 2 {
+                return Err(("expected lax to be at least 2 characters long".into(), None));
+            }
+
+            Ok(Some(validated.into()))
+        })]
+        #[on_failure(|_, opts| {
+            if true {
+                panic!("[on_failure]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub lax: String,
+    }
+}
+
+// post_validate & on_success with no fields at creation
 
 async fn should_properly_update_ctx_options_in_post_validators_and_provide_those_updates_in_grouped_on_success_handlers_with_no_fields_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in post_validator";
-    const REQUIRED_ERROR: &str = "lax is missing!";
-
-    const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE)
-                    .validate(|_, _, _| ready(Ok(None))),
-            )
-            .field(
-                lax_field("lax_1")
-                    .default(DEFAULT_VALUE)
-                    .validate(|_, _, _| ready(Ok(None))),
-            )
-        },
-        |o| {
-            o.post_validate(["lax", "lax_1"], |v| {
-                v.validate(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                    let mut ctx_options = o.write().await;
-
-                    ctx_options.add_message(MESSAGE);
-
-                    Ok(None)
-                })
-            })
-            .on_success([], |s| {
-                s.handle(|_, o: IvoCtxOptions<CtxOptions>| {
-                    if true {
-                        panic!("[grouped_on_success]: {}", o.messages[0])
-                    }
-
-                    ready(())
-                })
-            })
-        },
-    );
 
     let lax = DEFAULT_VALUE + 1;
 
-    let (data, handle_success, ctx_options) = model
+    let created = post_validate_create_schema::DataInputModel
         .create(
-            &PartialDataInput {
+            post_validate_create_schema::PartialDataInput {
                 lax: Some(lax),
                 lax_1: None,
             },
@@ -708,15 +553,15 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        post_validate_create_schema::DataInput {
             lax,
             lax_1: DEFAULT_VALUE
         }
     );
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_success().await;
+    created.handle_success().await;
 }
 
 async_test_matrix!(
@@ -724,85 +569,94 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_post_validators_and_provide_those_updates_in_grouped_on_success_handlers_with_no_fields_at_creation
 );
 
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod post_validate_create_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[lax(1)]
+        #[validate(|_, _, _| Ok(None))]
+        pub lax: i32,
+
+        #[lax(1)]
+        #[validate(|_, _, _| Ok(None))]
+        pub lax_1: i32,
+    }
+
+    #[post_validate(["lax", "lax_1"], validate = async |_, opts| {
+        opts.write().await.add_message("ctx_options updated in post_validator");
+        Ok(None)
+    })]
+    #[on_success(async |_, opts| {
+        panic!("[grouped_on_success]: {}", opts.read_sync().messages[0])
+    })]
+    const _: () = ();
+}
+
+// post_validate & on_success with fields during updates
+
 async fn should_properly_update_ctx_options_in_post_validators_and_provide_those_updates_in_grouped_on_success_handlers_during_updates(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in post_validator";
-    const REQUIRED_ERROR: &str = "lax is missing!";
 
-    const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                lax_field("lax")
-                    .default(DEFAULT_VALUE)
-                    .validate(|_, _, _| ready(Ok(None))),
-            )
-            .field(
-                lax_field("lax_1")
-                    .default(DEFAULT_VALUE)
-                    .validate(|_, _, _| ready(Ok(None))),
-            )
-        },
-        |o| {
-            o.post_validate(["lax", "lax_1"], |v| {
-                v.validate(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                    let mut ctx_options = o.write().await;
-
-                    ctx_options.add_message(MESSAGE);
-
-                    Ok(None)
-                })
-            })
-            .on_success(["lax", "lax_1"], |s| {
-                s.handle(|_, o: IvoCtxOptions<CtxOptions>| {
-                    if true {
-                        panic!("[grouped_on_success]: {}", o.messages[0])
-                    }
-
-                    ready(())
-                })
-            })
-        },
-    );
-
-    let data = Data {
+    let data = post_validate_update_schema::DataInput {
         lax: DEFAULT_VALUE,
         lax_1: DEFAULT_VALUE,
     };
 
     let lax = Some(data.lax + 1);
 
-    let (updates, handle_success, ctx_options) = model
+    let updated = post_validate_update_schema::DataInputModel
         .update(
-            &data,
-            &PartialDataInput { lax, lax_1: None },
+            data.clone(),
+            post_validate_update_schema::PartialDataInput { lax, lax_1: None },
             CtxOptions::new(),
         )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(updates, PartialData { lax, lax_1: None });
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(
+        updated.data,
+        post_validate_update_schema::PartialDataInput { lax, lax_1: None }
+    );
+    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_success().await;
+    updated.handle_success().await;
 }
 
 async_test_matrix!(
     "[grouped_on_success]: ctx_options updated in post_validator",
     should_properly_update_ctx_options_in_post_validators_and_provide_those_updates_in_grouped_on_success_handlers_during_updates
 );
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod post_validate_update_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[lax(1)]
+        #[validate(|_, _, _| Ok(None))]
+        pub lax: i32,
+
+        #[lax(1)]
+        #[validate(|_, _, _| Ok(None))]
+        pub lax_1: i32,
+    }
+
+    #[post_validate(["lax", "lax_1"], validate = async |_, opts| {
+        opts.write().await.add_message("ctx_options updated in post_validator");
+        Ok(None)
+    })]
+    #[on_success(["lax", "lax_1"], async |_, opts| {
+        panic!("[grouped_on_success]: {}", opts.read_sync().messages[0])
+    })]
+    const _: () = ();
+}

@@ -4,57 +4,75 @@ title: Dependent Fields
 
 # Dependent Fields
 
-A dependent field is a purely output field whose value changes whenever at least one field it
-depends on is provided and accepted (e.g. `username_last_updated_at` should only update whenever
+A dependent field is an output-only field whose value is recomputed whenever at least one of its
+declared parent fields is provided (e.g. `username_last_updated_at` should only update whenever
 `username` changes).
 
-- It must have either a default static value or a resolver for the default value.
-- It must depend on at least one other field - [lax](./lax.md), [required](./required.md),
-  [virtual](./virtuals.md), or another dependent field (no circular dependencies). The parent
-  fields are supplied as the second argument to `dependent_field`.
-- It must have a resolver to generate new values whenever a parent field is provided and accepted.
-- It may use [`readonly`](https://github.com/kamtoeddy/ivo#readonly) to stop accepting further
-  updates once its value differs from its default.
-- It may have [`on_delete` and `on_success`](../life-cycles.md) event handlers.
+- Declared with `#[depends_on("parent", ...)]` -- at least one parent, each a string literal
+  naming another field on the schema ([lax](./lax.md), [required](./required.md),
+  [virtual](./virtuals.md), or another dependent field; no circular dependencies).
+- Requires a resolver via `#[resolve(|ctx, opts| -> T)]`, run whenever a parent changes.
+- Requires a default via `#[default(value_or_resolver)]`, used until a parent first changes (and
+  as the fallback if none of the parents were ever provided).
+- May use `#[readonly]` to stop accepting further changes once its value differs from its default.
+- May have [`on_delete` and `on_success`](../life-cycles.md) event handlers.
+- Requires `output(...)` on the schema, since it never appears on the input struct.
 
 ## Example
 
-`value` is a lax field with a default of `0`. `computed` is a dependent field that equals
-`value + 1` (with its own fallback default of `1`). The dependency on `value` is declared as the
-second argument to `dependent_field`:
+`computed` depends on `value` (a lax field defaulting to `0`) and resolves to `value + 1`:
 
 ```rust
-use std::{future::ready, sync::LazyLock};
-use ivo::{dependent_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
+use ivo::ivo_schema;
 
-type Ctx = IvoContext<DataInput, Data>;
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod dependents_schema {
+    struct Fields {
+        #[lax(0)]
+        pub value: i32,
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-struct DataInput {
-    pub value: i32,
+        #[depends_on("value")]
+        #[default(1)]
+        #[resolve(|ctx, _opts| ctx.values().value + 1)]
+        pub computed: i32,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-struct Data {
-    pub value: i32,
-    pub computed: i32,
-}
+fn main() {
+    // `value` defaults to 0 -- but a lax field's default still counts as "provided" for its
+    // own resolution, so `computed` still resolves once: 0 + 1 = 1.
+    let created = dependents_schema::DataModel
+        .create(dependents_schema::PartialDataInput { value: None }, ())
+        .unwrap();
+    println!("{:?}", created.data); // Data { value: 0, computed: 1 }
 
-static MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(lax_field("value").default(0)).field(
-                dependent_field("computed", ["value"])
-                    .default(1)
-                    .resolve(|ctx: Ctx, _| ready(ctx.values().value.unwrap_or(0) + 1)),
-            )
-        },
-        |o| o,
-    )
-});
+    let created = dependents_schema::DataModel
+        .create(
+            dependents_schema::PartialDataInput { value: Some(5) },
+            (),
+        )
+        .unwrap();
+    println!("{:?}", created.data); // Data { value: 5, computed: 6 }
+
+    let updated = dependents_schema::DataModel
+        .update(
+            created.data,
+            dependents_schema::PartialDataInput { value: Some(10) },
+            (),
+        )
+        .unwrap();
+    println!("{:?}", updated.data); // PartialData { value: Some(10), computed: Some(11) }
+}
 ```
 
-## Examples
+`ctx.values()` inside the resolver gives access to every field resolved so far in the same
+`create`/`update` call, including sibling dependents earlier in the dependency graph -- see
+[Execution Pipeline](../execution-pipeline.md) for the exact phase ordering.
+
+## More examples
 
 - [Default values](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_defaults.rs)
 - [Dependent on dependent](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/dependent_on_dependent.rs)
@@ -62,7 +80,7 @@ static MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
 
 ## Try it in the browser
 
-`value` is a lax field with a default of `0`. `computed` is a dependent field that equals `value + 1`
-(with its own fallback default of `1`).
+`value` is a lax field with a default of `0`. `computed` is a dependent field that equals
+`value + 1` (with its own fallback default of `1`).
 
 <RustPlayground demo="dependents" />

@@ -54,7 +54,7 @@ static MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
                                 ctx.input()
                                     .virtual_field
                                     .clone()
-                                    .unwrap_or_else(|| DEFAULT_DEPENDENT.to_string()),
+                                    .unwrap_or_else(|| ctx.values().dependent.clone()),
                             )
                         }),
                 )

@@ -1,25 +1,21 @@
-use std::{future::ready, sync::LazyLock};
-
-use ivo::{required_field, IvoContext, IvoInputStruct, IvoModel, IvoShared, IvoStruct};
+use ivo::ivo_schema;
 
 const MIN_USERNAME_LEN: usize = 4;
 
 #[async_std::main]
 async fn main() {
-    let (payload, handle_failure, _) = DATA_MODEL
-        .create(&PartialDataInput { username: None }, None)
-        .await
-        .err()
-        .unwrap();
+    let errors = DataModel
+        .create(PartialData { username: None }, ())
+        .unwrap_err();
 
-    println!("\nfailed to create: {:#?}", payload);
+    println!("\nfailed to create: {:#?}", errors.errors);
 
     assert_eq!(
-        payload.get("username").unwrap().reason,
-        "\"username\" is required!"
+        errors.errors.get("username").unwrap().reason,
+        "\"username\" was required!"
     );
 
-    handle_failure().await;
+    errors.handle_failure();
 
     let data = Data {
         username: "john-doe".to_string(),
@@ -27,91 +23,70 @@ async fn main() {
 
     let updated_username = Some("jane-doe".to_string());
 
-    let (updates, handle_success, _) = DATA_MODEL
+    let updated = DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            PartialData {
                 username: updated_username.clone(),
             },
-            None,
+            (),
         )
-        .await
-        .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updates);
+    println!("\nupdates: {:#?}", updated.data);
 
     assert_eq!(
-        updates,
+        updated.data,
         PartialData {
             username: updated_username.as_deref().map(sanitize_username)
         }
     );
 
-    handle_success().await;
+    let updated_data = updated.data.clone();
 
-    let data = data.clone_with_updates(&updates);
+    updated.handle_success();
 
-    DATA_MODEL.delete(&data, None).await;
+    let data = data.clone_with_updates(&updated_data);
+
+    DataModel.delete(&data, ());
 }
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub username: String,
+pub use schema::{Data, DataModel, PartialData};
+
+#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+mod schema {
+    use super::MIN_USERNAME_LEN;
+
+    struct Fields {
+        #[required]
+        #[required_error(|_, _| "\"username\" was required!".to_string())]
+        #[validate(|_, _, _| Ok(None))]
+        #[re_validate(|v, _, _| {
+            if v.len() < MIN_USERNAME_LEN {
+                return Err((
+                    format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long"),
+                    None,
+                ));
+            }
+
+            Ok(Some(crate::sanitize_username(&v)))
+        })]
+        #[on_success(|ctx, _| {
+            println!("\n[on_success]: username = {}", ctx.values().username);
+        })]
+        #[on_delete(|data, _| {
+            println!("\n[on_delete]: username = {}", data.username);
+        })]
+        #[on_failure(|ctx, _| {
+            println!("\n[on_failure]: raw username = {:?}", ctx.raw_input().username);
+            println!(
+                "\n[on_failure]: validated username = {:?}",
+                ctx.input().username
+            );
+        })]
+        pub username: String,
+    }
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub username: String,
-}
-
-pub static DATA_MODEL: LazyLock<IvoModel<DataInput, Data>> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-
-                required_field("username")
-                    .validate(|_, _, _| ready(Ok(None::<String>)))
-                    .re_validate(|v: String, _, _| {
-                        if v.len() < MIN_USERNAME_LEN {
-                            return ready(Err((
-                                format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long"),
-                                None,
-                            )));
-                        }
-
-                        ready(Ok(Some(sanitize_username(&v))))
-                    })
-                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_success]: username = {}",
-                            ctx.values().username.unwrap()
-                        );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: username = {}", data.username);
-
-                        ready(())
-                    })
-                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
-                        println!(
-                            "\n[on_failure]: raw username = {}",
-                            ctx.raw_input().username.unwrap()
-                        );
-                        println!(
-                            "\n[on_failure]: validated username = {}",
-                            ctx.input().username.unwrap()
-                        );
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    )
-});
 
 fn sanitize_username(name: &str) -> String {
     format!("re-validated-{name}")

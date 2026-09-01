@@ -4,15 +4,62 @@ title: Champs constants
 
 # Champs constants
 
-Une constante est un champ de sortie exclusif dont la valeur ne doit jamais changer après la
-création (par ex. `id`).
+Un champ constant est un champ exclusif à la sortie dont la valeur est calculée une seule fois, à
+la création, et n'est jamais acceptée depuis l'entrée ni modifiée par une mise à jour (par ex.
+`id`).
 
-- Il doit avoir soit une valeur statique, soit un résolveur.
-- Il peut avoir des gestionnaires d'événements [`on_delete` et `on_success`](../life-cycles.md).
+- Déclaré avec `#[constant(valeur_ou_résolveur)]` -- une valeur statique, ou un résolveur
+  `|ctx, opts| -> T` (synchrone ou asynchrone, avec accès au contexte et aux options comme tout
+  autre gestionnaire).
+- Nécessite `output(...)` sur le schéma, puisqu'il n'apparaît jamais sur la struct d'entrée.
+- Peut avoir des gestionnaires d'événements [`on_delete` et `on_success`](../life-cycles.md).
 
 ## Exemple
 
-- [Valeurs statiques et dynamiques](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/constants.rs)
+`id` est une constante statique. `label` est calculé une seule fois via un résolveur en closure
+sans argument :
+
+```rust
+use ivo::ivo_schema;
+
+#[ivo_schema(
+    input(ItemInput, derive(Debug, Clone, PartialEq)),
+    output(Item, derive(Debug, Clone, PartialEq))
+)]
+mod item_schema {
+    struct Fields {
+        #[constant(1234)]
+        pub id: i32,
+
+        #[constant(|| "generated".to_string())]
+        pub label: String,
+
+        #[required]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
+        pub name: String,
+    }
+}
+
+fn main() {
+    let created = item_schema::ItemModel
+        .create(
+            item_schema::PartialItemInput {
+                name: Some("widget".into()),
+            },
+            (),
+        )
+        .unwrap();
+
+    assert_eq!(created.data.id, 1234);
+    assert_eq!(created.data.label, "generated");
+
+    println!("{:#?}", created.data);
+    // Item { id: 1234, label: "generated", name: "widget" }
+}
+```
+
+Une mise à jour de `item_schema::PartialItemInput` n'a aucun champ `id`/`label` -- il n'y a rien à
+soumettre pour une constante, et aucun moyen de la modifier après la création.
 
 ## Essayez-le dans le navigateur
 

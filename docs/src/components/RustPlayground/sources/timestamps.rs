@@ -1,29 +1,27 @@
 use chrono::{DateTime, Utc};
-use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
-use std::sync::LazyLock;
+use ivo::ivo_schema;
 
 type Timestamp = DateTime<Utc>;
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub username: String,
+#[ivo_schema(
+    input(TimestampsInput, derive(Debug, Clone, PartialEq)),
+    output(TimestampsData, derive(Debug, Clone, PartialEq))
+)]
+mod timestamps_schema {
+    use super::Timestamp;
+    use chrono::Utc;
+
+    struct Fields {
+        #[lax("default-username".to_string())]
+        pub username: String,
+
+        #[created_at]
+        pub created_at: Timestamp,
+
+        #[updated_at]
+        pub updated_at: Timestamp,
+    }
+
+    #[timestamps(|| Utc::now())]
+    const _: () = ();
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub username: String,
-    pub created_at: Timestamp,
-    pub updated_at: Timestamp,
-}
-
-type DataModel = IvoModel<DataInput, Data, Option<()>, Timestamp>;
-
-static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(lax_field("username").default("default-username".to_string()))
-                .timestamps(|t| t.resolve(Utc::now).created_at(None).updated_at(None))
-        },
-        |o| o,
-    )
-});

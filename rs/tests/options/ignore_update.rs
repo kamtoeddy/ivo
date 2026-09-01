@@ -1,365 +1,58 @@
-use ivo::{
-    constant_field, dependent_field, lax_field, virtual_field, IvoInputStruct, IvoModel, IvoStruct,
-};
-use std::{future::ready, panic};
+use ivo::ivo_schema;
 
-#[test]
-fn should_allow_if_fields_array_is_empty() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod empty_grouped_ignore_update_schema {
+    struct Fields {
+        #[lax("default_lax_value".to_string())]
+        pub lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let r = panic::catch_unwind(|| {
-        IvoModel::<DataInput, Data>::new(
-            |f| {
-                f.field(lax_field("lax").default(1234))
-                    .field(lax_field("lax_1").default(5678))
-            },
-            |o| o.ignore_update([], |_, _, _| ready(false)),
-        )
-    });
-
-    assert!(r.is_ok())
+    #[ignore_update(|ctx, _| {
+        ctx.input()
+            .lax
+            .as_ref()
+            .map(|v| v == "ignore_value")
+            .unwrap_or(false)
+    })]
+    const _: () = ();
 }
 
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: grouped ignore update expects either zero (0) fields or at least 2 fields"
-)]
-fn should_reject_if_fields_array_has_just_one_field() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.ignore_update(["lax"], |_, _, _| ready(false)),
-    );
+async fn should_allow_if_fields_array_is_empty() {
+    let _ = empty_grouped_ignore_update_schema::DataInputModel;
 }
 
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: remove duplicates of \"lax\" in your grouped ignore update config"
-)]
-fn should_reject_if_the_fields_array_contains_any_duplicates() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
+async_test_matrix!(should_allow_if_fields_array_is_empty);
 
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
+async fn should_respect_option_to_ignore_updates_with_empty_fields_array() {
+    let existing = empty_grouped_ignore_update_schema::DataInput {
+        lax: "lax_value".to_string(),
+    };
 
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.ignore_update(["lax", "lax"], |_, _, _| ready(false)),
-    );
+    let updates = empty_grouped_ignore_update_schema::PartialDataInput {
+        lax: Some("ignore_value".to_string()),
+    };
+
+    let err = empty_grouped_ignore_update_schema::DataInputModel
+        .update(existing, updates, ())
+        .err()
+        .unwrap();
+    assert!(err.errors.is_none());
+
+    let existing = empty_grouped_ignore_update_schema::DataInput {
+        lax: "lax_value".to_string(),
+    };
+
+    let lax_update = "should_not_ignore".to_string();
+    let updates = empty_grouped_ignore_update_schema::PartialDataInput {
+        lax: Some(lax_update.clone()),
+    };
+
+    let updated = empty_grouped_ignore_update_schema::DataInputModel
+        .update(existing, updates, ())
+        .ok()
+        .unwrap();
+
+    assert_eq!(updated.data.lax, Some(lax_update));
 }
 
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: \"invalid_field\" does not exist on your schema"
-)]
-fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_schema() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.ignore_update(["lax", "invalid_field"], |_, _, _| ready(false)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: only lax, required and virtual fields can belong to grouped ignore update configs; remove \"id\""
-)]
-fn should_reject_if_a_constant_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(constant_field("id").value(1234))
-                .field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.ignore_update(["lax", "id"], |_, _, _| ready(false)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: only lax, required and virtual fields can belong to grouped ignore update configs; remove \"dependent\""
-)]
-fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "lax_1"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
-        },
-        |o| o.ignore_update(["lax", "lax_1", "dependent"], |_, _, _| ready(false)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: \"dependent\" is an alias; use \"virtual_field\" instead"
-)]
-fn should_reject_if_an_alias_similar_to_a_dependent_field_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "virtual_field"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("dependent")
-                    .validate(|_, _, _| ready(Ok(Some(1)))),
-            )
-        },
-        |o| o.ignore_update(["lax", "lax_1", "dependent"], |_, _, _| ready(false)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: \"alias\" is an alias; use \"virtual_field\" instead"
-)]
-fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-        alias: i32,
-    }
-
-    let _: IvoModel<DataInput, Data> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["lax", "virtual_field"])
-                    .default(1)
-                    .resolve(|_, _| ready(2)),
-            )
-            .field(lax_field("lax").default(1234))
-            .field(lax_field("lax_1").default(5678))
-            .field(
-                virtual_field("virtual_field")
-                    .alias("alias")
-                    .validate(|_, _, _| ready(Ok(Some(1)))),
-            )
-        },
-        |o| o.ignore_update(["lax", "lax_1", "alias"], |_, _, _| ready(false)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: only lax, required and virtual fields can belong to grouped ignore update configs; remove \"created_at\""
-)]
-fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        created_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).created_at(None))
-        },
-        |o| o.ignore_update(["lax", "lax_1", "created_at"], |_, _, _| ready(false)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: only lax, required and virtual fields can belong to grouped ignore update configs; remove \"custom_created_at\""
-)]
-fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        custom_created_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).created_at(Some("custom_created_at")))
-        },
-        |o| {
-            o.ignore_update(["lax", "lax_1", "custom_created_at"], |_, _, _| {
-                ready(false)
-            })
-        },
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: only lax, required and virtual fields can belong to grouped ignore update configs; remove \"updated_at\""
-)]
-fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        updated_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).updated_at(None))
-        },
-        |o| o.ignore_update(["lax", "lax_1", "updated_at"], |_, _, _| ready(false)),
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "[options.ignore_update]: only lax, required and virtual fields can belong to grouped ignore update configs; remove \"custom_updated_at\""
-)]
-fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        custom_updated_at: i32,
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: IvoModel<DataInput, Data, Option<()>, i32> = IvoModel::new(
-        |f| {
-            f.field(lax_field("lax").default(1234))
-                .field(lax_field("lax_1").default(5678))
-                .timestamps(|t| t.resolve(|| 1234).updated_at(Some("custom_updated_at")))
-        },
-        |o| {
-            o.ignore_update(["lax", "lax_1", "custom_updated_at"], |_, _, _| {
-                ready(false)
-            })
-        },
-    );
-}
+async_test_matrix!(should_respect_option_to_ignore_updates_with_empty_fields_array);

@@ -1,23 +1,4 @@
-use std::future::ready;
-
-use ivo::{
-    dependent_field, virtual_field, IvoContext, IvoCtxOptions, IvoInputStruct, IvoModel,
-    IvoRwCtxOptions, IvoStruct,
-};
-
-use crate::async_test_matrix;
-
-// TODO:
-// [x] ignore
-// [x] required
-// [x] validate
-// [x] re_validate
-// [x] sanitizer
-// [x] post_validator
-// [x] on_failure
-// [x] on_success
-// [x] o.on_success
-// [x] o.post_validate
+use ivo::ivo_schema;
 
 #[derive(Clone)]
 struct CtxOptions {
@@ -34,53 +15,15 @@ impl CtxOptions {
     }
 }
 
-// required
+// required at creation
 
 async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
+    use required_create_schema::{DataModel, PartialDataInput, MESSAGE, REQUIRED_ERROR};
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-        virtual_field_1: i32,
-    }
-
-    const DEFAULT_VALUE: i32 = 1;
-    const MESSAGE: &str = "ctx_options updated in ignore resolver";
-    const REQUIRED_ERROR: &str = "virtual_field is missing!";
-
-    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
-                    .default(DEFAULT_VALUE)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .required(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        Some(REQUIRED_ERROR.into())
-                    }),
-            )
-            .field(virtual_field("virtual_field_1").validate(|_: i32, _, _| ready(Ok(None))))
-        },
-        |o| o,
-    );
-
-    let (err, _, ctx_options) = model
+    let failed = DataModel
         .create(
-            &PartialDataInput {
+            PartialDataInput {
                 virtual_field: None,
                 virtual_field_1: Some(1),
             },
@@ -90,62 +33,63 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .err()
         .unwrap();
 
-    assert_eq!(err.get("virtual_field").unwrap().reason, REQUIRED_ERROR);
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(
+        failed.errors.get("virtual_field").unwrap().reason,
+        REQUIRED_ERROR
+    );
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
     should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_at_creation
 );
 
-async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_during_updates(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-        virtual_field_1: i32,
-    }
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod required_create_schema {
+    use super::CtxOptions;
 
     const DEFAULT_VALUE: i32 = 1;
-    const MESSAGE: &str = "ctx_options updated in ignore resolver";
-    const REQUIRED_ERROR: &str = "virtual_field is missing!";
+    pub const MESSAGE: &str = "ctx_options updated in ignore resolver";
+    pub const REQUIRED_ERROR: &str = "virtual_field is missing!";
 
-    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
-                    .default(DEFAULT_VALUE)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .required(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
+    struct Fields {
+        #[depends_on("virtual_field", "virtual_field_1")]
+        #[default(DEFAULT_VALUE)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap_or(0) + 1)]
+        pub dependent: i32,
 
-                        ctx_options.add_message(MESSAGE);
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[required(async |_, opts| {
+            opts.write().await.add_message(MESSAGE);
+            Some(REQUIRED_ERROR.into())
+        })]
+        pub virtual_field: i32,
 
-                        Some(REQUIRED_ERROR.into())
-                    }),
-            )
-            .field(virtual_field("virtual_field_1").validate(|_: i32, _, _| ready(Ok(None))))
-        },
-        |o| o,
-    );
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field_1: i32,
+    }
+}
 
-    let (err, _, ctx_options) = model
+// required during updates
+
+async fn should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_during_updates(
+) {
+    use required_update_schema::{
+        Data, DataModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, REQUIRED_ERROR,
+    };
+
+    let failed = DataModel
         .update(
-            &Data {
+            Data {
                 dependent: DEFAULT_VALUE,
             },
-            &PartialDataInput {
+            PartialDataInput {
                 virtual_field: None,
                 virtual_field_1: Some(1),
             },
@@ -155,78 +99,72 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .err()
         .unwrap();
 
-    match err {
-        Some(payload) => {
-            assert_eq!(payload.get("virtual_field").unwrap().reason, REQUIRED_ERROR);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(
+        failed
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
+        REQUIRED_ERROR
+    );
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
     should_properly_update_ctx_options_in_required_resolver_and_provide_those_updates_in_on_failure_handlers_during_updates
 );
 
-// ignore_update
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod required_update_schema {
+    use super::CtxOptions;
+
+    pub const DEFAULT_VALUE: i32 = 1;
+    pub const MESSAGE: &str = "ctx_options updated in ignore resolver";
+    pub const REQUIRED_ERROR: &str = "virtual_field is missing!";
+
+    struct Fields {
+        #[depends_on("virtual_field", "virtual_field_1")]
+        #[default(DEFAULT_VALUE)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap_or(0) + 1)]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[required(async |_, opts| {
+            opts.write().await.add_message(MESSAGE);
+            Some(REQUIRED_ERROR.into())
+        })]
+        pub virtual_field: i32,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        pub virtual_field_1: i32,
+    }
+}
+
+// ignore_update during updates
 
 async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provide_those_updates_in_on_success_handlers_during_updates(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-    }
-
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore_update resolver";
 
-    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_VALUE)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap() + 1)
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .ignore(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        false
-                    })
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_success]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let data = Data {
+    let data = ignore_update_schema::Data {
         dependent: DEFAULT_VALUE,
     };
 
     let value = Some(data.dependent + 1);
 
-    let (data, handle_success, ctx_options) = model
+    let updated = ignore_update_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            ignore_update_schema::PartialDataInput {
                 virtual_field: value,
             },
             CtxOptions::new(),
@@ -236,14 +174,14 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
         .unwrap();
 
     assert_eq!(
-        data,
-        PartialData {
+        updated.data,
+        ignore_update_schema::PartialData {
             dependent: value.map(|v| v + 1)
         }
     );
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_success().await;
+    updated.handle_success();
 }
 
 async_test_matrix!(
@@ -251,65 +189,44 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_ignore_update_resolver_and_provide_those_updates_in_on_success_handlers_during_updates
 );
 
-// validate
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod ignore_update_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap() + 1)]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[ignore(async |_, opts| {
+            opts.write().await.add_message("ctx_options updated in ignore_update resolver");
+            false
+        })]
+        #[on_success(|_, opts| {
+            if true {
+                panic!("[on_success]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub virtual_field: i32,
+    }
+}
+
+// validate at creation
 
 async fn should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
+    use validate_create_schema::{DataModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
-
-    const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in validator";
-    const VIRTUAL_FIELD_ERROR: &str = "virtual_field is missing!";
-
-    const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_VALUE.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return Err((MIN_LENGTH_ERROR.into(), None));
-                        }
-
-                        Ok(Some(validated.into()))
-                    })
-                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_failure]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let (err, handle_failure, ctx_options) = model
+    let failed = DataModel
         .create(
-            &PartialDataInput {
+            PartialDataInput {
                 virtual_field: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -318,10 +235,13 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .err()
         .unwrap();
 
-    assert_eq!(err.get("virtual_field").unwrap().reason, MIN_LENGTH_ERROR);
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(
+        failed.errors.get("virtual_field").unwrap().reason,
+        MIN_LENGTH_ERROR
+    );
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_failure().await;
+    failed.handle_failure();
 }
 
 async_test_matrix!(
@@ -329,66 +249,57 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_at_creation
 );
 
-async fn should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod validate_create_schema {
+    use super::CtxOptions;
 
     const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in validator";
-    const VIRTUAL_FIELD_ERROR: &str = "virtual_field is missing!";
+    pub const MESSAGE: &str = "ctx_options updated in validator";
+    pub const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(DEFAULT_VALUE.into())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
 
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_VALUE.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
+        #[ivo_virtual]
+        #[validate(async |v: String, _, opts| {
+            opts.write().await.add_message(MESSAGE);
 
-                        ctx_options.add_message(MESSAGE);
+            let validated = v.trim();
 
-                        let validated = v.trim();
+            if validated.len() < 2 {
+                return Err((MIN_LENGTH_ERROR.into(), None));
+            }
 
-                        if validated.len() < 2 {
-                            return Err((MIN_LENGTH_ERROR.into(), None));
-                        }
+            Ok(Some(validated.into()))
+        })]
+        #[on_failure(|_, opts| {
+            if true {
+                panic!("[on_failure]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub virtual_field: String,
+    }
+}
 
-                        Ok(Some(validated.into()))
-                    })
-                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_failure]: {}", o.messages[0])
-                        }
+// validate during updates
 
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
+async fn should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
+) {
+    use validate_update_schema::{Data, DataModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, MIN_LENGTH_ERROR};
 
-    let (err, handle_failure, ctx_options) = model
+    let failed = DataModel
         .update(
-            &Data {
+            Data {
                 dependent: DEFAULT_VALUE.into(),
             },
-            &PartialDataInput {
+            PartialDataInput {
                 virtual_field: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -397,19 +308,19 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .err()
         .unwrap();
 
-    match err {
-        Some(payload) => {
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                MIN_LENGTH_ERROR
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    assert_eq!(
+        failed
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
+        MIN_LENGTH_ERROR
+    );
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 
-    assert_eq!(ctx_options.messages[0], MESSAGE);
-
-    handle_failure().await;
+    failed.handle_failure();
 }
 
 async_test_matrix!(
@@ -417,66 +328,54 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_validators_and_provide_those_updates_in_on_failure_handlers_during_updates
 );
 
-// re_validate
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod validate_update_schema {
+    use super::CtxOptions;
+
+    pub const DEFAULT_VALUE: &str = "default_value";
+    pub const MESSAGE: &str = "ctx_options updated in validator";
+    pub const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
+
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(DEFAULT_VALUE.into())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(async |v: String, _, opts| {
+            opts.write().await.add_message(MESSAGE);
+
+            let validated = v.trim();
+
+            if validated.len() < 2 {
+                return Err((MIN_LENGTH_ERROR.into(), None));
+            }
+
+            Ok(Some(validated.into()))
+        })]
+        #[on_failure(|_, opts| {
+            if true {
+                panic!("[on_failure]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub virtual_field: String,
+    }
+}
+
+// re_validate at creation
 
 async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
+    use re_validate_create_schema::{DataModel, PartialDataInput, MESSAGE, MIN_LENGTH_ERROR};
 
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
-
-    const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in re_validator";
-    const VIRTUAL_FIELD_ERROR: &str = "virtual_field is missing!";
-
-    const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_VALUE.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_, _, _| ready(Ok(None)))
-                    .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        let validated = v.trim();
-
-                        if validated.len() < 2 {
-                            return Err((MIN_LENGTH_ERROR.into(), None));
-                        }
-
-                        Ok(Some(validated.into()))
-                    })
-                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_failure]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let (err, handle_failure, ctx_options) = model
+    let failed = DataModel
         .create(
-            &PartialDataInput {
+            PartialDataInput {
                 virtual_field: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -485,10 +384,13 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .err()
         .unwrap();
 
-    assert_eq!(err.get("virtual_field").unwrap().reason, MIN_LENGTH_ERROR);
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(
+        failed.errors.get("virtual_field").unwrap().reason,
+        MIN_LENGTH_ERROR
+    );
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_failure().await;
+    failed.handle_failure();
 }
 
 async_test_matrix!(
@@ -496,67 +398,58 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_at_creation
 );
 
-async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
-) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod re_validate_create_schema {
+    use super::CtxOptions;
 
     const DEFAULT_VALUE: &str = "default_value";
-    const MESSAGE: &str = "ctx_options updated in re_validator";
-    const VIRTUAL_FIELD_ERROR: &str = "virtual_field is missing!";
+    pub const MESSAGE: &str = "ctx_options updated in re_validator";
+    pub const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(DEFAULT_VALUE.into())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
 
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(DEFAULT_VALUE.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_, _, _| ready(Ok(None)))
-                    .re_validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[re_validate(async |v: String, _, opts| {
+            opts.write().await.add_message(MESSAGE);
 
-                        ctx_options.add_message(MESSAGE);
+            let validated = v.trim();
 
-                        let validated = v.trim();
+            if validated.len() < 2 {
+                return Err((MIN_LENGTH_ERROR.into(), None));
+            }
 
-                        if validated.len() < 2 {
-                            return Err((MIN_LENGTH_ERROR.into(), None));
-                        }
+            Ok(Some(validated.into()))
+        })]
+        #[on_failure(|_, opts| {
+            if true {
+                panic!("[on_failure]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub virtual_field: String,
+    }
+}
 
-                        Ok(Some(validated.into()))
-                    })
-                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_failure]: {}", o.messages[0])
-                        }
+// re_validate during updates
 
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
+async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_during_updates(
+) {
+    use re_validate_update_schema::{Data, DataModel, PartialDataInput, DEFAULT_VALUE, MESSAGE, MIN_LENGTH_ERROR};
 
-    let (err, handle_failure, ctx_options) = model
+    let failed = DataModel
         .update(
-            &Data {
+            Data {
                 dependent: DEFAULT_VALUE.into(),
             },
-            &PartialDataInput {
+            PartialDataInput {
                 virtual_field: Some(String::from(" ")),
             },
             CtxOptions::new(),
@@ -565,19 +458,19 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .err()
         .unwrap();
 
-    match err {
-        Some(payload) => {
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                MIN_LENGTH_ERROR
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
+    assert_eq!(
+        failed
+            .errors
+            .as_ref()
+            .unwrap()
+            .get("virtual_field")
+            .unwrap()
+            .reason,
+        MIN_LENGTH_ERROR
+    );
+    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
 
-    assert_eq!(ctx_options.messages[0], MESSAGE);
-
-    handle_failure().await;
+    failed.handle_failure();
 }
 
 async_test_matrix!(
@@ -585,63 +478,62 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_re_validators_and_provide_those_updates_in_on_failure_handlers_during_updates
 );
 
-// sanitize
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod re_validate_update_schema {
+    use super::CtxOptions;
+
+    pub const DEFAULT_VALUE: &str = "default_value";
+    pub const MESSAGE: &str = "ctx_options updated in re_validator";
+    pub const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
+
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default(DEFAULT_VALUE.into())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|_, _, _| Ok(None))]
+        #[re_validate(async |v: String, _, opts| {
+            opts.write().await.add_message(MESSAGE);
+
+            let validated = v.trim();
+
+            if validated.len() < 2 {
+                return Err((MIN_LENGTH_ERROR.into(), None));
+            }
+
+            Ok(Some(validated.into()))
+        })]
+        #[on_failure(|_, opts| {
+            if true {
+                panic!("[on_failure]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub virtual_field: String,
+    }
+}
+
+// sanitize at creation
 
 async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_updates_on_success_handlers_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
-
-    let default_dependent_value = "default_dependent_value";
+    let _default_dependent_value = "default_dependent_value";
     const MESSAGE: &str = "ctx_options updated in sanitizer";
 
     fn sanitize(value: &str) -> String {
         format!("sanitized-{value}")
     }
 
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_: String, _, _| ready(Ok(None)))
-                    .sanitize(async |value: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        sanitize(&value)
-                    })
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_success]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
     let virtual_value = "virtual_value".to_string();
 
-    let (data, handle_success, ctx_options) = model
+    let created = sanitize_create_schema::DataModel
         .create(
-            &PartialDataInput {
+            sanitize_create_schema::PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
             },
             CtxOptions::new(),
@@ -651,22 +543,20 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         .unwrap();
 
     assert_eq!(
-        data,
-        Data {
+        created.data,
+        sanitize_create_schema::Data {
             dependent: sanitize(&virtual_value)
-        },
+        }
     );
-
     assert_ne!(
-        data,
-        Data {
+        created.data,
+        sanitize_create_schema::Data {
             dependent: virtual_value
         }
     );
+    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
 
-    assert_eq!(ctx_options.messages[0], MESSAGE);
-
-    handle_success().await;
+    created.handle_success();
 }
 
 async_test_matrix!(
@@ -674,66 +564,55 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_sanitizers_and_provide_those_updates_on_success_handlers_at_creation
 );
 
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod sanitize_create_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default("default_dependent_value".into())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|_: String, _, _| Ok(None))]
+        #[sanitize(async |value: String, _, opts| {
+            opts.write().await.add_message("ctx_options updated in sanitizer");
+            format!("sanitized-{value}")
+        })]
+        #[on_success(|_, opts| {
+            if true {
+                panic!("[on_success]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub virtual_field: String,
+    }
+}
+
+// sanitize during updates
+
 async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_updates_on_success_handlers_during_updates(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-    }
-
-    let default_dependent_value = "default_dependent_value";
     const MESSAGE: &str = "ctx_options updated in sanitizer";
 
     fn sanitize(value: &str) -> String {
         format!("sanitized-{value}")
     }
 
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field"])
-                    .default(default_dependent_value.into())
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                virtual_field("virtual_field")
-                    .validate(|_: String, _, _| ready(Ok(None)))
-                    .sanitize(async |value: String, _, o: IvoRwCtxOptions<CtxOptions>| {
-                        let mut ctx_options = o.write().await;
-
-                        ctx_options.add_message(MESSAGE);
-
-                        sanitize(&value)
-                    })
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
-                        if true {
-                            panic!("[on_success]: {}", o.messages[0])
-                        }
-
-                        ready(())
-                    }),
-            )
-        },
-        |o| o,
-    );
-
-    let data = Data {
-        dependent: default_dependent_value.into(),
+    let data = sanitize_update_schema::Data {
+        dependent: "default_dependent_value".into(),
     };
 
     let updated_virtual_value = "updated_virtual_value".to_string();
 
-    let (updates, handle_success, ctx_options) = model
+    let updated = sanitize_update_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            sanitize_update_schema::PartialDataInput {
                 virtual_field: Some(updated_virtual_value.clone()),
             },
             CtxOptions::new(),
@@ -743,22 +622,20 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialData {
+        updated.data,
+        sanitize_update_schema::PartialData {
             dependent: Some(sanitize(&updated_virtual_value))
-        },
+        }
     );
-
     assert_ne!(
-        updates,
-        PartialData {
+        updated.data,
+        sanitize_update_schema::PartialData {
             dependent: Some(updated_virtual_value)
-        },
+        }
     );
+    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
 
-    assert_eq!(ctx_options.messages[0], MESSAGE);
-
-    handle_success().await;
+    updated.handle_success();
 }
 
 async_test_matrix!(
@@ -766,66 +643,47 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_sanitizers_and_provide_those_updates_on_success_handlers_during_updates
 );
 
-// o.post_validate & o.on_success
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod sanitize_update_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[depends_on("virtual_field")]
+        #[default("default_dependent_value".into())]
+        #[resolve(|ctx, _| ctx.input().virtual_field.clone().unwrap())]
+        pub dependent: String,
+
+        #[ivo_virtual]
+        #[validate(|_: String, _, _| Ok(None))]
+        #[sanitize(async |value: String, _, opts| {
+            opts.write().await.add_message("ctx_options updated in sanitizer");
+            format!("sanitized-{value}")
+        })]
+        #[on_success(|_, opts| {
+            if true {
+                panic!("[on_success]: {}", opts.read_sync().messages[0])
+            }
+        })]
+        pub virtual_field: String,
+    }
+}
+
+// post_validate & on_success with no fields at creation
 
 async fn should_properly_update_ctx_options_in_post_validators_and_provide_those_updates_in_grouped_on_success_handlers_with_no_fields_at_creation(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-        virtual_field_1: i32,
-    }
-
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in post_validator";
-    const VIRTUAL_FIELD_ERROR: &str = "virtual_field is missing!";
-
-    const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
-                    .default(DEFAULT_VALUE)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(virtual_field("virtual_field").validate(|_: i32, _, _| ready(Ok(None))))
-            .field(virtual_field("virtual_field_1").validate(|_: i32, _, _| ready(Ok(None))))
-        },
-        |o| {
-            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
-                v.validate(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                    let mut ctx_options = o.write().await;
-
-                    ctx_options.add_message(MESSAGE);
-
-                    Ok(None)
-                })
-            })
-            .on_success([], |s| {
-                s.handle(|_, o: IvoCtxOptions<CtxOptions>| {
-                    if true {
-                        panic!("[grouped_on_success]: {}", o.messages[0])
-                    }
-
-                    ready(())
-                })
-            })
-        },
-    );
 
     let value = DEFAULT_VALUE + 1;
 
-    let (data, handle_success, ctx_options) = model
+    let created = post_validate_create_schema::DataModel
         .create(
-            &PartialDataInput {
+            post_validate_create_schema::PartialDataInput {
                 virtual_field: Some(value),
                 virtual_field_1: Some(value),
             },
@@ -835,10 +693,13 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         .ok()
         .unwrap();
 
-    assert_eq!(data, Data { dependent: value });
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(
+        created.data,
+        post_validate_create_schema::Data { dependent: value }
+    );
+    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_success().await;
+    created.handle_success().await;
 }
 
 async_test_matrix!(
@@ -846,69 +707,56 @@ async_test_matrix!(
     should_properly_update_ctx_options_in_post_validators_and_provide_those_updates_in_grouped_on_success_handlers_with_no_fields_at_creation
 );
 
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod post_validate_create_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[depends_on("virtual_field", "virtual_field_1")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(|_: i32, _, _| Ok(None))]
+        pub virtual_field: i32,
+
+        #[ivo_virtual]
+        #[validate(|_: i32, _, _| Ok(None))]
+        pub virtual_field_1: i32,
+    }
+
+    #[post_validate(["virtual_field", "virtual_field_1"], validate = async |_, opts| {
+        opts.write().await.add_message("ctx_options updated in post_validator");
+        Ok(None)
+    })]
+    #[on_success(async |_, opts| {
+        panic!("[grouped_on_success]: {}", opts.read_sync().messages[0])
+    })]
+    const _: () = ();
+}
+
+// post_validate & on_success with fields during updates
+
 async fn should_properly_update_ctx_options_in_post_validators_and_provide_those_updates_in_grouped_on_success_handlers_during_updates(
 ) {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: i32,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: i32,
-        virtual_field_1: i32,
-    }
-
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in post_validator";
-    const VIRTUAL_FIELD_ERROR: &str = "virtual_field is missing!";
 
-    const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
-
-    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
-        |f| {
-            f.field(
-                dependent_field("dependent", ["virtual_field", "virtual_field_1"])
-                    .default(DEFAULT_VALUE)
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(virtual_field("virtual_field").validate(|_: i32, _, _| ready(Ok(None))))
-            .field(virtual_field("virtual_field_1").validate(|_: i32, _, _| ready(Ok(None))))
-        },
-        |o| {
-            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
-                v.validate(async |_, o: IvoRwCtxOptions<CtxOptions>| {
-                    let mut ctx_options = o.write().await;
-
-                    ctx_options.add_message(MESSAGE);
-
-                    Ok(None)
-                })
-            })
-            .on_success(["virtual_field", "virtual_field_1"], |s| {
-                s.handle(|_, o: IvoCtxOptions<CtxOptions>| {
-                    if true {
-                        panic!("[grouped_on_success]: {}", o.messages[0])
-                    }
-
-                    ready(())
-                })
-            })
-        },
-    );
-
-    let data = Data {
+    let data = post_validate_update_schema::Data {
         dependent: DEFAULT_VALUE,
     };
 
     let value = Some(data.dependent + 1);
 
-    let (updates, handle_success, ctx_options) = model
+    let updated = post_validate_update_schema::DataModel
         .update(
-            &data,
-            &PartialDataInput {
+            data.clone(),
+            post_validate_update_schema::PartialDataInput {
                 virtual_field: value,
                 virtual_field_1: None,
             },
@@ -918,13 +766,49 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         .ok()
         .unwrap();
 
-    assert_eq!(updates, PartialData { dependent: value });
-    assert_eq!(ctx_options.messages[0], MESSAGE);
+    assert_eq!(
+        updated.data,
+        post_validate_update_schema::PartialData { dependent: value }
+    );
+    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
 
-    handle_success().await;
+    updated.handle_success().await;
 }
 
 async_test_matrix!(
     "[grouped_on_success]: ctx_options updated in post_validator",
     should_properly_update_ctx_options_in_post_validators_and_provide_those_updates_in_grouped_on_success_handlers_during_updates
 );
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq)),
+    ctx_options(CtxOptions)
+)]
+mod post_validate_update_schema {
+    use super::CtxOptions;
+
+    struct Fields {
+        #[depends_on("virtual_field", "virtual_field_1")]
+        #[default(1)]
+        #[resolve(|ctx, _| ctx.input().virtual_field.unwrap())]
+        pub dependent: i32,
+
+        #[ivo_virtual]
+        #[validate(|_: i32, _, _| Ok(None))]
+        pub virtual_field: i32,
+
+        #[ivo_virtual]
+        #[validate(|_: i32, _, _| Ok(None))]
+        pub virtual_field_1: i32,
+    }
+
+    #[post_validate(["virtual_field", "virtual_field_1"], validate = async |_, opts| {
+        opts.write().await.add_message("ctx_options updated in post_validator");
+        Ok(None)
+    })]
+    #[on_success(["virtual_field", "virtual_field_1"], async |_, opts| {
+        panic!("[grouped_on_success]: {}", opts.read_sync().messages[0])
+    })]
+    const _: () = ();
+}

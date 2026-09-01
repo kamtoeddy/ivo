@@ -1,26 +1,21 @@
-use std::{collections::HashMap, future::ready, sync::LazyLock};
+use std::collections::HashMap;
 
-use crate::async_test_matrix;
-use ivo::{
-    required_field, IvoErrorPayload, IvoErrorSanitizer, IvoInputStruct, IvoModel, IvoStruct,
-};
+use ivo::{ivo_schema, IvoErrorPayload, IvoErrorSanitizer};
 
 async fn should_respect_custom_error_sanitizer() {
-    let r = PLACE_MODEL
-        .create(
-            &PartialPlace {
-                coordinates: Some(Coodinates {
-                    lat: f64::NAN,
-                    lon: f64::NAN,
-                }),
-            },
-            None,
-        )
-        .await;
+    let r = place_schema::PlaceInputModel.create(
+        place_schema::PartialPlaceInput {
+            coordinates: Some(Coordinates {
+                lat: f64::NAN,
+                lon: f64::NAN,
+            }),
+        },
+        None,
+    );
 
     match r {
-        Err((p, _, _)) => {
-            let errors = p.get("coordinates").unwrap();
+        Err(handle) => {
+            let errors = handle.errors.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
             assert!(errors.contains(&customize("InvalidNumber")));
@@ -28,21 +23,19 @@ async fn should_respect_custom_error_sanitizer() {
         _ => unreachable!("expected a validation error"),
     }
 
-    let r = PLACE_MODEL
-        .create(
-            &PartialPlace {
-                coordinates: Some(Coodinates {
-                    lat: 400.0,
-                    lon: -200.0,
-                }),
-            },
-            None,
-        )
-        .await;
+    let r = place_schema::PlaceInputModel.create(
+        place_schema::PartialPlaceInput {
+            coordinates: Some(Coordinates {
+                lat: 400.0,
+                lon: -200.0,
+            }),
+        },
+        None,
+    );
 
     match r {
-        Err((p, _, _)) => {
-            let errors = p.get("coordinates").unwrap();
+        Err(handle) => {
+            let errors = handle.errors.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
             assert!(errors.contains(&customize("Out of range error")));
@@ -52,29 +45,27 @@ async fn should_respect_custom_error_sanitizer() {
         _ => unreachable!("expected a validation error"),
     }
 
-    let data = Place {
-        coordinates: Coodinates {
+    let data = place_schema::PlaceInput {
+        coordinates: Coordinates {
             lat: 3.0,
             lon: 45.1,
         },
     };
 
-    let r = PLACE_MODEL
-        .update(
-            &data,
-            &PartialPlace {
-                coordinates: Some(Coodinates {
-                    lat: f64::NAN,
-                    lon: f64::NAN,
-                }),
-            },
-            None,
-        )
-        .await;
+    let r = place_schema::PlaceInputModel.update(
+        data.clone(),
+        place_schema::PartialPlaceInput {
+            coordinates: Some(Coordinates {
+                lat: f64::NAN,
+                lon: f64::NAN,
+            }),
+        },
+        None,
+    );
 
     match r {
-        Err((Some(payload), _, _)) => {
-            let errors = payload.get("coordinates").unwrap();
+        Err(handle) => {
+            let errors = handle.errors.as_ref().unwrap().get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
             assert!(errors.contains(&customize("InvalidNumber")));
@@ -82,22 +73,20 @@ async fn should_respect_custom_error_sanitizer() {
         _ => unreachable!("expected a validation error"),
     }
 
-    let r = PLACE_MODEL
-        .update(
-            &data,
-            &PartialPlace {
-                coordinates: Some(Coodinates {
-                    lat: -400.0,
-                    lon: 200.0,
-                }),
-            },
-            None,
-        )
-        .await;
+    let r = place_schema::PlaceInputModel.update(
+        data.clone(),
+        place_schema::PartialPlaceInput {
+            coordinates: Some(Coordinates {
+                lat: -400.0,
+                lon: 200.0,
+            }),
+        },
+        None,
+    );
 
     match r {
-        Err((Some(payload), _, _)) => {
-            let errors = payload.get("coordinates").unwrap();
+        Err(handle) => {
+            let errors = handle.errors.as_ref().unwrap().get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
             assert!(errors.contains(&customize("Out of range error")));
@@ -107,95 +96,89 @@ async fn should_respect_custom_error_sanitizer() {
         _ => unreachable!("expected a validation error"),
     }
 
-    let updated_coords = Coodinates {
+    let updated_coords = Coordinates {
         lat: data.coordinates.lat + 1.1,
         lon: data.coordinates.lon,
     };
 
-    let (updates, _, _) = PLACE_MODEL
+    let updated = place_schema::PlaceInputModel
         .update(
-            &data,
-            &PartialPlace {
+            data.clone(),
+            place_schema::PartialPlaceInput {
                 coordinates: Some(updated_coords.clone()),
             },
             None,
         )
-        .await
         .ok()
         .unwrap();
 
     assert_eq!(
-        updates,
-        PartialPlace {
+        updated.data,
+        place_schema::PartialPlaceInput {
             coordinates: Some(updated_coords)
         }
     );
 
-    let data = data.clone_with_updates(&updates);
+    let data = data.clone_with_updates(&updated.data);
 
-    let (err, _, _) = PLACE_MODEL
+    let failed = place_schema::PlaceInputModel
         .update(
-            &data,
-            &PartialPlace {
+            data.clone(),
+            place_schema::PartialPlaceInput {
                 coordinates: Some(data.coordinates.clone()),
             },
             None,
         )
-        .await
         .err()
         .unwrap();
 
-    assert!(err.is_none());
+    assert!(failed.errors.is_none());
 }
 
 async_test_matrix!(should_respect_custom_error_sanitizer);
 
-#[derive(Debug, PartialEq, Clone)]
-struct Coodinates {
+#[derive(Debug, Default, PartialEq, Clone)]
+struct Coordinates {
     lat: f64,
     lon: f64,
 }
 
-#[derive(Debug, Clone, IvoInputStruct)]
-struct Place {
-    coordinates: Coodinates,
+type PlacesCtxOptions = Option<(String, Coordinates)>;
+
+#[ivo_schema(
+    input(PlaceInput, derive(Debug, Clone, PartialEq)),
+    ctx_options(PlacesCtxOptions),
+    error_sanitizer(ErrorSanitizer)
+)]
+mod place_schema {
+    use super::{Coordinates, ErrorSanitizer, PlacesCtxOptions};
+
+    struct Fields {
+        #[required]
+        #[validate(|c: Coordinates, _, _| {
+            if c.lat.is_nan() || c.lon.is_nan() {
+                return Err(("InvalidNumber".into(), None));
+            }
+
+            let mut errors = vec![];
+
+            if !(-90.0..=90.0).contains(&c.lat) {
+                errors.push("LatitudeOutOfRange: [-90, 90]".into());
+            }
+
+            if !(-180.0..=180.0).contains(&c.lon) {
+                errors.push("LongitudeOutOfRange: [-180, 180]".into());
+            }
+
+            if !errors.is_empty() {
+                return Err(("Out of range error".into(), Some(errors)));
+            }
+
+            Ok(None)
+        })]
+        pub coordinates: Coordinates,
+    }
 }
-
-type PlacesCtxOptions = Option<(String, Coodinates)>;
-type PlacesTimestamp = ();
-
-static PLACE_MODEL: LazyLock<
-    IvoModel<Place, Place, PlacesCtxOptions, PlacesTimestamp, ErrorSanitizer>,
-> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(
-                required_field("coordinates").validate(|c: Coodinates, _, _| {
-                    if c.lat.is_nan() || c.lon.is_nan() {
-                        return ready(Err(("InvalidNumber".into(), None)));
-                    }
-
-                    let mut errors = vec![];
-
-                    if !(-90.0..=90.0).contains(&c.lat) {
-                        errors.push("LatitudeOutOfRange: [-90, 90]".into());
-                    }
-
-                    if !(-180.0..=180.0).contains(&c.lon) {
-                        errors.push("LongitudeOutOfRange: [-180, 180]".into());
-                    }
-
-                    if !errors.is_empty() {
-                        return ready(Err(("Out of range error".into(), Some(errors))));
-                    }
-
-                    ready(Ok(None))
-                }),
-            )
-        },
-        |o| o,
-    )
-});
 
 struct ErrorSanitizer;
 

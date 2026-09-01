@@ -1,16 +1,13 @@
-
 [package]
 name = "ivo-derive"
-license-file = "../../../LICENSE"
-publish = true
-repository.workspace = true
-homepage.workspace = true
-keywords.workspace = true
-categories.workspace = true
-description = "Proc-macro crate for #[derive(IvoStruct)] — part of ivo"
+description = "Proc-macro crate for Ivo v2 — #[ivo_schema], #[derive(IvoStruct)], #[derive(IvoInputStruct)]"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
 
 [lib]
 proc-macro = true
@@ -18,4 +15,4 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1"
 quote = "1.0"
-syn = { version = "2.0.118", features = ["full"] }
+syn = { version = "2.0", features = ["full"] }

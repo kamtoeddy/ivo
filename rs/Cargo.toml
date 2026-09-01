@@ -6,60 +6,66 @@ categories.workspace = true
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
-license-file.workspace = true
+license.workspace = true
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
 rust-version.workspace = true
+autotests = false
+
+[[test]]
+name = "mod"
+path = "tests/mod.rs"
 
 [workspace]
 members = ["crates/*", "examples/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["kamtoeddy <kamtoeddytagne@gmail.com>"]
 categories = ["data-structures", "development-tools"]
-license-file = "./LICENSE"
+license = "MIT"
 readme = "README.md"
-repository = "https://github.com/kamtoeddy/ivo/rs"
+repository = "https://github.com/kamtoeddy/ivo"
 homepage = "https://ivo.kamtoeddy.com/docs/rs"
 keywords = ["ivo", "schema", "validation", "data-modelling"]
-rust-version = "1.80.0"
+rust-version = "1.85.0"
+
+[features]
+validators = ["dep:ivo-validators"]
 
 [workspace.dependencies]
-# core deps
-futures-locks = "0.7"
-
 # examples & tests deps
+async-lock = "3"
 async-std = { version= "1.13.2", features = ["attributes"] }
 chrono = "0.4.45"
 regex = "1.10"
 unicode-normalization = "0.1"
 
-[features]
-validators = ["dep:ivo-validators"]
-
 [dependencies]
-futures = "0.3"
-futures-locks.workspace = true
-ivo-derive = { path = "./crates/derive", version = "0.4.0" }
-ivo-validators = { path = "./crates/validators", version = "0.4.0", optional = true}
+async-lock.workspace = true
+# `join!` only (no executor/reactor/io): used by generated `create`/`update`
+# bodies to poll independent async field handlers within a phase concurrently
+# instead of sequentially, without pulling in a runtime.
+futures-util = { version = "0.3", default-features = false, features = ["std", "async-await", "async-await-macro"] }
+ivo-derive = { path = "./crates/derive", version = "0.5.0" }
+ivo-validators = { path = "./crates/validators", version = "0.5.0", optional = true}
 
 [dev-dependencies]
+async-std = { workspace = true, features = ["attributes"] }
 chrono.workspace = true
+criterion = { version = "0.5", features = ["async_tokio"] }
+paste = "1"
 regex.workspace = true
-unicode-normalization.workspace = true
-
-async-std.workspace = true
-smol = "2.0.2"
-tokio = { version = "1.0", features = ["rt", "rt-multi-thread", "macros"] }
-paste = "1.0.15"
 seahash = "4.1.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
-criterion = { version = "0.5", features = ["async_tokio"] }
+smol = "2.0"
+tokio = { version = "1.0", features = ["rt", "rt-multi-thread", "macros"] }
+trybuild = "=1.0.119"
+unicode-normalization.workspace = true
 
 [profile.release]
 lto = true
@@ -73,9 +79,10 @@ harness = false
 name = "memory"
 harness = false
 
-[[example]]
+[[bench]]
 name = "main_demo"
-path = "examples/main_demo/src/main.rs"
+path = "benches/main_demo/mod.rs"
+harness = false
 required-features = ["validators"]
 
 [[example]]
@@ -103,12 +110,52 @@ name = "lax_with_validators"
 path = "examples/lax_with_validators.rs"
 
 [[example]]
+name = "lax_readonly"
+path = "examples/lax_readonly.rs"
+
+[[example]]
+name = "lax_required"
+path = "examples/lax_required.rs"
+
+[[example]]
+name = "lax_with_ignore"
+path = "examples/lax_with_ignore.rs"
+
+[[example]]
+name = "lax_with_ignore_init"
+path = "examples/lax_with_ignore_init.rs"
+
+[[example]]
+name = "lax_with_ignore_update"
+path = "examples/lax_with_ignore_update.rs"
+
+[[example]]
+name = "virtuals_with_alias_name"
+path = "examples/virtuals_with_alias_name.rs"
+
+[[example]]
+name = "virtuals_with_alias_name_same_as_dependent"
+path = "examples/virtuals_with_alias_name_same_as_dependent.rs"
+
+[[example]]
+name = "virtuals_with_required"
+path = "examples/virtuals_with_required.rs"
+
+[[example]]
+name = "option_on_success"
+path = "examples/option_on_success.rs"
+
+[[example]]
 name = "required"
 path = "examples/required.rs"
 
 [[example]]
 name = "required_error"
 path = "examples/required_error.rs"
+
+[[example]]
+name = "required_readonly"
+path = "examples/required_readonly.rs"
 
 [[example]]
 name = "required_with_ignore_update"
@@ -119,17 +166,30 @@ name = "required_with_re_validate"
 path = "examples/required_with_re_validate.rs"
 
 [[example]]
-name = "required_readonly"
-path = "examples/required_readonly.rs"
+name = "timestamps_with_default_names"
+path = "examples/timestamps_with_default_names.rs"
+
+[[example]]
+name = "main_demo"
+path = "examples/main_demo/src/main.rs"
+required-features = ["validators"]
 
 [[example]]
 name = "timestamps_with_custom_names"
 path = "examples/timestamps_with_custom_names.rs"
 
 [[example]]
-name = "timestamps_with_default_names"
-path = "examples/timestamps_with_default_names.rs"
+name = "virtuals"
+path = "examples/virtuals.rs"
 
 [[example]]
-name = "option_on_success"
-path = "examples/option_on_success.rs"
+name = "virtuals_with_ignore"
+path = "examples/virtuals_with_ignore.rs"
+
+[[example]]
+name = "virtuals_with_ignore_init"
+path = "examples/virtuals_with_ignore_init.rs"
+
+[[example]]
+name = "virtuals_with_ignore_update"
+path = "examples/virtuals_with_ignore_update.rs"
