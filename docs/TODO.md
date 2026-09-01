@@ -178,3 +178,19 @@ it in the browser` section with a runnable schema example to the _imported copy_
 - Rust playground supports curated demos with editable JSON input, not arbitrary Rust source -
   running arbitrary Rust in-browser would require a sandboxed compile backend, rejected as
   unnecessary infra/security burden for a docs site.
+- `docs-rs/options.md` has no French translation despite Phase 5 above claiming "all pages"
+  translated -- confirmed missing from `i18n/fr/docusaurus-plugin-content-docs-rs/current/` (only
+  `index.md`, `life-cycles.md`, `validators.md`, and `definitions/*.md` exist there); root cause
+  not investigated. This was previously silent (the old English-fallback content had no internal
+  relative links, so nothing broke), but surfaced as a real `bun run build` failure once the
+  v0.5.0 rewrite added relative markdown links between pages -- fixed by removing options.md's own
+  outgoing relative links (English fallback content renders fine for French readers when the
+  content itself is just prose, but its relative links don't resolve correctly in extending a
+  Docusaurus doc without a translation of its own). A full French translation of the v0.5.0
+  `options.md` would let those links come back; not attempted here (translation, not doc-content
+  generation, was the ask).
+- v0.5.0 docs-rs content does not (yet) wire up the interactive `<RustPlayground>` component used
+  in v0.4.x's `definitions/*.md` pages -- that component's WASM backend (`wasm/ivo-playground/`)
+  is still built against the old `/rs` API. All v0.5.0 examples are plain, verified-by-compiling
+  Rust code blocks (matching the `rs-next/README.md` style) instead. Rebuilding the playground
+  against `rs-next` is a separate, larger follow-up.

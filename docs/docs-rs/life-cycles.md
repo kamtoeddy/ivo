@@ -9,28 +9,71 @@ are shared across both implementations - see the
 [root README](https://github.com/kamtoeddy/ivo#lifecycle-events) for the full language-agnostic
 definitions. This page covers how to wire them up in Rust.
 
-## onDelete
+## `onDelete`
 
-Manually triggered by invoking the `delete` method of a schema's model. Subscribe for the entire
-entity via schema options, or per output field. See the
-`should_properly_trigger_on_delete_handlers` and `should_properly_trigger_all_on_delete_handlers`
-test functions
-[here](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/opions/mod.rs).
+`#[on_delete(|data, opts| { ... })]` -- triggered directly by calling a schema's generated `delete`
+method. Subscribe per output field, or entity-wide via the
+[`on_delete` schema option](./options.md#on_delete). `delete` is only generated when the schema
+declares at least one `on_delete` handler (field-level or schema-level), and is `async` only if
+any of them are.
 
-## onFailure
+```rust
+use ivo::ivo_schema;
 
-Manually triggered by invoking the `handle failure` function returned from an unsuccessful create
-or update operation. Subscribe on individual input fields that have at least one validator.
+#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+mod delete_schema {
+    struct Fields {
+        #[required]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[on_delete(|data, _opts| {
+            println!("[username]: on_delete: {}", data.username);
+        })]
+        pub username: String,
+    }
+}
 
-## onSuccess
+fn main() {
+    let data = delete_schema::DataInput {
+        username: "jane".into(),
+    };
 
-Manually triggered by invoking the `handle success` function returned from a successful create or
-update operation. Subscribe on any individual field, or for
-[a group of fields via schema options](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/option_on_success.rs)
-(an empty fields array subscribes to changes on the entire entity).
+    delete_schema::DataInputModel.delete(&data, ());
+}
+```
+
+## `onFailure`
+
+`#[on_failure(|ctx, opts| { ... })]` -- registered on a field that has a validator, triggered by
+calling `handle_failure()` on the `IvoFailureHandle` returned from an unsuccessful `create` or
+`update`.
+
+```rust
+let failed = DataInputModel.create(input, ()).unwrap_err();
+println!("{:?}", failed.errors);
+failed.handle_failure(); // runs any matching on_failure triggers; async if any handler is
+```
+
+## `onSuccess`
+
+`#[on_success(|ctx, opts| { ... })]` -- registered on any individual field, or for
+[a group of fields via the schema option](./options.md#on_success) (the bare, arrayless form fires
+on every success regardless of which fields changed). Triggered by calling `handle_success()` on
+the `IvoSuccessHandle` returned from a successful `create` or `update`.
+
+```rust
+let created = DataInputModel.create(input, ()).unwrap();
+println!("{:?}", created.data);
+created.handle_success(); // fires any on_success handler(s) whose fields actually changed
+```
+
+`handle_success`/`handle_failure` only exist on the returned handle at all when the schema
+declares at least one matching `on_success`/`on_failure` handler *somewhere* -- calling one on a
+schema with none is a compile error (the method isn't generated), not a silent no-op. Once it does
+exist, it's still safe to call unconditionally: a grouped `on_success` whose fields didn't change
+this call simply doesn't fire, without you having to check first.
 
 ## Custom context options
 
 See [Getting Started - custom context options](./index.md#custom-context-options) for how to
-thread extra data (dependency injection, caching, i18n, ...) through create/update/delete
+thread extra data (dependency injection, caching, i18n, ...) through `create`/`update`/`delete`
 operations and into these handlers.
