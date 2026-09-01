@@ -1,311 +1,222 @@
-//! Wraps a handful of curated `ivo` (Rust) schema demos - one module per demo,
-//! each mirroring an example under `rs/examples/*.rs` - and exposes them to
-//! JS/WASM as JSON-in, JSON-out functions. This is deliberately *not* an
-//! arbitrary-code Rust playground (see /docs/README.md for why); each demo's
-//! schema is fixed at compile time and only the input JSON is editable.
+//! Wraps a handful of curated `ivo` (Rust) schema demos - one schema module per
+//! demo, each mirroring a `rs-next/examples/*.rs`/docs-rs example - and exposes
+//! them to JS/WASM as JSON-in, JSON-out functions. This is deliberately *not*
+//! an arbitrary-code Rust playground (see /docs/README.md for why); each
+//! demo's schema is fixed at compile time and only the input JSON is editable.
 
-use std::future::ready;
-use std::sync::LazyLock;
+use ivo::ivo_schema;
 use wasm_bindgen::prelude::*;
 
 fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
-mod constants {
-    use super::*;
-    use ivo::{constant_field, lax_field, IvoInputStruct, IvoModel, IvoStruct};
-
-    const CONSTANT_ID: i32 = 1234;
-    const DEFAULT_USERNAME: &str = "default-username";
-
-    #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-    pub struct DataInput {
-        pub username: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    pub struct Data {
+#[ivo_schema(
+    input(ConstantsInput, derive(Debug, Clone, PartialEq)),
+    output(ConstantsData, derive(Debug, Clone, PartialEq))
+)]
+mod constants_schema {
+    struct Fields {
+        #[constant(1234)]
         pub id: i32,
+
+        #[lax("default-username".to_string())]
+        #[validate(|_, _, _| Ok(None))]
         pub username: String,
-    }
-
-    type DataModel = IvoModel<DataInput, Data>;
-
-    static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
-        IvoModel::new(
-            |f| {
-                f.field(constant_field("id").value(CONSTANT_ID)).field(
-                    lax_field("username")
-                        .default(DEFAULT_USERNAME.into())
-                        .validate(|_, _, _| ready(Ok(None::<String>))),
-                )
-            },
-            |o| o,
-        )
-    });
-
-    #[wasm_bindgen(js_name = constantsCreate)]
-    pub async fn create(input_json: String) -> Result<String, JsValue> {
-        set_panic_hook();
-
-        let username: Option<String> = super::parse_optional_field(&input_json, "username")?;
-
-        match MODEL.create(&PartialDataInput { username }, None).await {
-            Ok((data, _, _)) => Ok(serde_json::json!({
-                "data": { "id": data.id, "username": data.username },
-                "error": null,
-            })
-            .to_string()),
-            Err((payload, _, _)) => Ok(super::error_response(payload)),
-        }
     }
 }
 
-mod lax_defaults {
-    use super::*;
-    use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
+#[wasm_bindgen(js_name = constantsCreate)]
+pub async fn constants_create(input_json: String) -> Result<String, JsValue> {
+    set_panic_hook();
 
-    const DEFAULT_USERNAME: &str = "default-username";
+    let username: Option<String> = parse_optional_field(&input_json, "username")?;
 
-    #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-    pub struct DataInput {
-        pub username: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    pub struct Data {
-        pub username: String,
-    }
-
-    type DataModel = IvoModel<DataInput, Data>;
-
-    static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
-        IvoModel::new(
-            |f| f.field(lax_field("username").default(DEFAULT_USERNAME.to_string())),
-            |o| o,
-        )
-    });
-
-    #[wasm_bindgen(js_name = laxDefaultsCreate)]
-    pub async fn create(input_json: String) -> Result<String, JsValue> {
-        set_panic_hook();
-
-        let username: Option<String> = super::parse_optional_field(&input_json, "username")?;
-
-        match MODEL.create(&PartialDataInput { username }, None).await {
-            Ok((data, _, _)) => Ok(serde_json::json!({
-                "data": { "username": data.username },
-                "error": null,
-            })
-            .to_string()),
-            Err((payload, _, _)) => Ok(super::error_response(payload)),
-        }
+    match constants_schema::ConstantsDataModel
+        .create(constants_schema::PartialConstantsInput { username }, ())
+    {
+        Ok(handle) => Ok(serde_json::json!({
+            "data": { "id": handle.data.id, "username": handle.data.username },
+            "error": null,
+        })
+        .to_string()),
+        Err(handle) => Ok(error_response(handle.errors)),
     }
 }
 
-mod required {
-    use super::*;
-    use ivo::{required_field, IvoInputStruct, IvoModel, IvoStruct};
-
-    #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-    pub struct DataInput {
+#[ivo_schema(input(LaxDefaultsInput, derive(Debug, Clone, PartialEq)))]
+mod lax_defaults_schema {
+    struct Fields {
+        #[lax("default-username".to_string())]
         pub username: String,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    pub struct Data {
-        pub username: String,
-    }
-
-    type DataModel = IvoModel<DataInput, Data>;
-
-    static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
-        IvoModel::new(
-            |f| f.field(required_field("username").validate(|_, _, _| ready(Ok(None::<String>)))),
-            |o| o,
-        )
-    });
-
-    #[wasm_bindgen(js_name = requiredCreate)]
-    pub async fn create(input_json: String) -> Result<String, JsValue> {
-        set_panic_hook();
-
-        let username: Option<String> = super::parse_optional_field(&input_json, "username")?;
-
-        match MODEL.create(&PartialDataInput { username }, None).await {
-            Ok((data, _, _)) => Ok(serde_json::json!({
-                "data": { "username": data.username },
-                "error": null,
-            })
-            .to_string()),
-            Err((payload, _, _)) => Ok(super::error_response(payload)),
-        }
     }
 }
 
-mod virtuals {
-    use super::*;
-    use ivo::{dependent_field, virtual_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
+#[wasm_bindgen(js_name = laxDefaultsCreate)]
+pub async fn lax_defaults_create(input_json: String) -> Result<String, JsValue> {
+    set_panic_hook();
 
+    let username: Option<String> = parse_optional_field(&input_json, "username")?;
+
+    match lax_defaults_schema::LaxDefaultsInputModel.create(
+        lax_defaults_schema::PartialLaxDefaultsInput { username },
+        (),
+    ) {
+        Ok(handle) => Ok(serde_json::json!({
+            "data": { "username": handle.data.username },
+            "error": null,
+        })
+        .to_string()),
+        Err(handle) => Ok(error_response(handle.errors)),
+    }
+}
+
+#[ivo_schema(input(RequiredInput, derive(Debug, Clone, PartialEq)))]
+mod required_schema {
+    struct Fields {
+        #[required]
+        #[validate(|_, _, _| Ok(None))]
+        pub username: String,
+    }
+}
+
+#[wasm_bindgen(js_name = requiredCreate)]
+pub async fn required_create(input_json: String) -> Result<String, JsValue> {
+    set_panic_hook();
+
+    let username: Option<String> = parse_optional_field(&input_json, "username")?;
+
+    match required_schema::RequiredInputModel
+        .create(required_schema::PartialRequiredInput { username }, ())
+    {
+        Ok(handle) => Ok(serde_json::json!({
+            "data": { "username": handle.data.username },
+            "error": null,
+        })
+        .to_string()),
+        Err(handle) => Ok(error_response(handle.errors)),
+    }
+}
+
+#[ivo_schema(
+    input(VirtualsInput, derive(Debug, Clone, PartialEq)),
+    output(VirtualsData, derive(Debug, Clone, PartialEq))
+)]
+mod virtuals_schema {
     const DEFAULT_DEPENDENT: &str = "DEFAULT_DEPENDENT_VALUE";
 
-    type Ctx = IvoContext<DataInput, Data>;
-
-    #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-    pub struct DataInput {
+    struct Fields {
+        #[ivo_virtual]
+        #[validate(|v: String, _, _| Ok(Some(v)))]
         pub virtual_field: String,
-    }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    pub struct Data {
+        #[depends_on("virtual_field")]
+        #[default(DEFAULT_DEPENDENT.to_string())]
+        #[resolve(|ctx, _| {
+            ctx.input()
+                .virtual_field
+                .clone()
+                .unwrap_or_else(|| ctx.values().dependent.clone())
+        })]
         pub dependent: String,
     }
+}
 
-    type DataModel = IvoModel<DataInput, Data>;
+#[wasm_bindgen(js_name = virtualsCreate)]
+pub async fn virtuals_create(input_json: String) -> Result<String, JsValue> {
+    set_panic_hook();
 
-    static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
-        IvoModel::new(
-            |f| {
-                f.field(
-                    virtual_field("virtual_field").validate(|v: String, _, _| ready(Ok(Some(v)))),
-                )
-                .field(
-                    dependent_field("dependent", ["virtual_field"])
-                        .default(DEFAULT_DEPENDENT.to_string())
-                        .resolve(|ctx: Ctx, _| {
-                            ready(
-                                ctx.input()
-                                    .virtual_field
-                                    .clone()
-                                    .unwrap_or_else(|| DEFAULT_DEPENDENT.to_string()),
-                            )
-                        }),
-                )
-            },
-            |o| o,
-        )
-    });
+    let virtual_field: Option<String> = parse_optional_field(&input_json, "virtual_field")?;
 
-    #[wasm_bindgen(js_name = virtualsCreate)]
-    pub async fn create(input_json: String) -> Result<String, JsValue> {
-        set_panic_hook();
-
-        let virtual_field: Option<String> =
-            super::parse_optional_field(&input_json, "virtual_field")?;
-
-        match MODEL
-            .create(&PartialDataInput { virtual_field }, None)
-            .await
-        {
-            Ok((data, _, _)) => Ok(serde_json::json!({
-                "data": { "dependent": data.dependent },
-                "error": null,
-            })
-            .to_string()),
-            Err((payload, _, _)) => Ok(super::error_response(payload)),
-        }
+    match virtuals_schema::VirtualsDataModel
+        .create(virtuals_schema::PartialVirtualsInput { virtual_field }, ())
+    {
+        Ok(handle) => Ok(serde_json::json!({
+            "data": { "dependent": handle.data.dependent },
+            "error": null,
+        })
+        .to_string()),
+        Err(handle) => Ok(error_response(handle.errors)),
     }
 }
 
-mod dependents {
-    use super::*;
-    use ivo::{dependent_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
-
-    type Ctx = IvoContext<DataInput, Data>;
-
-    #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-    pub struct DataInput {
+#[ivo_schema(
+    input(DependentsInput, derive(Debug, Clone, PartialEq)),
+    output(DependentsData, derive(Debug, Clone, PartialEq))
+)]
+mod dependents_schema {
+    struct Fields {
+        #[lax(0)]
         pub value: i32,
-    }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    pub struct Data {
-        pub value: i32,
+        #[depends_on("value")]
+        #[default(1_000)]
+        #[resolve(|ctx, _| ctx.values().value + 1)]
         pub computed: i32,
     }
+}
 
-    type DataModel = IvoModel<DataInput, Data>;
+#[wasm_bindgen(js_name = dependentsCreate)]
+pub async fn dependents_create(input_json: String) -> Result<String, JsValue> {
+    set_panic_hook();
 
-    static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
-        IvoModel::new(
-            |f| {
-                f.field(lax_field("value").default(0)).field(
-                    dependent_field("computed", ["value"])
-                        .default(1)
-                        .resolve(|ctx: Ctx, _| ready(ctx.values().value.unwrap_or(0) + 1)),
-                )
-            },
-            |o| o,
-        )
-    });
+    let value: Option<i32> = parse_optional_field(&input_json, "value")?;
 
-    #[wasm_bindgen(js_name = dependentsCreate)]
-    pub async fn create(input_json: String) -> Result<String, JsValue> {
-        set_panic_hook();
-
-        let value: Option<i32> = super::parse_optional_field(&input_json, "value")?;
-
-        match MODEL.create(&PartialDataInput { value }, None).await {
-            Ok((data, _, _)) => Ok(serde_json::json!({
-                "data": { "value": data.value, "computed": data.computed },
-                "error": null,
-            })
-            .to_string()),
-            Err((payload, _, _)) => Ok(super::error_response(payload)),
-        }
+    match dependents_schema::DependentsDataModel
+        .create(dependents_schema::PartialDependentsInput { value }, ())
+    {
+        Ok(handle) => Ok(serde_json::json!({
+            "data": { "value": handle.data.value, "computed": handle.data.computed },
+            "error": null,
+        })
+        .to_string()),
+        Err(handle) => Ok(error_response(handle.errors)),
     }
 }
 
-mod timestamps {
-    use super::*;
+#[ivo_schema(
+    input(TimestampsInput, derive(Debug, Clone, PartialEq)),
+    output(TimestampsData, derive(Debug, Clone, PartialEq))
+)]
+mod timestamps_schema {
     use chrono::{DateTime, Utc};
-    use ivo::{lax_field, IvoInputStruct, IvoModel, IvoStruct};
 
     type Timestamp = DateTime<Utc>;
 
-    #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-    pub struct DataInput {
+    struct Fields {
+        #[lax("default-username".to_string())]
         pub username: String,
-    }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    pub struct Data {
-        pub username: String,
+        #[created_at]
         pub created_at: Timestamp,
+
+        #[updated_at]
         pub updated_at: Timestamp,
     }
 
-    type DataModel = IvoModel<DataInput, Data, Option<()>, Timestamp>;
+    #[timestamps(|| Utc::now())]
+    const _: () = ();
+}
 
-    static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
-        IvoModel::new(
-            |f| {
-                f.field(lax_field("username").default("default-username".to_string()))
-                    .timestamps(|t| t.resolve(Utc::now).created_at(None).updated_at(None))
+#[wasm_bindgen(js_name = timestampsCreate)]
+pub async fn timestamps_create(input_json: String) -> Result<String, JsValue> {
+    set_panic_hook();
+
+    let username: Option<String> = parse_optional_field(&input_json, "username")?;
+
+    match timestamps_schema::TimestampsDataModel
+        .create(timestamps_schema::PartialTimestampsInput { username }, ())
+    {
+        Ok(handle) => Ok(serde_json::json!({
+            "data": {
+                "username": handle.data.username,
+                "created_at": handle.data.created_at.to_rfc3339(),
+                "updated_at": handle.data.updated_at.to_rfc3339(),
             },
-            |o| o,
-        )
-    });
-
-    #[wasm_bindgen(js_name = timestampsCreate)]
-    pub async fn create(input_json: String) -> Result<String, JsValue> {
-        set_panic_hook();
-
-        let username: Option<String> = super::parse_optional_field(&input_json, "username")?;
-
-        match MODEL.create(&PartialDataInput { username }, None).await {
-            Ok((data, _, _)) => Ok(serde_json::json!({
-                "data": {
-                    "username": data.username,
-                    "created_at": data.created_at.to_rfc3339(),
-                    "updated_at": data.updated_at.to_rfc3339(),
-                },
-                "error": null,
-            })
-            .to_string()),
-            Err((payload, _, _)) => Ok(super::error_response(payload)),
-        }
+            "error": null,
+        })
+        .to_string()),
+        Err(handle) => Ok(error_response(handle.errors)),
     }
 }
 
@@ -331,7 +242,7 @@ fn parse_optional_field<T: serde::de::DeserializeOwned>(
     }
 }
 
-fn error_response(payload: ivo::IvoErrorPayload<()>) -> String {
+fn error_response<Metadata: Clone>(payload: ivo::IvoErrorPayload<Metadata>) -> String {
     let fields: serde_json::Map<String, serde_json::Value> = payload
         .into_iter()
         .map(|(field, err)| (field, serde_json::Value::String(err.reason)))

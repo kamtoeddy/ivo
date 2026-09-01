@@ -1,31 +1,17 @@
-use ivo::{dependent_field, lax_field, IvoContext, IvoInputStruct, IvoModel, IvoStruct};
-use std::future::ready;
-use std::sync::LazyLock;
+use ivo::ivo_schema;
 
-type Ctx = IvoContext<DataInput, Data>;
+#[ivo_schema(
+    input(DependentsInput, derive(Debug, Clone, PartialEq)),
+    output(DependentsData, derive(Debug, Clone, PartialEq))
+)]
+mod dependents_schema {
+    struct Fields {
+        #[lax(0)]
+        pub value: i32,
 
-#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
-pub struct DataInput {
-    pub value: i32,
+        #[depends_on("value")]
+        #[default(1_000)]
+        #[resolve(|ctx, _| ctx.values().value + 1)]
+        pub computed: i32,
+    }
 }
-
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
-pub struct Data {
-    pub value: i32,
-    pub computed: i32,
-}
-
-type DataModel = IvoModel<DataInput, Data>;
-
-static MODEL: LazyLock<DataModel> = LazyLock::new(|| {
-    IvoModel::new(
-        |f| {
-            f.field(lax_field("value").default(0)).field(
-                dependent_field("computed", ["value"])
-                    .default(1)
-                    .resolve(|ctx: Ctx, _| ready(ctx.values().value.unwrap_or(0) + 1)),
-            )
-        },
-        |o| o,
-    )
-});

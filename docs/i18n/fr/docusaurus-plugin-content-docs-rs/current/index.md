@@ -5,9 +5,12 @@ slug: /
 
 # Démarrage
 
-`ivo` pour Rust attend que vous définissiez votre modèle de données avec des structs qui
-implémentent `IvoInputStruct` (requis pour les structs d'entrée) et `IvoStruct`. Cela se fait via
-leurs macros dérivées respectives.
+Cette documentation couvre `ivo` pour Rust **v0.5.0**.
+
+Les schémas se déclarent, ils ne se construisent pas de façon impérative : une seule macro
+d'attribut, `#[ivo_schema(...)]`, prend un module contenant vos déclarations de champs et génère
+les structs d'entrée/sortie, leurs équivalents partiels/erreurs, ainsi qu'un modèle typé et
+spécifique au schéma avec des méthodes `create`/`update`/`delete`.
 
 ## Installation
 
@@ -15,80 +18,96 @@ leurs macros dérivées respectives.
 cargo add ivo
 ```
 
-## Définir des structs
+## Démarrage rapide
 
-```rs
+```rust
 use chrono::{DateTime, Utc};
-use ivo::{IvoInputStruct, IvoStruct};
-
-#[derive(Clone, PartialEq, IvoInputStruct)]
-struct UserInput {
-    email: Option<String>,
-    phone_number: Option<String>,
-    username: String,
-}
+use ivo::ivo_schema;
 
 type Timestamp = DateTime<Utc>;
 
-#[derive(Clone, PartialEq, IvoStruct)]
-struct User {
-    id: String,
-    created_at: Timestamp,
-    email: Option<String>,
-    phone_number: Option<String>,
-    updated_at: Option<Timestamp>,
-    username: String,
-    username_last_updated_at: Option<Timestamp>,
+#[ivo_schema(
+    input(PostInput, derive(Debug, Clone, PartialEq)),
+    output(Post, derive(Debug, Clone, PartialEq))
+)]
+mod post_schema {
+    use super::Timestamp;
+    use chrono::Utc;
+
+    struct Fields {
+        #[constant(1)]
+        pub id: i32,
+
+        #[created_at]
+        pub created_at: Timestamp,
+
+        #[updated_at]
+        pub updated_at: Timestamp,
+
+        #[required]
+        #[validate(|title: String, _, _| {
+            if title.trim().len() < 3 {
+                return Err(("title must be at least 3 characters long".into(), None));
+            }
+            Ok(Some(title.trim().to_string()))
+        })]
+        pub title: String,
+
+        #[lax(String::new())]
+        pub body: String,
+    }
+
+    #[timestamps(|| Utc::now())]
+    const _: () = ();
+}
+
+use post_schema::{PartialPostInput, PostModel};
+
+fn main() {
+    let created = PostModel
+        .create(
+            PartialPostInput {
+                title: Some("Hello, ivo!".into()),
+                body: Some("My first post.".into()),
+            },
+            (), // ctx_options -- `()` quand le schéma n'en déclare aucune
+        )
+        .unwrap();
+
+    println!("{:#?}", created.data); // -> Post { id, created_at, updated_at, title, body }
+
+    let updated = PostModel
+        .update(
+            created.data,
+            PartialPostInput {
+                title: None,
+                body: Some("Edited.".into()),
+            },
+            (),
+        )
+        .unwrap();
+
+    println!("{:#?}", updated.data); // -> PartialPost { body: Some("Edited."), .. le reste à None }
 }
 ```
 
-### `IvoStruct`
-
-Dériver `IvoStruct` sur `User` génère un struct `PartialUser`, ainsi que des méthodes utilitaires :
-
-```rs
-impl IvoStruct for User {
-    fn append_updates(&mut self, updates: &Self::Partial);
-    fn clone_with_updates(&self, updates: &Self::Partial) -> Self;
-}
-
-impl From<User> for PartialUser {
-    fn from(value: User) -> PartialUser;
-}
-```
-
-`PartialUser` obtient un constructeur, des méthodes builder `set_*`/`with_*` et des méthodes
-`unset_*` pour chaque champ, ainsi que `into_option()` et `is_empty()` :
-
-```rs
-struct PartialUser {
-    id: Option<String>,
-    created_at: Option<Timestamp>,
-    email: Option<String>,
-    phone_number: Option<Option<String>>,
-    updated_at: Option<Option<Timestamp>>,
-    username: Option<String>,
-    username_last_updated_at: Option<Option<Timestamp>>,
-}
-```
-
-L'attribut `#[ivo(...)]` permet de personnaliser les structs partiels générés et leurs champs, par
-exemple pour dériver `Serialize`/`Deserialize` ou transmettre des attributs `#[serde(...)]` aux
-champs générés - voir le
-[README Rust](https://github.com/kamtoeddy/ivo/blob/main/rs/README.md#ivostruct) pour l'exemple
-complet.
-
-### `IvoInputStruct`
-
-Dériver `IvoInputStruct` sur `UserInput` implémente automatiquement `IvoStruct` et génère en plus
-un struct `UserInputErrors`, utilisé pour retourner les erreurs des
-[post-validateurs](https://github.com/kamtoeddy/ivo#post-validator) et des résolveurs de champs
-requis groupés.
+- `input(...)` nomme la struct d'entrée générée et est toujours obligatoire ; `output(...)` nomme
+  la struct de sortie et n'est obligatoire que lorsque le schéma a des champs exclusifs à l'entrée
+  (`#[ivo_virtual]`) ou à la sortie (`#[constant]`, `#[depends_on(...)]`, horodatages). Un schéma
+  ne contenant que des champs `#[required]`/`#[lax]` peut omettre `output(...)` entièrement et
+  utiliser une seule struct pour les deux.
+- `derive(...)` ajoute des dérivations à la struct générée ; `derive_partial(...)` les ajoute à son
+  équivalent partiel (par ex. pour dériver `Serialize`/`Deserialize` pour le transport réseau).
+- La macro génère une valeur unité `{OutputName}Model` (ou `{InputName}Model` pour un schéma à une
+  seule struct) -- `post_schema::PostModel.create(...)` fonctionne directement, sans `::new()`.
+- `create`/`update`/`delete` ne sont `async` que si au moins un gestionnaire qu'ils invoquent est
+  asynchrone -- sinon, la méthode générée (et tout `handle_success`/`handle_failure` qu'elle
+  retourne) est purement synchrone, sans imposer de dépendance à un runtime.
 
 ## Définir un schéma
 
-Les champs d'un schéma appartiennent à l'une des six catégories suivantes - consultez chacune
-pour les règles et un exemple exécutable :
+Les champs d'un schéma appartiennent à l'une de six catégories - voir chacune pour les règles et
+un exemple exécutable :
 
 - [Champs constants](./definitions/constants.md)
 - [Champs dépendants](./definitions/dependents.md)
@@ -97,35 +116,30 @@ pour les règles et un exemple exécutable :
 - [Horodatages](./definitions/timestamps.md)
 - [Champs virtuels](./definitions/virtuals.md)
 
+Voir [Validateurs](./validators.md) pour le fonctionnement de `#[validate]`/`#[re_validate]`, et
+[Cycles de vie](./life-cycles.md) pour `#[on_success]`/`#[on_failure]`/`#[on_delete]`.
+
 ## Options du schéma
 
-- **Ignore (groupé)** : avec les
-  [champs lax](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/fields/lax/ignore.rs) ou les
-  [champs virtuels](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/fields/virtuals/ignore.rs)
-- **Ignore update (groupé)** : pour
-  [l'entité entière](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/opions/mod.rs), avec les
-  [champs lax](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/fields/lax/ignore.rs) ou les
-  [champs requis](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/fields/required/ignore.rs)
-- **Required (groupé)** : avec les
-  [champs lax](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/fields/lax/mod.rs) ou les
-  [champs virtuels](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/fields/virtuals/mod.rs)
-- **Post-validate** : avec les
-  [champs lax](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/fields/lax/mod.rs), les
-  [champs requis](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/fields/required/mod.rs) ou
-  les [champs virtuels](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/fields/virtuals/mod.rs)
-- **On success / on delete** : voir [Cycles de vie](./life-cycles.md)
+Le comportement groupé et transversal aux champs s'attache à un élément `const _: () = ();`
+anonyme à l'intérieur du module du schéma, et non enchaîné à l'appel de la macro -- voir
+[Options du schéma](./options.md) pour `ignore`, `ignore_update`, `required`, `post_validate`,
+`on_success`, `on_delete` et `timestamps`, chacune avec un exemple exécutable.
 
 ## Options de contexte personnalisées
 
-Les options de contexte permettent de faire transiter des données supplémentaires (injection de
-dépendances, cache, i18n, ...) à travers une opération. Voir la
-[démo](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
+`ctx_options(VotreType)` fait transiter une valeur de votre propre type (injection de
+dépendances, cache, données propres à la requête, ...) à travers chaque gestionnaire d'un appel
+`create`/`update`. Voir
+[Options du schéma - Options de contexte personnalisées](./options.md#options-de-contexte-personnalisées),
+ou la démo complète dans
+[`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
 
 ## `ErrorSanitizer` personnalisé
 
 Le payload par défaut retourné pour les opérations échouées a la signature suivante :
 
-```rs
+```rust
 type DefaultFieldErrorMetadata = ();
 
 struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
@@ -133,18 +147,20 @@ struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
     pub metadata: Option<Metadata>,
 }
 
-type IvoErrorPayload<Metadata: Clone> = HashMap<String, FieldError<Metadata>>;
+type IvoErrorPayload<Metadata> = HashMap<String, FieldError<Metadata>>;
 ```
 
-Pour personnaliser ce payload, fournissez une implémentation du trait `IvoErrorSanitizer` - voir
-[cet exemple](https://github.com/kamtoeddy/ivo/blob/main/rs/tests/extras/error_sanitizer.rs).
+Pour personnaliser ce payload, fournissez une implémentation du trait `IvoErrorSanitizer` via
+`error_sanitizer(VotreSanitizer)` -- voir
+[Options du schéma - Payloads d'erreur personnalisés](./options.md#payloads-derreur-personnalisés-avec-ivoerrorsanitizer).
 
-## Référence API
+## Référence de l'API
 
-Les documents ci-dessus couvrent les concepts de haut niveau. Pour la référence API exhaustive
-(types, fonctions, macros dérivées) générée par rustdoc, consultez :
+La documentation narrative ci-dessus couvre les concepts de haut niveau. Pour la référence
+exhaustive de l'API générée (types, fonctions, macros dérivées), voir :
 
-- **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — rustdoc hébergé pour les crates publiées.
-  (Pas encore disponible car `ivo` n'a pas été publié sur crates.io.)
-- **rustdoc local** — exécutez `cargo doc --no-deps --open` depuis le répertoire `rs/` pour consulter
-  la même référence générée localement.
+- **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — rustdoc hébergé pour le crate publié.
+- **[crates.io/crates/ivo](https://crates.io/crates/ivo)** — page du registre de crates (versions,
+  dépendances, README).
+- **rustdoc local** — exécutez `cargo doc --no-deps --open` depuis le répertoire `rs-next/` pour
+  parcourir la même référence générée localement.

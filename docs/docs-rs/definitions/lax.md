@@ -56,3 +56,10 @@ fn main() {
 - [Ignore](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore.rs)
 - [Ignore init](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore_init.rs)
 - [Ignore update](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore_update.rs)
+
+## Try it in the browser
+
+`username` has a static default and no validator - leave the input empty to see the default kick
+in.
+
+<RustPlayground demo="lax_defaults" />

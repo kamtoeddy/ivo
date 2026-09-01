@@ -27,6 +27,11 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: "doc",
+      id: "execution-pipeline",
+      label: "Execution Pipeline",
+    },
+    {
+      type: "doc",
       id: "life-cycles",
       label: "Life Cycles",
     },

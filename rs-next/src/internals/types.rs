@@ -337,8 +337,25 @@ impl<CtxOptions> IvoCtxOptions<CtxOptions> {
     /// (there's no writer this could ever contend with within `ivo`'s own
     /// generated pipeline -- see [`IvoRwCtxOptions::read_sync`] for the
     /// fuller version of this warning, which does apply to writers).
+    ///
+    /// On `wasm32` (no OS thread to block), this is a non-blocking
+    /// `try_read()` instead -- see [`IvoRwCtxOptions::read_sync`]'s doc
+    /// comment for why that's equivalent in practice for every way `ivo`
+    /// itself calls this.
+    #[cfg(not(target_family = "wasm"))]
     pub fn read_sync(&self) -> async_lock::RwLockReadGuard<'_, CtxOptions> {
         self.0.read_blocking()
+    }
+
+    /// `wasm32` counterpart of the native `read_sync` above -- see its doc
+    /// comment.
+    #[cfg(target_family = "wasm")]
+    pub fn read_sync(&self) -> async_lock::RwLockReadGuard<'_, CtxOptions> {
+        self.0.try_read().expect(
+            "IvoCtxOptions::read_sync() found the lock contended on wasm32, where it can only \
+             ever poll once (no thread to block on) -- see the doc comment on the native \
+             `read_sync` for why this should never actually happen",
+        )
     }
 }
 
@@ -393,8 +410,27 @@ impl<CtxOptions> IvoRwCtxOptions<CtxOptions> {
     /// async-Rust footgun: it can stall or deadlock a single-threaded or
     /// limited-worker runtime. Use [`Self::read`] there instead, or
     /// `spawn_blocking` if you must combine both.
+    ///
+    /// On `wasm32` (no OS thread to block), this is a non-blocking
+    /// `try_read()` instead. Every one of the guarantees above still
+    /// applies, so in practice this never actually needs to wait -- it's
+    /// only genuine misuse (an independently-spawned task racing this call)
+    /// that could make it contended, and there `wasm32` panics instead of
+    /// blocking forever (there's no thread it could park on anyway).
+    #[cfg(not(target_family = "wasm"))]
     pub fn read_sync(&self) -> async_lock::RwLockReadGuard<'_, CtxOptions> {
         self.0.read_blocking()
+    }
+
+    /// `wasm32` counterpart of the native `read_sync` above -- see its doc
+    /// comment.
+    #[cfg(target_family = "wasm")]
+    pub fn read_sync(&self) -> async_lock::RwLockReadGuard<'_, CtxOptions> {
+        self.0.try_read().expect(
+            "IvoRwCtxOptions::read_sync() found the lock contended on wasm32, where it can only \
+             ever poll once (no thread to block on) -- see the doc comment on the native \
+             `read_sync` for why this should never actually happen",
+        )
     }
 
     /// Write the options, blocking the current thread until every other
@@ -405,8 +441,24 @@ impl<CtxOptions> IvoRwCtxOptions<CtxOptions> {
     /// Same caveat as [`Self::read_sync`] about independently-spawned tasks
     /// -- it applies here too, and matters more for writers, since a stuck
     /// writer also blocks every reader.
+    ///
+    /// On `wasm32`, this is a non-blocking `try_write()` instead -- see
+    /// [`Self::read_sync`]'s doc comment for why that's equivalent in
+    /// practice.
+    #[cfg(not(target_family = "wasm"))]
     pub fn write_sync(&self) -> async_lock::RwLockWriteGuard<'_, CtxOptions> {
         self.0.write_blocking()
+    }
+
+    /// `wasm32` counterpart of the native `write_sync` above -- see its doc
+    /// comment.
+    #[cfg(target_family = "wasm")]
+    pub fn write_sync(&self) -> async_lock::RwLockWriteGuard<'_, CtxOptions> {
+        self.0.try_write().expect(
+            "IvoRwCtxOptions::write_sync() found the lock contended on wasm32, where it can \
+             only ever poll once (no thread to block on) -- see the doc comment on the native \
+             `write_sync` for why this should never actually happen",
+        )
     }
 
     /// Downgrades this read/write handle to the read-only wrapper handed to

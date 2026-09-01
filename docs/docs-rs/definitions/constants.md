@@ -57,3 +57,9 @@ fn main() {
 
 An update to `item_schema::PartialItemInput` has no `id`/`label` fields at all -- there's nothing
 to submit for a constant, and no way to change it after creation.
+
+## Try it in the browser
+
+`id` is a constant (always `1234`); `username` is lax with a default. Edit the input and run it.
+
+<RustPlayground demo="constants" />

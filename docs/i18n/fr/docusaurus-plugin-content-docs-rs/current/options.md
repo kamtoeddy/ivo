@@ -1,19 +1,20 @@
 ---
-title: Schema Options
+title: Options du schéma
 sidebar_position: 3
 ---
 
-# Schema Options
+# Options du schéma
 
-Grouped, cross-field options attach to an anonymous `const _: () = ();` item directly inside the
-schema module -- not chained onto the `#[ivo_schema(...)]` call itself. Use them when a rule or
-side effect involves more than one field, or when you want to react to the entity as a whole.
-Multiple option attributes may be stacked on one const, or spread across several.
+Les options groupées et transversales aux champs s'attachent à un élément `const _: () = ();`
+anonyme directement à l'intérieur du module du schéma -- et non enchaînées à l'appel
+`#[ivo_schema(...)]` lui-même. Utilisez-les lorsqu'une règle ou un effet de bord implique plusieurs
+champs, ou lorsque vous voulez réagir à l'entité dans son ensemble. Plusieurs attributs d'option
+peuvent être empilés sur un même const, ou répartis sur plusieurs.
 
 ## `ignore`
 
-Skip processing for a group of lax or virtual fields together, based on a shared condition.
-Requires at least two fields, and applies to both `create` and `update`.
+Ignore le traitement d'un groupe de champs lax ou virtuels ensemble, selon une condition partagée.
+Nécessite au moins deux champs, et s'applique à la fois à `create` et `update`.
 
 ```rust
 use ivo::ivo_schema;
@@ -45,18 +46,20 @@ fn main() {
         )
         .unwrap();
 
-    println!("{:?}", created.data); // DataInput { email: "", phone: "" } -- both ignored, defaults used
+    println!("{:?}", created.data); // DataInput { email: "", phone: "" } -- les deux ignorés, valeurs par défaut utilisées
 }
 ```
 
-See [`lax_with_ignore.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore.rs)
-and field-level `#[ignore]` on virtual fields (Virtual Fields, in the Fields section of the sidebar).
+Voir [`lax_with_ignore.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore.rs)
+et `#[ignore]` au niveau du champ sur les champs virtuels (page Champs virtuels, section Champs de
+la barre latérale).
 
 ## `ignore_update`
 
-Same idea as `ignore`, but evaluated during updates only. `#[ignore_update([...], handler)]`
-requires at least two fields; to ignore the *entire entity* on update, omit the array and use the
-bare `#[ignore_update(handler)]` entity-level form instead.
+Même idée que `ignore`, mais évalué uniquement lors des mises à jour. `#[ignore_update([...],
+handler)]` nécessite au moins deux champs ; pour ignorer *l'entité entière* lors d'une mise à jour,
+omettez le tableau et utilisez plutôt la forme nue au niveau de l'entité,
+`#[ignore_update(handler)]`.
 
 ```rust
 use ivo::ivo_schema;
@@ -80,7 +83,7 @@ mod ignore_update_group_schema {
 fn main() {
     let data = ignore_update_group_schema::DataInput { a: 42, b: 1 };
 
-    // both fields ignored -> nothing actually changes -> "nothing to update"
+    // les deux champs ignorés -> rien ne change réellement -> "rien à mettre à jour"
     let err = ignore_update_group_schema::DataInputModel
         .update(
             data,
@@ -92,18 +95,19 @@ fn main() {
         )
         .unwrap_err();
 
-    assert!(err.errors.is_none()); // `None` errors means "nothing to update", not a validation failure
+    assert!(err.errors.is_none()); // `errors` à `None` signifie "rien à mettre à jour", pas un échec de validation
 }
 ```
 
-See [`lax_with_ignore_update.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore_update.rs).
+Voir [`lax_with_ignore_update.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/lax_with_ignore_update.rs).
 
 ## `required`
 
-Enforces that at least one of the listed lax/virtual fields is provided. The handler runs only
-when *none* of the listed fields were provided, and returns `Option<{InputName}Errors>` -- `Some`
-merges per-field errors into the payload, `None` means the requirement doesn't apply. Requires at
-least two fields. Commonly used for "provide email or phone" style rules.
+Impose qu'au moins un des champs lax/virtuels listés soit fourni. Le gestionnaire ne s'exécute que
+lorsque *aucun* des champs listés n'a été fourni, et retourne `Option<{InputName}Errors>` -- `Some`
+fusionne les erreurs par champ dans le payload, `None` signifie que l'exigence ne s'applique pas.
+Nécessite au moins deux champs. Couramment utilisé pour des règles du type "fournir un email ou un
+téléphone".
 
 ```rust
 use ivo::ivo_schema;
@@ -143,19 +147,20 @@ fn main() {
         )
         .unwrap_err();
 
-    println!("{:?}", err.errors); // both "email" and "phone_number" carry the same reason
+    println!("{:?}", err.errors); // "email" et "phone_number" portent tous deux la même raison
 }
 ```
 
-`DataInputErrors` is generated automatically alongside `DataInput`/`PartialDataInput`. See the same
-pattern in
+`DataInputErrors` est généré automatiquement aux côtés de `DataInput`/`PartialDataInput`. Voir le
+même schéma dans
 [`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
 
 ## `post_validate`
 
-Cross-field validation that runs after every individual field's `re_validate`. Can also return
-updated values for the group's own fields (`pre_validate` runs first and can feed updated values
-into the main `validate`). Requires at least two fields, from lax, required or virtual fields.
+Validation transversale aux champs, exécutée après le `re_validate` de chaque champ individuel.
+Peut aussi retourner des valeurs mises à jour pour les champs du groupe lui-même (`pre_validate`
+s'exécute en premier et peut alimenter le `validate` principal avec des valeurs mises à jour).
+Nécessite au moins deux champs, parmi les champs lax, requis ou virtuels.
 
 ```rust
 use ivo::ivo_schema;
@@ -199,15 +204,15 @@ fn main() {
 }
 ```
 
-See the cross-field validation in
+Voir la validation transversale dans
 [`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs).
 
 ## `on_success`
 
-Register a handler that runs after a successful `create` or `update`, via the returned handle's
-`handle_success()`. The bare, arrayless form fires on every success; `#[on_success([...], handler)]`
-requires at least one field and fires when at least one of the listed fields is part of the
-success payload.
+Enregistre un gestionnaire qui s'exécute après un `create` ou `update` réussi, via `handle_success()`
+sur le handle retourné. La forme nue, sans tableau, se déclenche à chaque succès ;
+`#[on_success([...], handler)]` nécessite au moins un champ et se déclenche lorsqu'au moins un des
+champs listés fait partie du payload de succès.
 
 ```rust
 use ivo::ivo_schema;
@@ -244,19 +249,19 @@ fn main() {
         )
         .unwrap();
 
-    created.handle_success(); // prints both lines above
+    created.handle_success(); // affiche les deux lignes ci-dessus
 }
 ```
 
-See the runnable
+Voir l'exemple exécutable
 [`option_on_success.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/option_on_success.rs)
-example for more detail, including dependent and virtual fields.
+pour plus de détails, y compris les champs dépendants et virtuels.
 
 ## `on_delete`
 
-Register one or more handlers that run when a schema's generated `delete` method is invoked, in
-addition to any per-field `#[on_delete]` handlers -- see the Life Cycles page (onDelete) in the
-sidebar.
+Enregistre un ou plusieurs gestionnaires qui s'exécutent lorsque la méthode `delete` générée d'un
+schéma est invoquée, en plus de tout gestionnaire `#[on_delete]` par champ -- voir la page Cycles
+de vie (onDelete) dans la barre latérale.
 
 ```rust
 #[on_delete(|data, _opts| {
@@ -267,22 +272,26 @@ const _: () = ();
 
 ## `timestamps`
 
-The shared, **synchronous** resolver for `#[created_at]`/`#[updated_at]`/`#[optional_updated_at]`
-fields -- see the Timestamps page in the Fields section of the sidebar for the full picture.
+Le résolveur partagé et **synchrone** pour les champs
+`#[created_at]`/`#[updated_at]`/`#[optional_updated_at]` -- voir la page Horodatages dans la
+section Champs de la barre latérale pour la vue d'ensemble.
 
 ```rust
 #[timestamps(|| chrono::Utc::now())]
 const _: () = ();
 ```
 
-Accepts either a zero-arg closure or a bare function path (`#[timestamps(chrono::Utc::now)]`).
+Accepte soit une closure sans argument, soit un chemin de fonction nu
+(`#[timestamps(chrono::Utc::now)]`).
 
-## Custom context options
+## Options de contexte personnalisées
 
-`ctx_options(YourType)` in the macro call threads a value of your own type (dependency injection,
-caching, request-scoped data, ...) through every handler in a `create`/`update` call, wrapped in a
-read/write lock so concurrent handlers can share and mutate it safely. Async handlers use
-`opts.read().await`/`opts.write().await`; sync handlers use `opts.read_sync()`/`opts.write_sync()`.
+`ctx_options(VotreType)` dans l'appel de la macro fait transiter une valeur de votre propre type
+(injection de dépendances, cache, données propres à la requête, ...) à travers chaque gestionnaire
+d'un appel `create`/`update`, enveloppée dans un verrou lecture/écriture afin que les gestionnaires
+concurrents puissent la partager et la modifier en toute sécurité. Les gestionnaires asynchrones
+utilisent `opts.read().await`/`opts.write().await` ; les gestionnaires synchrones utilisent
+`opts.read_sync()`/`opts.write_sync()`.
 
 ```rust
 use ivo::ivo_schema;
@@ -327,15 +336,17 @@ fn main() {
 }
 ```
 
-Pass `()` when a schema declares no `ctx_options(...)`, as in every other example on this page.
-See [`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs)
-for a complete, realistic example (dependency lookups, uniqueness checks, and mutation across
-several handlers in the same call).
+Passez `()` lorsqu'un schéma ne déclare aucune `ctx_options(...)`, comme dans tous les autres
+exemples de cette page. Voir
+[`main_demo/src/domain.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/main_demo/src/domain.rs)
+pour un exemple complet et réaliste (recherches de dépendances, vérifications d'unicité, et
+mutation à travers plusieurs gestionnaires dans le même appel).
 
-## Custom error payloads with `IvoErrorSanitizer`
+## Payloads d'erreur personnalisés avec `IvoErrorSanitizer`
 
-By default `ivo` returns errors as `HashMap<String, FieldError<()>>`. Change the shape of the
-error payload by implementing `IvoErrorSanitizer` and passing it via `error_sanitizer(...)`:
+Par défaut, `ivo` retourne les erreurs sous forme de `HashMap<String, FieldError<()>>`. Changez la
+forme du payload d'erreur en implémentant `IvoErrorSanitizer` et en le passant via
+`error_sanitizer(...)` :
 
 ```rust
 use std::collections::HashMap;
@@ -394,13 +405,13 @@ fn main() {
 }
 ```
 
-See the full example, including a custom `ctx_options` type, in
+Voir l'exemple complet, incluant un type `ctx_options` personnalisé, dans
 [`tests/extras/error_sanitizer.rs`](https://github.com/kamtoeddy/ivo/blob/main/rs-next/tests/extras/error_sanitizer.rs).
 
-## API reference
+## Référence de l'API
 
-For the exhaustive list of grouped-option signatures and constraints, see:
+Pour la liste exhaustive des signatures et contraintes des options groupées, voir :
 
-- **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — hosted rustdoc for the published crate.
-- **Local rustdoc** — run `cargo doc --no-deps --open` from the `rs-next/` directory to browse the
-  same generated reference locally.
+- **[docs.rs/crate/ivo](https://docs.rs/crate/ivo)** — rustdoc hébergé pour le crate publié.
+- **rustdoc local** — exécutez `cargo doc --no-deps --open` depuis le répertoire `rs-next/` pour
+  parcourir la même référence générée localement.

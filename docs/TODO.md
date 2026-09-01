@@ -6,6 +6,14 @@ site covering both the TypeScript (`/ts`, v1.9.0 + v2.0.0 only - see scope decis
 both languages, and English + French i18n. See [`README.md`](./README.md) for the architecture
 rationale and directory layout.
 
+- [x] Rebuilt the interactive WASM playground (`wasm/ivo-playground/`) against `rs-next` (v0.5.0's `#[ivo_schema]` API) instead of the old `/rs`. All 6 demos (`constants`, `lax_defaults`, `required`, `virtuals`, `dependents`, `timestamps`) rewritten to the new attribute-macro syntax, same `wasm_bindgen` export names/JSON shape so `src/components/RustPlayground`'s TS side needed no changes; source display files in `RustPlayground/sources/*.rs` updated to match. Re-embedded `<RustPlayground demo="..." />` on the 6 relevant `docs-rs/definitions/*.md` pages (EN + FR) that had lost it in the v0.5.0 content rewrite. Surfaced and fixed a real, separate bug in `rs-next` itself along the way: `IvoRwCtxOptions`/`IvoCtxOptions`'s `read_sync()`/`write_sync()` didn't compile at all for `wasm32` (the derive macro calls `read_sync()` internally for any fully-synchronous schema, and `async-lock`'s blocking primitives don't exist on that target) -- fixed by keeping the real OS-thread-blocking implementation on native (preserves the already-tested concurrency guarantees) and switching to a non-blocking `try_read()`/`try_write()` implementation specifically on `wasm32`, which is safe because of the same "never actually contended" reasoning already documented on those methods. Verified via `cargo test` (843+46 unchanged on native), `wasm-pack build`, and the `Rust playground runs the constants/required demo` Playwright e2e tests (real browser, actually executes the new schemas) -- all pass.
+
+Related fixes made while completing the v0.5.0 doc rewrite:
+
+- [x] Replaced direct links to `rs-next/GOAL.md` from the docs site (`docs-rs/definitions/dependents.md`, `docs-rs/options.md`) with a new, user-facing **Execution Pipeline** page (`docs-rs/execution-pipeline.md` + French translation), added to the sidebar. GOAL.md is an internal architecture-design doc, not meant to be a docs-site destination.
+- [x] Fixed the French version dropdown showing stale/duplicate labels ("0.4.0, 0.4.0, 0.3.0") -- `i18n/fr/docusaurus-plugin-content-docs-rs/current.json`'s label was never bumped past "v0.4.0" (a pre-existing staleness bug), and the new v0.4.2 snapshot inherited that same stale label when created. Both fixed to "v0.5.0"/"v0.4.2".
+- [x] Completed the French translation of `docs-rs/options.md` (was entirely missing, a pre-existing gap despite Phase 5 below claiming full coverage - see "Known gaps"), plus every other `docs-rs/*.md` page rewritten for v0.5.0 (all 11 pages now have full EN/FR parity, confirmed by file-count diff).
+
 ## Phase 0 - Scaffold
 
 - [x] `bun create docusaurus` (TypeScript template) into `/docs`
@@ -178,19 +186,7 @@ it in the browser` section with a runnable schema example to the _imported copy_
 - Rust playground supports curated demos with editable JSON input, not arbitrary Rust source -
   running arbitrary Rust in-browser would require a sandboxed compile backend, rejected as
   unnecessary infra/security burden for a docs site.
-- `docs-rs/options.md` has no French translation despite Phase 5 above claiming "all pages"
-  translated -- confirmed missing from `i18n/fr/docusaurus-plugin-content-docs-rs/current/` (only
-  `index.md`, `life-cycles.md`, `validators.md`, and `definitions/*.md` exist there); root cause
-  not investigated. This was previously silent (the old English-fallback content had no internal
-  relative links, so nothing broke), but surfaced as a real `bun run build` failure once the
-  v0.5.0 rewrite added relative markdown links between pages -- fixed by removing options.md's own
-  outgoing relative links (English fallback content renders fine for French readers when the
-  content itself is just prose, but its relative links don't resolve correctly in extending a
-  Docusaurus doc without a translation of its own). A full French translation of the v0.5.0
-  `options.md` would let those links come back; not attempted here (translation, not doc-content
-  generation, was the ask).
-- v0.5.0 docs-rs content does not (yet) wire up the interactive `<RustPlayground>` component used
-  in v0.4.x's `definitions/*.md` pages -- that component's WASM backend (`wasm/ivo-playground/`)
-  is still built against the old `/rs` API. All v0.5.0 examples are plain, verified-by-compiling
-  Rust code blocks (matching the `rs-next/README.md` style) instead. Rebuilding the playground
-  against `rs-next` is a separate, larger follow-up.
+- ~~`docs-rs/options.md` has no French translation~~ -- fixed, see above (full French translation
+  now in place; the root cause of why it was ever missing, despite Phase 5 below claiming "all
+  pages" translated, was not investigated).
+- ~~v0.5.0 docs-rs content doesn't wire up `<RustPlayground>`~~ -- fixed, see above.

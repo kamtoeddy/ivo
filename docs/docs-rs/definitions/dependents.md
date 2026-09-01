@@ -70,11 +70,17 @@ fn main() {
 
 `ctx.values()` inside the resolver gives access to every field resolved so far in the same
 `create`/`update` call, including sibling dependents earlier in the dependency graph -- see
-[Execution pipeline](https://github.com/kamtoeddy/ivo/blob/main/rs-next/GOAL.md#17-execution-pipeline)
-for the exact phase ordering.
+[Execution Pipeline](../execution-pipeline.md) for the exact phase ordering.
 
 ## More examples
 
 - [Default values](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/dependent_defaults.rs)
 - [Dependent on dependent](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/dependent_on_dependent.rs)
 - [Readonly](https://github.com/kamtoeddy/ivo/blob/main/rs-next/examples/dependent_readonly.rs)
+
+## Try it in the browser
+
+`value` is a lax field with a default of `0`. `computed` is a dependent field that equals
+`value + 1` (with its own fallback default of `1`).
+
+<RustPlayground demo="dependents" />
