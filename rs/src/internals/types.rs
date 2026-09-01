@@ -561,14 +561,14 @@ where
 /// `handle_success` is asynchronous.
 pub struct IvoSuccessHandle<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> {
     pub data: O,
-    pub ctx_options: IvoCtxOptions<CtxOptions>,
+    pub ctx_options: CtxOptions,
     trigger: IvoTriggerFn,
 }
 
 impl<O, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool>
     IvoSuccessHandle<O, CtxOptions, ASYNC, HAS_SUCCESS>
 {
-    pub fn new(data: O, ctx_options: IvoCtxOptions<CtxOptions>, trigger: IvoTriggerFn) -> Self {
+    pub fn new(data: O, ctx_options: CtxOptions, trigger: IvoTriggerFn) -> Self {
         Self {
             data,
             ctx_options,
@@ -613,18 +613,14 @@ impl<O: fmt::Debug, CtxOptions, const ASYNC: bool, const HAS_SUCCESS: bool> fmt:
 /// `handle_failure` is asynchronous.
 pub struct IvoFailureHandle<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool> {
     pub errors: Payload,
-    pub ctx_options: IvoCtxOptions<CtxOptions>,
+    pub ctx_options: CtxOptions,
     trigger: IvoTriggerFn,
 }
 
 impl<Payload, CtxOptions, const ASYNC: bool, const HAS_FAILURE: bool>
     IvoFailureHandle<Payload, CtxOptions, ASYNC, HAS_FAILURE>
 {
-    pub fn new(
-        errors: Payload,
-        ctx_options: IvoCtxOptions<CtxOptions>,
-        trigger: IvoTriggerFn,
-    ) -> Self {
+    pub fn new(errors: Payload, ctx_options: CtxOptions, trigger: IvoTriggerFn) -> Self {
         Self {
             errors,
             ctx_options,

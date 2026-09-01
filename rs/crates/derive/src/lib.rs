@@ -5214,11 +5214,12 @@ fn generate_model(
     // after every one of those phases).
     let create_error_check = quote! {
         if !errors.is_empty() {
-            let __return_opts = _ctx_options.clone();
+            let __opts_guard = #create_options_read;
+            let __return_opts = (*__opts_guard).clone();
             let __failure_trigger = #create_failure_trigger;
             return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
                 <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                    errors, &*#create_options_read,
+                    errors, &*__opts_guard,
                 ),
                 __return_opts,
                 __failure_trigger,
@@ -5228,12 +5229,13 @@ fn generate_model(
     let update_error_check = quote! {
         if !errors.is_empty() {
             let __trigger_changes = __changes.clone();
-            let __return_opts = _ctx_options.clone();
+            let __opts_guard = #update_options_read;
+            let __return_opts = (*__opts_guard).clone();
             let __failure_trigger = #update_failure_trigger;
             return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
                 ::core::option::Option::Some(
                     <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                        errors, &*#update_options_read,
+                        errors, &*__opts_guard,
                     ),
                 ),
                 __return_opts,
@@ -5321,7 +5323,7 @@ fn generate_model(
 
     let update_nothing_to_update_return = quote! {
         let __trigger_changes = __changes.clone();
-        let __return_opts = _ctx_options.clone();
+        let __return_opts = (*#update_options_read).clone();
         let __failure_trigger = #update_failure_trigger;
         return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
             ::core::option::Option::None,
@@ -5418,7 +5420,7 @@ fn generate_model(
 
                 #create_timestamps_phase
 
-                let __return_opts = _ctx_options.clone();
+                let __return_opts = (*#create_options_read).clone();
                 let __success_trigger = #create_success_trigger;
                 ::core::result::Result::Ok(::ivo::__ivo_internals::IvoSuccessHandle::new(
                     output,
@@ -5489,7 +5491,7 @@ fn generate_model(
                 #(#timestamp_update_phase)*
 
                 let __trigger_changes = __changes.clone();
-                let __return_opts = _ctx_options.clone();
+                let __return_opts = (*#update_options_read).clone();
                 let __success_trigger = #update_success_trigger;
                 ::core::result::Result::Ok(::ivo::__ivo_internals::IvoSuccessHandle::new(
                     __changes,

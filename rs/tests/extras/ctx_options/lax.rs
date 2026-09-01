@@ -35,7 +35,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
         created.data,
         default_fn_schema::DataInput { lax: DEFAULT_VALUE }
     );
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.messages[0], MESSAGE);
 
     created.handle_success();
 }
@@ -86,7 +86,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
         .unwrap();
 
     assert_eq!(created.data, ignore_create_schema::DataInput { lax });
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.messages[0], MESSAGE);
 
     created.handle_success();
 }
@@ -141,7 +141,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
         .unwrap();
 
     assert_eq!(updated.data, ignore_update_schema::PartialDataInput { lax });
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
 
     updated.handle_success();
 }
@@ -190,7 +190,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .unwrap();
 
     assert_eq!(failed.errors.get("lax").unwrap().reason, REQUIRED_ERROR);
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
@@ -246,7 +246,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         failed.errors.as_ref().unwrap().get("lax").unwrap().reason,
         REQUIRED_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
@@ -295,7 +295,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .unwrap();
 
     assert_eq!(failed.errors.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -364,7 +364,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         failed.errors.as_ref().unwrap().get("lax").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -421,7 +421,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .unwrap();
 
     assert_eq!(failed.errors.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -491,7 +491,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         failed.errors.as_ref().unwrap().get("lax").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -559,7 +559,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
             lax_1: DEFAULT_VALUE
         }
     );
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.messages[0], MESSAGE);
 
     created.handle_success().await;
 }
@@ -624,7 +624,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         updated.data,
         post_validate_update_schema::PartialDataInput { lax, lax_1: None }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
 
     updated.handle_success().await;
 }

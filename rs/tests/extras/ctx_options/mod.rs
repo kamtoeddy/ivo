@@ -69,7 +69,7 @@ async fn should_properly_update_ctx_options() {
         .unwrap();
 
     assert_eq!(
-        created.ctx_options.read().await.warnings[0],
+        created.ctx_options.warnings[0],
         format!("warning: supplier {supplier_num} is not currently active!")
     );
 
@@ -91,7 +91,7 @@ async fn should_properly_update_ctx_options() {
         .unwrap();
 
     assert_eq!(
-        updated.ctx_options.read().await.warnings[0],
+        updated.ctx_options.warnings[0],
         format!("warning: supplier {supplier_num} is not currently active!")
     );
 }

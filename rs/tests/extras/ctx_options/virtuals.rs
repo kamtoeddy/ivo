@@ -37,7 +37,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         failed.errors.get("virtual_field").unwrap().reason,
         REQUIRED_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
@@ -109,7 +109,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
             .reason,
         REQUIRED_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 }
 
 async_test_matrix!(
@@ -179,7 +179,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
             dependent: value.map(|v| v + 1)
         }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
 
     updated.handle_success();
 }
@@ -239,7 +239,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         failed.errors.get("virtual_field").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -318,7 +318,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
             .reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -388,7 +388,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         failed.errors.get("virtual_field").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -468,7 +468,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
             .reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -554,7 +554,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
             dependent: virtual_value
         }
     );
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.messages[0], MESSAGE);
 
     created.handle_success();
 }
@@ -633,7 +633,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
             dependent: Some(updated_virtual_value)
         }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
 
     updated.handle_success();
 }
@@ -697,7 +697,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         created.data,
         post_validate_create_schema::Data { dependent: value }
     );
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.messages[0], MESSAGE);
 
     created.handle_success().await;
 }
@@ -770,7 +770,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         updated.data,
         post_validate_update_schema::PartialData { dependent: value }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
 
     updated.handle_success().await;
 }

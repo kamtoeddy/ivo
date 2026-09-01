@@ -43,7 +43,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
         updated.data,
         ignore_update_schema::PartialDataInput { required }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
 
     updated.handle_success();
 }
@@ -98,7 +98,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         failed.errors.get("required").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -169,7 +169,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
             .reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -230,7 +230,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         failed.errors.get("required").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -302,7 +302,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
             .reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
 
     failed.handle_failure();
 }
@@ -369,7 +369,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
             required_1: required
         }
     );
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.messages[0], MESSAGE);
 
     created.handle_success().await;
 }
@@ -440,7 +440,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
             required_1: None
         }
     );
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
 
     updated.handle_success().await;
 }

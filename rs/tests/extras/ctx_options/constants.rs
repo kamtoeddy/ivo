@@ -1,6 +1,5 @@
 use ivo::ivo_schema;
 
-
 #[derive(Clone)]
 struct CtxOptions {
     messages: Vec<String>,
@@ -38,7 +37,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
         }
     );
 
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.messages[0], MESSAGE);
 
     created.handle_success();
 }

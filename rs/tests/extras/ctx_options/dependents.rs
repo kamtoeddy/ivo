@@ -41,7 +41,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
         }
     );
 
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.messages[0], MESSAGE);
 
     created.handle_success();
 }
@@ -106,7 +106,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
         }
     );
 
-    assert_eq!(created.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(created.ctx_options.messages[0], MESSAGE);
 
     created.handle_success();
 }
@@ -177,7 +177,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
         }
     );
 
-    assert_eq!(updated.ctx_options.read().await.messages[0], MESSAGE);
+    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
 
     updated.handle_success();
 }
