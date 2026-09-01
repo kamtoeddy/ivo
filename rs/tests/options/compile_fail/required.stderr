@@ -52,7 +52,7 @@ error: only lax and virtual fields can belong to grouped required configs; remov
    |
    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error: `output(...)` is not allowed when the schema only contains required and/or lax fields without timestamps
+error: `output(...)` is only allowed if at least one output-only field like constants, dependent, or timestamp fields is present
    --> tests/options/compile_fail/required.rs:108:1
     |
 108 | / #[ivo_schema(

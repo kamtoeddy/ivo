@@ -1430,7 +1430,7 @@ fn validate_single_dual_mode(args: &SchemaArgs, fields: &[FieldDef]) -> syn::Res
     if !requires_dual && args.output.is_some() {
         return Err(syn::Error::new(
             proc_macro2::Span::call_site(),
-            "`output(...)` is not allowed when the schema only contains required and/or lax fields without timestamps",
+            "`output(...)` is only allowed if at least one output-only field like constants, dependent, or timestamp fields is present",
         ));
     }
 
