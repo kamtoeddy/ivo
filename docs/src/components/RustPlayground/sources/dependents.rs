@@ -10,8 +10,8 @@ mod dependents_schema {
         pub value: i32,
 
         #[depends_on("value")]
-        #[default(1_000)]
-        #[resolve(|ctx, _| ctx.values().value + 1)]
+        #[default(1_001)]
+        #[resolve(|ctx, _| ctx.values().value + 12)]
         pub computed: i32,
     }
 }
