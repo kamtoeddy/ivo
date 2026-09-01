@@ -54,7 +54,7 @@ pub struct Supplier {
 async fn should_properly_update_ctx_options() {
     let supplier_num = 2;
 
-    let created = product_schema::ProductModel
+    let (data, ctx_options) = product_schema::ProductModel
         .create(
             product_schema::PartialProductInput {
                 name: Some("product_name".into()),
@@ -69,15 +69,15 @@ async fn should_properly_update_ctx_options() {
         .unwrap();
 
     assert_eq!(
-        created.ctx_options.warnings[0],
+        ctx_options.warnings[0],
         format!("warning: supplier {supplier_num} is not currently active!")
     );
 
     let supplier_num = 3;
 
-    let updated = product_schema::ProductModel
+    let (_, ctx_options) = product_schema::ProductModel
         .update(
-            created.data.clone(),
+            data.clone(),
             product_schema::PartialProductInput {
                 name: None,
                 price: None,
@@ -91,7 +91,7 @@ async fn should_properly_update_ctx_options() {
         .unwrap();
 
     assert_eq!(
-        updated.ctx_options.warnings[0],
+        ctx_options.warnings[0],
         format!("warning: supplier {supplier_num} is not currently active!")
     );
 }

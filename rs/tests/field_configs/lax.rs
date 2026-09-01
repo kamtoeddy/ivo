@@ -9,7 +9,7 @@ fn should_allow_lax_fields_with_static_and_dynamic_defaults() {
 
 #[tokio::test]
 async fn should_resolve_async_dynamic_lax_default() {
-    let created = async_dynamic_lax_schema::DataInputModel
+    let (created, ..) = async_dynamic_lax_schema::DataInputModel
         .create(
             async_dynamic_lax_schema::PartialDataInput { name: None },
             (),
@@ -18,7 +18,7 @@ async fn should_resolve_async_dynamic_lax_default() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.name, "default");
+    assert_eq!(created.name, "default");
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]

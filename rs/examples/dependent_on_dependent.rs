@@ -63,28 +63,30 @@ mod data_schema {
 async fn timed() {
     let timer = Instant::now();
 
-    let created = DataModel
+    let (created, _ctx_options, handle_success) = DataModel
         .create(PartialDataInput::new().with_lax("lol".into()), ())
+        .ok()
         .unwrap();
 
-    let data = created.data.clone();
+    let data = created.clone();
     println!("\ncreated: {:#?}", data);
 
     println!("\nCreate duration: {:?}", timer.elapsed());
 
-    let _ = created.handle_success().await;
+    let _ = handle_success().await;
 
     println!("\nCreate duration handle_success: {:?}", timer.elapsed());
 
     let timer = Instant::now();
 
-    let updated = DataModel
+    let (updated, _ctx_options, handle_success) = DataModel
         .update(data, PartialDataInput::new().with_lax("lolol".into()), ())
+        .ok()
         .unwrap();
-    println!("\nupdate: {:#?}", updated.data);
+    println!("\nupdate: {:#?}", updated);
     println!("\nUpdate duration: {:?}", timer.elapsed());
 
-    let _ = updated.handle_success().await;
+    let _ = handle_success().await;
 
     println!("\nUpdate duration handle_success: {:?}", timer.elapsed());
 }
@@ -93,7 +95,7 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
     let lax_1 = "john-doe".to_string();
     let lax_1_input_value = Some(lax_1.clone());
 
-    let created = DataModel
+    let (created, _ctx_options, handle_success) = DataModel
         .create(
             PartialDataInput {
                 lax: None,
@@ -104,10 +106,10 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         Data {
             dependent: DEFAULT_DEPENDENT,
             dependent_1: DEFAULT_DEPENDENT,
@@ -116,12 +118,12 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 
     let lax = "john-doe".to_string();
     let lax_input_value = Some(lax.clone());
 
-    let created = DataModel
+    let (created, _ctx_options, handle_success) = DataModel
         .create(
             PartialDataInput {
                 lax: lax_input_value,
@@ -132,12 +134,12 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     let dependent = DEFAULT_DEPENDENT + 1;
 
     assert_eq!(
-        created.data,
+        created,
         Data {
             dependent,
             dependent_1: dependent + 10,
@@ -146,14 +148,14 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 
     let lax = "john-doe".to_string();
     let lax_input_value = Some(lax.clone());
     let lax_1 = "jane-doe".to_string();
     let lax_1_input_value = Some(lax_1.clone());
 
-    let created = DataModel
+    let (created, _ctx_options, handle_success) = DataModel
         .create(
             PartialDataInput {
                 lax: lax_input_value,
@@ -164,12 +166,12 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     let dependent = DEFAULT_DEPENDENT + 1;
 
     assert_eq!(
-        created.data,
+        created,
         Data {
             dependent,
             dependent_1: dependent + 10,
@@ -178,7 +180,7 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
         }
     );
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async fn should_reject_update_if_resolver_was_run_during_prior_update() {
@@ -191,7 +193,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
 
     let updated_lax = Some("jane-doe".to_string());
 
-    let updates = DataModel
+    let (updates, _ctx_options, handle_success) = DataModel
         .update(
             data.clone(),
             PartialDataInput {
@@ -204,7 +206,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         .unwrap();
 
     assert_eq!(
-        updates.data,
+        updates,
         PartialData {
             dependent: None,
             dependent_1: None,
@@ -213,9 +215,9 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         }
     );
 
-    let data_1 = updates.data.clone();
+    let data_1 = updates.clone();
 
-    updates.handle_success().await;
+    handle_success().await;
 
     let data_1 = data.clone_with_updates(&data_1);
 
@@ -224,7 +226,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
     let updated_lax = Some("jane-doe".to_string());
     let updated_lax_1 = Some("james-doe".to_string());
 
-    let updates = DataModel
+    let (updates, _ctx_options, handle_success) = DataModel
         .update(
             data.clone(),
             PartialDataInput {
@@ -239,7 +241,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
     let dependent = Some(data.dependent + 1);
 
     assert_eq!(
-        updates.data,
+        updates,
         PartialData {
             dependent: dependent.clone(),
             dependent_1: dependent.map(|v| v + 10),
@@ -248,9 +250,9 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         }
     );
 
-    let data_1 = updates.data.clone();
+    let data_1 = updates.clone();
 
-    updates.handle_success().await;
+    handle_success().await;
 
     let data_1 = data.clone_with_updates(&data_1);
 
@@ -258,7 +260,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
 
     let updated_lax = Some("jane-doe".to_string());
 
-    let updates = DataModel
+    let (updates, _ctx_options, handle_success) = DataModel
         .update(
             data.clone(),
             PartialDataInput {
@@ -273,7 +275,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
     let dependent = Some(data.dependent + 1);
 
     assert_eq!(
-        updates.data,
+        updates,
         PartialData {
             dependent: dependent.clone(),
             dependent_1: dependent.map(|v| v + 10),
@@ -282,9 +284,9 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
         }
     );
 
-    let data_1 = updates.data.clone();
+    let data_1 = updates.clone();
 
-    updates.handle_success().await;
+    handle_success().await;
 
     let data_1 = data.clone_with_updates(&data_1);
 

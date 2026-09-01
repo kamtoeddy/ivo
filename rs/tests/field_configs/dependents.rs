@@ -31,7 +31,7 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
 
 #[tokio::test]
 async fn should_resolve_async_dynamic_default_for_dependent_field() {
-    let created = async_dynamic_default_dependent_schema::DataModel
+    let (created, ..) = async_dynamic_default_dependent_schema::DataModel
         .create(
             async_dynamic_default_dependent_schema::PartialDataInput {
                 lax: None,
@@ -43,12 +43,12 @@ async fn should_resolve_async_dynamic_default_for_dependent_field() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.dependent, 1);
+    assert_eq!(created.dependent, 1);
 }
 
 #[tokio::test]
 async fn should_resolve_async_resolver_for_dependent_field() {
-    let created = async_resolve_dependent_schema::DataModel
+    let (created, ..) = async_resolve_dependent_schema::DataModel
         .create(
             async_resolve_dependent_schema::PartialDataInput {
                 lax: Some(String::from("x")),
@@ -60,7 +60,7 @@ async fn should_resolve_async_resolver_for_dependent_field() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.dependent, 2);
+    assert_eq!(created.dependent, 2);
 }
 
 #[ivo_schema(
@@ -464,7 +464,7 @@ async fn should_resolve_independent_async_dependents_of_the_same_round_concurren
     // concurrently, not one `.await` at a time. `rendezvous()` only returns
     // once *both* resolvers have started, which can only happen if they are
     // in flight at the same time.
-    let created = async_parallel_dependents_schema::DataModel
+    let (created, ..) = async_parallel_dependents_schema::DataModel
         .create(
             async_parallel_dependents_schema::PartialDataInput {
                 name: Some("abc".into()),
@@ -475,14 +475,14 @@ async fn should_resolve_independent_async_dependents_of_the_same_round_concurren
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.dependent_a, 3);
-    assert_eq!(created.data.dependent_b, 4);
+    assert_eq!(created.dependent_a, 3);
+    assert_eq!(created.dependent_b, 4);
 
     async_parallel_dependents_schema::STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let updated = async_parallel_dependents_schema::DataModel
+    let (updated, ..) = async_parallel_dependents_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_parallel_dependents_schema::PartialDataInput {
                 name: Some("abcde".into()),
             },
@@ -493,7 +493,7 @@ async fn should_resolve_independent_async_dependents_of_the_same_round_concurren
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_parallel_dependents_schema::PartialData {
             name: Some("abcde".into()),
             dependent_a: Some(5),

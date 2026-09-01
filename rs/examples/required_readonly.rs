@@ -2,22 +2,23 @@ use ivo::ivo_schema;
 
 #[async_std::main]
 async fn main() {
-    let errors = DataModel
+    let (errors, _ctx_options, handle_failure) = DataModel
         .create(PartialData { username: None }, ())
-        .unwrap_err();
+        .err()
+        .unwrap();
 
-    println!("\nfailed to create: {:#?}", errors.errors);
+    println!("\nfailed to create: {:#?}", errors);
 
     assert_eq!(
-        errors.errors.get("username").unwrap().reason,
+        errors.get("username").unwrap().reason,
         "\"username\" was not provided!"
     );
 
-    errors.handle_failure();
+    handle_failure();
 
     let updated_username = Some("james-doe".to_string());
 
-    let handle = DataModel
+    let (handle, _ctx_options, handle_failure) = DataModel
         .update(
             Data {
                 username: "john-doe".to_string(),
@@ -27,13 +28,14 @@ async fn main() {
             },
             (),
         )
-        .unwrap_err();
+        .err()
+        .unwrap();
 
-    assert!(handle.errors.is_none());
+    assert!(handle.is_none());
 
     println!("\nNothing to update");
 
-    handle.handle_failure();
+    handle_failure();
 }
 
 pub use schema::{Data, DataModel, PartialData};

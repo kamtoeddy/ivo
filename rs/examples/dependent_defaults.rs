@@ -8,7 +8,7 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
     ($module:ident) => {{
         use $module::*;
 
-        let created = DataModel
+        let (created, _ctx_options, handle_success) = DataModel
             .create(
                 PartialDataInput {
                     lax: None,
@@ -20,10 +20,10 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             .ok()
             .unwrap();
 
-        println!("\ncreated: {:#?}", created.data);
+        println!("\ncreated: {:#?}", created);
 
         assert_eq!(
-            created.data,
+            created,
             Data {
                 dependent: DEFAULT_DEPENDENT,
                 lax: DEFAULT_LAX_VALUE,
@@ -32,14 +32,14 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             }
         );
 
-        let data = created.data.clone();
-        created.handle_success();
+        let data = created.clone();
+        handle_success();
 
         DataModel.delete(&data, ());
 
         let unrelated_lax = DEFAULT_LAX_VALUE + 1;
 
-        let created = DataModel
+        let (created, _ctx_options, handle_success) = DataModel
             .create(
                 PartialDataInput {
                     lax: None,
@@ -51,10 +51,10 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             .ok()
             .unwrap();
 
-        println!("\ncreated: {:#?}", created.data);
+        println!("\ncreated: {:#?}", created);
 
         assert_eq!(
-            created.data,
+            created,
             Data {
                 dependent: DEFAULT_DEPENDENT,
                 lax: DEFAULT_LAX_VALUE,
@@ -63,14 +63,14 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             }
         );
 
-        let data = created.data.clone();
-        created.handle_success();
+        let data = created.clone();
+        handle_success();
 
         DataModel.delete(&data, ());
 
         let lax = DEFAULT_LAX_VALUE + 1;
 
-        let created = DataModel
+        let (created, _ctx_options, handle_success) = DataModel
             .create(
                 PartialDataInput {
                     lax: Some(lax),
@@ -82,10 +82,10 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             .ok()
             .unwrap();
 
-        println!("\ncreated: {:#?}", created.data);
+        println!("\ncreated: {:#?}", created);
 
         assert_eq!(
-            created.data,
+            created,
             Data {
                 dependent: DEFAULT_DEPENDENT + 1,
                 lax,
@@ -94,14 +94,14 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             }
         );
 
-        let data = created.data.clone();
-        created.handle_success();
+        let data = created.clone();
+        handle_success();
 
         DataModel.delete(&data, ());
 
         let username = "john-doe".to_string();
 
-        let created = DataModel
+        let (created, _ctx_options, handle_success) = DataModel
             .create(
                 PartialDataInput {
                     lax: None,
@@ -113,10 +113,10 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             .ok()
             .unwrap();
 
-        println!("\ncreated: {:#?}", created.data);
+        println!("\ncreated: {:#?}", created);
 
         assert_eq!(
-            created.data,
+            created,
             Data {
                 dependent: DEFAULT_DEPENDENT + 1,
                 lax: DEFAULT_LAX_VALUE,
@@ -125,8 +125,8 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             }
         );
 
-        let data = created.data.clone();
-        created.handle_success();
+        let data = created.clone();
+        handle_success();
 
         DataModel.delete(&data, ());
 
@@ -134,7 +134,7 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
         let unrelated_lax = DEFAULT_LAX_VALUE + 100;
         let username = "john-doe".to_string();
 
-        let created = DataModel
+        let (created, _ctx_options, handle_success) = DataModel
             .create(
                 PartialDataInput {
                     lax: Some(lax),
@@ -146,10 +146,10 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             .ok()
             .unwrap();
 
-        println!("\ncreated: {:#?}", created.data);
+        println!("\ncreated: {:#?}", created);
 
         assert_eq!(
-            created.data,
+            created,
             Data {
                 dependent: DEFAULT_DEPENDENT + 1,
                 lax,
@@ -158,8 +158,8 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_at_creation {
             }
         );
 
-        let data = created.data.clone();
-        created.handle_success();
+        let data = created.clone();
+        handle_success();
 
         DataModel.delete(&data, ());
     }};
@@ -178,7 +178,7 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_during_updates {
 
         let updated_username = Some("jane-doe".to_string());
 
-        let updates = DataModel
+        let (updates, _ctx_options, handle_success) = DataModel
             .update(
                 data.clone(),
                 PartialDataInput {
@@ -191,10 +191,10 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_during_updates {
             .ok()
             .unwrap();
 
-        println!("\nupdates: {:#?}", updates.data);
+        println!("\nupdates: {:#?}", updates);
 
         assert_eq!(
-            updates.data,
+            updates,
             PartialData {
                 dependent: Some(data.dependent + 1),
                 lax: None,
@@ -203,8 +203,8 @@ macro_rules! should_properly_resolve_values_of_dependent_fields_during_updates {
             }
         );
 
-        let updates_data = updates.data.clone();
-        updates.handle_success();
+        let updates_data = updates.clone();
+        handle_success();
 
         let data = data.clone_with_updates(&updates_data);
 

@@ -27,7 +27,7 @@ impl CtxOptions {
 #[should_panic(expected = "ctx_options updated synchronously in validator")]
 fn should_properly_write_ctx_options_synchronously_in_a_sync_validator_and_read_them_back_synchronously_in_an_on_success_handler(
 ) {
-    let created = sync_write_schema::DataInputModel
+    let (_, _ctx_options, handle_success) = sync_write_schema::DataInputModel
         .create(
             sync_write_schema::PartialDataInput { required: Some(1) },
             CtxOptions::new(),
@@ -35,7 +35,7 @@ fn should_properly_write_ctx_options_synchronously_in_a_sync_validator_and_read_
         .ok()
         .unwrap();
 
-    created.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(

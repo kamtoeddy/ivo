@@ -18,7 +18,7 @@ use ivo::ivo_schema;
 fn should_respect_created_at_timestamp_with_default_name() {
     let lax = 400;
 
-    let created = sync_created_at_default_name_schema::DataModel
+    let (created, ..) = sync_created_at_default_name_schema::DataModel
         .create(
             sync_created_at_default_name_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -26,14 +26,14 @@ fn should_respect_created_at_timestamp_with_default_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.lax, lax);
-    assert!(created.data.created_at > 0);
+    assert_eq!(created.lax, lax);
+    assert!(created.created_at > 0);
 
     let lax_update = 200;
 
-    let updated = sync_created_at_default_name_schema::DataModel
+    let (updated, ..) = sync_created_at_default_name_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_created_at_default_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
@@ -42,15 +42,15 @@ fn should_respect_created_at_timestamp_with_default_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(updated.data.lax, Some(lax_update));
-    assert_eq!(updated.data.created_at, None);
+    assert_eq!(updated.lax, Some(lax_update));
+    assert_eq!(updated.created_at, None);
 }
 
 #[test]
 fn should_respect_created_at_timestamp_with_custom_name() {
     let lax = 400;
 
-    let created = sync_created_at_custom_name_schema::DataModel
+    let (created, ..) = sync_created_at_custom_name_schema::DataModel
         .create(
             sync_created_at_custom_name_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -58,14 +58,14 @@ fn should_respect_created_at_timestamp_with_custom_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.lax, lax);
-    assert!(created.data.custom_created_at > 0);
+    assert_eq!(created.lax, lax);
+    assert!(created.custom_created_at > 0);
 
     let lax_update = 200;
 
-    let updated = sync_created_at_custom_name_schema::DataModel
+    let (updated, ..) = sync_created_at_custom_name_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_created_at_custom_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
@@ -74,15 +74,15 @@ fn should_respect_created_at_timestamp_with_custom_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(updated.data.lax, Some(lax_update));
-    assert_eq!(updated.data.custom_created_at, None);
+    assert_eq!(updated.lax, Some(lax_update));
+    assert_eq!(updated.custom_created_at, None);
 }
 
 #[test]
 fn should_respect_updated_at_timestamp_with_default_name() {
     let lax = 400;
 
-    let created = sync_updated_at_default_name_schema::DataModel
+    let (created, ..) = sync_updated_at_default_name_schema::DataModel
         .create(
             sync_updated_at_default_name_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -90,14 +90,14 @@ fn should_respect_updated_at_timestamp_with_default_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.lax, lax);
-    assert!(created.data.updated_at > 0);
+    assert_eq!(created.lax, lax);
+    assert!(created.updated_at > 0);
 
     let lax_update = 200;
 
-    let updated = sync_updated_at_default_name_schema::DataModel
+    let (updated, ..) = sync_updated_at_default_name_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_updated_at_default_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
@@ -106,16 +106,16 @@ fn should_respect_updated_at_timestamp_with_default_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(updated.data.lax, Some(lax_update));
-    assert!(updated.data.updated_at.is_some());
-    assert!(updated.data.updated_at.unwrap() >= created.data.updated_at);
+    assert_eq!(updated.lax, Some(lax_update));
+    assert!(updated.updated_at.is_some());
+    assert!(updated.updated_at.unwrap() >= created.updated_at);
 }
 
 #[test]
 fn should_respect_updated_at_timestamp_with_custom_name() {
     let lax = 400;
 
-    let created = sync_updated_at_custom_name_schema::DataModel
+    let (created, ..) = sync_updated_at_custom_name_schema::DataModel
         .create(
             sync_updated_at_custom_name_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -123,14 +123,14 @@ fn should_respect_updated_at_timestamp_with_custom_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.lax, lax);
-    assert!(created.data.custom_updated_at > 0);
+    assert_eq!(created.lax, lax);
+    assert!(created.custom_updated_at > 0);
 
     let lax_update = 200;
 
-    let updated = sync_updated_at_custom_name_schema::DataModel
+    let (updated, ..) = sync_updated_at_custom_name_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_updated_at_custom_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
@@ -139,16 +139,16 @@ fn should_respect_updated_at_timestamp_with_custom_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(updated.data.lax, Some(lax_update));
-    assert!(updated.data.custom_updated_at.is_some());
-    assert!(updated.data.custom_updated_at.unwrap() >= created.data.custom_updated_at);
+    assert_eq!(updated.lax, Some(lax_update));
+    assert!(updated.custom_updated_at.is_some());
+    assert!(updated.custom_updated_at.unwrap() >= created.custom_updated_at);
 }
 
 #[test]
 fn should_respect_optional_updated_at_timestamp_with_default_name() {
     let lax = 400;
 
-    let created = sync_optional_updated_at_default_name_schema::DataModel
+    let (created, ..) = sync_optional_updated_at_default_name_schema::DataModel
         .create(
             sync_optional_updated_at_default_name_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -156,14 +156,14 @@ fn should_respect_optional_updated_at_timestamp_with_default_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.lax, lax);
-    assert_eq!(created.data.updated_at, None);
+    assert_eq!(created.lax, lax);
+    assert_eq!(created.updated_at, None);
 
     let lax_update = 200;
 
-    let updated = sync_optional_updated_at_default_name_schema::DataModel
+    let (updated, ..) = sync_optional_updated_at_default_name_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_optional_updated_at_default_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
@@ -172,15 +172,15 @@ fn should_respect_optional_updated_at_timestamp_with_default_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(updated.data.lax, Some(lax_update));
-    assert!(updated.data.updated_at.is_some());
+    assert_eq!(updated.lax, Some(lax_update));
+    assert!(updated.updated_at.is_some());
 }
 
 #[test]
 fn should_respect_optional_updated_at_timestamp_with_custom_name() {
     let lax = 400;
 
-    let created = sync_optional_updated_at_custom_name_schema::DataModel
+    let (created, ..) = sync_optional_updated_at_custom_name_schema::DataModel
         .create(
             sync_optional_updated_at_custom_name_schema::PartialDataInput { lax: Some(lax) },
             (),
@@ -188,14 +188,14 @@ fn should_respect_optional_updated_at_timestamp_with_custom_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data.lax, lax);
-    assert_eq!(created.data.custom_updated_at, None);
+    assert_eq!(created.lax, lax);
+    assert_eq!(created.custom_updated_at, None);
 
     let lax_update = 200;
 
-    let updated = sync_optional_updated_at_custom_name_schema::DataModel
+    let (updated, ..) = sync_optional_updated_at_custom_name_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_optional_updated_at_custom_name_schema::PartialDataInput {
                 lax: Some(lax_update),
             },
@@ -204,8 +204,8 @@ fn should_respect_optional_updated_at_timestamp_with_custom_name() {
         .ok()
         .unwrap();
 
-    assert_eq!(updated.data.lax, Some(lax_update));
-    assert!(updated.data.custom_updated_at.is_some());
+    assert_eq!(updated.lax, Some(lax_update));
+    assert!(updated.custom_updated_at.is_some());
 }
 
 #[ivo_schema(
@@ -406,7 +406,7 @@ fn should_call_the_timestamp_resolver_at_most_once_per_create_call() {
 
     let before = sync_created_and_updated_at_call_count_schema::CALL_COUNT.load(Ordering::SeqCst);
 
-    let created = sync_created_and_updated_at_call_count_schema::DataModel
+    let (created, ..) = sync_created_and_updated_at_call_count_schema::DataModel
         .create(
             sync_created_and_updated_at_call_count_schema::PartialDataInput { lax: Some(1) },
             (),
@@ -422,5 +422,5 @@ fn should_call_the_timestamp_resolver_at_most_once_per_create_call() {
         "the timestamp resolver must be invoked exactly once per create call, even with both \
          #[created_at] and #[updated_at] declared"
     );
-    assert_eq!(created.data.created_at, created.data.updated_at);
+    assert_eq!(created.created_at, created.updated_at);
 }

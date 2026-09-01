@@ -19,7 +19,7 @@ async fn should_evaluate_field_level_and_grouped_ignore_resolvers_concurrently_o
     // `filter_input_fields_allowed`), regardless of field type or which kind
     // of ignore option they came from. `rendezvous()` only returns once
     // *both* have started.
-    let created = async_parallel_ignore_create_schema::DataInputModel
+    let (created, ..) = async_parallel_ignore_create_schema::DataInputModel
         .create(
             async_parallel_ignore_create_schema::DataInput {
                 field_a: 10,
@@ -33,7 +33,7 @@ async fn should_evaluate_field_level_and_grouped_ignore_resolvers_concurrently_o
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_parallel_ignore_create_schema::DataInput {
             field_a: 10,
             field_b: 20,
@@ -83,7 +83,7 @@ async fn should_evaluate_field_level_and_grouped_ignore_resolvers_concurrently_o
         field_c: 3,
     };
 
-    let updated = async_parallel_ignore_update_schema::DataInputModel
+    let (updated, ..) = async_parallel_ignore_update_schema::DataInputModel
         .update(
             existing,
             async_parallel_ignore_update_schema::PartialDataInput {
@@ -98,7 +98,7 @@ async fn should_evaluate_field_level_and_grouped_ignore_resolvers_concurrently_o
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_parallel_ignore_update_schema::PartialDataInput {
             field_a: Some(10),
             field_b: Some(20),

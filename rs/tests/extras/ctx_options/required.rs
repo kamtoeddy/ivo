@@ -1,6 +1,5 @@
 use ivo::ivo_schema;
 
-
 #[derive(Clone)]
 struct CtxOptions {
     messages: Vec<String>,
@@ -29,7 +28,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
 
     let required = Some(data.required + 1);
 
-    let updated = ignore_update_schema::DataInputModel
+    let (updates, ctx_options, handle_success) = ignore_update_schema::DataInputModel
         .update(
             data.clone(),
             ignore_update_schema::PartialDataInput { required },
@@ -39,13 +38,10 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
         .ok()
         .unwrap();
 
-    assert_eq!(
-        updated.data,
-        ignore_update_schema::PartialDataInput { required }
-    );
-    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
+    assert_eq!(updates, ignore_update_schema::PartialDataInput { required });
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    updated.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(
@@ -83,7 +79,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     const MESSAGE: &str = "ctx_options updated in validator";
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let failed = validate_create_schema::DataInputModel
+    let (failed, ctx_options, handle_failure) = validate_create_schema::DataInputModel
         .create(
             validate_create_schema::PartialDataInput {
                 required: Some(String::from(" ")),
@@ -94,13 +90,10 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .err()
         .unwrap();
 
-    assert_eq!(
-        failed.errors.get("required").unwrap().reason,
-        MIN_LENGTH_ERROR
-    );
-    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
+    assert_eq!(failed.get("required").unwrap().reason, MIN_LENGTH_ERROR);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -145,7 +138,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     const MESSAGE: &str = "ctx_options updated in validator";
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let failed = validate_update_schema::DataInputModel
+    let (errors, ctx_options, handle_failure) = validate_update_schema::DataInputModel
         .update(
             validate_update_schema::DataInput {
                 required: DEFAULT_VALUE.into(),
@@ -160,18 +153,12 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .unwrap();
 
     assert_eq!(
-        failed
-            .errors
-            .as_ref()
-            .unwrap()
-            .get("required")
-            .unwrap()
-            .reason,
+        errors.as_ref().unwrap().get("required").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -215,7 +202,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     const MESSAGE: &str = "ctx_options updated in re_validator";
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let failed = re_validate_create_schema::DataInputModel
+    let (failed, ctx_options, handle_failure) = re_validate_create_schema::DataInputModel
         .create(
             re_validate_create_schema::PartialDataInput {
                 required: Some(String::from(" ")),
@@ -226,13 +213,10 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .err()
         .unwrap();
 
-    assert_eq!(
-        failed.errors.get("required").unwrap().reason,
-        MIN_LENGTH_ERROR
-    );
-    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
+    assert_eq!(failed.get("required").unwrap().reason, MIN_LENGTH_ERROR);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -278,7 +262,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     const MESSAGE: &str = "ctx_options updated in re_validator";
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let failed = re_validate_update_schema::DataInputModel
+    let (errors, ctx_options, handle_failure) = re_validate_update_schema::DataInputModel
         .update(
             re_validate_update_schema::DataInput {
                 required: DEFAULT_VALUE.into(),
@@ -293,18 +277,12 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .unwrap();
 
     assert_eq!(
-        failed
-            .errors
-            .as_ref()
-            .unwrap()
-            .get("required")
-            .unwrap()
-            .reason,
+        errors.as_ref().unwrap().get("required").unwrap().reason,
         MIN_LENGTH_ERROR
     );
-    assert_eq!(failed.ctx_options.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 async_test_matrix!(
@@ -350,7 +328,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let required = 2;
 
-    let created = post_validate_create_schema::DataInputModel
+    let (created, ctx_options, handle_success) = post_validate_create_schema::DataInputModel
         .create(
             post_validate_create_schema::PartialDataInput {
                 required: Some(required),
@@ -363,15 +341,15 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         post_validate_create_schema::DataInput {
             required,
             required_1: required
         }
     );
-    assert_eq!(created.ctx_options.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    created.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -420,7 +398,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let required = Some(data.required + 1);
 
-    let updated = post_validate_update_schema::DataInputModel
+    let (updates, ctx_options, handle_success) = post_validate_update_schema::DataInputModel
         .update(
             data.clone(),
             post_validate_update_schema::PartialDataInput {
@@ -434,15 +412,15 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updates,
         post_validate_update_schema::PartialDataInput {
             required,
             required_1: None
         }
     );
-    assert_eq!(updated.ctx_options.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(

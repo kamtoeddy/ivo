@@ -12,7 +12,7 @@ use ivo::ivo_schema;
 fn should_resolve_sync_virtual_fields_with_and_without_aliases() {
     let value = 24;
 
-    let created = sync_no_alias_schema::DataModel
+    let (created, ..) = sync_no_alias_schema::DataModel
         .create(
             sync_no_alias_schema::PartialDataInput {
                 virtual_field: Some(value.to_string()),
@@ -23,13 +23,13 @@ fn should_resolve_sync_virtual_fields_with_and_without_aliases() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_no_alias_schema::Data {
             dependent: value + 1,
         }
     );
 
-    let created = sync_alias_schema::DataModel
+    let (created, ..) = sync_alias_schema::DataModel
         .create(
             sync_alias_schema::PartialDataInput {
                 virtual_alias: Some(value.to_string()),
@@ -40,13 +40,13 @@ fn should_resolve_sync_virtual_fields_with_and_without_aliases() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_alias_schema::Data {
             dependent: value + 1,
         }
     );
 
-    let created = sync_alias_as_dependent_schema::DataModel
+    let (created, ..) = sync_alias_as_dependent_schema::DataModel
         .create(
             sync_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some(value.to_string()),
@@ -57,7 +57,7 @@ fn should_resolve_sync_virtual_fields_with_and_without_aliases() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_alias_as_dependent_schema::Data {
             dependent: value + 1,
         }
@@ -67,7 +67,7 @@ fn should_resolve_sync_virtual_fields_with_and_without_aliases() {
 async fn should_resolve_async_virtual_fields_with_and_without_aliases() {
     let value = 24;
 
-    let created = async_no_alias_schema::DataModel
+    let (created, ..) = async_no_alias_schema::DataModel
         .create(
             async_no_alias_schema::PartialDataInput {
                 virtual_field: Some(value.to_string()),
@@ -79,13 +79,13 @@ async fn should_resolve_async_virtual_fields_with_and_without_aliases() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_no_alias_schema::Data {
             dependent: value + 1,
         }
     );
 
-    let created = async_alias_schema::DataModel
+    let (created, ..) = async_alias_schema::DataModel
         .create(
             async_alias_schema::PartialDataInput {
                 virtual_alias: Some(value.to_string()),
@@ -97,13 +97,13 @@ async fn should_resolve_async_virtual_fields_with_and_without_aliases() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_alias_schema::Data {
             dependent: value + 1,
         }
     );
 
-    let created = async_alias_as_dependent_schema::DataModel
+    let (created, ..) = async_alias_as_dependent_schema::DataModel
         .create(
             async_alias_as_dependent_schema::PartialDataInput {
                 dependent: Some(value.to_string()),
@@ -115,7 +115,7 @@ async fn should_resolve_async_virtual_fields_with_and_without_aliases() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_alias_as_dependent_schema::Data {
             dependent: value + 1,
         }
@@ -132,7 +132,7 @@ async_test_matrix!(should_resolve_async_virtual_fields_with_and_without_aliases)
 fn should_return_empty_updates_when_no_value_has_changed() {
     let value = 24;
 
-    let created = sync_no_change_schema::DataModel
+    let (created, ..) = sync_no_change_schema::DataModel
         .create(
             sync_no_change_schema::PartialDataInput {
                 virtual_field: Some(value),
@@ -143,13 +143,13 @@ fn should_return_empty_updates_when_no_value_has_changed() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_no_change_schema::Data { dependent: value }
     );
 
-    let failed = sync_no_change_schema::DataModel
+    let (failed, ..) = sync_no_change_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_no_change_schema::PartialDataInput {
                 virtual_field: Some(value),
             },
@@ -158,13 +158,13 @@ fn should_return_empty_updates_when_no_value_has_changed() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async fn should_return_empty_updates_when_no_value_has_changed_async() {
     let value = 24;
 
-    let created = async_no_change_schema::DataModel
+    let (created, ..) = async_no_change_schema::DataModel
         .create(
             async_no_change_schema::PartialDataInput {
                 virtual_field: Some(value),
@@ -176,13 +176,13 @@ async fn should_return_empty_updates_when_no_value_has_changed_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_no_change_schema::Data { dependent: value }
     );
 
-    let failed = async_no_change_schema::DataModel
+    let (failed, ..) = async_no_change_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_no_change_schema::PartialDataInput {
                 virtual_field: Some(value),
             },
@@ -192,7 +192,7 @@ async fn should_return_empty_updates_when_no_value_has_changed_async() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_return_empty_updates_when_no_value_has_changed_async);
@@ -214,15 +214,15 @@ fn should_respect_the_required_rule() {
         (),
     );
 
-    let errors = result.unwrap_err();
+    let (errors, ..) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         required_error
     );
 
     let lax = "require_virtual_field_for_update".to_string();
 
-    let created = sync_required_schema::DataModel
+    let (created, ..) = sync_required_schema::DataModel
         .create(
             sync_required_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -234,13 +234,13 @@ fn should_respect_the_required_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_required_schema::Data { dependent: 1, lax }
     );
 
-    let errors = sync_required_schema::DataModel
+    let (errors, ..) = sync_required_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_required_schema::PartialDataInput {
                 lax: Some("some update".into()),
                 virtual_field: None,
@@ -252,7 +252,6 @@ fn should_respect_the_required_rule() {
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("virtual_field")
@@ -276,15 +275,15 @@ async fn should_respect_the_required_rule_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
+    let (errors, ..) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         required_error
     );
 
     let lax = "require_virtual_field_for_update".to_string();
 
-    let created = async_required_schema::DataModel
+    let (created, ..) = async_required_schema::DataModel
         .create(
             async_required_schema::PartialDataInput {
                 lax: Some(lax.clone()),
@@ -297,13 +296,13 @@ async fn should_respect_the_required_rule_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_required_schema::Data { dependent: 1, lax }
     );
 
-    let errors = async_required_schema::DataModel
+    let (errors, ..) = async_required_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_required_schema::PartialDataInput {
                 lax: Some("some update".into()),
                 virtual_field: None,
@@ -316,7 +315,6 @@ async fn should_respect_the_required_rule_async() {
 
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("virtual_field")
@@ -332,7 +330,7 @@ async_test_matrix!(should_respect_the_required_rule_async);
 fn should_properly_handle_grouped_required_errors() {
     const EXPECTED_REQUIRED_ERROR: &str = "field is required";
 
-    let errors = sync_grouped_required_schema::DataModel
+    let (errors, ..) = sync_grouped_required_schema::DataModel
         .create(
             sync_grouped_required_schema::PartialDataInput {
                 virtual_field: None,
@@ -344,17 +342,17 @@ fn should_properly_handle_grouped_required_errors() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.get("lax_2").is_none());
+    assert!(errors.get("lax_2").is_none());
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
     assert_eq!(
-        errors.errors.get("lax_1").unwrap().reason,
+        errors.get("lax_1").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
 
-    let errors = sync_grouped_required_schema::DataModel
+    let (errors, ..) = sync_grouped_required_schema::DataModel
         .update(
             sync_grouped_required_schema::Data {
                 dependent: 1,
@@ -371,10 +369,9 @@ fn should_properly_handle_grouped_required_errors() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("virtual_field")
@@ -383,7 +380,7 @@ fn should_properly_handle_grouped_required_errors() {
         EXPECTED_REQUIRED_ERROR
     );
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        errors.as_ref().unwrap().get("lax_1").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
 }
@@ -391,7 +388,7 @@ fn should_properly_handle_grouped_required_errors() {
 async fn should_properly_handle_grouped_required_errors_async() {
     const EXPECTED_REQUIRED_ERROR: &str = "field is required";
 
-    let errors = async_grouped_required_schema::DataModel
+    let (errors, ..) = async_grouped_required_schema::DataModel
         .create(
             async_grouped_required_schema::PartialDataInput {
                 virtual_field: None,
@@ -404,17 +401,17 @@ async fn should_properly_handle_grouped_required_errors_async() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.get("lax_2").is_none());
+    assert!(errors.get("lax_2").is_none());
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
     assert_eq!(
-        errors.errors.get("lax_1").unwrap().reason,
+        errors.get("lax_1").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
 
-    let errors = async_grouped_required_schema::DataModel
+    let (errors, ..) = async_grouped_required_schema::DataModel
         .update(
             async_grouped_required_schema::Data {
                 dependent: 1,
@@ -432,10 +429,9 @@ async fn should_properly_handle_grouped_required_errors_async() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.as_ref().unwrap().get("lax_2").is_none());
+    assert!(errors.as_ref().unwrap().get("lax_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("virtual_field")
@@ -444,7 +440,7 @@ async fn should_properly_handle_grouped_required_errors_async() {
         EXPECTED_REQUIRED_ERROR
     );
     assert_eq!(
-        errors.errors.as_ref().unwrap().get("lax_1").unwrap().reason,
+        errors.as_ref().unwrap().get("lax_1").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
 }
@@ -462,7 +458,7 @@ fn should_not_create_if_primary_validation_fails() {
     let values = [String::from(" "), String::from(" 1"), String::from("1")];
 
     for value in values {
-        let errors = sync_primary_validation_schema::DataModel
+        let (errors, ..) = sync_primary_validation_schema::DataModel
             .create(
                 sync_primary_validation_schema::PartialDataInput {
                     virtual_field: Some(value),
@@ -473,7 +469,7 @@ fn should_not_create_if_primary_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            errors.errors.get("virtual_field").unwrap().reason,
+            errors.get("virtual_field").unwrap().reason,
             MIN_LENGTH_ERROR
         );
     }
@@ -481,7 +477,7 @@ fn should_not_create_if_primary_validation_fails() {
     let values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
 
     for value in values {
-        let created = sync_primary_validation_schema::DataModel
+        let (created, ..) = sync_primary_validation_schema::DataModel
             .create(
                 sync_primary_validation_schema::PartialDataInput {
                     virtual_field: Some(value.clone()),
@@ -491,7 +487,7 @@ fn should_not_create_if_primary_validation_fails() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.dependent, value.len() as i32);
+        assert_eq!(created.dependent, value.len() as i32);
     }
 }
 
@@ -501,7 +497,7 @@ async fn should_not_create_if_primary_validation_fails_async() {
     let values = [String::from(" "), String::from(" 1"), String::from("1")];
 
     for value in values {
-        let errors = async_primary_validation_schema::DataModel
+        let (errors, ..) = async_primary_validation_schema::DataModel
             .create(
                 async_primary_validation_schema::PartialDataInput {
                     virtual_field: Some(value),
@@ -513,7 +509,7 @@ async fn should_not_create_if_primary_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            errors.errors.get("virtual_field").unwrap().reason,
+            errors.get("virtual_field").unwrap().reason,
             MIN_LENGTH_ERROR
         );
     }
@@ -521,7 +517,7 @@ async fn should_not_create_if_primary_validation_fails_async() {
     let values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
 
     for value in values {
-        let created = async_primary_validation_schema::DataModel
+        let (created, ..) = async_primary_validation_schema::DataModel
             .create(
                 async_primary_validation_schema::PartialDataInput {
                     virtual_field: Some(value.clone()),
@@ -532,7 +528,7 @@ async fn should_not_create_if_primary_validation_fails_async() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.dependent, value.len() as i32);
+        assert_eq!(created.dependent, value.len() as i32);
     }
 }
 
@@ -546,7 +542,7 @@ async_test_matrix!(should_not_create_if_primary_validation_fails_async);
 fn should_properly_use_re_validated_values() {
     let value = 1;
 
-    let created = sync_re_validate_schema::DataModel
+    let (created, ..) = sync_re_validate_schema::DataModel
         .create(
             sync_re_validate_schema::PartialDataInput {
                 virtual_field: Some(value),
@@ -557,7 +553,7 @@ fn should_properly_use_re_validated_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_re_validate_schema::Data {
             dependent: value + 1
         }
@@ -565,9 +561,9 @@ fn should_properly_use_re_validated_values() {
 
     let value = 2;
 
-    let updated = sync_re_validate_schema::DataModel
+    let (updated, ..) = sync_re_validate_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_re_validate_schema::PartialDataInput {
                 virtual_field: Some(value),
             },
@@ -577,7 +573,7 @@ fn should_properly_use_re_validated_values() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_re_validate_schema::PartialData {
             dependent: Some(value + 1),
         }
@@ -587,7 +583,7 @@ fn should_properly_use_re_validated_values() {
 async fn should_properly_use_re_validated_values_async() {
     let value = 1;
 
-    let created = async_re_validate_schema::DataModel
+    let (created, ..) = async_re_validate_schema::DataModel
         .create(
             async_re_validate_schema::PartialDataInput {
                 virtual_field: Some(value),
@@ -599,7 +595,7 @@ async fn should_properly_use_re_validated_values_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_re_validate_schema::Data {
             dependent: value + 1
         }
@@ -607,9 +603,9 @@ async fn should_properly_use_re_validated_values_async() {
 
     let value = 2;
 
-    let updated = async_re_validate_schema::DataModel
+    let (updated, ..) = async_re_validate_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_re_validate_schema::PartialDataInput {
                 virtual_field: Some(value),
             },
@@ -620,7 +616,7 @@ async fn should_properly_use_re_validated_values_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_re_validate_schema::PartialData {
             dependent: Some(value + 1),
         }
@@ -634,7 +630,7 @@ fn should_not_re_validate_virtual_fields_that_were_not_provided_or_were_ignored(
     // re-validate must only run for a virtual field that was actually provided
     // (and not ignored); a defaulted/absent virtual field should never reach
     // the re-validator.
-    let created = sync_re_validate_not_provided_schema::DataModel
+    let (created, ..) = sync_re_validate_not_provided_schema::DataModel
         .create(
             sync_re_validate_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -645,7 +641,7 @@ fn should_not_re_validate_virtual_fields_that_were_not_provided_or_were_ignored(
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_re_validate_not_provided_schema::Data { dependent: 0 }
     );
 }
@@ -662,7 +658,7 @@ fn should_respect_sanitizers_if_provided() {
 
     let virtual_value = "raw-value".to_string();
 
-    let created = sync_sanitize_schema::DataModel
+    let (created, ..) = sync_sanitize_schema::DataModel
         .create(
             sync_sanitize_schema::PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
@@ -673,7 +669,7 @@ fn should_respect_sanitizers_if_provided() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_sanitize_schema::Data {
             dependent: sanitize(&virtual_value),
         }
@@ -681,9 +677,9 @@ fn should_respect_sanitizers_if_provided() {
 
     let updated_virtual_value = "updated-raw-value".to_string();
 
-    let updated = sync_sanitize_schema::DataModel
+    let (updated, ..) = sync_sanitize_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_sanitize_schema::PartialDataInput {
                 virtual_field: Some(updated_virtual_value.clone()),
             },
@@ -693,7 +689,7 @@ fn should_respect_sanitizers_if_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_sanitize_schema::PartialData {
             dependent: Some(sanitize(&updated_virtual_value)),
         }
@@ -707,7 +703,7 @@ async fn should_respect_sanitizers_if_provided_async() {
 
     let virtual_value = "raw-value".to_string();
 
-    let created = async_sanitize_schema::DataModel
+    let (created, ..) = async_sanitize_schema::DataModel
         .create(
             async_sanitize_schema::PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
@@ -719,7 +715,7 @@ async fn should_respect_sanitizers_if_provided_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_sanitize_schema::Data {
             dependent: sanitize(&virtual_value),
         }
@@ -727,9 +723,9 @@ async fn should_respect_sanitizers_if_provided_async() {
 
     let updated_virtual_value = "updated-raw-value".to_string();
 
-    let updated = async_sanitize_schema::DataModel
+    let (updated, ..) = async_sanitize_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_sanitize_schema::PartialDataInput {
                 virtual_field: Some(updated_virtual_value.clone()),
             },
@@ -740,7 +736,7 @@ async fn should_respect_sanitizers_if_provided_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_sanitize_schema::PartialData {
             dependent: Some(sanitize(&updated_virtual_value)),
         }
@@ -753,7 +749,7 @@ async_test_matrix!(should_respect_sanitizers_if_provided_async);
 fn should_only_sanitize_virtual_fields_that_were_provided() {
     // A virtual field that was not provided (and thus never validated) must
     // not be sanitized either; the resolver never sees a value for it.
-    let created = sync_sanitize_not_provided_schema::DataModel
+    let (created, ..) = sync_sanitize_not_provided_schema::DataModel
         .create(
             sync_sanitize_not_provided_schema::PartialDataInput {
                 virtual_field: None,
@@ -764,7 +760,7 @@ fn should_only_sanitize_virtual_fields_that_were_provided() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_sanitize_not_provided_schema::Data {
             dependent: String::new(),
         }
@@ -776,7 +772,7 @@ fn should_sanitize_virtual_fields_only_after_post_validate_succeeds() {
     // `post_validate` handlers must observe the validated-but-not-yet-sanitized
     // virtual value; only once post-validation succeeds does sanitize run and
     // feed the sanitized value to dependent resolution.
-    let created = sync_sanitize_after_post_validate_schema::DataModel
+    let (created, ..) = sync_sanitize_after_post_validate_schema::DataModel
         .create(
             sync_sanitize_after_post_validate_schema::PartialDataInput {
                 name: Some("name".into()),
@@ -788,7 +784,7 @@ fn should_sanitize_virtual_fields_only_after_post_validate_succeeds() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_sanitize_after_post_validate_schema::Data {
             name: "name".into(),
             dependent: "sanitized-raw".into(),
@@ -804,7 +800,7 @@ fn should_sanitize_virtual_fields_only_after_post_validate_succeeds() {
 fn should_use_input_value_if_validator_does_not_return_a_validated_value() {
     let value = 1;
 
-    let created = sync_pass_through_schema::DataModel
+    let (created, ..) = sync_pass_through_schema::DataModel
         .create(
             sync_pass_through_schema::PartialDataInput {
                 virtual_field: Some(value),
@@ -815,7 +811,7 @@ fn should_use_input_value_if_validator_does_not_return_a_validated_value() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_pass_through_schema::Data { dependent: value }
     );
 }
@@ -823,7 +819,7 @@ fn should_use_input_value_if_validator_does_not_return_a_validated_value() {
 async fn should_use_input_value_if_validator_does_not_return_a_validated_value_async() {
     let value = 1;
 
-    let created = async_pass_through_schema::DataModel
+    let (created, ..) = async_pass_through_schema::DataModel
         .create(
             async_pass_through_schema::PartialDataInput {
                 virtual_field: Some(value),
@@ -835,7 +831,7 @@ async fn should_use_input_value_if_validator_does_not_return_a_validated_value_a
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_pass_through_schema::Data { dependent: value }
     );
 }
@@ -854,7 +850,7 @@ fn should_respect_post_validation_config() {
 
     let virtual_value = VIRTUAL_FIELD_VALIDATION_FAIL.to_string();
 
-    let errors = sync_post_validate_schema::DataModel
+    let (errors, ..) = sync_post_validate_schema::DataModel
         .create(
             sync_post_validate_schema::PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
@@ -866,16 +862,16 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.get("virtual_field_1").is_none());
-    assert!(errors.errors.get("virtual_field_2").is_none());
+    assert!(errors.get("virtual_field_1").is_none());
+    assert!(errors.get("virtual_field_2").is_none());
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         virtual_value
     );
 
     let virtual_value = BOTH_VALIDATION_FAIL.to_string();
 
-    let errors = sync_post_validate_schema::DataModel
+    let (errors, ..) = sync_post_validate_schema::DataModel
         .create(
             sync_post_validate_schema::PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
@@ -887,13 +883,13 @@ fn should_respect_post_validation_config() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.get("virtual_field_2").is_none());
+    assert!(errors.get("virtual_field_2").is_none());
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         virtual_value
     );
     assert_eq!(
-        errors.errors.get("virtual_field_1").unwrap().reason,
+        errors.get("virtual_field_1").unwrap().reason,
         virtual_value
     );
 }
@@ -905,7 +901,7 @@ async fn should_respect_post_validation_config_async() {
 
     let virtual_value = VIRTUAL_FIELD_VALIDATION_FAIL.to_string();
 
-    let errors = async_post_validate_schema::DataModel
+    let (errors, ..) = async_post_validate_schema::DataModel
         .create(
             async_post_validate_schema::PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
@@ -918,16 +914,16 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.get("virtual_field_1").is_none());
-    assert!(errors.errors.get("virtual_field_2").is_none());
+    assert!(errors.get("virtual_field_1").is_none());
+    assert!(errors.get("virtual_field_2").is_none());
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         virtual_value
     );
 
     let virtual_value = BOTH_VALIDATION_FAIL.to_string();
 
-    let errors = async_post_validate_schema::DataModel
+    let (errors, ..) = async_post_validate_schema::DataModel
         .create(
             async_post_validate_schema::PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
@@ -940,13 +936,13 @@ async fn should_respect_post_validation_config_async() {
         .err()
         .unwrap();
 
-    assert!(errors.errors.get("virtual_field_2").is_none());
+    assert!(errors.get("virtual_field_2").is_none());
     assert_eq!(
-        errors.errors.get("virtual_field").unwrap().reason,
+        errors.get("virtual_field").unwrap().reason,
         virtual_value
     );
     assert_eq!(
-        errors.errors.get("virtual_field_1").unwrap().reason,
+        errors.get("virtual_field_1").unwrap().reason,
         virtual_value
     );
 }
@@ -969,7 +965,7 @@ async_test_matrix!(should_respect_post_validation_config_async);
 
 #[test]
 fn should_surface_post_validate_errors_on_an_aliased_virtual_field() {
-    let errors = post_validate_aliased_virtual_schema::DataModel
+    let (errors, ..) = post_validate_aliased_virtual_schema::DataModel
         .create(
             post_validate_aliased_virtual_schema::PartialDataInput {
                 field_a: Some("a".into()),
@@ -977,10 +973,10 @@ fn should_surface_post_validate_errors_on_an_aliased_virtual_field() {
             },
             (),
         )
-        .unwrap_err();
+        .err().unwrap();
 
     assert_eq!(
-        errors.errors.get("aliased").unwrap().reason,
+        errors.get("aliased").unwrap().reason,
         "aliased field rejected"
     );
 }
@@ -1037,7 +1033,7 @@ mod post_validate_aliased_virtual_schema {
 
 #[test]
 fn should_key_required_error_by_alias_for_an_aliased_virtual_field() {
-    let create_errors = alias_field_level_errors_schema::DataModel
+    let (create_errors, ..) = alias_field_level_errors_schema::DataModel
         .create(
             alias_field_level_errors_schema::PartialDataInput {
                 lax: None,
@@ -1045,15 +1041,15 @@ fn should_key_required_error_by_alias_for_an_aliased_virtual_field() {
             },
             (),
         )
-        .unwrap_err();
+        .err().unwrap();
 
     assert_eq!(
-        create_errors.errors.get("aliased").unwrap().reason,
+        create_errors.get("aliased").unwrap().reason,
         "aliased is required"
     );
-    assert!(create_errors.errors.get("v_field").is_none());
+    assert!(create_errors.get("v_field").is_none());
 
-    let created = alias_field_level_errors_schema::DataModel
+    let (created, ..) = alias_field_level_errors_schema::DataModel
         .create(
             alias_field_level_errors_schema::PartialDataInput {
                 lax: None,
@@ -1064,9 +1060,9 @@ fn should_key_required_error_by_alias_for_an_aliased_virtual_field() {
         .ok()
         .unwrap();
 
-    let update_errors = alias_field_level_errors_schema::DataModel
+    let (update_errors, ..) = alias_field_level_errors_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             alias_field_level_errors_schema::PartialDataInput {
                 // `lax` must be provided too, or the update is a no-op
                 // ("nothing to update") that short-circuits before the
@@ -1081,7 +1077,6 @@ fn should_key_required_error_by_alias_for_an_aliased_virtual_field() {
 
     assert_eq!(
         update_errors
-            .errors
             .as_ref()
             .unwrap()
             .get("aliased")
@@ -1093,7 +1088,7 @@ fn should_key_required_error_by_alias_for_an_aliased_virtual_field() {
 
 #[test]
 fn should_key_validate_error_by_alias_for_an_aliased_virtual_field() {
-    let errors = alias_field_level_errors_schema::DataModel
+    let (errors, ..) = alias_field_level_errors_schema::DataModel
         .create(
             alias_field_level_errors_schema::PartialDataInput {
                 lax: None,
@@ -1101,18 +1096,18 @@ fn should_key_validate_error_by_alias_for_an_aliased_virtual_field() {
             },
             (),
         )
-        .unwrap_err();
+        .err().unwrap();
 
     assert_eq!(
-        errors.errors.get("aliased").unwrap().reason,
+        errors.get("aliased").unwrap().reason,
         "validate failed"
     );
-    assert!(errors.errors.get("v_field").is_none());
+    assert!(errors.get("v_field").is_none());
 }
 
 #[test]
 fn should_key_re_validate_error_by_alias_for_an_aliased_virtual_field() {
-    let errors = alias_field_level_errors_schema::DataModel
+    let (errors, ..) = alias_field_level_errors_schema::DataModel
         .create(
             alias_field_level_errors_schema::PartialDataInput {
                 lax: None,
@@ -1120,13 +1115,13 @@ fn should_key_re_validate_error_by_alias_for_an_aliased_virtual_field() {
             },
             (),
         )
-        .unwrap_err();
+        .err().unwrap();
 
     assert_eq!(
-        errors.errors.get("aliased").unwrap().reason,
+        errors.get("aliased").unwrap().reason,
         "re_validate failed"
     );
-    assert!(errors.errors.get("v_field").is_none());
+    assert!(errors.get("v_field").is_none());
 }
 
 #[ivo_schema(
@@ -1173,7 +1168,7 @@ mod alias_field_level_errors_schema {
 fn should_return_empty_updates_when_no_value_has_changed_with_alias() {
     let value = 24;
 
-    let created = sync_no_change_alias_schema::DataModel
+    let (created, ..) = sync_no_change_alias_schema::DataModel
         .create(
             sync_no_change_alias_schema::PartialDataInput {
                 virtual_alias: Some(value),
@@ -1184,13 +1179,13 @@ fn should_return_empty_updates_when_no_value_has_changed_with_alias() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_no_change_alias_schema::Data { dependent: value }
     );
 
-    let failed = sync_no_change_alias_schema::DataModel
+    let (failed, ..) = sync_no_change_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_no_change_alias_schema::PartialDataInput {
                 virtual_alias: Some(value),
             },
@@ -1199,13 +1194,13 @@ fn should_return_empty_updates_when_no_value_has_changed_with_alias() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async fn should_return_empty_updates_when_no_value_has_changed_with_alias_async() {
     let value = 24;
 
-    let created = async_no_change_alias_schema::DataModel
+    let (created, ..) = async_no_change_alias_schema::DataModel
         .create(
             async_no_change_alias_schema::PartialDataInput {
                 virtual_alias: Some(value),
@@ -1217,13 +1212,13 @@ async fn should_return_empty_updates_when_no_value_has_changed_with_alias_async(
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_no_change_alias_schema::Data { dependent: value }
     );
 
-    let failed = async_no_change_alias_schema::DataModel
+    let (failed, ..) = async_no_change_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_no_change_alias_schema::PartialDataInput {
                 virtual_alias: Some(value),
             },
@@ -1233,7 +1228,7 @@ async fn should_return_empty_updates_when_no_value_has_changed_with_alias_async(
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_return_empty_updates_when_no_value_has_changed_with_alias_async);
@@ -1908,7 +1903,7 @@ async fn should_validate_re_validate_and_sanitize_independent_virtual_fields_con
         .store(0, std::sync::atomic::Ordering::SeqCst);
     async_parallel_virtuals_schema::SANITIZE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let created = async_parallel_virtuals_schema::DataModel
+    let (created, ..) = async_parallel_virtuals_schema::DataModel
         .create(
             async_parallel_virtuals_schema::PartialDataInput {
                 virtual_a: Some("a".into()),
@@ -1921,7 +1916,7 @@ async fn should_validate_re_validate_and_sanitize_independent_virtual_fields_con
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_parallel_virtuals_schema::Data {
             dependent_a: "sanitized-a".into(),
             dependent_b: "sanitized-b".into(),
@@ -1933,9 +1928,9 @@ async fn should_validate_re_validate_and_sanitize_independent_virtual_fields_con
         .store(0, std::sync::atomic::Ordering::SeqCst);
     async_parallel_virtuals_schema::SANITIZE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let updated = async_parallel_virtuals_schema::DataModel
+    let (updated, ..) = async_parallel_virtuals_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_parallel_virtuals_schema::PartialDataInput {
                 virtual_a: Some("aa".into()),
                 virtual_b: Some("bb".into()),
@@ -1947,7 +1942,7 @@ async fn should_validate_re_validate_and_sanitize_independent_virtual_fields_con
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_parallel_virtuals_schema::PartialData {
             dependent_a: Some("sanitized-aa".into()),
             dependent_b: Some("sanitized-bb".into()),
@@ -2031,7 +2026,7 @@ async fn should_validate_required_and_virtual_fields_in_one_combined_phase() {
     // polled concurrently *together*, proving validate is one merged phase
     // across field types rather than two sequential ones (virtual, then
     // required/lax). Same for re-validate.
-    let created = async_merged_validate_schema::DataModel
+    let (created, ..) = async_merged_validate_schema::DataModel
         .create(
             async_merged_validate_schema::PartialDataInput {
                 name: Some("a".into()),
@@ -2044,7 +2039,7 @@ async fn should_validate_required_and_virtual_fields_in_one_combined_phase() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_merged_validate_schema::Data {
             name: "revalidated-a".into(),
             dependent: "revalidated-b".into(),
@@ -2054,9 +2049,9 @@ async fn should_validate_required_and_virtual_fields_in_one_combined_phase() {
     async_merged_validate_schema::VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
     async_merged_validate_schema::RE_VALIDATE_STARTED.store(0, std::sync::atomic::Ordering::SeqCst);
 
-    let updated = async_merged_validate_schema::DataModel
+    let (updated, ..) = async_merged_validate_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_merged_validate_schema::PartialDataInput {
                 name: Some("aa".into()),
                 virtual_field: Some("bb".into()),
@@ -2068,7 +2063,7 @@ async fn should_validate_required_and_virtual_fields_in_one_combined_phase() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_merged_validate_schema::PartialData {
             name: Some("revalidated-aa".into()),
             dependent: Some("revalidated-bb".into()),

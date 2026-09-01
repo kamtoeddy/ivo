@@ -5,7 +5,7 @@ const MIN_USERNAME_LEN: usize = 4;
 fn main() {
     let username = "n".repeat(MIN_USERNAME_LEN - 1);
 
-    let failed = data_schema::DataModel
+    let (failed, _ctx_options, handle_failure) = data_schema::DataModel
         .create(
             data_schema::PartialData::new().with_username(username.clone()),
             (),
@@ -13,18 +13,18 @@ fn main() {
         .err()
         .unwrap();
 
-    println!("\nfailed to create: {:#?}", failed.errors);
+    println!("\nfailed to create: {:#?}", failed);
 
     assert_eq!(
-        failed.errors.get("username").unwrap().reason,
+        failed.get("username").unwrap().reason,
         format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long")
     );
 
-    failed.handle_failure();
+    handle_failure();
 
     let updated_username = Some("j".repeat(MIN_USERNAME_LEN - 1));
 
-    let failed_update = data_schema::DataModel
+    let (failed_update, _ctx_options, handle_failure) = data_schema::DataModel
         .update(
             data_schema::Data {
                 username: username.clone(),
@@ -37,11 +37,10 @@ fn main() {
         .err()
         .unwrap();
 
-    println!("\nfailed to update: {:#?}", failed_update.errors);
+    println!("\nfailed to update: {:#?}", failed_update);
 
     assert_eq!(
         failed_update
-            .errors
             .as_ref()
             .unwrap()
             .get("username")
@@ -50,7 +49,7 @@ fn main() {
         format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long")
     );
 
-    failed_update.handle_failure();
+    handle_failure();
 }
 
 #[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]

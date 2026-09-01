@@ -20,7 +20,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
     const CONSTANT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in constant value resolver";
 
-    let created = data_schema::DataModel
+    let (data, ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialDataInput { lax: Some(2) },
             CtxOptions::new(),
@@ -30,16 +30,16 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
         .unwrap();
 
     assert_eq!(
-        created.data,
+        data,
         data_schema::Data {
             id: CONSTANT_VALUE,
             lax: 2
         }
     );
 
-    assert_eq!(created.ctx_options.messages[0], MESSAGE);
+    assert_eq!(ctx_options.messages[0], MESSAGE);
 
-    created.handle_success();
+    handle_success();
 }
 
 async_test_matrix!(

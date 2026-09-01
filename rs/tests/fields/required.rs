@@ -11,14 +11,14 @@ fn should_respect_the_default_required_error_if_field_is_missing() {
         (),
     );
 
-    let errors = result.unwrap_err();
+    let (errors, ..) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("required").unwrap().reason,
+        errors.get("required").unwrap().reason,
         "field is required"
     );
 
     let required = 2;
-    let created = sync_default_required_error_schema::DataModel
+    let (created, ..) = sync_default_required_error_schema::DataModel
         .create(
             sync_default_required_error_schema::PartialData {
                 required: Some(required),
@@ -29,7 +29,7 @@ fn should_respect_the_default_required_error_if_field_is_missing() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_default_required_error_schema::Data { required }
     );
 }
@@ -42,14 +42,14 @@ async fn should_respect_the_default_required_error_if_field_is_missing_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
+    let (errors, ..) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("required").unwrap().reason,
+        errors.get("required").unwrap().reason,
         "field is required"
     );
 
     let required = 2;
-    let created = async_default_required_error_schema::DataModel
+    let (created, ..) = async_default_required_error_schema::DataModel
         .create(
             async_default_required_error_schema::PartialData {
                 required: Some(required),
@@ -61,7 +61,7 @@ async fn should_respect_the_default_required_error_if_field_is_missing_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_default_required_error_schema::Data { required }
     );
 }
@@ -77,14 +77,14 @@ fn should_respect_custom_static_required_error_if_field_is_missing() {
         (),
     );
 
-    let errors = result.unwrap_err();
+    let (errors, ..) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("required").unwrap().reason,
+        errors.get("required").unwrap().reason,
         required_error
     );
 
     let required = 2;
-    let created = sync_static_required_error_schema::DataModel
+    let (created, ..) = sync_static_required_error_schema::DataModel
         .create(
             sync_static_required_error_schema::PartialData {
                 required: Some(required),
@@ -95,7 +95,7 @@ fn should_respect_custom_static_required_error_if_field_is_missing() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_static_required_error_schema::Data { required }
     );
 }
@@ -110,14 +110,14 @@ async fn should_respect_custom_static_required_error_if_field_is_missing_async()
         )
         .await;
 
-    let errors = result.unwrap_err();
+    let (errors, ..) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("required").unwrap().reason,
+        errors.get("required").unwrap().reason,
         required_error
     );
 
     let required = 2;
-    let created = async_static_required_error_schema::DataModel
+    let (created, ..) = async_static_required_error_schema::DataModel
         .create(
             async_static_required_error_schema::PartialData {
                 required: Some(required),
@@ -129,7 +129,7 @@ async fn should_respect_custom_static_required_error_if_field_is_missing_async()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_static_required_error_schema::Data { required }
     );
 }
@@ -145,14 +145,14 @@ fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
         (),
     );
 
-    let errors = result.unwrap_err();
+    let (errors, ..) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("required").unwrap().reason,
+        errors.get("required").unwrap().reason,
         REQUIRED_ERROR
     );
 
     let required = 2;
-    let created = sync_dynamic_required_error_schema::DataModel
+    let (created, ..) = sync_dynamic_required_error_schema::DataModel
         .create(
             sync_dynamic_required_error_schema::PartialData {
                 required: Some(required),
@@ -163,7 +163,7 @@ fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_dynamic_required_error_schema::Data { required }
     );
 }
@@ -178,14 +178,14 @@ async fn should_respect_custom_dynamic_required_error_if_field_is_missing_async(
         )
         .await;
 
-    let errors = result.unwrap_err();
+    let (errors, ..) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("required").unwrap().reason,
+        errors.get("required").unwrap().reason,
         REQUIRED_ERROR
     );
 
     let required = 2;
-    let created = async_dynamic_required_error_schema::DataModel
+    let (created, ..) = async_dynamic_required_error_schema::DataModel
         .create(
             async_dynamic_required_error_schema::PartialData {
                 required: Some(required),
@@ -197,7 +197,7 @@ async fn should_respect_custom_dynamic_required_error_if_field_is_missing_async(
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_dynamic_required_error_schema::Data { required }
     );
 }
@@ -222,9 +222,9 @@ fn should_not_create_if_primary_validation_fails() {
             (),
         );
 
-        let errors = result.unwrap_err();
+        let (errors, ..) = result.err().unwrap();
         assert_eq!(
-            errors.errors.get("required").unwrap().reason,
+            errors.get("required").unwrap().reason,
             MIN_LENGTH_ERROR
         );
     }
@@ -232,7 +232,7 @@ fn should_not_create_if_primary_validation_fails() {
     let required_values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
 
     for required_value in required_values {
-        let created = sync_primary_validation_schema::DataModel
+        let (created, ..) = sync_primary_validation_schema::DataModel
             .create(
                 sync_primary_validation_schema::PartialData {
                     required: Some(required_value.clone()),
@@ -242,7 +242,7 @@ fn should_not_create_if_primary_validation_fails() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.required, required_value);
+        assert_eq!(created.required, required_value);
     }
 }
 
@@ -261,9 +261,9 @@ async fn should_not_create_if_primary_validation_fails_async() {
             )
             .await;
 
-        let errors = result.unwrap_err();
+        let (errors, ..) = result.err().unwrap();
         assert_eq!(
-            errors.errors.get("required").unwrap().reason,
+            errors.get("required").unwrap().reason,
             MIN_LENGTH_ERROR
         );
     }
@@ -271,7 +271,7 @@ async fn should_not_create_if_primary_validation_fails_async() {
     let required_values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
 
     for required_value in required_values {
-        let created = async_primary_validation_schema::DataModel
+        let (created, ..) = async_primary_validation_schema::DataModel
             .create(
                 async_primary_validation_schema::PartialData {
                     required: Some(required_value.clone()),
@@ -282,7 +282,7 @@ async fn should_not_create_if_primary_validation_fails_async() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.required, required_value);
+        assert_eq!(created.required, required_value);
     }
 }
 
@@ -308,10 +308,9 @@ fn should_not_update_if_primary_validation_fails() {
             (),
         );
 
-        let errors = result.unwrap_err();
+        let (errors, ..) = result.err().unwrap();
         assert_eq!(
             errors
-                .errors
                 .as_ref()
                 .unwrap()
                 .get("required")
@@ -326,7 +325,7 @@ fn should_not_update_if_primary_validation_fails() {
             continue;
         }
 
-        let updated = sync_update_primary_validation_schema::DataModel
+        let (updated, ..) = sync_update_primary_validation_schema::DataModel
             .update(
                 data.clone(),
                 sync_update_primary_validation_schema::PartialDataInput {
@@ -338,7 +337,7 @@ fn should_not_update_if_primary_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            updated.data,
+            updated,
             sync_update_primary_validation_schema::PartialData {
                 id: None,
                 required: Some(updated_value),
@@ -368,10 +367,9 @@ async fn should_not_update_if_primary_validation_fails_async() {
             )
             .await;
 
-        let errors = result.unwrap_err();
+        let (errors, ..) = result.err().unwrap();
         assert_eq!(
             errors
-                .errors
                 .as_ref()
                 .unwrap()
                 .get("required")
@@ -386,7 +384,7 @@ async fn should_not_update_if_primary_validation_fails_async() {
             continue;
         }
 
-        let updated = async_update_primary_validation_schema::DataModel
+        let (updated, ..) = async_update_primary_validation_schema::DataModel
             .update(
                 data.clone(),
                 async_update_primary_validation_schema::PartialDataInput {
@@ -399,7 +397,7 @@ async fn should_not_update_if_primary_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            updated.data,
+            updated,
             async_update_primary_validation_schema::PartialData {
                 id: None,
                 required: Some(updated_value),
@@ -415,7 +413,7 @@ fn should_properly_use_input_values_as_output_values_if_validator_does_not_retur
 ) {
     let required = 1;
 
-    let created = sync_pass_through_validation_schema::DataModel
+    let (created, ..) = sync_pass_through_validation_schema::DataModel
         .create(
             sync_pass_through_validation_schema::PartialData {
                 required: Some(required),
@@ -426,13 +424,13 @@ fn should_properly_use_input_values_as_output_values_if_validator_does_not_retur
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_pass_through_validation_schema::Data { required }
     );
 
     let required = 2;
 
-    let updated = sync_pass_through_validation_schema::DataModel
+    let (updated, ..) = sync_pass_through_validation_schema::DataModel
         .update(
             sync_pass_through_validation_schema::Data {
                 required: required - 1,
@@ -446,7 +444,7 @@ fn should_properly_use_input_values_as_output_values_if_validator_does_not_retur
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_pass_through_validation_schema::PartialData {
             required: Some(required)
         }
@@ -457,7 +455,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 ) {
     let required = 1;
 
-    let created = async_pass_through_validation_schema::DataModel
+    let (created, ..) = async_pass_through_validation_schema::DataModel
         .create(
             async_pass_through_validation_schema::PartialData {
                 required: Some(required),
@@ -469,13 +467,13 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_pass_through_validation_schema::Data { required }
     );
 
     let required = 2;
 
-    let updated = async_pass_through_validation_schema::DataModel
+    let (updated, ..) = async_pass_through_validation_schema::DataModel
         .update(
             async_pass_through_validation_schema::Data {
                 required: required - 1,
@@ -490,7 +488,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_pass_through_validation_schema::PartialData {
             required: Some(required)
         }
@@ -520,9 +518,9 @@ fn should_not_create_if_re_validation_fails() {
             (),
         );
 
-        let errors = result.unwrap_err();
+        let (errors, ..) = result.err().unwrap();
         assert_eq!(
-            errors.errors.get("required").unwrap().reason,
+            errors.get("required").unwrap().reason,
             sync_re_validation_schema::MIN_REVALIDATION_LENGTH_ERROR
         );
     }
@@ -530,7 +528,7 @@ fn should_not_create_if_re_validation_fails() {
     let required_values = [String::from("1".repeat(4)), String::from("1".repeat(5))];
 
     for required_value in required_values {
-        let created = sync_re_validation_schema::DataModel
+        let (created, ..) = sync_re_validation_schema::DataModel
             .create(
                 sync_re_validation_schema::PartialData {
                     required: Some(required_value.clone()),
@@ -540,7 +538,7 @@ fn should_not_create_if_re_validation_fails() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.required, required_value);
+        assert_eq!(created.required, required_value);
     }
 }
 
@@ -562,9 +560,9 @@ async fn should_not_create_if_re_validation_fails_async() {
             )
             .await;
 
-        let errors = result.unwrap_err();
+        let (errors, ..) = result.err().unwrap();
         assert_eq!(
-            errors.errors.get("required").unwrap().reason,
+            errors.get("required").unwrap().reason,
             async_re_validation_schema::MIN_REVALIDATION_LENGTH_ERROR
         );
     }
@@ -572,7 +570,7 @@ async fn should_not_create_if_re_validation_fails_async() {
     let required_values = [String::from("1".repeat(4)), String::from("1".repeat(5))];
 
     for required_value in required_values {
-        let created = async_re_validation_schema::DataModel
+        let (created, ..) = async_re_validation_schema::DataModel
             .create(
                 async_re_validation_schema::PartialData {
                     required: Some(required_value.clone()),
@@ -583,7 +581,7 @@ async fn should_not_create_if_re_validation_fails_async() {
             .ok()
             .unwrap();
 
-        assert_eq!(created.data.required, required_value);
+        assert_eq!(created.required, required_value);
     }
 }
 
@@ -610,10 +608,9 @@ fn should_not_update_if_re_validation_fails() {
             (),
         );
 
-        let errors = result.unwrap_err();
+        let (errors, ..) = result.err().unwrap();
         assert_eq!(
             errors
-                .errors
                 .as_ref()
                 .unwrap()
                 .get("required")
@@ -628,7 +625,7 @@ fn should_not_update_if_re_validation_fails() {
             continue;
         }
 
-        let updated = DataModel
+        let (updated, ..) = DataModel
             .update(
                 data.clone(),
                 PartialDataInput::new().with_required(updated_value),
@@ -638,7 +635,7 @@ fn should_not_update_if_re_validation_fails() {
             .unwrap();
 
         assert_eq!(
-            updated.data,
+            updated,
             PartialData {
                 id: None,
                 required: Some(updated_value),
@@ -669,10 +666,9 @@ async fn should_not_update_if_re_validation_fails_async() {
             )
             .await;
 
-        let errors = result.unwrap_err();
+        let (errors, ..) = result.err().unwrap();
         assert_eq!(
             errors
-                .errors
                 .as_ref()
                 .unwrap()
                 .get("required")
@@ -687,7 +683,7 @@ async fn should_not_update_if_re_validation_fails_async() {
             continue;
         }
 
-        let updated = DataModel
+        let (updated, ..) = DataModel
             .update(
                 data.clone(),
                 PartialDataInput::new().with_required(updated_value),
@@ -698,7 +694,7 @@ async fn should_not_update_if_re_validation_fails_async() {
             .unwrap();
 
         assert_eq!(
-            updated.data,
+            updated,
             PartialData {
                 id: None,
                 required: Some(updated_value),
@@ -713,7 +709,7 @@ async_test_matrix!(should_not_update_if_re_validation_fails_async);
 fn should_properly_use_re_validated_values() {
     let value = 1;
 
-    let created = sync_re_validated_values_schema::DataModel
+    let (created, ..) = sync_re_validated_values_schema::DataModel
         .create(
             sync_re_validated_values_schema::PartialData {
                 required: Some(value),
@@ -724,7 +720,7 @@ fn should_properly_use_re_validated_values() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_re_validated_values_schema::Data {
             required: value + 1
         }
@@ -732,7 +728,7 @@ fn should_properly_use_re_validated_values() {
 
     let value = 2;
 
-    let updated = sync_re_validated_values_schema::DataModel
+    let (updated, ..) = sync_re_validated_values_schema::DataModel
         .update(
             sync_re_validated_values_schema::Data {
                 required: value - 1,
@@ -746,7 +742,7 @@ fn should_properly_use_re_validated_values() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_re_validated_values_schema::PartialData {
             required: Some(value + 1)
         }
@@ -756,7 +752,7 @@ fn should_properly_use_re_validated_values() {
 async fn should_properly_use_re_validated_values_async() {
     let value = 1;
 
-    let created = async_re_validated_values_schema::DataModel
+    let (created, ..) = async_re_validated_values_schema::DataModel
         .create(
             async_re_validated_values_schema::PartialData {
                 required: Some(value),
@@ -768,7 +764,7 @@ async fn should_properly_use_re_validated_values_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_re_validated_values_schema::Data {
             required: value + 1
         }
@@ -776,7 +772,7 @@ async fn should_properly_use_re_validated_values_async() {
 
     let value = 2;
 
-    let updated = async_re_validated_values_schema::DataModel
+    let (updated, ..) = async_re_validated_values_schema::DataModel
         .update(
             async_re_validated_values_schema::Data {
                 required: value - 1,
@@ -791,7 +787,7 @@ async fn should_properly_use_re_validated_values_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_re_validated_values_schema::PartialData {
             required: Some(value + 1)
         }
@@ -805,7 +801,7 @@ fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_re
 ) {
     let value = 1;
 
-    let created = sync_re_validator_pass_through_schema::DataModel
+    let (created, ..) = sync_re_validator_pass_through_schema::DataModel
         .create(
             sync_re_validator_pass_through_schema::PartialData {
                 required: Some(value),
@@ -816,7 +812,7 @@ fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_re
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_re_validator_pass_through_schema::Data {
             required: value + 1
         }
@@ -824,7 +820,7 @@ fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_re
 
     let value = 2;
 
-    let updated = sync_re_validator_pass_through_schema::DataModel
+    let (updated, ..) = sync_re_validator_pass_through_schema::DataModel
         .update(
             sync_re_validator_pass_through_schema::Data {
                 required: value - 1,
@@ -838,7 +834,7 @@ fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_re
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_re_validator_pass_through_schema::PartialData {
             required: Some(value + 1)
         }
@@ -849,7 +845,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 ) {
     let value = 1;
 
-    let created = async_re_validator_pass_through_schema::DataModel
+    let (created, ..) = async_re_validator_pass_through_schema::DataModel
         .create(
             async_re_validator_pass_through_schema::PartialData {
                 required: Some(value),
@@ -861,7 +857,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_re_validator_pass_through_schema::Data {
             required: value + 1
         }
@@ -869,7 +865,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let value = 2;
 
-    let updated = async_re_validator_pass_through_schema::DataModel
+    let (updated, ..) = async_re_validator_pass_through_schema::DataModel
         .update(
             async_re_validator_pass_through_schema::Data {
                 required: value - 1,
@@ -884,7 +880,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_re_validator_pass_through_schema::PartialData {
             required: Some(value + 1)
         }
@@ -904,7 +900,7 @@ fn should_respect_the_ignore_update_rule() {
     let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
     let required = 1;
 
-    let created = sync_ignore_update_schema::DataModel
+    let (created, ..) = sync_ignore_update_schema::DataModel
         .create(
             sync_ignore_update_schema::PartialData {
                 lax: Some(lax.clone()),
@@ -916,16 +912,16 @@ fn should_respect_the_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_update_schema::Data { lax, required },
         "should not evaluate the ignore_update rule of required fields at creation"
     );
 
     let required = required + 2;
 
-    let failed = sync_ignore_update_schema::DataModel
+    let (failed, ..) = sync_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_update_schema::PartialData {
                 lax: None,
                 required: Some(required),
@@ -935,14 +931,14 @@ fn should_respect_the_ignore_update_rule() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 
     let data = sync_ignore_update_schema::Data {
         lax: "normal_lax_value".into(),
-        ..created.data
+        ..created
     };
 
-    let updated = sync_ignore_update_schema::DataModel
+    let (updated, ..) = sync_ignore_update_schema::DataModel
         .update(
             data,
             sync_ignore_update_schema::PartialData {
@@ -955,7 +951,7 @@ fn should_respect_the_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_update_schema::PartialData {
             lax: None,
             required: Some(required)
@@ -969,7 +965,7 @@ async fn should_respect_the_ignore_update_rule_async() {
     let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
     let required = 1;
 
-    let created = async_ignore_update_schema::DataModel
+    let (created, ..) = async_ignore_update_schema::DataModel
         .create(
             async_ignore_update_schema::PartialData {
                 lax: Some(lax.clone()),
@@ -982,16 +978,16 @@ async fn should_respect_the_ignore_update_rule_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_ignore_update_schema::Data { lax, required },
         "should not evaluate the ignore_update rule of required fields at creation"
     );
 
     let required = required + 2;
 
-    let failed = async_ignore_update_schema::DataModel
+    let (failed, ..) = async_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_ignore_update_schema::PartialData {
                 lax: None,
                 required: Some(required),
@@ -1002,14 +998,14 @@ async fn should_respect_the_ignore_update_rule_async() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 
     let data = async_ignore_update_schema::Data {
         lax: "normal_lax_value".into(),
-        ..created.data
+        ..created
     };
 
-    let updated = async_ignore_update_schema::DataModel
+    let (updated, ..) = async_ignore_update_schema::DataModel
         .update(
             data,
             async_ignore_update_schema::PartialData {
@@ -1023,7 +1019,7 @@ async fn should_respect_the_ignore_update_rule_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_ignore_update_schema::PartialData {
             lax: None,
             required: Some(required)
@@ -1038,7 +1034,7 @@ fn should_respect_the_readonly_rule() {
     let lax = "ignore_required_for_update".to_string();
     let required = 1;
 
-    let created = sync_readonly_schema::DataModel
+    let (created, ..) = sync_readonly_schema::DataModel
         .create(
             sync_readonly_schema::PartialData {
                 lax: Some(lax.clone()),
@@ -1050,16 +1046,16 @@ fn should_respect_the_readonly_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_readonly_schema::Data { lax, required },
         "should allow required fields to be set at creation even when readonly"
     );
 
     let required = required + 2;
 
-    let failed = sync_readonly_schema::DataModel
+    let (failed, ..) = sync_readonly_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_readonly_schema::PartialData {
                 lax: None,
                 required: Some(required),
@@ -1069,14 +1065,14 @@ fn should_respect_the_readonly_rule() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async fn should_respect_the_readonly_rule_async() {
     let lax = "ignore_required_for_update".to_string();
     let required = 1;
 
-    let created = async_readonly_schema::DataModel
+    let (created, ..) = async_readonly_schema::DataModel
         .create(
             async_readonly_schema::PartialData {
                 lax: Some(lax.clone()),
@@ -1089,16 +1085,16 @@ async fn should_respect_the_readonly_rule_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_readonly_schema::Data { lax, required },
         "should allow required fields to be set at creation even when readonly"
     );
 
     let required = required + 2;
 
-    let failed = async_readonly_schema::DataModel
+    let (failed, ..) = async_readonly_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_readonly_schema::PartialData {
                 lax: None,
                 required: Some(required),
@@ -1109,7 +1105,7 @@ async fn should_respect_the_readonly_rule_async() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_respect_the_readonly_rule_async);
@@ -1125,7 +1121,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
     let lax_1 = "lax_1".to_string();
     let required = "some value".to_string();
 
-    let created = sync_grouped_ignore_update_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_update_schema::DataModel
         .create(
             sync_grouped_ignore_update_schema::PartialData {
                 lax: Some(lax.clone()),
@@ -1138,7 +1134,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_update_schema::Data {
             lax,
             required,
@@ -1150,7 +1146,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
     let lax_1 = "lax_1".to_string();
     let required = "some value".to_string();
 
-    let created = sync_grouped_ignore_update_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_update_schema::DataModel
         .create(
             sync_grouped_ignore_update_schema::PartialData {
                 lax: Some(lax.clone()),
@@ -1163,7 +1159,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_update_schema::Data {
             lax,
             lax_1,
@@ -1181,7 +1177,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
     let lax_1 = Some("lax_1".to_string());
     let required = Some("updated value".to_string());
 
-    let updated = sync_grouped_ignore_update_schema::DataModel
+    let (updated, ..) = sync_grouped_ignore_update_schema::DataModel
         .update(
             data,
             sync_grouped_ignore_update_schema::PartialData {
@@ -1195,7 +1191,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_ignore_update_schema::PartialData {
             lax: None,
             lax_1,
@@ -1213,7 +1209,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
     let lax_1 = Some("lax_1".to_string());
     let required = Some("updated value".to_string());
 
-    let updated = sync_grouped_ignore_update_schema::DataModel
+    let (updated, ..) = sync_grouped_ignore_update_schema::DataModel
         .update(
             data,
             sync_grouped_ignore_update_schema::PartialData {
@@ -1227,7 +1223,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_ignore_update_schema::PartialData {
             lax,
             lax_1,
@@ -1246,7 +1242,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_async() {
     let lax_1 = "lax_1".to_string();
     let required = "some value".to_string();
 
-    let created = async_grouped_ignore_update_schema::DataModel
+    let (created, ..) = async_grouped_ignore_update_schema::DataModel
         .create(
             async_grouped_ignore_update_schema::PartialData {
                 lax: Some(lax.clone()),
@@ -1260,7 +1256,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_grouped_ignore_update_schema::Data {
             lax,
             required,
@@ -1272,7 +1268,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_async() {
     let lax_1 = "lax_1".to_string();
     let required = "some value".to_string();
 
-    let created = async_grouped_ignore_update_schema::DataModel
+    let (created, ..) = async_grouped_ignore_update_schema::DataModel
         .create(
             async_grouped_ignore_update_schema::PartialData {
                 lax: Some(lax.clone()),
@@ -1286,7 +1282,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_grouped_ignore_update_schema::Data {
             lax,
             lax_1,
@@ -1304,7 +1300,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_async() {
     let lax_1 = Some("lax_1".to_string());
     let required = Some("updated value".to_string());
 
-    let updated = async_grouped_ignore_update_schema::DataModel
+    let (updated, ..) = async_grouped_ignore_update_schema::DataModel
         .update(
             data,
             async_grouped_ignore_update_schema::PartialData {
@@ -1319,7 +1315,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_ignore_update_schema::PartialData {
             lax: None,
             lax_1,
@@ -1337,7 +1333,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_async() {
     let lax_1 = Some("lax_1".to_string());
     let required = Some("updated value".to_string());
 
-    let updated = async_grouped_ignore_update_schema::DataModel
+    let (updated, ..) = async_grouped_ignore_update_schema::DataModel
         .update(
             data,
             async_grouped_ignore_update_schema::PartialData {
@@ -1352,7 +1348,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_ignore_update_schema::PartialData {
             lax,
             lax_1,
@@ -1408,12 +1404,12 @@ fn should_trigger_on_failure_handlers_at_creation() {
         (),
     );
 
-    let errors = result.unwrap_err();
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("required").unwrap().reason,
+        errors.get("required").unwrap().reason,
         "validation failed"
     );
-    errors.handle_failure();
+    handle_failure();
 }
 
 #[should_panic(expected = "[required]: on_failure triggered with value: fail_validation")]
@@ -1427,12 +1423,12 @@ async fn should_trigger_on_failure_handlers_at_creation_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
     assert_eq!(
-        errors.errors.get("required").unwrap().reason,
+        errors.get("required").unwrap().reason,
         "validation failed"
     );
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -1455,10 +1451,9 @@ fn should_trigger_on_failure_handlers_during_updates() {
         (),
     );
 
-    let errors = result.unwrap_err();
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required")
@@ -1466,7 +1461,7 @@ fn should_trigger_on_failure_handlers_during_updates() {
             .reason,
         "validation failed"
     );
-    errors.handle_failure();
+    handle_failure();
 }
 
 #[should_panic(expected = "[required]: on_failure triggered with value: fail_validation")]
@@ -1485,10 +1480,9 @@ async fn should_trigger_on_failure_handlers_during_updates_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required")
@@ -1496,7 +1490,7 @@ async fn should_trigger_on_failure_handlers_during_updates_async() {
             .reason,
         "validation failed"
     );
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -1521,9 +1515,9 @@ fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.is_none());
-    errors.handle_failure();
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
+    assert!(errors.is_none());
+    handle_failure();
 }
 
 #[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
@@ -1560,9 +1554,9 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.is_none());
-    errors.handle_failure().await;
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
+    assert!(errors.is_none());
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -1603,11 +1597,10 @@ fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignore
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required").is_none());
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required2")
@@ -1615,7 +1608,7 @@ fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignore
             .reason,
         "validation failed"
     );
-    errors.handle_failure();
+    handle_failure();
 }
 
 #[should_panic(expected = "[required]: on_failure triggered with value: update to be ignored")]
@@ -1636,11 +1629,10 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required").is_none());
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required2")
@@ -1648,7 +1640,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             .reason,
         "validation failed"
     );
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -1675,11 +1667,10 @@ fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignore
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required").is_none());
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required2")
@@ -1687,7 +1678,7 @@ fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignore
             .reason,
         "validation failed"
     );
-    errors.handle_failure();
+    handle_failure();
 }
 
 #[should_panic(
@@ -1711,11 +1702,10 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required").is_none());
+    let (errors, _ctx_options, handle_failure) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required2")
@@ -1723,7 +1713,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             .reason,
         "validation failed"
     );
-    errors.handle_failure().await;
+    handle_failure().await;
 }
 
 async_test_matrix!(
@@ -1743,7 +1733,7 @@ fn should_trigger_on_success_handlers_at_creation() {
         required: "required".into(),
     };
 
-    let created = sync_on_success_creation_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_on_success_creation_schema::DataModel
         .create(
             sync_on_success_creation_schema::PartialData {
                 required: Some(data.required.clone()),
@@ -1754,8 +1744,8 @@ fn should_trigger_on_success_handlers_at_creation() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, data);
-    created.handle_success();
+    assert_eq!(created, data);
+    handle_success();
 }
 
 #[should_panic(expected = "[required]: on_success triggered with value: required")]
@@ -1765,7 +1755,7 @@ async fn should_trigger_on_success_handlers_at_creation_async() {
         required: "required".into(),
     };
 
-    let created = async_on_success_creation_schema::DataModel
+    let (created, _ctx_options, handle_success) = async_on_success_creation_schema::DataModel
         .create(
             async_on_success_creation_schema::PartialData {
                 required: Some(data.required.clone()),
@@ -1777,8 +1767,8 @@ async fn should_trigger_on_success_handlers_at_creation_async() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.data, data);
-    created.handle_success().await;
+    assert_eq!(created, data);
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1798,7 +1788,7 @@ fn should_trigger_on_success_handlers_during_updates_if_provided() {
 
     let updated_required_value = "updated_required_value".to_string();
 
-    let updated = sync_on_success_update_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_on_success_update_schema::DataModel
         .update(
             data,
             sync_on_success_update_schema::PartialData {
@@ -1811,14 +1801,14 @@ fn should_trigger_on_success_handlers_during_updates_if_provided() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_on_success_update_schema::PartialData {
             required2: None,
             required: Some(updated_required_value),
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 #[should_panic(expected = "[required]: on_success triggered with value: updated_required_value")]
@@ -1832,7 +1822,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided_async() {
 
     let updated_required_value = "updated_required_value".to_string();
 
-    let updated = async_on_success_update_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_on_success_update_schema::DataModel
         .update(
             data,
             async_on_success_update_schema::PartialData {
@@ -1846,14 +1836,14 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_on_success_update_schema::PartialData {
             required2: None,
             required: Some(updated_required_value),
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -1870,7 +1860,7 @@ fn should_not_trigger_on_success_handlers_during_updates_if_not_provided() {
 
     let updated_required2_value = "updated_required2_value".to_string();
 
-    let updated = sync_on_success_update_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_on_success_update_schema::DataModel
         .update(
             data,
             sync_on_success_update_schema::PartialData {
@@ -1879,17 +1869,18 @@ fn should_not_trigger_on_success_handlers_during_updates_if_not_provided() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_on_success_update_schema::PartialData {
             required2: Some(updated_required2_value),
             required: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided_async() {
@@ -1900,7 +1891,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided_a
 
     let updated_required2_value = "updated_required2_value".to_string();
 
-    let updated = async_on_success_update_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_on_success_update_schema::DataModel
         .update(
             data,
             async_on_success_update_schema::PartialData {
@@ -1910,17 +1901,19 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided_a
             (),
         )
         .await
+        
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_on_success_update_schema::PartialData {
             required2: Some(updated_required2_value),
             required: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(should_not_trigger_on_success_handlers_during_updates_if_not_provided_async);
@@ -1935,7 +1928,7 @@ fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored
     let updated_required_value = "updated_required_value".to_string();
     let updated_required2_value = "updated_required2_value".to_string();
 
-    let updated = sync_on_success_update_ignored_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_on_success_update_ignored_schema::DataModel
         .update(
             data,
             sync_on_success_update_ignored_schema::PartialData {
@@ -1944,17 +1937,18 @@ fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_on_success_update_ignored_schema::PartialData {
             required2: Some(updated_required2_value),
             required: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored_async() {
@@ -1966,7 +1960,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
     let updated_required_value = "updated_required_value".to_string();
     let updated_required2_value = "updated_required2_value".to_string();
 
-    let updated = async_on_success_update_ignored_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_on_success_update_ignored_schema::DataModel
         .update(
             data,
             async_on_success_update_ignored_schema::PartialData {
@@ -1976,17 +1970,19 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
             (),
         )
         .await
+        
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_on_success_update_ignored_schema::PartialData {
             required2: Some(updated_required2_value),
             required: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -2003,7 +1999,7 @@ fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored
     let updated_required_value = "updated_required_value".to_string();
     let updated_required2_value = "updated_required2_value".to_string();
 
-    let updated = sync_on_success_update_readonly_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_on_success_update_readonly_schema::DataModel
         .update(
             data,
             sync_on_success_update_readonly_schema::PartialData {
@@ -2012,17 +2008,18 @@ fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_on_success_update_readonly_schema::PartialData {
             required2: Some(updated_required2_value),
             required: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored_as_readonly_async(
@@ -2035,7 +2032,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
     let updated_required_value = "updated_required_value".to_string();
     let updated_required2_value = "updated_required2_value".to_string();
 
-    let updated = async_on_success_update_readonly_schema::DataModel
+    let (updated, _ctx_options, handle_success) = async_on_success_update_readonly_schema::DataModel
         .update(
             data,
             async_on_success_update_readonly_schema::PartialData {
@@ -2045,17 +2042,19 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
             (),
         )
         .await
+        
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_on_success_update_readonly_schema::PartialData {
             required2: Some(updated_required2_value),
             required: None,
         }
     );
 
-    updated.handle_success().await;
+    handle_success().await;
 }
 
 async_test_matrix!(
@@ -2068,7 +2067,7 @@ fn should_trigger_entity_level_success_handlers_each_time_creation_is_successful
     let required_value = "required_value".to_string();
     let required_1_value = "required_1_value".to_string();
 
-    let created = sync_on_success_entity_level_schema::DataModel
+    let (created, _ctx_options, handle_success) = sync_on_success_entity_level_schema::DataModel
         .create(
             sync_on_success_entity_level_schema::PartialData {
                 required: Some(required_value.clone()),
@@ -2076,17 +2075,18 @@ fn should_trigger_entity_level_success_handlers_each_time_creation_is_successful
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_on_success_entity_level_schema::Data {
             required: required_value,
             required_1: required_1_value,
         }
     );
 
-    created.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
@@ -2117,7 +2117,7 @@ fn should_trigger_entity_level_success_handlers_each_time_update_is_successful()
 
     let updated_value = "updated_value".to_string();
 
-    let updated = sync_on_success_entity_level_update_schema::DataModel
+    let (updated, _ctx_options, handle_success) = sync_on_success_entity_level_update_schema::DataModel
         .update(
             data,
             sync_on_success_entity_level_update_schema::PartialData {
@@ -2126,17 +2126,18 @@ fn should_trigger_entity_level_success_handlers_each_time_update_is_successful()
             },
             (),
         )
+        .ok()
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_on_success_entity_level_update_schema::PartialData {
             required: Some(updated_value),
             required_1: None,
         }
     );
 
-    updated.handle_success();
+    handle_success();
 }
 
 #[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
@@ -2187,10 +2188,10 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_1").is_none());
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_1").is_none());
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
 
     // Unrelated post-validation errors are ignored.
     let required = REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
@@ -2203,10 +2204,10 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_1").is_none());
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_1").is_none());
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
 
     // Single field pre-validation failure.
     let required_1 = REQUIRED_1_PRE_VALIDATION_FAIL.to_string();
@@ -2219,10 +2220,10 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required").is_none());
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required_1").unwrap().reason, required_1);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required").is_none());
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required_1").unwrap().reason, required_1);
 
     // Both fields fail pre-validation.
     let required = BOTH_PRE_VALIDATION_FAIL.to_string();
@@ -2235,10 +2236,10 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
-    assert_eq!(errors.errors.get("required_1").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
+    assert_eq!(errors.get("required_1").unwrap().reason, required);
 
     // Single field post-validation failure.
     let required = REQUIRED_VALIDATION_FAIL.to_string();
@@ -2251,10 +2252,10 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_1").is_none());
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_1").is_none());
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
 
     // Both fields fail post-validation.
     let required = BOTH_VALIDATION_FAIL.to_string();
@@ -2267,10 +2268,10 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
-    assert_eq!(errors.errors.get("required_1").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
+    assert_eq!(errors.get("required_1").unwrap().reason, required);
 
     // updates
     let data = sync_post_validation_schema::Data {
@@ -2294,12 +2295,11 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required").is_none());
-    assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required").is_none());
+    assert!(errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required_1")
@@ -2325,11 +2325,10 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required")
@@ -2339,7 +2338,6 @@ fn should_respect_post_validation_config() {
     );
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required_1")
@@ -2365,12 +2363,11 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required_1").is_none());
-    assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required_1").is_none());
+    assert!(errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required")
@@ -2396,12 +2393,11 @@ fn should_respect_post_validation_config() {
         (),
     );
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required_1").is_none());
-    assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required_1").is_none());
+    assert!(errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required")
@@ -2437,10 +2433,10 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_1").is_none());
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_1").is_none());
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
 
     let required = REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
     let result = async_post_validation_schema::DataModel
@@ -2454,10 +2450,10 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_1").is_none());
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_1").is_none());
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
 
     let required_1 = REQUIRED_1_PRE_VALIDATION_FAIL.to_string();
     let result = async_post_validation_schema::DataModel
@@ -2471,10 +2467,10 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required").is_none());
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required_1").unwrap().reason, required_1);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required").is_none());
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required_1").unwrap().reason, required_1);
 
     let required = BOTH_PRE_VALIDATION_FAIL.to_string();
     let result = async_post_validation_schema::DataModel
@@ -2488,10 +2484,10 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
-    assert_eq!(errors.errors.get("required_1").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
+    assert_eq!(errors.get("required_1").unwrap().reason, required);
 
     let required = REQUIRED_VALIDATION_FAIL.to_string();
     let result = async_post_validation_schema::DataModel
@@ -2505,10 +2501,10 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_1").is_none());
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_1").is_none());
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
 
     let required = BOTH_VALIDATION_FAIL.to_string();
     let result = async_post_validation_schema::DataModel
@@ -2522,10 +2518,10 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.get("required_2").is_none());
-    assert_eq!(errors.errors.get("required").unwrap().reason, required);
-    assert_eq!(errors.errors.get("required_1").unwrap().reason, required);
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.get("required_2").is_none());
+    assert_eq!(errors.get("required").unwrap().reason, required);
+    assert_eq!(errors.get("required_1").unwrap().reason, required);
 
     let data = async_post_validation_schema::Data {
         required: value.clone(),
@@ -2550,12 +2546,11 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required").is_none());
-    assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required").is_none());
+    assert!(errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required_1")
@@ -2583,11 +2578,10 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required")
@@ -2597,7 +2591,6 @@ async fn should_respect_post_validation_config_async() {
     );
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required_1")
@@ -2625,12 +2618,11 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required_1").is_none());
-    assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required_1").is_none());
+    assert!(errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required")
@@ -2658,12 +2650,11 @@ async fn should_respect_post_validation_config_async() {
         )
         .await;
 
-    let errors = result.unwrap_err();
-    assert!(errors.errors.as_ref().unwrap().get("required_1").is_none());
-    assert!(errors.errors.as_ref().unwrap().get("required_2").is_none());
+    let (errors, ..) = result.err().unwrap();
+    assert!(errors.as_ref().unwrap().get("required_1").is_none());
+    assert!(errors.as_ref().unwrap().get("required_2").is_none());
     assert_eq!(
         errors
-            .errors
             .as_ref()
             .unwrap()
             .get("required")
@@ -2686,7 +2677,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
     let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
     let value = "some random value".to_string();
 
-    let created = sync_post_validate_updates_schema::DataModel
+    let (created, ..) = sync_post_validate_updates_schema::DataModel
         .create(
             sync_post_validate_updates_schema::PartialData {
                 required: Some(required.clone()),
@@ -2699,7 +2690,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_post_validate_updates_schema::Data {
             required: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
             required_1: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
@@ -2709,7 +2700,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
 
     let required = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let created = sync_post_validate_updates_schema::DataModel
+    let (created, ..) = sync_post_validate_updates_schema::DataModel
         .create(
             sync_post_validate_updates_schema::PartialData {
                 required: Some(required.clone()),
@@ -2722,7 +2713,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_post_validate_updates_schema::Data {
             required: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
             required_1: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
@@ -2738,7 +2729,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
 
     let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let updated = sync_post_validate_updates_schema::DataModel
+    let (updated, ..) = sync_post_validate_updates_schema::DataModel
         .update(
             data,
             sync_post_validate_updates_schema::PartialData {
@@ -2752,7 +2743,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_post_validate_updates_schema::PartialData {
             required: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
             required_1: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
@@ -2768,7 +2759,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
 
     let required = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let updated = sync_post_validate_updates_schema::DataModel
+    let (updated, ..) = sync_post_validate_updates_schema::DataModel
         .update(
             data,
             sync_post_validate_updates_schema::PartialData {
@@ -2782,7 +2773,7 @@ fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_post_validate_updates_schema::PartialData {
             required: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
             required_1: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
@@ -2802,7 +2793,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
     let value = "some random value".to_string();
 
-    let created = async_post_validate_updates_schema::DataModel
+    let (created, ..) = async_post_validate_updates_schema::DataModel
         .create(
             async_post_validate_updates_schema::PartialData {
                 required: Some(required.clone()),
@@ -2816,7 +2807,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_post_validate_updates_schema::Data {
             required: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
             required_1: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
@@ -2826,7 +2817,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let required = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let created = async_post_validate_updates_schema::DataModel
+    let (created, ..) = async_post_validate_updates_schema::DataModel
         .create(
             async_post_validate_updates_schema::PartialData {
                 required: Some(required.clone()),
@@ -2840,7 +2831,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_post_validate_updates_schema::Data {
             required: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
             required_1: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
@@ -2856,7 +2847,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let updated = async_post_validate_updates_schema::DataModel
+    let (updated, ..) = async_post_validate_updates_schema::DataModel
         .update(
             data,
             async_post_validate_updates_schema::PartialData {
@@ -2871,7 +2862,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_post_validate_updates_schema::PartialData {
             required: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
             required_1: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
@@ -2887,7 +2878,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let required = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
-    let updated = async_post_validate_updates_schema::DataModel
+    let (updated, ..) = async_post_validate_updates_schema::DataModel
         .update(
             data,
             async_post_validate_updates_schema::PartialData {
@@ -2902,7 +2893,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_post_validate_updates_schema::PartialData {
             required: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
             required_1: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
@@ -4091,15 +4082,15 @@ mod async_on_success_update_readonly_schema {
 
 #[test]
 fn should_not_run_validate_once_missing_required_fields_have_already_failed() {
-    let errors = fail_fast_required_then_validate_schema::DataInputModel
+    let (errors, ..) = fail_fast_required_then_validate_schema::DataInputModel
         .create(
             fail_fast_required_then_validate_schema::PartialDataInput { field_a: None },
             (),
         )
-        .unwrap_err();
+        .err().unwrap();
 
     assert_eq!(
-        errors.errors.get("field_a").unwrap().reason,
+        errors.get("field_a").unwrap().reason,
         "field is required"
     );
 }
@@ -4117,16 +4108,16 @@ mod fail_fast_required_then_validate_schema {
 
 #[test]
 fn should_not_run_re_validate_once_validate_has_already_failed() {
-    let errors = fail_fast_validate_then_re_validate_schema::DataInputModel
+    let (errors, ..) = fail_fast_validate_then_re_validate_schema::DataInputModel
         .create(
             fail_fast_validate_then_re_validate_schema::PartialDataInput {
                 field_a: Some("bad".into()),
             },
             (),
         )
-        .unwrap_err();
+        .err().unwrap();
 
-    assert_eq!(errors.errors.get("field_a").unwrap().reason, "invalid");
+    assert_eq!(errors.get("field_a").unwrap().reason, "invalid");
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -4158,7 +4149,7 @@ fn should_not_run_validate_once_missing_required_fields_have_already_failed_on_u
         field_b: "b".into(),
     };
 
-    let errors = fail_fast_update_required_then_validate_schema::DataInputModel
+    let (errors, ..) = fail_fast_update_required_then_validate_schema::DataInputModel
         .update(
             existing,
             fail_fast_update_required_then_validate_schema::PartialDataInput {
@@ -4167,10 +4158,10 @@ fn should_not_run_validate_once_missing_required_fields_have_already_failed_on_u
             },
             (),
         )
-        .unwrap_err();
+        .err().unwrap();
 
     assert_eq!(
-        errors.errors.unwrap().get("field_b").unwrap().reason,
+        errors.unwrap().get("field_b").unwrap().reason,
         "field_b is required for this update"
     );
 }
@@ -4211,7 +4202,7 @@ fn should_return_nothing_to_update_early_when_all_provided_fields_are_ignored() 
         field_b: "b".into(),
     };
 
-    let err = nothing_to_update_checkpoint1_schema::DataInputModel
+    let (err, ..) = nothing_to_update_checkpoint1_schema::DataInputModel
         .update(
             existing,
             nothing_to_update_checkpoint1_schema::PartialDataInput {
@@ -4223,7 +4214,7 @@ fn should_return_nothing_to_update_early_when_all_provided_fields_are_ignored() 
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
@@ -4254,7 +4245,7 @@ fn should_return_nothing_to_update_before_dependent_resolution_when_validate_rev
         dependent: 0,
     };
 
-    let err = nothing_to_update_checkpoint2_schema::DataModel
+    let (err, ..) = nothing_to_update_checkpoint2_schema::DataModel
         .update(
             existing,
             nothing_to_update_checkpoint2_schema::PartialDataInput {
@@ -4265,7 +4256,7 @@ fn should_return_nothing_to_update_before_dependent_resolution_when_validate_rev
         .err()
         .unwrap();
 
-    assert!(err.errors.is_none());
+    assert!(err.is_none());
 }
 
 #[ivo_schema(

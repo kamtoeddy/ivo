@@ -5,7 +5,7 @@ const DEFAULT_LAX_VALUE: &str = "DEFAULT_LAX_VALUE";
 
 #[tokio::main]
 async fn main() {
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialDataInput {
                 lax: None,
@@ -17,24 +17,24 @@ async fn main() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             dependent: DEFAULT_DEPENDENT_VALUE.to_string(),
             lax: DEFAULT_LAX_VALUE.to_string(),
         }
     );
 
-    let created_data = created.data.clone();
-    created.handle_success().await;
+    let created_data = created.clone();
+    handle_success().await;
 
     data_schema::DataModel.delete(&created_data, ());
 
     let virtual_value = "some value";
 
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialDataInput {
                 lax: None,
@@ -46,24 +46,24 @@ async fn main() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             dependent: virtual_value.to_string(),
             lax: DEFAULT_LAX_VALUE.to_string(),
         }
     );
 
-    let created_data = created.data.clone();
-    created.handle_success().await;
+    let created_data = created.clone();
+    handle_success().await;
 
     data_schema::DataModel.delete(&created_data, ());
 
     let lax_value = "some lax value";
 
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialDataInput {
                 lax: Some(lax_value.to_string()),
@@ -75,24 +75,24 @@ async fn main() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             dependent: DEFAULT_DEPENDENT_VALUE.to_string(),
             lax: lax_value.to_string(),
         }
     );
 
-    let created_data = created.data.clone();
-    created.handle_success().await;
+    let created_data = created.clone();
+    handle_success().await;
 
     data_schema::DataModel.delete(&created_data, ());
 
     let updated_lax_value: Option<String> = Some("updated lax value".to_string());
 
-    let updated = data_schema::DataModel
+    let (updated, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             created_data.clone(),
             data_schema::PartialDataInput {
@@ -105,18 +105,18 @@ async fn main() {
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
     assert_eq!(
-        updated.data,
+        updated,
         data_schema::PartialData {
             dependent: None,
             lax: updated_lax_value,
         }
     );
 
-    let updated_data = updated.data.clone();
-    updated.handle_success().await;
+    let updated_data = updated.clone();
+    handle_success().await;
 
     let data = created_data.clone_with_updates(&updated_data);
 
@@ -124,7 +124,7 @@ async fn main() {
 
     let updated_virtual_value: Option<String> = Some("updated virtual_value value".to_string());
 
-    let updated = data_schema::DataModel
+    let (updated, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialDataInput {
@@ -137,18 +137,18 @@ async fn main() {
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
     assert_eq!(
-        updated.data,
+        updated,
         data_schema::PartialData {
             dependent: updated_virtual_value,
             lax: None
         }
     );
 
-    let updated_data = updated.data.clone();
-    updated.handle_success().await;
+    let updated_data = updated.clone();
+    handle_success().await;
 
     data_schema::DataModel.delete(&data.clone_with_updates(&updated_data), ());
 }

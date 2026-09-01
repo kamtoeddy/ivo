@@ -5212,35 +5212,51 @@ fn generate_model(
     // than let later phases run against already-invalid data, matching `rs/`'s
     // reference implementation (which checks `error_tool.has_errors()` right
     // after every one of those phases).
+    // The `Err` tuple's arity (2 vs 3 elements) now encodes "does this schema
+    // have any `on_failure` handler at all" -- replacing the old
+    // `IvoFailureHandle<_, _, ASYNC, HAS_FAILURE>` const generics. When there
+    // are none, no trigger closure is built at all (not even a no-op one).
+    let (create_failure_let, create_failure_extra) = if has_failure_handlers {
+        (
+            quote! { let __failure_trigger = #create_failure_trigger; },
+            quote! { , __failure_trigger },
+        )
+    } else {
+        (quote! {}, quote! {})
+    };
     let create_error_check = quote! {
         if !errors.is_empty() {
             let __opts_guard = #create_options_read;
             let __return_opts = (*__opts_guard).clone();
-            let __failure_trigger = #create_failure_trigger;
-            return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-                <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                    errors, &*__opts_guard,
-                ),
-                __return_opts,
-                __failure_trigger,
-            ))
+            let __payload = <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                errors, &*__opts_guard,
+            );
+            #create_failure_let
+            return ::core::result::Result::Err((__payload, __return_opts #create_failure_extra));
         }
+    };
+    let (update_failure_let, update_failure_extra) = if has_failure_handlers {
+        (
+            quote! {
+                let __trigger_changes = __changes.clone();
+                let __failure_trigger = #update_failure_trigger;
+            },
+            quote! { , __failure_trigger },
+        )
+    } else {
+        (quote! {}, quote! {})
     };
     let update_error_check = quote! {
         if !errors.is_empty() {
-            let __trigger_changes = __changes.clone();
             let __opts_guard = #update_options_read;
             let __return_opts = (*__opts_guard).clone();
-            let __failure_trigger = #update_failure_trigger;
-            return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-                ::core::option::Option::Some(
-                    <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                        errors, &*__opts_guard,
-                    ),
+            let __payload = ::core::option::Option::Some(
+                <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                    errors, &*__opts_guard,
                 ),
-                __return_opts,
-                __failure_trigger,
-            ));
+            );
+            #update_failure_let
+            return ::core::result::Result::Err((__payload, __return_opts #update_failure_extra));
         }
     };
 
@@ -5322,14 +5338,9 @@ fn generate_model(
     };
 
     let update_nothing_to_update_return = quote! {
-        let __trigger_changes = __changes.clone();
         let __return_opts = (*#update_options_read).clone();
-        let __failure_trigger = #update_failure_trigger;
-        return ::core::result::Result::Err(::ivo::__ivo_internals::IvoFailureHandle::new(
-            ::core::option::Option::None,
-            __return_opts,
-            __failure_trigger,
-        ));
+        #update_failure_let
+        return ::core::result::Result::Err((::core::option::Option::None, __return_opts #update_failure_extra));
     };
 
     // Checkpoint 1 (matches `rs/`'s `filter_input_fields_allowed`): if every
@@ -5359,6 +5370,66 @@ fn generate_model(
         }
     };
 
+    // `(value, ctx_options)` when the path has no handlers to trigger,
+    // `(value, ctx_options, IvoSyncTrigger)`/`(value, ctx_options,
+    // IvoAsyncTrigger)` otherwise -- the tuple's own arity and trigger type
+    // now fully replace `IvoSuccessHandle`/`IvoFailureHandle`'s const
+    // generics, resolved once here at macro-expansion time rather than via a
+    // runtime enum match.
+    let tuple_ty = |value_ty: &proc_macro2::TokenStream,
+                     has_handlers: bool,
+                     is_async: bool|
+     -> proc_macro2::TokenStream {
+        if !has_handlers {
+            quote! { (#value_ty, #ctx_options_ty) }
+        } else if is_async {
+            quote! { (#value_ty, #ctx_options_ty, ::ivo::__ivo_internals::IvoAsyncTrigger) }
+        } else {
+            quote! { (#value_ty, #ctx_options_ty, ::ivo::__ivo_internals::IvoSyncTrigger) }
+        }
+    };
+
+    let create_ok_ty = tuple_ty(
+        &quote! { #output_name },
+        has_success_handlers,
+        create_success_is_async,
+    );
+    let create_err_ty = tuple_ty(
+        &quote! { #payload_ty },
+        has_failure_handlers,
+        create_failure_is_async,
+    );
+    let update_ok_ty = tuple_ty(
+        &quote! { #partial_output_name },
+        has_success_handlers,
+        update_success_is_async,
+    );
+    let update_err_ty = tuple_ty(
+        &quote! { ::core::option::Option<#payload_ty> },
+        has_failure_handlers,
+        update_failure_is_async,
+    );
+
+    let (create_success_let, create_success_extra) = if has_success_handlers {
+        (
+            quote! { let __success_trigger = #create_success_trigger; },
+            quote! { , __success_trigger },
+        )
+    } else {
+        (quote! {}, quote! {})
+    };
+    let (update_success_let, update_success_extra) = if has_success_handlers {
+        (
+            quote! {
+                let __trigger_changes = __changes.clone();
+                let __success_trigger = #update_success_trigger;
+            },
+            quote! { , __success_trigger },
+        )
+    } else {
+        (quote! {}, quote! {})
+    };
+
     quote! {
         pub struct #model_type_name;
 
@@ -5370,10 +5441,7 @@ fn generate_model(
                 &self,
                 input: I,
                 _ctx_options: #ctx_options_ty,
-            ) -> ::core::result::Result<
-                ::ivo::__ivo_internals::IvoSuccessHandle<#output_name, #ctx_options_ty, #create_success_is_async, #has_success_handlers>,
-                ::ivo::__ivo_internals::IvoFailureHandle<#payload_ty, #ctx_options_ty, #create_failure_is_async, #has_failure_handlers>,
-            >
+            ) -> ::core::result::Result<#create_ok_ty, #create_err_ty>
             where
                 I: ::core::convert::Into<#partial_input_name>,
             {
@@ -5421,12 +5489,8 @@ fn generate_model(
                 #create_timestamps_phase
 
                 let __return_opts = (*#create_options_read).clone();
-                let __success_trigger = #create_success_trigger;
-                ::core::result::Result::Ok(::ivo::__ivo_internals::IvoSuccessHandle::new(
-                    output,
-                    __return_opts,
-                    __success_trigger,
-                ))
+                #create_success_let
+                ::core::result::Result::Ok((output, __return_opts #create_success_extra))
             }
 
             #update_sig(
@@ -5434,10 +5498,7 @@ fn generate_model(
                 existing: #output_name,
                 updates: #partial_input_name,
                 _ctx_options: #ctx_options_ty,
-            ) -> ::core::result::Result<
-                ::ivo::__ivo_internals::IvoSuccessHandle<#partial_output_name, #ctx_options_ty, #update_success_is_async, #has_success_handlers>,
-                ::ivo::__ivo_internals::IvoFailureHandle<::core::option::Option<#payload_ty>, #ctx_options_ty, #update_failure_is_async, #has_failure_handlers>,
-            > {
+            ) -> ::core::result::Result<#update_ok_ty, #update_err_ty> {
                 let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
                 let _ctx_options = _rw_ctx_options.__read_only();
 
@@ -5490,14 +5551,9 @@ fn generate_model(
 
                 #(#timestamp_update_phase)*
 
-                let __trigger_changes = __changes.clone();
                 let __return_opts = (*#update_options_read).clone();
-                let __success_trigger = #update_success_trigger;
-                ::core::result::Result::Ok(::ivo::__ivo_internals::IvoSuccessHandle::new(
-                    __changes,
-                    __return_opts,
-                    __success_trigger,
-                ))
+                #update_success_let
+                ::core::result::Result::Ok((__changes, __return_opts #update_success_extra))
             }
 
             #delete_method
@@ -6395,22 +6451,40 @@ mod tests {
         assert_compile_error(&out, "post_validate missing validate handler");
     }
 
-    fn extract_failure_handle_ty(out: &str) -> Option<String> {
-        let start = out.find("IvoFailureHandle")?;
+    // `create`'s `Result<Ok, Err>` return type is now a plain tuple whose
+    // *arity* (2 vs 3 elements, the 3rd being `IvoSyncTrigger`/
+    // `IvoAsyncTrigger`) encodes whether that schema has any handler to
+    // trigger -- there's no longer a named `IvoSuccessHandle`/
+    // `IvoFailureHandle` generic to anchor on, so these tests just check for
+    // the trigger type's presence/absence within `create`'s return type as a
+    // whole (each test below only ever sets up one of on_success/on_failure,
+    // so there's no ambiguity between the Ok and Err arms).
+    fn extract_create_return_ty(out: &str) -> Option<String> {
+        // `TokenStream::to_string()` (used by the `expand` test helper below)
+        // renders raw tokens with a space around every punctuation, e.g.
+        // `:: core :: result :: Result <`, so anchor on the bare `Result`
+        // ident rather than the fully-qualified, spaced-out path.
+        let fn_idx = out.find("fn create")?;
+        let result_idx = out[fn_idx..].find("Result")? + fn_idx;
+        let angle_start = out[result_idx..].find('<')? + result_idx;
         let mut depth = 0;
         let mut end = None;
-        for (i, c) in out[start..].char_indices() {
+        for (i, c) in out[angle_start..].char_indices() {
             if c == '<' {
                 depth += 1;
             } else if c == '>' {
                 depth -= 1;
                 if depth == 0 {
-                    end = Some(start + i + c.len_utf8());
+                    end = Some(angle_start + i + c.len_utf8());
                     break;
                 }
             }
         }
-        out.get(start..end?).map(|s| s.to_string())
+        out.get(angle_start..end?).map(|s| s.to_string())
+    }
+
+    fn has_trigger_ty(ty: &str) -> bool {
+        ty.contains("IvoSyncTrigger") || ty.contains("IvoAsyncTrigger")
     }
 
     #[test]
@@ -6427,11 +6501,10 @@ mod tests {
             "#,
         );
         assert_no_compile_error(&out, "schema without on_failure");
-        let ty = extract_failure_handle_ty(&out)
-            .expect("expected IvoFailureHandle type in generated code");
+        let ty = extract_create_return_ty(&out).expect("expected create's return type");
         assert!(
-            ty.replace(' ', "").ends_with(",false,false>"),
-            "expected HAS_FAILURE=false, got: {}",
+            !has_trigger_ty(&ty),
+            "expected no failure trigger, got: {}",
             ty
         );
     }
@@ -6451,31 +6524,8 @@ mod tests {
             "#,
         );
         assert_no_compile_error(&out, "schema with on_failure");
-        let ty = extract_failure_handle_ty(&out)
-            .expect("expected IvoFailureHandle type in generated code");
-        assert!(
-            ty.replace(' ', "").ends_with(",false,true>"),
-            "expected HAS_FAILURE=true, got: {}",
-            ty
-        );
-    }
-
-    fn extract_success_handle_ty(out: &str) -> Option<String> {
-        let start = out.find("IvoSuccessHandle")?;
-        let mut depth = 0;
-        let mut end = None;
-        for (i, c) in out[start..].char_indices() {
-            if c == '<' {
-                depth += 1;
-            } else if c == '>' {
-                depth -= 1;
-                if depth == 0 {
-                    end = Some(start + i + c.len_utf8());
-                    break;
-                }
-            }
-        }
-        out.get(start..end?).map(|s| s.to_string())
+        let ty = extract_create_return_ty(&out).expect("expected create's return type");
+        assert!(has_trigger_ty(&ty), "expected a failure trigger, got: {}", ty);
     }
 
     #[test]
@@ -6492,11 +6542,10 @@ mod tests {
             "#,
         );
         assert_no_compile_error(&out, "schema without on_success");
-        let ty = extract_success_handle_ty(&out)
-            .expect("expected IvoSuccessHandle type in generated code");
+        let ty = extract_create_return_ty(&out).expect("expected create's return type");
         assert!(
-            ty.replace(' ', "").ends_with(",false,false>"),
-            "expected HAS_SUCCESS=false, got: {}",
+            !has_trigger_ty(&ty),
+            "expected no success trigger, got: {}",
             ty
         );
     }
@@ -6516,13 +6565,8 @@ mod tests {
             "#,
         );
         assert_no_compile_error(&out, "schema with on_success");
-        let ty = extract_success_handle_ty(&out)
-            .expect("expected IvoSuccessHandle type in generated code");
-        assert!(
-            ty.replace(' ', "").ends_with(",false,true>"),
-            "expected HAS_SUCCESS=true, got: {}",
-            ty
-        );
+        let ty = extract_create_return_ty(&out).expect("expected create's return type");
+        assert!(has_trigger_ty(&ty), "expected a success trigger, got: {}", ty);
     }
 
     #[test]
@@ -6570,3 +6614,4 @@ mod tests {
         );
     }
 }
+

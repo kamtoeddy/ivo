@@ -6,7 +6,7 @@ use ivo::ivo_schema;
 
 #[test]
 fn should_respect_field_level_ignore_update_on_virtual_fields() {
-    let created = sync_ignore_update_schema::DataModel
+    let (created, ..) = sync_ignore_update_schema::DataModel
         .create(
             sync_ignore_update_schema::PartialDataInput {
                 lax: None,
@@ -18,16 +18,16 @@ fn should_respect_field_level_ignore_update_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_update_schema::Data {
             lax: 10,
             dependent: 2
         }
     );
 
-    let updated = sync_ignore_update_schema::DataModel
+    let (updated, ..) = sync_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_update_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_field: Some("new_virtual_value".into()),
@@ -38,16 +38,16 @@ fn should_respect_field_level_ignore_update_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_update_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    let failed = sync_ignore_update_schema::DataModel
+    let (failed, ..) = sync_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_update_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("ignored_value".into()),
@@ -57,11 +57,11 @@ fn should_respect_field_level_ignore_update_on_virtual_fields() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async fn should_respect_field_level_ignore_update_on_virtual_fields_async() {
-    let created = async_ignore_update_schema::DataModel
+    let (created, ..) = async_ignore_update_schema::DataModel
         .create(
             async_ignore_update_schema::PartialDataInput {
                 lax: None,
@@ -74,16 +74,16 @@ async fn should_respect_field_level_ignore_update_on_virtual_fields_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_ignore_update_schema::Data {
             lax: 10,
             dependent: 2
         }
     );
 
-    let updated = async_ignore_update_schema::DataModel
+    let (updated, ..) = async_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_ignore_update_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_field: Some("new_virtual_value".into()),
@@ -95,16 +95,16 @@ async fn should_respect_field_level_ignore_update_on_virtual_fields_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_ignore_update_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    let failed = async_ignore_update_schema::DataModel
+    let (failed, ..) = async_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_ignore_update_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("ignored_value".into()),
@@ -115,7 +115,7 @@ async fn should_respect_field_level_ignore_update_on_virtual_fields_async() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_respect_field_level_ignore_update_on_virtual_fields_async);
@@ -129,7 +129,7 @@ async_test_matrix!(should_respect_field_level_ignore_update_on_virtual_fields_as
 
 #[test]
 fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field() {
-    let created = sync_ignore_update_alias_schema::DataModel
+    let (created, ..) = sync_ignore_update_alias_schema::DataModel
         .create(
             sync_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
@@ -141,16 +141,16 @@ fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_update_alias_schema::Data {
             lax: 10,
             dependent: 2
         }
     );
 
-    let updated = sync_ignore_update_alias_schema::DataModel
+    let (updated, ..) = sync_ignore_update_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_update_alias_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_alias: Some("new_virtual_value".into()),
@@ -161,16 +161,16 @@ fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_update_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    let failed = sync_ignore_update_alias_schema::DataModel
+    let (failed, ..) = sync_ignore_update_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("ignored_value".into()),
@@ -180,11 +180,11 @@ fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field_async() {
-    let created = async_ignore_update_alias_schema::DataModel
+    let (created, ..) = async_ignore_update_alias_schema::DataModel
         .create(
             async_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
@@ -197,16 +197,16 @@ async fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field_as
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_ignore_update_alias_schema::Data {
             lax: 10,
             dependent: 2
         }
     );
 
-    let updated = async_ignore_update_alias_schema::DataModel
+    let (updated, ..) = async_ignore_update_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_ignore_update_alias_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_alias: Some("new_virtual_value".into()),
@@ -218,16 +218,16 @@ async fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field_as
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_ignore_update_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    let failed = async_ignore_update_alias_schema::DataModel
+    let (failed, ..) = async_ignore_update_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("ignored_value".into()),
@@ -238,7 +238,7 @@ async fn should_respect_field_level_ignore_update_on_an_aliased_virtual_field_as
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_respect_field_level_ignore_update_on_an_aliased_virtual_field_async);
@@ -252,7 +252,7 @@ fn should_respect_grouped_ignore_rule_on_virtual_fields() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let created = sync_grouped_ignore_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_schema::DataModel
         .create(
             sync_grouped_ignore_schema::PartialDataInput {
                 lax: None,
@@ -264,14 +264,14 @@ fn should_respect_grouped_ignore_rule_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value,
         }
     );
 
-    let created = sync_grouped_ignore_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_schema::DataModel
         .create(
             sync_grouped_ignore_schema::PartialDataInput {
                 lax: Some(20),
@@ -283,16 +283,16 @@ fn should_respect_grouped_ignore_rule_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_schema::Data {
             dependent: 2,
             lax: 20,
         }
     );
 
-    let updated = sync_grouped_ignore_schema::DataModel
+    let (updated, ..) = sync_grouped_ignore_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_field: Some("keep".into()),
@@ -303,16 +303,16 @@ fn should_respect_grouped_ignore_rule_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_ignore_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = sync_grouped_ignore_schema::DataModel
+    let (failed, ..) = sync_grouped_ignore_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("virtual_value".into()),
@@ -322,14 +322,14 @@ fn should_respect_grouped_ignore_rule_on_virtual_fields() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async fn should_respect_grouped_ignore_rule_on_virtual_fields_async() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let created = async_grouped_ignore_schema::DataModel
+    let (created, ..) = async_grouped_ignore_schema::DataModel
         .create(
             async_grouped_ignore_schema::PartialDataInput {
                 lax: None,
@@ -342,14 +342,14 @@ async fn should_respect_grouped_ignore_rule_on_virtual_fields_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_grouped_ignore_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value,
         }
     );
 
-    let created = async_grouped_ignore_schema::DataModel
+    let (created, ..) = async_grouped_ignore_schema::DataModel
         .create(
             async_grouped_ignore_schema::PartialDataInput {
                 lax: Some(20),
@@ -362,16 +362,16 @@ async fn should_respect_grouped_ignore_rule_on_virtual_fields_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_grouped_ignore_schema::Data {
             dependent: 2,
             lax: 20,
         }
     );
 
-    let updated = async_grouped_ignore_schema::DataModel
+    let (updated, ..) = async_grouped_ignore_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_grouped_ignore_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_field: Some("keep".into()),
@@ -383,16 +383,16 @@ async fn should_respect_grouped_ignore_rule_on_virtual_fields_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_ignore_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = async_grouped_ignore_schema::DataModel
+    let (failed, ..) = async_grouped_ignore_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_grouped_ignore_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("virtual_value".into()),
@@ -403,7 +403,7 @@ async fn should_respect_grouped_ignore_rule_on_virtual_fields_async() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_respect_grouped_ignore_rule_on_virtual_fields_async);
@@ -424,7 +424,7 @@ fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let created = sync_grouped_ignore_alias_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_alias_schema::DataModel
         .create(
             sync_grouped_ignore_alias_schema::PartialDataInput {
                 lax: None,
@@ -436,14 +436,14 @@ fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_alias_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value,
         }
     );
 
-    let created = sync_grouped_ignore_alias_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_alias_schema::DataModel
         .create(
             sync_grouped_ignore_alias_schema::PartialDataInput {
                 lax: Some(20),
@@ -455,16 +455,16 @@ fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_alias_schema::Data {
             dependent: 2,
             lax: 20,
         }
     );
 
-    let updated = sync_grouped_ignore_alias_schema::DataModel
+    let (updated, ..) = sync_grouped_ignore_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_alias_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_alias: Some("keep".into()),
@@ -475,16 +475,16 @@ fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_ignore_alias_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = sync_grouped_ignore_alias_schema::DataModel
+    let (failed, ..) = sync_grouped_ignore_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("virtual_value".into()),
@@ -494,14 +494,14 @@ fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field_async() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let created = async_grouped_ignore_alias_schema::DataModel
+    let (created, ..) = async_grouped_ignore_alias_schema::DataModel
         .create(
             async_grouped_ignore_alias_schema::PartialDataInput {
                 lax: None,
@@ -514,14 +514,14 @@ async fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field_async() 
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_grouped_ignore_alias_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value,
         }
     );
 
-    let created = async_grouped_ignore_alias_schema::DataModel
+    let (created, ..) = async_grouped_ignore_alias_schema::DataModel
         .create(
             async_grouped_ignore_alias_schema::PartialDataInput {
                 lax: Some(20),
@@ -534,16 +534,16 @@ async fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field_async() 
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_grouped_ignore_alias_schema::Data {
             dependent: 2,
             lax: 20,
         }
     );
 
-    let updated = async_grouped_ignore_alias_schema::DataModel
+    let (updated, ..) = async_grouped_ignore_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_grouped_ignore_alias_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_alias: Some("keep".into()),
@@ -555,16 +555,16 @@ async fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field_async() 
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_ignore_alias_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = async_grouped_ignore_alias_schema::DataModel
+    let (failed, ..) = async_grouped_ignore_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_grouped_ignore_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("virtual_value".into()),
@@ -575,7 +575,7 @@ async fn should_respect_grouped_ignore_rule_on_an_aliased_virtual_field_async() 
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_respect_grouped_ignore_rule_on_an_aliased_virtual_field_async);
@@ -588,7 +588,7 @@ async_test_matrix!(should_respect_grouped_ignore_rule_on_an_aliased_virtual_fiel
 fn should_respect_grouped_ignore_update_rule_on_virtual_fields() {
     let default_lax_value = 10;
 
-    let created = sync_grouped_ignore_update_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_update_schema::DataModel
         .create(
             sync_grouped_ignore_update_schema::PartialDataInput {
                 lax: None,
@@ -600,16 +600,16 @@ fn should_respect_grouped_ignore_update_rule_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_update_schema::Data {
             dependent: 2,
             lax: default_lax_value,
         }
     );
 
-    let updated = sync_grouped_ignore_update_schema::DataModel
+    let (updated, ..) = sync_grouped_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_update_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_field: Some("keep".into()),
@@ -620,16 +620,16 @@ fn should_respect_grouped_ignore_update_rule_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_ignore_update_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = sync_grouped_ignore_update_schema::DataModel
+    let (failed, ..) = sync_grouped_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_update_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("virtual_value".into()),
@@ -639,13 +639,13 @@ fn should_respect_grouped_ignore_update_rule_on_virtual_fields() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async fn should_respect_grouped_ignore_update_rule_on_virtual_fields_async() {
     let default_lax_value = 10;
 
-    let created = async_grouped_ignore_update_schema::DataModel
+    let (created, ..) = async_grouped_ignore_update_schema::DataModel
         .create(
             async_grouped_ignore_update_schema::PartialDataInput {
                 lax: None,
@@ -658,16 +658,16 @@ async fn should_respect_grouped_ignore_update_rule_on_virtual_fields_async() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_grouped_ignore_update_schema::Data {
             dependent: 2,
             lax: default_lax_value,
         }
     );
 
-    let updated = async_grouped_ignore_update_schema::DataModel
+    let (updated, ..) = async_grouped_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_grouped_ignore_update_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_field: Some("keep".into()),
@@ -679,16 +679,16 @@ async fn should_respect_grouped_ignore_update_rule_on_virtual_fields_async() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_ignore_update_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = async_grouped_ignore_update_schema::DataModel
+    let (failed, ..) = async_grouped_ignore_update_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_grouped_ignore_update_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("virtual_value".into()),
@@ -699,7 +699,7 @@ async fn should_respect_grouped_ignore_update_rule_on_virtual_fields_async() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_respect_grouped_ignore_update_rule_on_virtual_fields_async);
@@ -712,7 +712,7 @@ async_test_matrix!(should_respect_grouped_ignore_update_rule_on_virtual_fields_a
 fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field() {
     let default_lax_value = 10;
 
-    let created = sync_grouped_ignore_update_alias_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_update_alias_schema::DataModel
         .create(
             sync_grouped_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
@@ -724,16 +724,16 @@ fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_update_alias_schema::Data {
             dependent: 2,
             lax: default_lax_value,
         }
     );
 
-    let updated = sync_grouped_ignore_update_alias_schema::DataModel
+    let (updated, ..) = sync_grouped_ignore_update_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_update_alias_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_alias: Some("keep".into()),
@@ -744,16 +744,16 @@ fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_ignore_update_alias_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = sync_grouped_ignore_update_alias_schema::DataModel
+    let (failed, ..) = sync_grouped_ignore_update_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("virtual_value".into()),
@@ -763,13 +763,13 @@ fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field_async() {
     let default_lax_value = 10;
 
-    let created = async_grouped_ignore_update_alias_schema::DataModel
+    let (created, ..) = async_grouped_ignore_update_alias_schema::DataModel
         .create(
             async_grouped_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
@@ -782,16 +782,16 @@ async fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field_a
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         async_grouped_ignore_update_alias_schema::Data {
             dependent: 2,
             lax: default_lax_value,
         }
     );
 
-    let updated = async_grouped_ignore_update_alias_schema::DataModel
+    let (updated, ..) = async_grouped_ignore_update_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_grouped_ignore_update_alias_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_alias: Some("keep".into()),
@@ -803,16 +803,16 @@ async fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field_a
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         async_grouped_ignore_update_alias_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = async_grouped_ignore_update_alias_schema::DataModel
+    let (failed, ..) = async_grouped_ignore_update_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             async_grouped_ignore_update_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("virtual_value".into()),
@@ -823,7 +823,7 @@ async fn should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field_a
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 async_test_matrix!(should_respect_grouped_ignore_update_rule_on_an_aliased_virtual_field_async);
@@ -841,7 +841,7 @@ async_test_matrix!(should_respect_grouped_ignore_update_rule_on_an_aliased_virtu
 
 #[test]
 fn should_respect_field_level_ignore_on_virtual_fields() {
-    let created = sync_ignore_schema::DataModel
+    let (created, ..) = sync_ignore_schema::DataModel
         .create(
             sync_ignore_schema::PartialDataInput {
                 lax: None,
@@ -853,14 +853,14 @@ fn should_respect_field_level_ignore_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_schema::Data {
             lax: 10,
             dependent: 1,
         }
     );
 
-    let created = sync_ignore_schema::DataModel
+    let (created, ..) = sync_ignore_schema::DataModel
         .create(
             sync_ignore_schema::PartialDataInput {
                 lax: Some(20),
@@ -872,16 +872,16 @@ fn should_respect_field_level_ignore_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_schema::Data {
             lax: 20,
             dependent: 1,
         }
     );
 
-    let updated = sync_ignore_schema::DataModel
+    let (updated, ..) = sync_ignore_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_field: Some("virtual_value".into()),
@@ -892,16 +892,16 @@ fn should_respect_field_level_ignore_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    let failed = sync_ignore_schema::DataModel
+    let (failed, ..) = sync_ignore_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("virtual_value".into()),
@@ -911,12 +911,12 @@ fn should_respect_field_level_ignore_on_virtual_fields() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 #[test]
 fn should_respect_field_level_ignore_on_an_aliased_virtual_field() {
-    let created = sync_ignore_alias_schema::DataModel
+    let (created, ..) = sync_ignore_alias_schema::DataModel
         .create(
             sync_ignore_alias_schema::PartialDataInput {
                 lax: None,
@@ -928,14 +928,14 @@ fn should_respect_field_level_ignore_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_alias_schema::Data {
             lax: 10,
             dependent: 1,
         }
     );
 
-    let created = sync_ignore_alias_schema::DataModel
+    let (created, ..) = sync_ignore_alias_schema::DataModel
         .create(
             sync_ignore_alias_schema::PartialDataInput {
                 lax: Some(20),
@@ -947,16 +947,16 @@ fn should_respect_field_level_ignore_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_alias_schema::Data {
             lax: 20,
             dependent: 1,
         }
     );
 
-    let updated = sync_ignore_alias_schema::DataModel
+    let (updated, ..) = sync_ignore_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_alias_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_alias: Some("virtual_value".into()),
@@ -967,16 +967,16 @@ fn should_respect_field_level_ignore_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    let failed = sync_ignore_alias_schema::DataModel
+    let (failed, ..) = sync_ignore_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("virtual_value".into()),
@@ -986,13 +986,13 @@ fn should_respect_field_level_ignore_on_an_aliased_virtual_field() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 #[test]
 fn should_respect_field_level_ignore_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
 ) {
-    let created = sync_ignore_dependent_alias_schema::DataModel
+    let (created, ..) = sync_ignore_dependent_alias_schema::DataModel
         .create(
             sync_ignore_dependent_alias_schema::PartialDataInput {
                 lax: None,
@@ -1004,14 +1004,14 @@ fn should_respect_field_level_ignore_on_a_virtual_field_whose_alias_collides_wit
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_dependent_alias_schema::Data {
             lax: 10,
             dependent: 1,
         }
     );
 
-    let created = sync_ignore_dependent_alias_schema::DataModel
+    let (created, ..) = sync_ignore_dependent_alias_schema::DataModel
         .create(
             sync_ignore_dependent_alias_schema::PartialDataInput {
                 lax: Some(20),
@@ -1023,16 +1023,16 @@ fn should_respect_field_level_ignore_on_a_virtual_field_whose_alias_collides_wit
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_dependent_alias_schema::Data {
             lax: 20,
             dependent: 1,
         }
     );
 
-    let updated = sync_ignore_dependent_alias_schema::DataModel
+    let (updated, ..) = sync_ignore_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_dependent_alias_schema::PartialDataInput {
                 lax: Some(30),
                 dependent: Some("virtual_value".into()),
@@ -1043,16 +1043,16 @@ fn should_respect_field_level_ignore_on_a_virtual_field_whose_alias_collides_wit
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_dependent_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    let failed = sync_ignore_dependent_alias_schema::DataModel
+    let (failed, ..) = sync_ignore_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_dependent_alias_schema::PartialDataInput {
                 lax: None,
                 dependent: Some("virtual_value".into()),
@@ -1062,7 +1062,7 @@ fn should_respect_field_level_ignore_on_a_virtual_field_whose_alias_collides_wit
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 // -----------------------------------------------------------------------------
@@ -1076,7 +1076,7 @@ fn should_respect_field_level_ignore_on_a_virtual_field_whose_alias_collides_wit
 
 #[test]
 fn should_respect_field_level_ignore_init_on_virtual_fields() {
-    let created = sync_ignore_init_schema::DataModel
+    let (created, ..) = sync_ignore_init_schema::DataModel
         .create(
             sync_ignore_init_schema::PartialDataInput {
                 lax: None,
@@ -1088,14 +1088,14 @@ fn should_respect_field_level_ignore_init_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_init_schema::Data {
             lax: 10,
             dependent: 1,
         }
     );
 
-    let created = sync_ignore_init_schema::DataModel
+    let (created, ..) = sync_ignore_init_schema::DataModel
         .create(
             sync_ignore_init_schema::PartialDataInput {
                 lax: Some(20),
@@ -1107,16 +1107,16 @@ fn should_respect_field_level_ignore_init_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_init_schema::Data {
             lax: 20,
             dependent: 1,
         }
     );
 
-    let updated = sync_ignore_init_schema::DataModel
+    let (updated, ..) = sync_ignore_init_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_init_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_field: Some("virtual_value".into()),
@@ -1127,16 +1127,16 @@ fn should_respect_field_level_ignore_init_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_init_schema::PartialData {
             lax: Some(30),
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
         }
     );
 
-    let updated = sync_ignore_init_schema::DataModel
+    let (updated, ..) = sync_ignore_init_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_init_schema::PartialDataInput {
                 lax: None,
                 virtual_field: Some("virtual_value".into()),
@@ -1147,17 +1147,17 @@ fn should_respect_field_level_ignore_init_on_virtual_fields() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_init_schema::PartialData {
             lax: None,
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
         }
     );
 }
 
 #[test]
 fn should_respect_field_level_ignore_init_on_an_aliased_virtual_field() {
-    let created = sync_ignore_init_alias_schema::DataModel
+    let (created, ..) = sync_ignore_init_alias_schema::DataModel
         .create(
             sync_ignore_init_alias_schema::PartialDataInput {
                 lax: None,
@@ -1169,14 +1169,14 @@ fn should_respect_field_level_ignore_init_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_init_alias_schema::Data {
             lax: 10,
             dependent: 1,
         }
     );
 
-    let created = sync_ignore_init_alias_schema::DataModel
+    let (created, ..) = sync_ignore_init_alias_schema::DataModel
         .create(
             sync_ignore_init_alias_schema::PartialDataInput {
                 lax: Some(20),
@@ -1188,16 +1188,16 @@ fn should_respect_field_level_ignore_init_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_init_alias_schema::Data {
             lax: 20,
             dependent: 1,
         }
     );
 
-    let updated = sync_ignore_init_alias_schema::DataModel
+    let (updated, ..) = sync_ignore_init_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_init_alias_schema::PartialDataInput {
                 lax: Some(30),
                 virtual_alias: Some("virtual_value".into()),
@@ -1208,16 +1208,16 @@ fn should_respect_field_level_ignore_init_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_init_alias_schema::PartialData {
             lax: Some(30),
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
         }
     );
 
-    let updated = sync_ignore_init_alias_schema::DataModel
+    let (updated, ..) = sync_ignore_init_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_init_alias_schema::PartialDataInput {
                 lax: None,
                 virtual_alias: Some("virtual_value".into()),
@@ -1228,10 +1228,10 @@ fn should_respect_field_level_ignore_init_on_an_aliased_virtual_field() {
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_init_alias_schema::PartialData {
             lax: None,
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
         }
     );
 }
@@ -1239,7 +1239,7 @@ fn should_respect_field_level_ignore_init_on_an_aliased_virtual_field() {
 #[test]
 fn should_respect_field_level_ignore_init_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
 ) {
-    let created = sync_ignore_init_dependent_alias_schema::DataModel
+    let (created, ..) = sync_ignore_init_dependent_alias_schema::DataModel
         .create(
             sync_ignore_init_dependent_alias_schema::PartialDataInput {
                 lax: None,
@@ -1251,14 +1251,14 @@ fn should_respect_field_level_ignore_init_on_a_virtual_field_whose_alias_collide
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_init_dependent_alias_schema::Data {
             lax: 10,
             dependent: 1,
         }
     );
 
-    let created = sync_ignore_init_dependent_alias_schema::DataModel
+    let (created, ..) = sync_ignore_init_dependent_alias_schema::DataModel
         .create(
             sync_ignore_init_dependent_alias_schema::PartialDataInput {
                 lax: Some(20),
@@ -1270,16 +1270,16 @@ fn should_respect_field_level_ignore_init_on_a_virtual_field_whose_alias_collide
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_init_dependent_alias_schema::Data {
             lax: 20,
             dependent: 1,
         }
     );
 
-    let updated = sync_ignore_init_dependent_alias_schema::DataModel
+    let (updated, ..) = sync_ignore_init_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_init_dependent_alias_schema::PartialDataInput {
                 lax: Some(30),
                 dependent: Some("virtual_value".into()),
@@ -1290,16 +1290,16 @@ fn should_respect_field_level_ignore_init_on_a_virtual_field_whose_alias_collide
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_init_dependent_alias_schema::PartialData {
             lax: Some(30),
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
         }
     );
 
-    let updated = sync_ignore_init_dependent_alias_schema::DataModel
+    let (updated, ..) = sync_ignore_init_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_init_dependent_alias_schema::PartialDataInput {
                 lax: None,
                 dependent: Some("virtual_value".into()),
@@ -1310,10 +1310,10 @@ fn should_respect_field_level_ignore_init_on_a_virtual_field_whose_alias_collide
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_init_dependent_alias_schema::PartialData {
             lax: None,
-            dependent: Some(created.data.dependent + 1),
+            dependent: Some(created.dependent + 1),
         }
     );
 }
@@ -1330,7 +1330,7 @@ fn should_respect_field_level_ignore_init_on_a_virtual_field_whose_alias_collide
 #[test]
 fn should_respect_field_level_ignore_update_on_a_virtual_field_whose_alias_collides_with_a_dependent_field_name(
 ) {
-    let created = sync_ignore_update_dependent_alias_schema::DataModel
+    let (created, ..) = sync_ignore_update_dependent_alias_schema::DataModel
         .create(
             sync_ignore_update_dependent_alias_schema::PartialDataInput {
                 lax: None,
@@ -1342,16 +1342,16 @@ fn should_respect_field_level_ignore_update_on_a_virtual_field_whose_alias_colli
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_ignore_update_dependent_alias_schema::Data {
             lax: 10,
             dependent: 2,
         }
     );
 
-    let updated = sync_ignore_update_dependent_alias_schema::DataModel
+    let (updated, ..) = sync_ignore_update_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_update_dependent_alias_schema::PartialDataInput {
                 lax: Some(30),
                 dependent: Some("new_virtual_value".into()),
@@ -1362,16 +1362,16 @@ fn should_respect_field_level_ignore_update_on_a_virtual_field_whose_alias_colli
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_ignore_update_dependent_alias_schema::PartialData {
             lax: Some(30),
             dependent: None,
         }
     );
 
-    let failed = sync_ignore_update_dependent_alias_schema::DataModel
+    let (failed, ..) = sync_ignore_update_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_ignore_update_dependent_alias_schema::PartialDataInput {
                 lax: None,
                 dependent: Some("ignored_value".into()),
@@ -1381,7 +1381,7 @@ fn should_respect_field_level_ignore_update_on_a_virtual_field_whose_alias_colli
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 #[test]
@@ -1390,7 +1390,7 @@ fn should_respect_grouped_ignore_rule_on_a_virtual_field_whose_alias_collides_wi
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let created = sync_grouped_ignore_dependent_alias_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_dependent_alias_schema::DataModel
         .create(
             sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
                 lax: None,
@@ -1402,14 +1402,14 @@ fn should_respect_grouped_ignore_rule_on_a_virtual_field_whose_alias_collides_wi
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_dependent_alias_schema::Data {
             dependent: default_dependent_value,
             lax: default_lax_value,
         }
     );
 
-    let created = sync_grouped_ignore_dependent_alias_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_dependent_alias_schema::DataModel
         .create(
             sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
                 lax: Some(20),
@@ -1421,16 +1421,16 @@ fn should_respect_grouped_ignore_rule_on_a_virtual_field_whose_alias_collides_wi
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_dependent_alias_schema::Data {
             dependent: 2,
             lax: 20,
         }
     );
 
-    let updated = sync_grouped_ignore_dependent_alias_schema::DataModel
+    let (updated, ..) = sync_grouped_ignore_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
                 lax: Some(30),
                 dependent: Some("keep".into()),
@@ -1441,16 +1441,16 @@ fn should_respect_grouped_ignore_rule_on_a_virtual_field_whose_alias_collides_wi
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_ignore_dependent_alias_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = sync_grouped_ignore_dependent_alias_schema::DataModel
+    let (failed, ..) = sync_grouped_ignore_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_dependent_alias_schema::PartialDataInput {
                 lax: None,
                 dependent: Some("virtual_value".into()),
@@ -1460,7 +1460,7 @@ fn should_respect_grouped_ignore_rule_on_a_virtual_field_whose_alias_collides_wi
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 #[test]
@@ -1468,7 +1468,7 @@ fn should_respect_grouped_ignore_update_rule_on_a_virtual_field_whose_alias_coll
 ) {
     let default_lax_value = 10;
 
-    let created = sync_grouped_ignore_update_dependent_alias_schema::DataModel
+    let (created, ..) = sync_grouped_ignore_update_dependent_alias_schema::DataModel
         .create(
             sync_grouped_ignore_update_dependent_alias_schema::PartialDataInput {
                 lax: None,
@@ -1480,16 +1480,16 @@ fn should_respect_grouped_ignore_update_rule_on_a_virtual_field_whose_alias_coll
         .unwrap();
 
     assert_eq!(
-        created.data,
+        created,
         sync_grouped_ignore_update_dependent_alias_schema::Data {
             dependent: 2,
             lax: default_lax_value,
         }
     );
 
-    let updated = sync_grouped_ignore_update_dependent_alias_schema::DataModel
+    let (updated, ..) = sync_grouped_ignore_update_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_update_dependent_alias_schema::PartialDataInput {
                 lax: Some(30),
                 dependent: Some("keep".into()),
@@ -1500,16 +1500,16 @@ fn should_respect_grouped_ignore_update_rule_on_a_virtual_field_whose_alias_coll
         .unwrap();
 
     assert_eq!(
-        updated.data,
+        updated,
         sync_grouped_ignore_update_dependent_alias_schema::PartialData {
             dependent: Some(3),
             lax: Some(30),
         }
     );
 
-    let failed = sync_grouped_ignore_update_dependent_alias_schema::DataModel
+    let (failed, ..) = sync_grouped_ignore_update_dependent_alias_schema::DataModel
         .update(
-            created.data.clone(),
+            created.clone(),
             sync_grouped_ignore_update_dependent_alias_schema::PartialDataInput {
                 lax: None,
                 dependent: Some("virtual_value".into()),
@@ -1519,7 +1519,7 @@ fn should_respect_grouped_ignore_update_rule_on_a_virtual_field_whose_alias_coll
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 }
 
 // -----------------------------------------------------------------------------

@@ -62,13 +62,13 @@ async fn main() {
     // println!("\nCreate duration: {:?}", timer.elapsed());
 
     // match r {
-    //     Ok(handle) => {
-    //         println!("\n{:#?}\n", handle.data);
+    //     Ok((data, _ctx_options, handle_success)) => {
+    //         println!("\n{:#?}\n", data);
 
-    //         handle.handle_success();
+    //         handle_success();
     //     }
-    //     Err(handle) => {
-    //         println!("\nFailed to create: {:#?}", handle.errors);
+    //     Err((errors, _ctx_options)) => {
+    //         println!("\nFailed to create: {:#?}", errors);
     //     }
     // };
 
@@ -170,17 +170,17 @@ async fn main() {
     println!("\nUpdate duration: {:?}", timer.elapsed());
 
     match r {
-        Ok(handle) => {
-            println!("\nupdates: {:#?}", handle.data);
+        Ok((updated, _ctx_options, handle_success)) => {
+            println!("\nupdates: {:#?}", updated);
             println!(
                 "\nold + updates: {:#?}\n",
-                user.clone_with_updates(&handle.data)
+                user.clone_with_updates(&updated)
             );
 
-            handle.handle_success();
+            handle_success();
         }
-        Err(handle) => {
-            match handle.errors.as_ref() {
+        Err((errors, _ctx_options)) => {
+            match errors.as_ref() {
                 Some(payload) => println!("\nFailed to update: {:#?}\n", payload),
                 None => println!("\nNothing to update\n"),
             };

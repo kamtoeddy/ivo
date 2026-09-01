@@ -70,7 +70,7 @@ fn bench_memory(c: &mut Criterion) {
                 email: Some(String::from("alice@example.com")),
                 age: Some(30),
             };
-            schemas::UserModel.create(input, ()).await.unwrap().data
+            schemas::UserModel.create(input, ()).await.unwrap().0
         });
 
         b.to_async(rt).iter(|| async {

@@ -6,25 +6,25 @@ macro_rules! should_properly_create_and_update {
     ($module:ident) => {{
         use $module::*;
 
-        let created = DataModel.create(PartialData::new(), ()).ok().unwrap();
+        let (created, _ctx_options, handle_success) = DataModel.create(PartialData::new(), ()).ok().unwrap();
 
-        println!("\ncreated: {:#?}", created.data);
+        println!("\ncreated: {:#?}", created);
 
         assert_eq!(
-            created.data,
+            created,
             Data {
                 username: DEFAULT_USERNAME.to_string()
             }
         );
 
-        let data = created.data.clone();
-        created.handle_success();
+        let data = created.clone();
+        handle_success();
 
         DataModel.delete(&data, ());
 
         let updated_username = Some("jane-doe".to_string());
 
-        let updated = DataModel
+        let (updated, _ctx_options, handle_success) = DataModel
             .update(
                 data.clone(),
                 PartialData {
@@ -35,17 +35,17 @@ macro_rules! should_properly_create_and_update {
             .ok()
             .unwrap();
 
-        println!("\nupdates: {:#?}", updated.data);
+        println!("\nupdates: {:#?}", updated);
 
         assert_eq!(
-            updated.data,
+            updated,
             PartialData {
                 username: updated_username
             }
         );
 
-        let updates_data = updated.data.clone();
-        updated.handle_success();
+        let updates_data = updated.clone();
+        handle_success();
 
         let data = data.clone_with_updates(&updates_data);
 

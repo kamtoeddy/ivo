@@ -11,7 +11,7 @@ fn main() {
 fn should_not_update_if_resolver_was_run_at_creation() {
     let username = "john-doe".to_string();
 
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialDataInput::new().with_username(username.clone()),
             (),
@@ -19,24 +19,24 @@ fn should_not_update_if_resolver_was_run_at_creation() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             dependent: DEFAULT_DEPENDENT + 1,
             username,
         }
     );
 
-    let data = created.data.clone();
-    created.handle_success();
+    let data = created.clone();
+    handle_success();
 
     data_schema::DataModel.delete(&data, ());
 
     let updated_username = Some("tom-doe".to_string());
 
-    let updates = data_schema::DataModel
+    let (updates, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data,
             data_schema::PartialDataInput {
@@ -47,18 +47,18 @@ fn should_not_update_if_resolver_was_run_at_creation() {
         .ok()
         .unwrap();
 
-    println!("\nupdated: {:#?}", updates.data);
+    println!("\nupdated: {:#?}", updates);
 
     assert_eq!(
-        updates.data,
+        updates,
         data_schema::PartialData {
             dependent: None, // no more updates allowed
             username: updated_username
         }
     );
 
-    let updates_data = updates.data.clone();
-    updates.handle_success();
+    let updates_data = updates.clone();
+    handle_success();
 
     let data = data_schema::Data {
         dependent: DEFAULT_DEPENDENT + 1,
@@ -70,29 +70,29 @@ fn should_not_update_if_resolver_was_run_at_creation() {
 }
 
 fn should_reject_update_if_resolver_was_run_during_prior_update() {
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(data_schema::PartialDataInput::new(), ())
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             dependent: DEFAULT_DEPENDENT,
             username: DEFAULT_USERNAME.to_string()
         }
     );
 
-    let data = created.data.clone();
-    created.handle_success();
+    let data = created.clone();
+    handle_success();
 
     data_schema::DataModel.delete(&data, ());
 
     let updated_username = Some("jane-doe".to_string());
 
-    let updates = data_schema::DataModel
+    let (updates, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialDataInput {
@@ -103,18 +103,18 @@ fn should_reject_update_if_resolver_was_run_during_prior_update() {
         .ok()
         .unwrap();
 
-    println!("\nupdated: {:#?}", updates.data);
+    println!("\nupdated: {:#?}", updates);
 
     assert_eq!(
-        updates.data,
+        updates,
         data_schema::PartialData {
             dependent: Some(data.dependent + 1),
             username: updated_username
         }
     );
 
-    let updates_data = updates.data.clone();
-    updates.handle_success();
+    let updates_data = updates.clone();
+    handle_success();
 
     let data = data.clone_with_updates(&updates_data);
 
@@ -122,7 +122,7 @@ fn should_reject_update_if_resolver_was_run_during_prior_update() {
 
     let updated_username = Some("tom-doe".to_string());
 
-    let updates = data_schema::DataModel
+    let (updates, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialDataInput {
@@ -133,18 +133,18 @@ fn should_reject_update_if_resolver_was_run_during_prior_update() {
         .ok()
         .unwrap();
 
-    println!("\nupdated: {:#?}", updates.data);
+    println!("\nupdated: {:#?}", updates);
 
     assert_eq!(
-        updates.data,
+        updates,
         data_schema::PartialData {
             dependent: None, // no more updates allowed
             username: updated_username
         }
     );
 
-    let updates_data = updates.data.clone();
-    updates.handle_success();
+    let updates_data = updates.clone();
+    handle_success();
 
     let data = data.clone_with_updates(&updates_data);
 

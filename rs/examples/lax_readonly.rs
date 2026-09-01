@@ -3,28 +3,28 @@ use ivo::ivo_schema;
 const DEFAULT_USERNAME: &str = "DEFAULT_USERNAME";
 
 fn main() {
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(data_schema::PartialData::new(), ())
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             username: DEFAULT_USERNAME.to_string()
         }
     );
 
-    let data = created.data.clone();
-    created.handle_success();
+    let data = created.clone();
+    handle_success();
 
     data_schema::DataModel.delete(&data, ());
 
     let updated_username = Some("james-doe".to_string());
 
-    let updated = data_schema::DataModel
+    let (updated, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialData {
@@ -35,23 +35,23 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
     assert_eq!(
-        updated.data,
+        updated,
         data_schema::PartialData {
             username: updated_username
         }
     );
 
-    let data = data.clone_with_updates(&updated.data);
-    updated.handle_success();
+    let data = data.clone_with_updates(&updated);
+    handle_success();
 
     data_schema::DataModel.delete(&data, ());
 
     let updated_username = Some("jane-doe".to_string());
 
-    let failed = data_schema::DataModel
+    let (failed, _ctx_options, handle_failure) = data_schema::DataModel
         .update(
             data,
             data_schema::PartialData {
@@ -62,11 +62,11 @@ fn main() {
         .err()
         .unwrap();
 
-    assert!(failed.errors.is_none());
+    assert!(failed.is_none());
 
     println!("\nNothing to update");
 
-    failed.handle_failure();
+    handle_failure();
 }
 
 #[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]

@@ -4,7 +4,7 @@ const DEFAULT_LAX_VALUE: &str = "DEFAULT_LAX_VALUE";
 const DEFAULT_USERNAME: &str = "DEFAULT_USERNAME";
 
 fn main() {
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialData {
                 lax: None,
@@ -15,21 +15,21 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             lax: DEFAULT_LAX_VALUE.to_string(),
             username: DEFAULT_USERNAME.to_string()
         }
     );
 
-    created.handle_success();
+    handle_success();
 
     let lax = "some lax value".to_string();
 
-    let created = data_schema::DataModel
+    let (created, _ctx_options, handle_success) = data_schema::DataModel
         .create(
             data_schema::PartialData {
                 lax: Some(lax.clone()),
@@ -40,18 +40,18 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\ncreated: {:#?}", created.data);
+    println!("\ncreated: {:#?}", created);
 
     assert_eq!(
-        created.data,
+        created,
         data_schema::Data {
             lax,
             username: DEFAULT_USERNAME.to_string()
         }
     );
 
-    let data = created.data.clone();
-    created.handle_success();
+    let data = created.clone();
+    handle_success();
 
     data_schema::DataModel.delete(&data, ());
 
@@ -62,7 +62,7 @@ fn main() {
 
     let updated_username = Some("james-doe".to_string());
 
-    let updated = data_schema::DataModel
+    let (updated, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialData {
@@ -74,18 +74,18 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
     assert_eq!(
-        updated.data,
+        updated,
         data_schema::PartialData {
             lax: None,
             username: updated_username
         }
     );
 
-    let updates_data = updated.data.clone();
-    updated.handle_success();
+    let updates_data = updated.clone();
+    handle_success();
 
     let data = data.clone_with_updates(&updates_data);
 
@@ -99,7 +99,7 @@ fn main() {
     let updated_lax = Some("updated lax value".to_string());
     let updated_username = Some("james-doe".to_string());
 
-    let updated = data_schema::DataModel
+    let (updated, _ctx_options, handle_success) = data_schema::DataModel
         .update(
             data.clone(),
             data_schema::PartialData {
@@ -111,18 +111,18 @@ fn main() {
         .ok()
         .unwrap();
 
-    println!("\nupdates: {:#?}", updated.data);
+    println!("\nupdates: {:#?}", updated);
 
     assert_eq!(
-        updated.data,
+        updated,
         data_schema::PartialData {
             lax: updated_lax,
             username: updated_username
         }
     );
 
-    let updates_data = updated.data.clone();
-    updated.handle_success();
+    let updates_data = updated.clone();
+    handle_success();
 
     let data = data.clone_with_updates(&updates_data);
 
