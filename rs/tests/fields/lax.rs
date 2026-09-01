@@ -2503,11 +2503,11 @@ mod post_validation_sync_schema {
             }
 
             let lax_1 = ctx.values().lax_1.clone();
-            if errors.lax.is_none() && errors.lax_1.is_none() && errors.lax_2.is_none() && lax_1 == LAX_1_PRE_VALIDATION_FAIL {
+            if errors.is_empty() && lax_1 == LAX_1_PRE_VALIDATION_FAIL {
                 errors.set_lax_1(LAX_1_PRE_VALIDATION_FAIL, None);
             }
 
-            if errors.lax.is_none() && errors.lax_1.is_none() && errors.lax_2.is_none() {
+            if errors.is_empty() {
                 Ok(None)
             } else {
                 Err(errors)
@@ -2532,7 +2532,7 @@ mod post_validation_sync_schema {
                 }
             }
 
-            if errors.lax.is_none() && errors.lax_1.is_none() && errors.lax_2.is_none() {
+            if errors.is_empty() {
                 Ok(None)
             } else {
                 Err(errors)
@@ -2584,11 +2584,11 @@ mod post_validation_async_schema {
             }
 
             let lax_1 = ctx.values().lax_1.clone();
-            if errors.lax.is_none() && errors.lax_1.is_none() && errors.lax_2.is_none() && lax_1 == LAX_1_PRE_VALIDATION_FAIL {
+            if errors.is_empty() && lax_1 == LAX_1_PRE_VALIDATION_FAIL {
                 errors.set_lax_1(LAX_1_PRE_VALIDATION_FAIL, None);
             }
 
-            if errors.lax.is_none() && errors.lax_1.is_none() && errors.lax_2.is_none() {
+            if errors.is_empty() {
                 Ok(None)
             } else {
                 Err(errors)
@@ -2613,7 +2613,7 @@ mod post_validation_async_schema {
                 }
             }
 
-            if errors.lax.is_none() && errors.lax_1.is_none() && errors.lax_2.is_none() {
+            if errors.is_empty() {
                 Ok(None)
             } else {
                 Err(errors)

@@ -1896,6 +1896,16 @@ fn generate_partial_and_impls(
 
 fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_macro2::TokenStream {
     let errors_name = format_ident!("{}Errors", name);
+    // `#errors_name` is always just this one boxed pointer -- the field
+    // slots themselves (one `Option<FieldError<Metadata>>` per
+    // required/post_validate-participating field) live on `#inner_name`
+    // instead. Without this indirection, `#errors_name`'s stack size grows
+    // with the schema's field count, and every user closure returning it as
+    // an `Err` (any `#[required(...)]`/`#[post_validate(...)]` closure)
+    // eventually trips `clippy::result_large_err` -- boxing here fixes that
+    // for every schema, rather than pushing an `#[allow(...)]` or a
+    // hand-written `Box::new(...)` onto every schema author.
+    let inner_name = format_ident!("__{}ErrorsInner", name);
 
     let error_fields = fields.iter().map(|f| {
         let name = &f.name;
@@ -1909,7 +1919,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
 
     let is_empty_checks = fields.iter().map(|f| {
         let name = &f.name;
-        quote! { self.#name.is_none() }
+        quote! { self.0.#name.is_none() }
     });
 
     let setters = fields.iter().map(|f| {
@@ -1922,7 +1932,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
                 reason: impl ::core::convert::Into<::std::string::String>,
                 metadata: ::core::option::Option<Metadata>,
             ) -> &mut Self {
-                self.#name = ::core::option::Option::Some(::ivo::__ivo_internals::FieldError {
+                self.0.#name = ::core::option::Option::Some(::ivo::__ivo_internals::FieldError {
                     reason: reason.into(),
                     metadata,
                 });
@@ -1941,7 +1951,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
                 reason: impl ::core::convert::Into<::std::string::String>,
                 metadata: ::core::option::Option<Metadata>,
             ) -> Self {
-                self.#name = ::core::option::Option::Some(::ivo::__ivo_internals::FieldError {
+                self.0.#name = ::core::option::Option::Some(::ivo::__ivo_internals::FieldError {
                     reason: reason.into(),
                     metadata,
                 });
@@ -1955,7 +1965,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
         let name_str = name.to_string();
 
         quote! {
-            if let ::core::option::Option::Some(e) = self.#name {
+            if let ::core::option::Option::Some(e) = self.0.#name {
                 payload.insert(::std::string::String::from(#name_str), e);
             }
         }
@@ -1963,13 +1973,18 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
 
     quote! {
         #[derive(::core::clone::Clone)]
-        pub struct #errors_name<Metadata: ::core::clone::Clone = ::ivo::__ivo_internals::DefaultFieldErrorMetadata> {
+        struct #inner_name<Metadata: ::core::clone::Clone = ::ivo::__ivo_internals::DefaultFieldErrorMetadata> {
             #(#error_fields,)*
         }
 
+        #[derive(::core::clone::Clone)]
+        pub struct #errors_name<Metadata: ::core::clone::Clone = ::ivo::__ivo_internals::DefaultFieldErrorMetadata>(
+            ::std::boxed::Box<#inner_name<Metadata>>,
+        );
+
         impl<Metadata: ::core::clone::Clone> #errors_name<Metadata> {
             pub fn new() -> Self {
-                Self { #(#error_defaults,)* }
+                Self(::std::boxed::Box::new(#inner_name { #(#error_defaults,)* }))
             }
 
             pub fn is_empty(&self) -> bool {
