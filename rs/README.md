@@ -99,7 +99,7 @@ otherwise the generated method is plain sync, with no runtime dependency forced 
 handlers on that path, as above. If it does, a third element is appended -- a trigger you call to
 run them: `(data, ctx_options, handle)`, where `handle` is `FnOnce()` if every captured handler is
 sync, or `FnOnce() -> impl Future<Output = ()>` (call it, then `.await` the result) if any is
-async. `Result::unwrap()`/`unwrap_err()` require `Debug` on the *other* arm, which a trigger
+async. `Result::unwrap()`/`unwrap_err()` require `Debug` on the _other_ arm, which a trigger
 closure can't provide -- use `.ok().unwrap()` / `.err().unwrap()` instead (`Option::unwrap()` has
 no such bound), matching every example under [`examples/`](./examples).
 
@@ -119,8 +119,7 @@ Every field on `struct Fields { ... }` is declared with exactly one field-type a
 Each accepts its own set of behavior attributes -- `#[validate]`, `#[re_validate]`, `#[sanitize]`,
 `#[ignore]` / `#[ignore_init]` / `#[ignore_update]`, `#[readonly]`, `#[required(...)]` (conditional,
 distinct from the `#[required]` field type), `#[on_success]` / `#[on_failure]` / `#[on_delete]`,
-and more. See [`GOAL.md`](./GOAL.md) for the full attribute matrix and every allowed combination,
-or the runnable examples under [`examples/`](./examples) and [`tests/fields/`](./tests/fields).
+and more. Read the [docs](https://ivo.kamtoeddy.com/docs/rs) for more details.
 
 # Schema options
 
@@ -160,7 +159,7 @@ mod contact_schema {
 - **`#[on_success(...)]`** / **`#[on_delete(...)]`** -- grouped or entity-wide lifecycle triggers.
 - **`#[timestamps(|| ...)]`** -- the shared, synchronous resolver for `#[created_at]`/`#[updated_at]`.
 
-See [`GOAL.md` §19](./GOAL.md) for the full reference, including minimum field counts and which
+Read the [docs](https://ivo.kamtoeddy.com/docs/rs) for the full reference, including minimum field counts and which
 field types each option accepts.
 
 # Context options and error sanitizing
