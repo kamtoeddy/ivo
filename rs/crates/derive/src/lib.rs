@@ -361,7 +361,7 @@ fn emit_async_phase(
         }
     }
     let join_stmt = quote! {
-        let (#(#async_idents),*) = ::futures_util::join!(#(#async_exprs),*);
+        let (#(#async_idents),*) = ::ivo::futures_util_join!(#(#async_exprs),*);
     };
     let applies = items.iter().zip(&result_idents).map(|(item, ident)| {
         let apply = &item.apply;
@@ -3141,7 +3141,7 @@ fn generate_model(
             }
         }
         let join_stmt = quote! {
-            let (#(#async_idents),*) = ::futures_util::join!(#(#async_exprs),*);
+            let (#(#async_idents),*) = ::ivo::futures_util_join!(#(#async_exprs),*);
         };
 
         let applies = dependent_infos
@@ -4570,7 +4570,7 @@ fn generate_model(
                 }
             }
             let join_stmt = quote! {
-                let (#(#async_idents),*) = ::futures_util::join!(#(#async_exprs),*);
+                let (#(#async_idents),*) = ::ivo::futures_util_join!(#(#async_exprs),*);
             };
 
             let applies = level_infos.iter().zip(&result_idents).map(|(d, ident)| {
@@ -5377,8 +5377,8 @@ fn generate_model(
     // generics, resolved once here at macro-expansion time rather than via a
     // runtime enum match.
     let tuple_ty = |value_ty: &proc_macro2::TokenStream,
-                     has_handlers: bool,
-                     is_async: bool|
+                    has_handlers: bool,
+                    is_async: bool|
      -> proc_macro2::TokenStream {
         if !has_handlers {
             quote! { (#value_ty, #ctx_options_ty) }
@@ -6525,7 +6525,11 @@ mod tests {
         );
         assert_no_compile_error(&out, "schema with on_failure");
         let ty = extract_create_return_ty(&out).expect("expected create's return type");
-        assert!(has_trigger_ty(&ty), "expected a failure trigger, got: {}", ty);
+        assert!(
+            has_trigger_ty(&ty),
+            "expected a failure trigger, got: {}",
+            ty
+        );
     }
 
     #[test]
@@ -6566,7 +6570,11 @@ mod tests {
         );
         assert_no_compile_error(&out, "schema with on_success");
         let ty = extract_create_return_ty(&out).expect("expected create's return type");
-        assert!(has_trigger_ty(&ty), "expected a success trigger, got: {}", ty);
+        assert!(
+            has_trigger_ty(&ty),
+            "expected a success trigger, got: {}",
+            ty
+        );
     }
 
     #[test]
@@ -6614,4 +6622,3 @@ mod tests {
         );
     }
 }
-
