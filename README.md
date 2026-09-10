@@ -246,26 +246,25 @@ The alias name of a virtual field can only be found on an output struct if the c
 **Example**
 
 ```ts
-const userSchema = new Schema<InputStruct, OutputStruct>(
-  {
-    ...,
-    username: {
-      default: "",
-      dependsOn: "virtual_field",
-      //         ^^^^^^^^^^^^^^^
-      //                        dependency on "virtual_field"
-      resolve(summary) {
-        let value = /* do computation here */;
+const userSchema = new Schema<InputStruct, OutputStruct>((b) =>
+  b.field(
+    b.dependsOn("username", "virtual_field")
+      //                    ^^^^^^^^^^^^^^^
+      //                    dependency on "virtual_field"
+      .default("")
+      .resolve((ctx) => {
+      let value = /* do computation here */;
 
-        return value
-      },
-    },
-    virtual_field: { alias: "username", validator: validatePhoneNumber },
-    //               ^^^^^^^^^^^^^^^^^
-    //                                this is allowed because "username" directly depends on "virtual_field"
-    ...
-  },
-  ...
+      return value
+    })
+  )
+  b.field(
+    b.virtual("virtual_field")
+      .alias("username")
+    //       ^^^^^^^^^^
+    //       this is allowed because "username" directly depends on "virtual_field"
+      .validate(validatePhoneNumber)
+  )
 );
 ```
 
