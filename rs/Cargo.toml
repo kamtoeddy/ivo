@@ -41,6 +41,7 @@ validators = ["dep:ivo-validators"]
 async-lock = "3"
 async-std = { version= "1.13.2", features = ["attributes"] }
 chrono = "0.4.45"
+jiff = "0.2.35"
 regex = "1.10"
 unicode-normalization = "0.1"
 
@@ -56,6 +57,7 @@ ivo-validators = { path = "./crates/validators", version = "0.6.0", optional = t
 [dev-dependencies]
 async-std = { workspace = true, features = ["attributes"] }
 chrono.workspace = true
+jiff.workspace = true
 criterion = { version = "0.5", features = ["async_tokio"] }
 paste = "1"
 regex.workspace = true
