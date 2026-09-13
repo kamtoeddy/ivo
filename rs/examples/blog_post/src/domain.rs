@@ -30,6 +30,12 @@ mod post_schema {
 
     pub type PostId = i32;
 
+    const MIN_CONTENT_LENGTH: usize = 100;
+    const MAX_CONTENT_LENGTH: usize = 2_000;
+
+    const MIN_TITLE_LENGTH: usize = 5;
+    const MAX_TITLE_LENGTH: usize = 256;
+
     struct Fields {
         #[constant(1234)]
         pub id: PostId,
@@ -43,42 +49,51 @@ mod post_schema {
         #[required]
         #[required_error(|_, _| "\"title\" was not provided!".to_string())]
         #[validate(|v, _, _| {
-            const MIN_LEN: usize = 4;
             let validated = v.trim();
-            if validated.len() < MIN_LEN {
+
+            if validated.len() < MIN_TITLE_LENGTH {
                 return Err((
-                    format!("\"title\" must be at least {MIN_LEN} characters long"),
+                    format!("\"title\" must be at least {MIN_TITLE_LENGTH} characters long"),
                     None,
                 ));
             }
+
+            if validated.len() > MAX_TITLE_LENGTH {
+                return Err((
+                    format!("\"title\" must be at most {MAX_TITLE_LENGTH} characters long"),
+                    None,
+                ));
+            }
+
             Ok(Some(validated.to_string()))
         })]
         #[re_validate(async |title, _, o| {
             if o.read().await.find_user_by_title(&title).await.is_some() {
                 return Err(("title: \"{title}\" is already taken".into(), None));
             }
-            Ok(Some(format!("revalidated-'{title}'")))
-        })]
-        #[on_delete(|_, _| {
-            println!("[title]: on delete 1 handled");
-        })]
-        #[on_delete(|_, _| {
-            println!("[title]: on delete 2 handled");
+            Ok(None)
         })]
         pub title: String,
 
         #[required]
         #[required_error(|_, _| "\"content\" was not provided!".to_string())]
         #[validate(|v, _, _| {
-            const MIN_LEN: usize = 100;
-
             let validated = v.trim();
-            if validated.len() < MIN_LEN {
+
+            if validated.len() < MIN_CONTENT_LENGTH {
                 return Err((
-                    format!("\"content\" must be at least {MIN_LEN} characters long"),
+                    format!("\"content\" must be at least {MIN_CONTENT_LENGTH} characters long"),
                     None,
                 ));
             }
+
+            if validated.len() > MAX_CONTENT_LENGTH {
+                return Err((
+                    format!("\"content\" must be at most {MAX_CONTENT_LENGTH} characters long"),
+                    None,
+                ));
+            }
+
             Ok(Some(validated.to_string()))
         })]
         pub content: String,
@@ -87,18 +102,8 @@ mod post_schema {
     #[timestamps(Timestamp::now)]
     const _: () = ();
 
-    #[on_success(["content"], |_, _| {
-        println!("[options.on_success]: [content]");
-    })]
-    const _: () = ();
-
-    #[on_delete(|_, _| {
-        println!("[options.on_delete]: fn 1");
-    })]
-    const _: () = ();
-
-    #[on_delete(|_, _| {
-        println!("[options.on_delete]: fn 2");
+    #[on_success(["content", "title"], |_, _| {
+        println!("[options.on_success]: content or title changed");
     })]
     const _: () = ();
 }
@@ -137,6 +142,11 @@ mod comment_schema {
 
     pub type CommentId = i32;
 
+    const MIN_CONTENT_LENGTH: usize = 1;
+    const MAX_CONTENT_LENGTH: usize = 1_000;
+    const COMMENT_NOT_FOUND_ERROR: &str = "Comment not found";
+    const POST_NOT_FOUND_ERROR: &str = "Post not found";
+
     struct Fields {
         #[constant(1234)]
         pub id: CommentId,
@@ -149,27 +159,36 @@ mod comment_schema {
 
         #[required]
         #[required_error(|_, _| "\"content\" was not provided!".to_string())]
-        #[validate(|content, _, _| {
-            const MIN_LEN: usize = 50;
-            if content.len() < MIN_LEN {
+        #[validate(|v, _, _| {
+            let validated = v.trim();
+
+            if validated.len() < MIN_CONTENT_LENGTH {
                 return Err((
-                    format!("\"content\" must be at least {MIN_LEN} characters long"),
+                    format!("\"content\" must be at least {MIN_CONTENT_LENGTH} characters long"),
                     None,
                 ));
             }
-            Ok(None)
+
+            if validated.len() > MAX_CONTENT_LENGTH {
+                return Err((
+                    format!("\"content\" must be at most {MAX_CONTENT_LENGTH} characters long"),
+                    None,
+                ));
+            }
+
+            Ok(Some(validated.to_string()))
         })]
         pub content: String,
 
         #[readonly]
         #[required]
-        #[required_error(|_, _| "\"post_id\" is required!".to_string())]
-        #[validate(async |post_id, _, o| {
+        #[required_error(|_, _| "\"post\" is required!".to_string())]
+        #[validate(async |id, _, o| {
             let mut guard = o.write().await;
 
-            let Some(post) = guard.get_post_by_id(&post_id).await.cloned() else {
+            let Some(post) = guard.get_post_by_id(&id).await.cloned() else {
                 return Err((
-                    "Post not found".to_string(),
+                    POST_NOT_FOUND_ERROR.to_string(),
                     None,
                 ));
             };
@@ -182,19 +201,34 @@ mod comment_schema {
 
         #[readonly]
         #[lax(None)]
-        #[validate(async |reply_to_comment_id, _, o| {
-            if reply_to_comment_id.is_none() {
+        #[validate(async |id, ctx, o| {
+            if id.is_none() {
                 return Ok(None);
             }
 
+            // TODO: by the time validation runs, required and lax fields provided
+            // should also be available on ctx.values()
+            //
+            // in this case ".unwrap_or_else(|| ctx.values().post)"
+            // will never be run because "reply_to" is a readonly field
+            let post_id = ctx.input().post.unwrap_or_else(|| ctx.values().post);
+
             let guard = o.read().await;
 
-            if guard.get_comment_by_id(&reply_to_comment_id.unwrap()).await.is_none() {
+            if let Some(c) = guard.get_comment_by_id(&id.unwrap()).await {
+                // cannot reply to a comment that does not belong to the same post
+                if c.post != post_id {
+                    return Err((
+                        COMMENT_NOT_FOUND_ERROR.to_string(),
+                        None,
+                    ));
+                }
+            } else {
                 return Err((
-                    "Comment not found".to_string(),
+                    COMMENT_NOT_FOUND_ERROR.to_string(),
                     None,
                 ));
-            };
+            }
 
             Ok(None)
         })]

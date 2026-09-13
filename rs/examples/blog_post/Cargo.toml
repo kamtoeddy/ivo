@@ -1,5 +1,5 @@
 [package]
-name = "blog_posts"
+name = "blog_post"
 publish = false
 version.workspace = true
 edition.workspace = true

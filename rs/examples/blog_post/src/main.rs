@@ -9,6 +9,12 @@ use crate::domain::{
 
 #[async_std::main]
 async fn main() {
+    posts().await;
+    comments().await;
+}
+
+async fn posts() {
+    println!("\n\n[====================== Posts ======================]");
     // required error (tile, content)
     // let input = PartialPostInput::new();
 
@@ -38,6 +44,10 @@ async fn main() {
             println!("\nFailed to create: {:#?}", errors);
         }
     };
+}
+
+async fn comments() {
+    println!("\n\n[====================== Comments ======================]");
 
     // required error (content, post)
     // let input = PartialCommentInput::new();
@@ -56,7 +66,7 @@ async fn main() {
     // success
     let input = PartialCommentInput::new()
         .with_post(2)
-        .with_reply_to(Some(3))
+        .with_reply_to(Some(2))
         .with_content("some content ".repeat(10));
 
     let timer = Instant::now();

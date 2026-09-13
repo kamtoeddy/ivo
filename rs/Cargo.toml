@@ -93,8 +93,8 @@ path = "examples/main_demo/src/main.rs"
 required-features = ["validators"]
 
 [[example]]
-name = "blog_posts"
-path = "examples/blog_posts/src/main.rs"
+name = "blog_post"
+path = "examples/blog_post/src/main.rs"
 
 [[example]]
 name = "constants"
