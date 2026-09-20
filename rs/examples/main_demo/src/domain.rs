@@ -41,6 +41,8 @@ mod user_schema {
     use chrono::Utc;
     use ivo::validate_email;
 
+    const MIN_DAYS_BETWEEN_USERNAME_AND_SLUG_ID_UPDATES: i64 = 30;
+
     struct Fields {
         #[constant(1234)]
         pub id: i32,
@@ -168,15 +170,37 @@ mod user_schema {
     })]
     const _: () = ();
 
-    #[ignore_update(["username", "v_slug"], |ctx, _| {
-        match ctx.values().username_last_updated_at {
-            Some(dt) => (Utc::now() - dt).num_days() < 30,
-            _ => false,
-        }
-    })]
-    const _: () = ();
+    #[post_validate(["username", "v_slug"], pre_validate = |ctx, _| {
+        let Some(dt) = ctx.values().username_last_updated_at else {
+            return Ok(None);
+        };
 
-    #[post_validate(["username", "v_slug"], validate = async |ctx, o| {
+        let days_elapsed_since_last_update = (Utc::now() - dt).num_days();
+        let delta = MIN_DAYS_BETWEEN_USERNAME_AND_SLUG_ID_UPDATES - days_elapsed_since_last_update;
+
+        if delta <= 0 {
+            return Ok(None);
+        }
+
+        let input = ctx.input();
+        let input_slug_id = input.slug_id.clone();
+
+        let (reason, metadata) = (
+            &format!("Username or slug id can only be updated once every 30 days. Try again in {} days.", delta),
+            None,
+        );
+
+        let mut errors = UserInputErrors::new();
+
+        if input_slug_id.is_some() {
+            errors.set_slug_id(reason, metadata);
+        } else if input.username.is_some() {
+            errors.set_username(reason, metadata);
+        }
+
+        Err(errors)
+    },
+    validate = async |ctx, o| {
         let input = ctx.input();
         let input_slug_id = input.slug_id.clone();
 
