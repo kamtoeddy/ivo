@@ -41,10 +41,8 @@ where
     F: AsyncFn(T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
 {
     match validator(value, ctx, opts).await {
-        ::core::result::Result::Ok(v) => ::core::result::Result::Ok(v),
-        ::core::result::Result::Err((reason, metadata)) => {
-            ::core::result::Result::Err(FieldError { reason, metadata })
-        }
+        Ok(v) => Ok(v),
+        Err((reason, metadata)) => Err(FieldError { reason, metadata }),
     }
 }
 
@@ -111,10 +109,8 @@ where
     F: Fn(T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
 {
     match validator(value, ctx, opts) {
-        ::core::result::Result::Ok(v) => ::core::result::Result::Ok(v),
-        ::core::result::Result::Err((reason, metadata)) => {
-            ::core::result::Result::Err(FieldError { reason, metadata })
-        }
+        Ok(v) => Ok(v),
+        Err((reason, metadata)) => Err(FieldError { reason, metadata }),
     }
 }
 
