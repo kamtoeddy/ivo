@@ -172,16 +172,16 @@ struct FieldDef {
 
 fn parse_field_type(attrs: &[Attribute]) -> syn::Result<Option<FieldType>> {
     for attr in attrs {
-        // `#[required]` without arguments is the field-type attribute;
-        // `#[required(...)]` is a conditional-required behavior attribute.
-        if attr.path().is_ident("required") && matches!(attr.meta, syn::Meta::Path(_)) {
-            return Ok(Some(FieldType::Required));
+        if attr.path().is_ident("constant") {
+            return Ok(Some(FieldType::Constant));
         }
         if attr.path().is_ident("lax") {
             return Ok(Some(FieldType::Lax));
         }
-        if attr.path().is_ident("constant") {
-            return Ok(Some(FieldType::Constant));
+        // `#[required]` without arguments is the field-type attribute;
+        // `#[required(...)]` is a conditional-required behavior attribute.
+        if attr.path().is_ident("required") && matches!(attr.meta, syn::Meta::Path(_)) {
+            return Ok(Some(FieldType::Required));
         }
         // `#[dependent]` without arguments is a marker; `#[depends_on(...)]` declares parents.
         if (attr.path().is_ident("dependent") && matches!(attr.meta, syn::Meta::Path(_)))
@@ -1057,10 +1057,9 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
                         "validate"
                             | "re_validate"
                             | "sanitize"
-                            | "resolve"
                             | "default"
-                            | "value"
                             | "depends_on"
+                            | "resolve"
                             | "readonly"
                             | "ignore"
                             | "ignore_init"
@@ -1138,8 +1137,10 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
         for (name, _) in &behavior_names {
             *counts.entry(name.as_str()).or_insert(0) += 1;
         }
+
+        const LIFECYCLE: &[&str] = &["on_delete", "on_success", "on_failure"];
+
         for (name, count) in counts.iter() {
-            const LIFECYCLE: &[&str] = &["on_delete", "on_success", "on_failure"];
             if !LIFECYCLE.contains(name) && *count > 1 {
                 return Err(syn::Error::new_spanned(
                     &f.name,
@@ -1149,18 +1150,6 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
                     ),
                 ));
             }
-        }
-
-        if behavior_names.iter().any(|(n, _)| n == "re_validate")
-            && !behavior_names.iter().any(|(n, _)| n == "validate")
-        {
-            return Err(syn::Error::new_spanned(
-                &f.name,
-                format!(
-                    "field `{}`: `#[re_validate]` requires `#[validate]`",
-                    f.name
-                ),
-            ));
         }
 
         if behavior_names.iter().any(|(n, _)| n == "readonly") {
@@ -5778,23 +5767,6 @@ mod tests {
             "#,
         );
         assert_compile_error(&out, "output in single-struct schema");
-    }
-
-    #[test]
-    fn rejects_re_validate_without_validate() {
-        let out = expand(
-            "input(User)",
-            r#"
-            mod s {
-                struct Fields {
-                    #[required]
-                    #[re_validate(async |v, _ctx, _opts| { Ok(Some(v)) })]
-                    pub name: String,
-                }
-            }
-            "#,
-        );
-        assert_compile_error(&out, "re_validate without validate");
     }
 
     #[test]

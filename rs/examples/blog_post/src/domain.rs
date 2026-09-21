@@ -183,7 +183,7 @@ mod comment_schema {
         #[readonly]
         #[required]
         #[required_error(|_, _| "\"post\" is required!".to_string())]
-        #[validate(async |id, _, o| {
+        #[re_validate(async |id, _, o| {
             let mut guard = o.write().await;
 
             let Some(post) = guard.get_post_by_id(&id).await.cloned() else {
@@ -201,17 +201,12 @@ mod comment_schema {
 
         #[readonly]
         #[lax(None)]
-        #[validate(async |id, ctx, o| {
+        #[re_validate(async |id, ctx, o| {
             if id.is_none() {
                 return Ok(None);
             }
 
-            // TODO: by the time validation runs, required and lax fields provided
-            // should also be available on ctx.values()
-            //
-            // in this case ".unwrap_or_else(|| ctx.values().post)"
-            // will never be run because "reply_to" is a readonly field
-            let post_id = ctx.input().post.unwrap_or_else(|| ctx.values().post);
+            let post_id = ctx.values().post;
 
             let guard = o.read().await;
 
