@@ -42,6 +42,8 @@ mod user_schema {
     use ivo::validate_email;
 
     const MIN_DAYS_BETWEEN_USERNAME_AND_SLUG_ID_UPDATES: i64 = 30;
+    const MIN_SLUG_ID_LENGTH: usize = 2;
+    const MIN_USERNAME_LENGTH: usize = 4;
 
     struct Fields {
         #[constant(1234)]
@@ -72,14 +74,14 @@ mod user_schema {
         #[required]
         #[required_error(|_, _| "\"username\" was not provided!".to_string())]
         #[validate(|v, _, _| {
-            const MIN_LEN: usize = 4;
-            if v.len() < MIN_LEN {
+            let validated = v.trim();
+            if validated.len() < MIN_USERNAME_LENGTH {
                 return Err((
-                    format!("\"username\" must be at least {MIN_LEN} characters long"),
+                    format!("\"username\" must be at least {MIN_USERNAME_LENGTH} characters long"),
                     None,
                 ));
             }
-            Ok(None)
+            Ok(Some(validated.into()))
         })]
         #[re_validate(async |uname, _, o| {
             if o.read().await.find_user_by_username(&uname).await.is_some() {
@@ -116,11 +118,10 @@ mod user_schema {
 
         #[ivo_virtual("slug_id")]
         #[validate(|value, _, _| {
-            println!("[slug_id]: validate: {:?}", value);
             let validated = value.trim();
-            if validated.len() < 2 {
+            if validated.len() < MIN_SLUG_ID_LENGTH {
                 return Err((
-                    "slug ids must be at least 2 characters long".into(),
+                    format!("slug ids must be at least {MIN_SLUG_ID_LENGTH} characters long"),
                     None,
                 ));
             }
@@ -185,17 +186,19 @@ mod user_schema {
         let input = ctx.input();
         let input_slug_id = input.slug_id.clone();
 
-        let (reason, metadata) = (
-            &format!("Username or slug id can only be updated once every 30 days. Try again in {} days.", delta),
-            None,
-        );
-
         let mut errors = UserInputErrors::new();
 
         if input_slug_id.is_some() {
-            errors.set_slug_id(reason, metadata);
-        } else if input.username.is_some() {
-            errors.set_username(reason, metadata);
+            errors.set_slug_id(
+                format!("slug id can only be updated once every 30 days. Try again in {} days.", delta),
+                None,
+            );
+        }
+        if input.username.is_some() {
+            errors.set_username(
+                format!("Username can only be updated once every 30 days. Try again in {} days.", delta),
+                None,
+            );
         }
 
         Err(errors)
@@ -210,10 +213,10 @@ mod user_schema {
 
         let slug_id = slugify(&slug_string);
 
-        println!(
-            "\npost validating username & v_slug: [slug_string = {}] & [slug_id = {}]",
-            slug_string, slug_id
-        );
+        // println!(
+        //     "\npost validating username & v_slug: [slug_string = {}] & [slug_id = {}]",
+        //     slug_string, slug_id
+        // );
 
         let mut options = o.write().await;
 
