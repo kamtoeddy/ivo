@@ -73,6 +73,7 @@ fn main() {
             },
             (), // ctx_options -- `()` when the schema declares none
         )
+        .ok()
         .unwrap();
 
     println!("{:#?}", post); // -> Post { id, created_at, updated_at, title, body }
@@ -86,6 +87,7 @@ fn main() {
             },
             (),
         )
+        .ok()
         .unwrap();
 
     println!("{:#?}", updated); // -> PartialPost { body: Some("Edited."), .. rest None }
