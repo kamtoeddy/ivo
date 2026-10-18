@@ -112,7 +112,10 @@ pub use many_field_20::{ManyField20Model, PartialManyField20};
 
 // Dependent chain schema
 
-#[ivo_schema(input(ChainInput), output(Chain10, ivo_attrs(derive(Debug, Clone, PartialEq))))]
+#[ivo_schema(
+    input(ChainInput),
+    output(Chain10, ivo_attrs(derive(Debug, Clone, PartialEq)))
+)]
 mod chain_10 {
     struct Fields {
         #[required]

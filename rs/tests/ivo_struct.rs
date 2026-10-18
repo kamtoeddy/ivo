@@ -2,7 +2,11 @@ use ivo::{ivo_schema, IvoStruct};
 use seahash::SeaHasher;
 use std::hash::{Hash, Hasher};
 
-#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq)), ivo_partial_attrs(derive(Hash))))]
+#[ivo_schema(input(
+    DataInput,
+    ivo_attrs(derive(Debug, Clone, PartialEq)),
+    ivo_partial_attrs(derive(Hash))
+))]
 mod hash_schema {
     struct Fields {
         #[required]
@@ -289,7 +293,10 @@ fn should_attach_ivo_partial_attrs_to_the_partial_input_struct_and_its_fields() 
     // (`partialId`), partial-input-only `skip_serializing_if` on `nickname`
     // and shared partial `skip_serializing` on the virtual; non-partial field
     // attrs (`rename = "name"`) don't leak into partials
-    assert_eq!(json_keys(&value), ["DISPLAY_NAME", "FULL_NAME", "partialId"]);
+    assert_eq!(
+        json_keys(&value),
+        ["DISPLAY_NAME", "FULL_NAME", "partialId"]
+    );
 
     fn assert_hash<T: Hash>() {}
     assert_hash::<attrs_schema::PartialAccount>();
@@ -331,6 +338,12 @@ fn should_attach_ivo_partial_attrs_to_the_partial_output_struct_and_its_fields()
     // `nickname`
     assert_eq!(
         json_keys(&value),
-        ["display_name", "full_name", "nickname", "partialId", "version"]
+        [
+            "display_name",
+            "full_name",
+            "nickname",
+            "partialId",
+            "version"
+        ]
     );
 }

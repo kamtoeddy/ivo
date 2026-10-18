@@ -657,7 +657,11 @@ async fn smoke_model_grouped_ignore_update() {
     assert!(failed.is_none());
 }
 
-#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq)), ivo_partial_attrs(derive(Debug))))]
+#[ivo_schema(input(
+    User,
+    ivo_attrs(derive(Debug, Clone, PartialEq)),
+    ivo_partial_attrs(derive(Debug))
+))]
 mod user_derive_partial_schema {
     struct Fields {
         #[required]

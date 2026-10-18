@@ -498,7 +498,10 @@ const FIELD_PASSTHROUGH_ATTRS: &[&str] = &[
 /// Field passthrough attributes for `target`, emitted as `#[...]`: the shared
 /// `ivo_attrs`/`ivo_partial_attrs` first, then the target-scoped ones, each in
 /// source order. Their contents are checked in `validate_field_passthrough_attrs`.
-fn field_passthrough_attrs(attrs: &[Attribute], target: AttrTarget) -> Vec<proc_macro2::TokenStream> {
+fn field_passthrough_attrs(
+    attrs: &[Attribute],
+    target: AttrTarget,
+) -> Vec<proc_macro2::TokenStream> {
     [target.shared_attr_name(), target.scoped_attr_name()]
         .iter()
         .flat_map(|name| attr_values_tokens(attrs, name))
@@ -6916,7 +6919,10 @@ mod tests {
 
         let header = struct_header(&out, "User");
         assert!(header.contains("# [derive (Debug)]"), "got: {header}");
-        assert!(header.contains("# [serde (rename_all = \"camelCase\")]"), "got: {header}");
+        assert!(
+            header.contains("# [serde (rename_all = \"camelCase\")]"),
+            "got: {header}"
+        );
         assert!(!header.contains("Hash"), "got: {header}");
 
         let header = struct_header(&out, "PartialUser");
@@ -6949,7 +6955,9 @@ mod tests {
         assert_no_compile_error(&out, "ordering");
 
         let header = struct_header(&out, "User");
-        let derive_idx = header.find("# [derive (Debug , Hash)]").unwrap_or_else(|| panic!("got: {header}"));
+        let derive_idx = header
+            .find("# [derive (Debug , Hash)]")
+            .unwrap_or_else(|| panic!("got: {header}"));
         let serde_idx = header.find("# [serde").unwrap();
         assert!(derive_idx < serde_idx, "got: {header}");
     }
@@ -6962,6 +6970,9 @@ mod tests {
 
         let out = expand_with_struct_args("User, derive_partial(Debug)");
         assert_compile_error(&out, "derive_partial");
-        assert!(out.contains("use `ivo_partial_attrs(derive(...))`"), "got: {out}");
+        assert!(
+            out.contains("use `ivo_partial_attrs(derive(...))`"),
+            "got: {out}"
+        );
     }
 }
