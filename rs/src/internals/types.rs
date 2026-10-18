@@ -268,10 +268,11 @@ pub trait IvoInputStruct<CtxOptions, ErrorSanitizer: IvoErrorSanitizer<CtxOption
 #[derive(Clone)]
 pub struct IvoContext<I, O: WithPartialStruct> {
     input: I,
-    raw_input: I,
+    // Never mutated during a call, so every ctx built for it shares them.
+    raw_input: std::sync::Arc<I>,
     values: O::Partial,
     changes: Option<O::Partial>,
-    previous_values: Option<O>,
+    previous_values: Option<std::sync::Arc<O>>,
 }
 
 impl<I, O: WithPartialStruct> IvoContext<I, O> {
@@ -288,10 +289,10 @@ impl<I, O: WithPartialStruct> IvoContext<I, O> {
     /// separately, so the two can't drift out of sync.
     pub fn new(
         input: I,
-        raw_input: I,
+        raw_input: std::sync::Arc<I>,
         values: O::Partial,
         changes: Option<O::Partial>,
-        previous_values: Option<O>,
+        previous_values: Option<std::sync::Arc<O>>,
     ) -> Self {
         Self {
             input,
@@ -332,7 +333,7 @@ impl<I, O: WithPartialStruct> IvoContext<I, O> {
     /// The record as it was *before* this update was applied. `None` at
     /// creation (there is no prior record).
     pub fn previous_values(&self) -> Option<&O> {
-        self.previous_values.as_ref()
+        self.previous_values.as_deref()
     }
 
     pub fn is_update(&self) -> bool {
@@ -507,6 +508,26 @@ impl<CtxOptions> IvoRwCtxOptions<CtxOptions> {
     #[doc(hidden)]
     pub fn __read_only(&self) -> IvoCtxOptions<CtxOptions> {
         IvoCtxOptions(self.0.clone())
+    }
+
+    /// The options to hand back to the caller once `create`/`update`
+    /// returns. When nothing else holds them (no trigger was built and no
+    /// handler kept a clone), they're moved out without locking or cloning;
+    /// otherwise they're cloned.
+    #[doc(hidden)]
+    pub fn __into_inner_or_clone(self) -> CtxOptions
+    where
+        CtxOptions: Clone,
+    {
+        match std::sync::Arc::try_unwrap(self.0) {
+            Ok(lock) => lock.into_inner(),
+            Err(shared) => {
+                if let Some(guard) = shared.try_read() {
+                    return guard.clone();
+                }
+                Self(shared).read_sync().clone()
+            }
+        }
     }
 }
 

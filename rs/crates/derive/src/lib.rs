@@ -358,10 +358,6 @@ struct VirtualPipeline {
     setup: proc_macro2::TokenStream,
     validate_items: Vec<AsyncPhaseItem>,
     re_validate_items: Vec<AsyncPhaseItem>,
-    /// The `ctx` rebuild these fields would use as their own phase epilogue;
-    /// exposed so callers merging virtual items into a combined phase can
-    /// reuse the exact same rebuild as that phase's epilogue.
-    ctx_rebuild: proc_macro2::TokenStream,
     /// Sanitize has no non-virtual counterpart to merge with, so it's
     /// already fully assembled.
     sanitize_phase: proc_macro2::TokenStream,
@@ -374,17 +370,42 @@ struct VirtualPipeline {
     any_async: bool,
 }
 
+/// One step of a `create`/`update` body, as far as `ctx` is concerned: a
+/// point where `ctx` used to be rebuilt (only listed if that phase is actually
+/// emitted), or a phase whose handlers may read `ctx`.
+enum CtxStep {
+    Rebuild(&'static str),
+    Read(bool),
+}
+
+/// The rebuilds some handler observes: a rebuild is only needed when a phase
+/// between it and the next rebuild point reads `ctx`. Dropping the others
+/// never changes what a handler sees, since every reader still gets the
+/// snapshot taken at the start of its own window.
+fn observed_rebuilds(steps: &[CtxStep]) -> std::collections::HashSet<&'static str> {
+    let mut observed = std::collections::HashSet::new();
+    let mut current: Option<&'static str> = None;
+    for step in steps {
+        match step {
+            CtxStep::Rebuild(name) => current = Some(name),
+            CtxStep::Read(true) => {
+                if let Some(name) = current {
+                    observed.insert(name);
+                }
+            }
+            CtxStep::Read(false) => {}
+        }
+    }
+    observed
+}
+
 /// Emits a phase's items either sequentially (the default, and the only
 /// option when 0 or 1 items are async -- a single `.await` is already as
 /// parallel as it gets) or, once at least two items are async, by polling all
 /// async items concurrently via `join!` (no boxing/heap allocation, unlike
 /// `join_all`) before applying every result -- sync or async -- in original
-/// declaration order. `epilogue` runs once, after every item has been
-/// applied (e.g. a single `ctx` rebuild instead of one per item).
-fn emit_async_phase(
-    items: Vec<AsyncPhaseItem>,
-    epilogue: &proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
+/// declaration order.
+fn emit_async_phase(items: Vec<AsyncPhaseItem>) -> proc_macro2::TokenStream {
     if items.is_empty() {
         return quote! {};
     }
@@ -401,7 +422,7 @@ fn emit_async_phase(
                 #apply
             }
         });
-        return quote! { #(#stmts)* #epilogue };
+        return quote! { #(#stmts)* };
     }
 
     let result_idents: Vec<_> = (0..items.len())
@@ -435,7 +456,6 @@ fn emit_async_phase(
         #(#sync_bindings)*
         #join_stmt
         #(#applies)*
-        #epilogue
     }
 }
 
@@ -2885,7 +2905,7 @@ fn generate_model(
     // the seed phase rebuilds `ctx`, so `create` only builds its initial
     // `ctx` for them (the latter are checked with the seed items below).
     let mut create_needs_initial_ctx = !create_ignore_items.is_empty();
-    let ignore_evaluations = emit_async_phase(create_ignore_items, &quote! {});
+    let ignore_evaluations = emit_async_phase(create_ignore_items);
 
     let ignore_init_assignments = field_ignore_init.iter().map(|name| {
         let flag = format_ident!("ignore_{}", name);
@@ -2980,7 +3000,8 @@ fn generate_model(
         grouped.into_iter().chain(field_level).collect()
     };
     create_has_async |= create_required_items.iter().any(|i| i.is_async);
-    let required_evaluations = emit_async_phase(create_required_items, &quote! {});
+    let create_required_reads_ctx = !create_required_items.is_empty();
+    let required_evaluations = emit_async_phase(create_required_items);
 
     // Missing-required checks for fields marked with the `#[required]` field type.
     let required_field_checks = fields
@@ -3077,19 +3098,7 @@ fn generate_model(
         })
         .collect();
     create_has_async |= create_seed_items.iter().any(|i| i.is_async);
-    let create_seed_phase = {
-        let seed = emit_async_phase(create_seed_items, &quote! {});
-        quote! {
-            #seed
-            let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                input.clone(),
-                __original_input.clone(),
-                ::core::convert::Into::into(output.clone()),
-                ::core::option::Option::None,
-                ::core::option::Option::None,
-            );
-        }
-    };
+    let create_seed_phase = emit_async_phase(create_seed_items);
 
     // Validate takes each seeded value out of `output` rather than cloning
     // it: the item hands back the value to keep (validated, or unchanged when
@@ -3204,19 +3213,17 @@ fn generate_model(
         })
         .collect();
     create_has_async |= create_dependent_default_items.iter().any(|i| i.is_async);
-    let create_dependent_defaults_phase =
-        emit_async_phase(create_dependent_default_items, &quote! {});
+    let create_dependent_defaults_read_ctx = fields.iter().any(|f| {
+        matches!(f.field_type, FieldType::Dependent)
+            && attr_value_tokens(&f.attrs, "default")
+                .is_some_and(|tokens| closure_input_count(&tokens).is_some_and(|n| n > 0))
+    });
+    let has_dependents = fields
+        .iter()
+        .any(|f| matches!(f.field_type, FieldType::Dependent));
+    let create_dependent_defaults_phase = emit_async_phase(create_dependent_default_items);
 
     create_has_async |= create_early_items.iter().any(|i| i.is_async);
-    let create_early_ctx_rebuild = quote! {
-        let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-            input.clone(),
-            __original_input.clone(),
-            ::core::convert::Into::into(output.clone()),
-            ::core::option::Option::None,
-            ::core::option::Option::None,
-        );
-    };
     // Not emitted yet: merged with virtual fields' validate items below (see
     // `build_virtual_pipeline`) so validate is one combined phase across
     // every field type, not a virtual pass followed by a separate one.
@@ -3263,22 +3270,36 @@ fn generate_model(
         })
         .collect();
     create_has_async |= create_constant_items.iter().any(|i| i.is_async);
-    let create_constants_ctx_rebuild = quote! {
-        let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-            input.clone(),
-            __original_input.clone(),
-            ::core::convert::Into::into(output.clone()),
-            ::core::option::Option::None,
-            ::core::option::Option::None,
-        );
-    };
-    let create_constants_phase =
-        emit_async_phase(create_constant_items, &create_constants_ctx_rebuild);
+    let create_constants_read_ctx = fields.iter().any(|f| {
+        matches!(f.field_type, FieldType::Constant)
+            && attr_value_tokens(&f.attrs, "constant")
+                .is_some_and(|tokens| closure_input_count(&tokens).is_some_and(|n| n > 0))
+    });
+    let create_constants_phase = emit_async_phase(create_constant_items);
 
     // Dependent-field resolution pass for create: only resolve a dependent when
     // at least one of its parents was provided in the input or was resolved in
     // a previous iteration. The loop propagates changes through the dependency
     // graph in topological order until no more values change.
+    // Every field some dependent depends on gets an index into the
+    // `[bool; N]` "changed in the previous round" / "changed in this round"
+    // arrays the resolution loop tracks (instead of sets of field names).
+    let dependent_parent_names: Vec<String> = {
+        let mut names: Vec<String> = Vec::new();
+        for f in fields
+            .iter()
+            .filter(|f| matches!(f.field_type, FieldType::Dependent))
+        {
+            for parent in parse_depends_on(f).unwrap_or_default() {
+                if !names.contains(&parent) {
+                    names.push(parent);
+                }
+            }
+        }
+        names
+    };
+    let dependent_parent_index = |name: &str| dependent_parent_names.iter().position(|n| n == name);
+    let dependent_parent_count = dependent_parent_names.len();
     let dependent_create_init_fields: Vec<_> = fields
         .iter()
         .filter(|f| {
@@ -3287,14 +3308,14 @@ fn generate_model(
                 FieldType::Required | FieldType::Lax | FieldType::Virtual { .. }
             )
         })
-        .map(|f| {
-            let name_str = f.name.to_string();
+        .filter_map(|f| {
+            let index = dependent_parent_index(&f.name.to_string())?;
             let input_name = input_field_name(f);
-            quote! {
+            Some(quote! {
                 if input.#input_name.is_some() {
-                    __dependent_current_parents.insert(#name_str);
+                    __dependent_current_parents[#index] = true;
                 }
-            }
+            })
         })
         .collect();
 
@@ -3305,7 +3326,8 @@ fn generate_model(
     // `resolver` and not on the ctx/opts expressions passed to it.
     struct DependentInfo {
         name: proc_macro2::Ident,
-        name_str: String,
+        // Its index in the changed-parents arrays, if anything depends on it.
+        parent_index: Option<usize>,
         ty: proc_macro2::TokenStream,
         parent_guard: proc_macro2::TokenStream,
         resolver: proc_macro2::TokenStream,
@@ -3321,7 +3343,7 @@ fn generate_model(
             .filter(|f| matches!(f.field_type, FieldType::Dependent))
             .map(|f| {
                 let name = f.name.clone();
-                let name_str = name.to_string();
+                let parent_index = dependent_parent_index(&name.to_string());
                 let ty = {
                     let ty = &f.ty;
                     quote!(#ty)
@@ -3329,7 +3351,8 @@ fn generate_model(
                 let parents = parse_depends_on(f).unwrap_or_default();
                 let parent_checks: Vec<_> = parents
                     .iter()
-                    .map(|p| quote! { __dependent_current_parents.contains(#p) })
+                    .filter_map(|p| dependent_parent_index(p))
+                    .map(|index| quote! { __dependent_current_parents[#index] })
                     .collect();
                 let parent_guard = if parent_checks.is_empty() {
                     quote! { false }
@@ -3340,13 +3363,17 @@ fn generate_model(
                     .expect("dependent fields must have a #[resolve(...)] handler");
                 DependentInfo {
                     name,
-                    name_str,
+                    parent_index,
                     ty,
                     parent_guard,
                     resolver,
                 }
             })
             .collect()
+    };
+    let mark_dependent_changed = |parent_index: &Option<usize>| match parent_index {
+        Some(index) => quote! { __dependent_next_parents[#index] = true; },
+        None => quote! {},
     };
     let dependent_async_count = dependent_infos
         .iter()
@@ -3371,37 +3398,38 @@ fn generate_model(
         // parallel as it gets, so keep the simpler, incrementally-updated-ctx
         // codegen (each field observes prior fields' changes within the same
         // round, matching the pre-existing, well-tested behavior).
+        // Later resolvers observe earlier ones' changes, so `ctx` is rebuilt
+        // after every change (an unchanged value leaves the snapshot as is).
         let dependent_create_phase = dependent_infos.iter().map(|d| {
-            let DependentInfo { name, name_str, ty, parent_guard, resolver, .. } = d;
+            let DependentInfo { name, parent_index, ty, parent_guard, resolver, .. } = d;
             let ctx_expr = quote!(ctx.clone());
             let opts_expr = quote!(&_rw_ctx_options);
             let (_, resolver_expr) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
+            let mark_changed = mark_dependent_changed(parent_index);
             quote! {
                 if #parent_guard {
                     let __new_value: #ty = #resolver_expr;
                     if output.#name.as_ref() != ::core::option::Option::Some(&__new_value) {
-                        output.#name = ::core::option::Option::Some(__new_value.clone());
-                        __dependent_next_parents.insert(#name_str);
+                        output.#name = ::core::option::Option::Some(__new_value);
+                        #mark_changed
+                        ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                            input.clone(),
+                            __original_input.clone(),
+                            ::core::convert::Into::into(output.clone()),
+                            ::core::option::Option::None,
+                            ::core::option::Option::None,
+                        );
                     }
-                    ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                        input.clone(),
-                        __original_input.clone(),
-                        ::core::convert::Into::into(output.clone()),
-                        ::core::option::Option::None,
-                        ::core::option::Option::None,
-                    );
                 }
             }
         });
         quote! {
-            let mut __dependent_current_parents: ::std::collections::HashSet<&'static str> =
-                ::std::collections::HashSet::new();
+            let mut __dependent_current_parents = [false; #dependent_parent_count];
             #(#dependent_create_init_fields)*
             loop {
-                let mut __dependent_next_parents: ::std::collections::HashSet<&'static str> =
-                    ::std::collections::HashSet::new();
+                let mut __dependent_next_parents = [false; #dependent_parent_count];
                 #(#dependent_create_phase)*
-                if __dependent_next_parents.is_empty() {
+                if !__dependent_next_parents.contains(&true) {
                     break;
                 }
                 __dependent_current_parents = __dependent_next_parents;
@@ -3426,7 +3454,7 @@ fn generate_model(
                     resolver,
                     ..
                 } = d;
-                let ctx_expr = quote!(__round_ctx.clone());
+                let ctx_expr = quote!(ctx.clone());
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (_, resolver_expr) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
                 quote! {
@@ -3463,29 +3491,31 @@ fn generate_model(
             .iter()
             .zip(&result_idents)
             .map(|(d, ident)| {
-                let DependentInfo { name, name_str, .. } = d;
+                let DependentInfo {
+                    name, parent_index, ..
+                } = d;
+                let mark_changed = mark_dependent_changed(parent_index);
                 quote! {
                     if let ::core::option::Option::Some(__new_value) = #ident {
                         if output.#name.as_ref() != ::core::option::Option::Some(&__new_value) {
-                            output.#name = ::core::option::Option::Some(__new_value.clone());
-                            __dependent_next_parents.insert(#name_str);
+                            output.#name = ::core::option::Option::Some(__new_value);
+                            #mark_changed
                         }
                     }
                 }
             });
 
+        // Every resolver in a round reads the same snapshot (`ctx` only
+        // changes between rounds).
         quote! {
-            let mut __dependent_current_parents: ::std::collections::HashSet<&'static str> =
-                ::std::collections::HashSet::new();
+            let mut __dependent_current_parents = [false; #dependent_parent_count];
             #(#dependent_create_init_fields)*
             loop {
-                let mut __dependent_next_parents: ::std::collections::HashSet<&'static str> =
-                    ::std::collections::HashSet::new();
-                let __round_ctx = ctx.clone();
+                let mut __dependent_next_parents = [false; #dependent_parent_count];
                 #(#round_bindings)*
                 #join_stmt
                 #(#applies)*
-                if __dependent_next_parents.is_empty() {
+                if !__dependent_next_parents.contains(&true) {
                     break;
                 }
                 __dependent_current_parents = __dependent_next_parents;
@@ -3513,10 +3543,7 @@ fn generate_model(
     // (where a local `input` shadow is derived from `updates`).
     let build_virtual_pipeline = |ignore_flag_for: &dyn Fn(
         &FieldDef,
-    ) -> proc_macro2::TokenStream,
-                                  changes_expr: &proc_macro2::TokenStream,
-                                  previous_values_expr: &proc_macro2::TokenStream,
-                                  raw_input_expr: &proc_macro2::TokenStream|
+    ) -> proc_macro2::TokenStream|
      -> VirtualPipeline {
         struct VField<'a> {
             f: &'a FieldDef,
@@ -3570,20 +3597,6 @@ fn generate_model(
             }
         });
 
-        // `let mut` (not a bare `ctx = ...`) so this compiles regardless of
-        // whether `ctx` is already in scope as `mut` at the call site; later
-        // code in the same function body may still do a plain `ctx = ...`
-        // reassignment against this freshly-shadowed, always-`mut` binding.
-        let ctx_rebuild = quote! {
-            let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                input.clone(),
-                #raw_input_expr,
-                ::core::convert::Into::into(output.clone()),
-                #changes_expr,
-                #previous_values_expr,
-            );
-        };
-
         let mut any_async = false;
 
         let validate_items: Vec<AsyncPhaseItem> = vfields
@@ -3597,7 +3610,7 @@ fn generate_model(
                     provided_flag,
                     ..
                 } = v;
-                let value_expr = quote!(__value.clone());
+                let value_expr = quote!(__value);
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) =
@@ -3643,7 +3656,7 @@ fn generate_model(
                     provided_flag,
                     ..
                 } = v;
-                let value_expr = quote!(__value.clone());
+                let value_expr = quote!(__value);
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) = make_validator_call(
@@ -3693,7 +3706,7 @@ fn generate_model(
                     provided_flag,
                     ..
                 } = v;
-                let value_expr = quote!(__value.clone());
+                let value_expr = quote!(__value);
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) =
@@ -3719,15 +3732,12 @@ fn generate_model(
                 })
             })
             .collect();
-        // Sanitize has no `ctx` reads left downstream of it within this pass
-        // that aren't already rebuilt by the caller, so no epilogue needed.
-        let sanitize_phase = emit_async_phase(sanitize_items, &quote! {});
+        let sanitize_phase = emit_async_phase(sanitize_items);
 
         VirtualPipeline {
             setup: quote! { #(#setup_stmts)* },
             validate_items,
             re_validate_items,
-            ctx_rebuild,
             sanitize_phase,
             still_relevant_expr,
             any_async,
@@ -3744,12 +3754,7 @@ fn generate_model(
         }
     };
 
-    let create_virtual = build_virtual_pipeline(
-        &create_virtual_ignore_flag_for,
-        &quote!(::core::option::Option::None),
-        &quote!(::core::option::Option::None),
-        &quote!(__original_input.clone()),
-    );
+    let create_virtual = build_virtual_pipeline(&create_virtual_ignore_flag_for);
     create_has_async |= create_virtual.any_async;
 
     // Validate is one combined phase across every field type: required/lax
@@ -3763,9 +3768,18 @@ fn generate_model(
             .chain(create_early_items)
             .collect();
         let setup = &create_virtual.setup;
-        let phase = emit_async_phase(items, &create_early_ctx_rebuild);
+        let phase = emit_async_phase(items);
         quote! { #setup #(#create_validate_takes)* #phase }
     };
+    let create_validate_emitted = fields
+        .iter()
+        .any(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax))
+        || !create_virtual.validate_items.is_empty();
+    let create_validate_reads_ctx = !create_virtual.validate_items.is_empty()
+        || fields.iter().any(|f| {
+            matches!(f.field_type, FieldType::Required | FieldType::Lax)
+                && find_attr(&f.attrs, "validate").is_some()
+        });
 
     // Re-validation pass: run secondary validators over the built output.
     // Fields never see each other's re-validated value here (`ctx` isn't
@@ -3796,7 +3810,7 @@ fn generate_model(
                     let ty = &f.ty;
                     let ty_tokens = quote!(#ty);
                     let re_validator = attr_value_tokens(&f.attrs, "re_validate")?;
-                    let value_expr = quote!(__value.clone());
+                    let value_expr = quote!(__value);
                     let ctx_expr = quote!(&ctx);
                     let opts_expr = quote!(&_rw_ctx_options);
                     let (is_async, call) = make_validator_call(
@@ -3860,14 +3874,17 @@ fn generate_model(
     create_has_async |= re_validate_any_async;
     update_has_async |= re_validate_any_async;
 
+    let create_re_validate_emitted =
+        !re_validate_items.is_empty() || !create_virtual.re_validate_items.is_empty();
     let create_re_validate_phase = {
         let items: Vec<AsyncPhaseItem> = re_validate_items
             .clone()
             .into_iter()
             .chain(create_virtual.re_validate_items.clone())
             .collect();
-        emit_async_phase(items, &create_virtual.ctx_rebuild)
+        emit_async_phase(items)
     };
+    let create_sanitize_reads_ctx = !create_virtual.sanitize_phase.is_empty();
     let create_virtual_sanitize_phase = create_virtual.sanitize_phase.clone();
 
     let post_validate_options: Vec<_> = options
@@ -3906,42 +3923,39 @@ fn generate_model(
                     // below must match that, not the internal field name.
                     let name_str = external_field_name(f);
                     let is_virtual = matches!(f.field_type, FieldType::Virtual { .. });
-                    let create_output_update = if is_virtual {
-                        quote! {}
-                    } else {
-                        quote! {
-                            if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
-                                output.#input_name = ::core::option::Option::Some(__v.clone());
+                    // `__post_updates` is owned here, so each value is moved
+                    // into its last destination rather than cloned.
+                    let setter = format_ident!("set_{}", name);
+                    let (create_stmt, update_stmt) = if is_virtual {
+                        let stmt = quote! {
+                            if let ::core::option::Option::Some(__v) = __post_updates.#input_name {
+                                input.#input_name = ::core::option::Option::Some(__v);
                             }
-                        }
-                    };
-                    let update_output_update = if is_virtual {
-                        quote! {}
+                        };
+                        (stmt.clone(), stmt)
                     } else {
-                        let setter = format_ident!("set_{}", name);
-                        quote! {
-                            if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
-                                if &output.#input_name != __v {
-                                    output.#input_name = __v.clone();
-                                    __changes.#setter(__v.clone());
+                        (
+                            quote! {
+                                if let ::core::option::Option::Some(__v) = __post_updates.#input_name {
+                                    input.#input_name = ::core::option::Option::Some(__v.clone());
+                                    output.#input_name = ::core::option::Option::Some(__v);
                                 }
-                            }
-                        }
+                            },
+                            quote! {
+                                if let ::core::option::Option::Some(__v) = __post_updates.#input_name {
+                                    if &output.#input_name != &__v {
+                                        output.#input_name = __v.clone();
+                                        __changes.#setter(__v.clone());
+                                    }
+                                    input.#input_name = ::core::option::Option::Some(__v);
+                                }
+                            },
+                        )
                     };
                     (
                         name_str,
-                        quote! {
-                            if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
-                                input.#input_name = ::core::option::Option::Some(__v.clone());
-                            }
-                            #create_output_update
-                        },
-                        quote! {
-                            if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
-                                input.#input_name = ::core::option::Option::Some(__v.clone());
-                            }
-                            #update_output_update
-                        },
+                        create_stmt,
+                        update_stmt,
                         (f.name.clone(), is_virtual),
                     )
                 })
@@ -3978,11 +3992,8 @@ fn generate_model(
     let build_post_validate_phase =
         |handler_for: &dyn Fn(&PostValidateGroupInfo) -> Option<proc_macro2::TokenStream>,
          apply_updates_for: &dyn Fn(&PostValidateGroupInfo) -> &[proc_macro2::TokenStream],
-         changes_expr: &proc_macro2::TokenStream,
-         previous_values_expr: &proc_macro2::TokenStream,
-         raw_input_expr: &proc_macro2::TokenStream,
          relevance_guard_for: &dyn Fn(&PostValidateGroupInfo) -> proc_macro2::TokenStream|
-         -> proc_macro2::TokenStream {
+         -> (proc_macro2::TokenStream, bool) {
             let items: Vec<AsyncPhaseItem> = post_validate_groups
             .iter()
             .filter_map(|g| {
@@ -4029,16 +4040,8 @@ fn generate_model(
                 Some(AsyncPhaseItem { is_async, value_expr, apply })
             })
             .collect();
-            let ctx_rebuild = quote! {
-                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    #raw_input_expr,
-                    ::core::convert::Into::into(output.clone()),
-                    #changes_expr,
-                    #previous_values_expr,
-                );
-            };
-            emit_async_phase(items, &ctx_rebuild)
+            let emitted = !items.is_empty();
+            (emit_async_phase(items), emitted)
         };
 
     // Both guards match `rs/`'s `post_validate`, which only runs a group if
@@ -4090,38 +4093,30 @@ fn generate_model(
         quote! { (#(#flags)||*) }
     };
 
-    let post_validate_create_pre_phase = build_post_validate_phase(
-        &|g| g.pre_validate.clone(),
-        &|g| &g.create_apply_updates,
-        &quote!(::core::option::Option::None),
-        &quote!(::core::option::Option::None),
-        &quote!(__original_input.clone()),
-        &create_group_relevance_guard,
-    );
-    let post_validate_create_main_phase = build_post_validate_phase(
-        &|g| Some(g.handler.clone()),
-        &|g| &g.create_apply_updates,
-        &quote!(::core::option::Option::None),
-        &quote!(::core::option::Option::None),
-        &quote!(__original_input.clone()),
-        &create_group_relevance_guard,
-    );
-    let post_validate_update_pre_phase = build_post_validate_phase(
-        &|g| g.pre_validate.clone(),
-        &|g| &g.update_apply_updates,
-        &quote!(::core::option::Option::Some(__changes.clone())),
-        &quote!(::core::option::Option::Some(__original_output.clone())),
-        &quote!(updates.clone()),
-        &update_group_relevance_guard,
-    );
-    let post_validate_update_main_phase = build_post_validate_phase(
-        &|g| Some(g.handler.clone()),
-        &|g| &g.update_apply_updates,
-        &quote!(::core::option::Option::Some(__changes.clone())),
-        &quote!(::core::option::Option::Some(__original_output.clone())),
-        &quote!(updates.clone()),
-        &update_group_relevance_guard,
-    );
+    let (post_validate_create_pre_phase, post_validate_create_pre_emitted) =
+        build_post_validate_phase(
+            &|g| g.pre_validate.clone(),
+            &|g| &g.create_apply_updates,
+            &create_group_relevance_guard,
+        );
+    let (post_validate_create_main_phase, post_validate_create_main_emitted) =
+        build_post_validate_phase(
+            &|g| Some(g.handler.clone()),
+            &|g| &g.create_apply_updates,
+            &create_group_relevance_guard,
+        );
+    let (post_validate_update_pre_phase, post_validate_update_pre_emitted) =
+        build_post_validate_phase(
+            &|g| g.pre_validate.clone(),
+            &|g| &g.update_apply_updates,
+            &update_group_relevance_guard,
+        );
+    let (post_validate_update_main_phase, post_validate_update_main_emitted) =
+        build_post_validate_phase(
+            &|g| Some(g.handler.clone()),
+            &|g| &g.update_apply_updates,
+            &update_group_relevance_guard,
+        );
 
     let post_validate_any_async = post_validate_groups.iter().any(|g| {
         let ctx_expr = quote!(ctx);
@@ -4257,7 +4252,8 @@ fn generate_model(
         field_level.into_iter().chain(grouped).collect()
     };
     update_has_async |= update_ignore_items.iter().any(|i| i.is_async);
-    let update_ignore_evaluations = emit_async_phase(update_ignore_items, &quote! {});
+    let update_ignore_reads_ctx = !update_ignore_items.is_empty();
+    let update_ignore_evaluations = emit_async_phase(update_ignore_items);
 
     let bare_ignore_update_names: std::collections::HashSet<String> =
         bare_ignore_update_field_names
@@ -4316,9 +4312,9 @@ fn generate_model(
         let unchanged_guard = if matches!(f.field_type, FieldType::Virtual { .. }) {
             quote! { true }
         } else {
+            // `output` still holds the stored record when relevance is decided
             quote! {
-                updates.#input_name.as_ref()
-                    != ::core::option::Option::Some(&__original_output.#name)
+                updates.#input_name.as_ref() != ::core::option::Option::Some(&output.#name)
             }
         };
         quote! {
@@ -4330,13 +4326,15 @@ fn generate_model(
     };
     let update_relevant_field_checks: Vec<proc_macro2::TokenStream> = fields
         .iter()
-        .filter(|f| {
-            matches!(
-                f.field_type,
-                FieldType::Required | FieldType::Lax | FieldType::Virtual { .. }
-            )
+        .filter_map(|f| match f.field_type {
+            // already computed into `__update_relevant_*` (see below)
+            FieldType::Required | FieldType::Lax => {
+                let flag = format_ident!("__update_relevant_{}", f.name);
+                Some(quote! { #flag })
+            }
+            FieldType::Virtual { .. } => Some(update_field_relevant_check(f)),
+            _ => None,
         })
-        .map(update_field_relevant_check)
         .collect();
 
     // `__update_relevant_{name}` flags, one per required/lax field, declared
@@ -4392,12 +4390,7 @@ fn generate_model(
         }
     };
 
-    let update_virtual = build_virtual_pipeline(
-        &update_virtual_ignore_flag_for,
-        &quote!(::core::option::Option::Some(__changes.clone())),
-        &quote!(::core::option::Option::Some(__original_output.clone())),
-        &quote!(updates.clone()),
-    );
+    let update_virtual = build_virtual_pipeline(&update_virtual_ignore_flag_for);
     update_has_async |= update_virtual.any_async;
 
     // Conditional required checks for update (mirrors create logic but uses
@@ -4477,7 +4470,8 @@ fn generate_model(
         grouped.into_iter().chain(field_level).collect()
     };
     update_has_async |= update_required_items.iter().any(|i| i.is_async);
-    let update_required_evaluations = emit_async_phase(update_required_items, &quote! {});
+    let update_required_reads_ctx = !update_required_items.is_empty();
+    let update_required_evaluations = emit_async_phase(update_required_items);
 
     // Validate pass for updated required/lax fields. `#[sanitize]` is rejected
     // by the field-attribute whitelist on both field types, so it never
@@ -4496,32 +4490,9 @@ fn generate_model(
             let ty_tokens = quote!(#ty);
             let validator = attr_value_tokens(&f.attrs, "validate");
 
-            let ignore_update_flag = if update_ignore_field_names.contains(&name_str) {
-                let flag = format_ident!("ignore_update_{}", name);
-                quote! { #flag }
-            } else {
-                quote! { false }
-            };
-            let is_readonly = find_attr(&f.attrs, "readonly").is_some();
-            // `#[readonly]` on `#[required]` blocks every update outright;
-            // on `#[lax]` it only allows an update while the stored value
-            // still equals the static default.
-            let readonly_guard = if is_readonly {
-                match &f.field_type {
-                    FieldType::Lax => {
-                        let default_expr = attr_value_tokens(&f.attrs, "lax")
-                            .expect("lax fields always have a default (checked during validation)");
-                        quote! { output.#name == #default_expr }
-                    }
-                    _ => quote! { false },
-                }
-            } else {
-                quote! { true }
-            };
-
             let mut is_async = false;
             let validated_expr = if let Some(ref validator) = validator {
-                let value_expr = quote!(__value.clone());
+                let value_expr = quote!(v.clone());
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (a, call) =
@@ -4532,14 +4503,15 @@ fn generate_model(
                         ::core::result::Result::Ok(::core::option::Option::Some(__v)) => {
                             ::core::result::Result::Ok(__v)
                         }
+                        // the validator kept the value as submitted
                         ::core::result::Result::Ok(::core::option::Option::None) => {
-                            ::core::result::Result::Ok(__value)
+                            ::core::result::Result::Ok(v.clone())
                         }
                         ::core::result::Result::Err(e) => ::core::result::Result::Err(e),
                     }
                 }
             } else {
-                quote! { ::core::result::Result::Ok(__value) }
+                quote! { ::core::result::Result::Ok(v.clone()) }
             };
 
             // Matches `rs/`'s `filter_input_fields_allowed`: a field that's
@@ -4550,10 +4522,10 @@ fn generate_model(
             // submitted. It still counts as "attempted" (`rs/`'s broader
             // `fields_provided`, used for `on_failure` trigger relevance),
             // just with no value change and no validator call.
+            let relevant_flag = format_ident!("__update_relevant_{}", name);
             let value_expr = quote! {
                 if let ::core::option::Option::Some(v) = &updates.#input_name {
-                    if !#ignore_update_flag && #readonly_guard && v != &__original_output.#name {
-                        let __value: #ty_tokens = v.clone();
+                    if #relevant_flag {
                         (true, ::core::option::Option::Some(#validated_expr))
                     } else {
                         (true, ::core::option::Option::None)
@@ -4593,6 +4565,13 @@ fn generate_model(
     // Validate is one combined phase across every field type: required/lax
     // (`update_assignment_items`) and virtual fields' validators are batched
     // together, not run as two separate sequential passes.
+    let update_validate_emitted =
+        !update_virtual.validate_items.is_empty() || !update_assignment_items.is_empty();
+    let update_validate_reads_ctx = !update_virtual.validate_items.is_empty()
+        || fields.iter().any(|f| {
+            matches!(f.field_type, FieldType::Required | FieldType::Lax)
+                && find_attr(&f.attrs, "validate").is_some()
+        });
     let update_validate_phase = {
         let items: Vec<AsyncPhaseItem> = update_virtual
             .validate_items
@@ -4601,7 +4580,7 @@ fn generate_model(
             .chain(update_assignment_items)
             .collect();
         let setup = &update_virtual.setup;
-        let phase = emit_async_phase(items, &update_virtual.ctx_rebuild);
+        let phase = emit_async_phase(items);
         quote! { #setup #phase }
     };
 
@@ -4610,13 +4589,14 @@ fn generate_model(
     // the comment on `build_re_validate_items` above) and virtual fields'
     // re-validators, batched together as one combined phase, same as
     // validate above.
-    let update_re_validate_phase = {
-        let items: Vec<AsyncPhaseItem> = build_re_validate_items(&update_relevant_flag_for, false)
+    let update_re_validate_phase_items: Vec<AsyncPhaseItem> =
+        build_re_validate_items(&update_relevant_flag_for, false)
             .into_iter()
             .chain(update_virtual.re_validate_items.clone())
             .collect();
-        emit_async_phase(items, &update_virtual.ctx_rebuild)
-    };
+    let update_re_validate_emitted = !update_re_validate_phase_items.is_empty();
+    let update_re_validate_phase = emit_async_phase(update_re_validate_phase_items);
+    let update_sanitize_reads_ctx = !update_virtual.sanitize_phase.is_empty();
     let update_virtual_sanitize_phase = update_virtual.sanitize_phase.clone();
 
     // A virtual field that is ignored on update still counts as an attempted update,
@@ -4642,34 +4622,30 @@ fn generate_model(
         })
         .collect();
 
-    let change_recompute_fields: Vec<_> = fields
-        .iter()
-        .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
-        .collect();
-    let change_field_names = change_recompute_fields.iter().map(|f| &f.name);
-    let change_field_setters = change_recompute_fields
-        .iter()
-        .map(|f| format_ident!("set_{}", f.name));
-
-    // Matches `rs/`'s `evaluate_update_validity`: once a required/lax field's
-    // *value* turns out unchanged from what's already stored (recomputed
-    // above into `__changes`), `input()` must stop reporting it as provided
-    // too, not just `changes()` -- `raw_input()` still shows exactly what
-    // the caller submitted. Only required/lax fields have a corresponding
-    // `PartialInput` slot to unset here; dependent/constant/timestamp fields
-    // (also non-virtual) aren't part of the input at all. Virtual fields are
-    // deliberately excluded (matching `rs/`'s `is_virtual` skip): a virtual
-    // field's dependent(s) haven't resolved yet at this point in the
-    // pipeline, so whether it "actually changed" can't be determined until
-    // dependent resolution runs.
-    let input_strip_unchanged_fields: Vec<_> = fields
+    // After post-validate, `changes` is recomputed from scratch. Only
+    // required/lax fields can differ from the stored record at that point
+    // (dependents and timestamps are resolved later, constants never change).
+    // Matching `rs/`'s `evaluate_update_validity`, a required/lax field whose
+    // value turns out unchanged must also stop being reported by `input()`,
+    // not just `changes()` (`raw_input()` still shows what was submitted).
+    // Virtual fields are skipped (as in `rs/`): their dependents haven't
+    // resolved yet, so whether they changed anything isn't known here.
+    let change_recompute_stmts: Vec<_> = fields
         .iter()
         .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax))
+        .map(|f| {
+            let name = &f.name;
+            let setter = format_ident!("set_{}", name);
+            let input_name = input_field_name(f);
+            quote! {
+                if &__original_output.#name != &output.#name {
+                    __changes.#setter(output.#name.clone());
+                } else {
+                    input.#input_name = ::core::option::Option::None;
+                }
+            }
+        })
         .collect();
-    let input_strip_unchanged_output_names = input_strip_unchanged_fields.iter().map(|f| &f.name);
-    let input_strip_unchanged_input_names = input_strip_unchanged_fields
-        .iter()
-        .map(|f| input_field_name(f));
 
     // Same per-field pieces as before, but grouped into dependency levels: level
     // 0 depends only on non-dependent fields (already fully resolved before
@@ -4824,9 +4800,23 @@ fn generate_model(
         }
     };
 
+    // Nothing reads `ctx` after the last dependent is resolved (timestamps
+    // don't, and triggers build their own), so no rebuild follows it.
+    let dependent_update_level_count = dependent_update_levels.len();
     let dependent_update_phase: Vec<proc_macro2::TokenStream> = dependent_update_levels
         .into_iter()
-        .map(|level_infos| {
+        .enumerate()
+        .map(|(level_index, level_infos)| {
+            let is_last_level = level_index + 1 == dependent_update_level_count;
+            let update_rebuild = quote! {
+                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    updates.clone(),
+                    ::core::convert::Into::into(output.clone()),
+                    ::core::option::Option::Some(__changes.clone()),
+                    ::core::option::Option::Some(__original_output.clone()),
+                );
+            };
             let async_count = level_infos
                 .iter()
                 .filter(|d| resolver_is_async(&d.resolver))
@@ -4835,12 +4825,24 @@ fn generate_model(
 
             if async_count < 2 {
                 // Sequential codegen, unchanged from before level-grouping.
-                let stmts = level_infos.iter().map(|d| {
+                let level_len = level_infos.len();
+                let stmts = level_infos.iter().enumerate().map(|(i, d)| {
                     let DependentUpdateInfo {
-                        name, ty, setter, ignore_update_flag, parent_guard, readonly_guard, resolver,
+                        name,
+                        ty,
+                        setter,
+                        ignore_update_flag,
+                        parent_guard,
+                        readonly_guard,
+                        resolver,
                     } = d;
                     let ctx_expr = quote!(ctx.clone());
                     let resolver_expr = resolver_call_expr(resolver, &ctx_expr);
+                    let rebuild = if is_last_level && i + 1 == level_len {
+                        quote! {}
+                    } else {
+                        update_rebuild.clone()
+                    };
                     quote! {
                         if #parent_guard {
                             __update_attempted = true;
@@ -4849,13 +4851,7 @@ fn generate_model(
                                 if &__new_value != &__original_output.#name {
                                     output.#name = __new_value.clone();
                                     __changes.#setter(__new_value);
-                                    ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                                        input.clone(),
-                                        updates.clone(),
-                                        ::core::convert::Into::into(output.clone()),
-                                        ::core::option::Option::Some(__changes.clone()),
-                                        ::core::option::Option::Some(__original_output.clone()),
-                                    );
+                                    #rebuild
                                 }
                             }
                         }
@@ -4875,8 +4871,15 @@ fn generate_model(
             let value_exprs: Vec<_> = level_infos
                 .iter()
                 .map(|d| {
-                    let DependentUpdateInfo { ty, ignore_update_flag, parent_guard, readonly_guard, resolver, .. } = d;
-                    let ctx_expr = quote!(__round_ctx.clone());
+                    let DependentUpdateInfo {
+                        ty,
+                        ignore_update_flag,
+                        parent_guard,
+                        readonly_guard,
+                        resolver,
+                        ..
+                    } = d;
+                    let ctx_expr = quote!(ctx.clone());
                     let resolver_expr = resolver_call_expr(resolver, &ctx_expr);
                     quote! {
                         if #parent_guard {
@@ -4896,7 +4899,8 @@ fn generate_model(
             let mut level_bindings = Vec::new();
             let mut async_exprs = Vec::new();
             let mut async_idents = Vec::new();
-            for ((d, ident), value_expr) in level_infos.iter().zip(&result_idents).zip(&value_exprs) {
+            for ((d, ident), value_expr) in level_infos.iter().zip(&result_idents).zip(&value_exprs)
+            {
                 if resolver_is_async(&d.resolver) {
                     async_exprs.push(quote! { async { #value_expr } });
                     async_idents.push(ident.clone());
@@ -4908,6 +4912,11 @@ fn generate_model(
                 let (#(#async_idents),*) = ::ivo::futures_util_join!(#(#async_exprs),*);
             };
 
+            let mark_level_changed = if is_last_level {
+                quote! {}
+            } else {
+                quote! { __level_changed = true; }
+            };
             let applies = level_infos.iter().zip(&result_idents).map(|(d, ident)| {
                 let DependentUpdateInfo { name, setter, .. } = d;
                 quote! {
@@ -4919,24 +4928,33 @@ fn generate_model(
                         if &__new_value != &__original_output.#name {
                             output.#name = __new_value.clone();
                             __changes.#setter(__new_value);
+                            #mark_level_changed
                         }
                     }
                 }
             });
 
+            // Every resolver in a level reads the same snapshot; the next
+            // level only needs a new one if something in this level changed.
+            let (level_changed_decl, rebuild) = if is_last_level {
+                (quote! {}, quote! {})
+            } else {
+                (
+                    quote! { let mut __level_changed = false; },
+                    quote! {
+                        if __level_changed {
+                            #update_rebuild
+                        }
+                    },
+                )
+            };
             quote! {
                 {
-                    let __round_ctx = ctx.clone();
+                    #level_changed_decl
                     #(#level_bindings)*
                     #join_stmt
                     #(#applies)*
-                    ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                        input.clone(),
-                        updates.clone(),
-                        ::core::convert::Into::into(output.clone()),
-                        ::core::option::Option::Some(__changes.clone()),
-                        ::core::option::Option::Some(__original_output.clone()),
-                    );
+                    #rebuild
                 }
             }
         })
@@ -5059,7 +5077,7 @@ fn generate_model(
             .collect();
 
         let delete_is_async = on_delete_items.iter().any(|i| i.is_async);
-        let on_delete_body = emit_async_phase(on_delete_items, &quote! {});
+        let on_delete_body = emit_async_phase(on_delete_items);
 
         let delete_sig = if delete_is_async {
             quote! { pub async fn delete }
@@ -5269,10 +5287,10 @@ fn generate_model(
                 let condition = if o.fields.is_empty() {
                     quote! { true }
                 } else {
-                    let checks = o
-                        .fields
-                        .iter()
-                        .map(|f| quote! { __triggered_fields.contains(#f) });
+                    let checks = o.fields.iter().map(|f| {
+                        let flag = format_ident!("__triggered_{}", f);
+                        quote! { #flag }
+                    });
                     quote! { (#(#checks)||*) }
                 };
                 let call = if is_async {
@@ -5336,79 +5354,47 @@ fn generate_model(
     let create_failure_is_async = create_failure_items.iter().any(|i| i.is_async);
     let update_failure_is_async = update_failure_items.iter().any(|i| i.is_async);
 
-    let create_triggered_fields_init = if grouped_on_success_options.is_empty() {
-        quote! {}
-    } else {
-        let non_virtual_field_names: Vec<String> = fields
+    // Whether each field named by a grouped `#[on_success([...], ..)]` is part
+    // of the success payload, as one `bool` per field (only those fields).
+    let triggered_field_names: std::collections::BTreeSet<&str> = grouped_on_success_options
+        .iter()
+        .flat_map(|o| o.fields.iter().map(String::as_str))
+        .collect();
+    let triggered_fields = || {
+        fields
             .iter()
-            .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
-            .map(|f| f.name.to_string())
-            .collect();
-        let virtual_provided_checks: Vec<_> = fields
-            .iter()
-            .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
-            .map(|f| {
-                let input_name = input_field_name(f);
-                let name_str = f.name.to_string();
-                quote! {
-                    if input.#input_name.is_some() {
-                        __triggered_fields.insert(#name_str);
-                    }
-                }
-            })
-            .collect();
-        quote! {
-            let mut __triggered_fields: ::std::collections::HashSet<&'static str> =
-                ::std::collections::HashSet::new();
-            #(
-                __triggered_fields.insert(#non_virtual_field_names);
-            )*
-            #(#virtual_provided_checks)*
-        }
+            .filter(|f| triggered_field_names.contains(f.name.to_string().as_str()))
     };
-
-    let update_triggered_fields_init = if grouped_on_success_options.is_empty() {
-        quote! {}
-    } else {
-        let non_virtual_checks: Vec<_> = fields
-            .iter()
-            .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
-            .map(|f| {
-                let name = &f.name;
-                let name_str = name.to_string();
-                quote! {
-                    if __trigger_changes.#name.is_some() {
-                        __triggered_fields.insert(#name_str);
-                    }
-                }
-            })
-            .collect();
-        let virtual_provided_checks: Vec<_> = fields
-            .iter()
-            .filter(|f| matches!(f.field_type, FieldType::Virtual { .. }))
-            .map(|f| {
+    let create_triggered_fields_init: Vec<_> = triggered_fields()
+        .map(|f| {
+            let flag = format_ident!("__triggered_{}", f.name);
+            if matches!(f.field_type, FieldType::Virtual { .. }) {
                 let input_name = input_field_name(f);
-                let name_str = f.name.to_string();
-                let ignore_flag = if update_ignore_field_names.contains(&name_str) {
+                quote! { let #flag = input.#input_name.is_some(); }
+            } else {
+                // every non-virtual field is part of a created record
+                quote! { let #flag = true; }
+            }
+        })
+        .collect();
+    let update_triggered_fields_init: Vec<_> = triggered_fields()
+        .map(|f| {
+            let flag = format_ident!("__triggered_{}", f.name);
+            let name = &f.name;
+            if matches!(f.field_type, FieldType::Virtual { .. }) {
+                let input_name = input_field_name(f);
+                let ignore_flag = if update_ignore_field_names.contains(&f.name.to_string()) {
                     let flag = format_ident!("ignore_update_{}", f.name);
                     quote! { #flag }
                 } else {
                     quote! { false }
                 };
-                quote! {
-                    if !#ignore_flag && updates.#input_name.is_some() {
-                        __triggered_fields.insert(#name_str);
-                    }
-                }
-            })
-            .collect();
-        quote! {
-            let mut __triggered_fields: ::std::collections::HashSet<&'static str> =
-                ::std::collections::HashSet::new();
-            #(#non_virtual_checks)*
-            #(#virtual_provided_checks)*
-        }
-    };
+                quote! { let #flag = !#ignore_flag && updates.#input_name.is_some(); }
+            } else {
+                quote! { let #flag = __trigger_changes.#name.is_some(); }
+            }
+        })
+        .collect();
 
     // Multiple hooks of the same kind (e.g. two `#[on_success]` on different
     // fields) are independent by design, so `emit_async_phase` batches them
@@ -5420,7 +5406,7 @@ fn generate_model(
                 return quote! { ::ivo::__ivo_internals::ivo_sync_trigger(|| {}) };
             }
             let is_async = items.iter().any(|i| i.is_async);
-            let body = emit_async_phase(items, &quote! {});
+            let body = emit_async_phase(items);
             if is_async {
                 quote! {
                     {
@@ -5454,14 +5440,15 @@ fn generate_model(
     // what the caller actually submitted regardless of later rewrites).
     let create_success_trigger = {
         let setup = quote! {
-            let __trigger_input = input.clone();
+            let _ctx_options = _rw_ctx_options.__read_only();
             let __trigger_raw_input = __original_input.clone();
-            let __trigger_output = output.clone();
-            #create_triggered_fields_init
+            #(#create_triggered_fields_init)*
+            // built right before `create` returns: `input` is no longer
+            // needed, `output` is (it's returned)
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                __trigger_input.clone(),
+                input,
                 __trigger_raw_input.clone(),
-                ::core::convert::Into::into(__trigger_output.clone()),
+                ::core::convert::Into::into(output.clone()),
                 ::core::option::Option::None,
                 ::core::option::Option::None,
             );
@@ -5471,13 +5458,14 @@ fn generate_model(
 
     let create_failure_trigger = {
         let setup = quote! {
-            let __trigger_input = input.clone();
+            let _ctx_options = _rw_ctx_options.__read_only();
             let __trigger_raw_input = __original_input.clone();
-            let __trigger_output = output.clone();
+            // built right before `create` returns an error: neither `input`
+            // nor `output` is needed afterwards
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                __trigger_input.clone(),
+                input,
                 __trigger_raw_input.clone(),
-                ::core::convert::Into::into(__trigger_output.clone()),
+                ::core::convert::Into::into(output),
                 ::core::option::Option::None,
                 ::core::option::Option::None,
             );
@@ -5487,14 +5475,15 @@ fn generate_model(
 
     let update_success_trigger = {
         let setup = quote! {
-            let __trigger_input = input.clone();
+            let _ctx_options = _rw_ctx_options.__read_only();
             let __trigger_raw_input = updates.clone();
-            let __trigger_output = output.clone();
-            #update_triggered_fields_init
+            #(#update_triggered_fields_init)*
+            // built right before `update` returns `__changes`: `input` and
+            // `output` are no longer needed
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                __trigger_input.clone(),
+                input,
                 __trigger_raw_input.clone(),
-                ::core::convert::Into::into(__trigger_output.clone()),
+                ::core::convert::Into::into(output),
                 ::core::option::Option::Some(__trigger_changes.clone()),
                 ::core::option::Option::Some(__original_output.clone()),
             );
@@ -5504,14 +5493,15 @@ fn generate_model(
 
     let update_failure_trigger = {
         let setup = quote! {
-            let __trigger_input = input.clone();
+            let _ctx_options = _rw_ctx_options.__read_only();
             let __trigger_raw_input = updates.clone();
-            let __trigger_output = output.clone();
+            // built right before `update` returns an error: none of `input`,
+            // `output` or the changes are needed afterwards
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                __trigger_input.clone(),
+                input,
                 __trigger_raw_input.clone(),
-                ::core::convert::Into::into(__trigger_output.clone()),
-                ::core::option::Option::Some(__trigger_changes.clone()),
+                ::core::convert::Into::into(output),
+                ::core::option::Option::Some(__trigger_changes),
                 ::core::option::Option::Some(__original_output.clone()),
             );
         };
@@ -5528,18 +5518,6 @@ fn generate_model(
         quote! { pub async fn update }
     } else {
         quote! { pub fn update }
-    };
-
-    let create_options_read = if create_has_async {
-        quote! { _rw_ctx_options.read().await }
-    } else {
-        quote! { _rw_ctx_options.read_sync() }
-    };
-
-    let update_options_read = if update_has_async {
-        quote! { _rw_ctx_options.read().await }
-    } else {
-        quote! { _rw_ctx_options.read_sync() }
     };
 
     // Fail fast: errors from any single phase (missing-required, validate,
@@ -5561,19 +5539,19 @@ fn generate_model(
     };
     let create_error_check = quote! {
         if !errors.is_empty() {
-            let __opts_guard = #create_options_read;
-            let __return_opts = (*__opts_guard).clone();
-            let __payload = <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                errors, &*__opts_guard,
-            );
             #create_failure_let
+            let __return_opts = _rw_ctx_options.__into_inner_or_clone();
+            let __payload = <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
+                errors, &__return_opts,
+            );
             return ::core::result::Result::Err((__payload, __return_opts #create_failure_extra));
         }
     };
     let (update_failure_let, update_failure_extra) = if has_failure_handlers {
         (
             quote! {
-                let __trigger_changes = __changes.clone();
+                // the changes aren't returned on failure
+                let __trigger_changes = __changes;
                 let __failure_trigger = #update_failure_trigger;
             },
             quote! { , __failure_trigger },
@@ -5583,14 +5561,13 @@ fn generate_model(
     };
     let update_error_check = quote! {
         if !errors.is_empty() {
-            let __opts_guard = #update_options_read;
-            let __return_opts = (*__opts_guard).clone();
+            #update_failure_let
+            let __return_opts = _rw_ctx_options.__into_inner_or_clone();
             let __payload = ::core::option::Option::Some(
                 <#error_sanitizer_ty as ::ivo::__ivo_internals::IvoErrorSanitizer<#ctx_options_ty>>::sanitize(
-                    errors, &*__opts_guard,
+                    errors, &__return_opts,
                 ),
             );
-            #update_failure_let
             return ::core::result::Result::Err((__payload, __return_opts #update_failure_extra));
         }
     };
@@ -5609,22 +5586,159 @@ fn generate_model(
     // `on_failure` triggers read `__changes` at the point of failure, and
     // checking right after this phase (before that recompute runs) would
     // make them observe stale, pre-recompute state instead.
+    // `ctx` is only rebuilt where some later handler reads it (see
+    // `observed_rebuilds`), and after a phase's fail-fast check, so a failing
+    // call never builds a snapshot just to drop it.
+    let create_rebuild = quote! {
+        ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+            input.clone(),
+            __original_input.clone(),
+            ::core::convert::Into::into(output.clone()),
+            ::core::option::Option::None,
+            ::core::option::Option::None,
+        );
+    };
+    let update_rebuild = quote! {
+        ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+            input.clone(),
+            updates.clone(),
+            ::core::convert::Into::into(output.clone()),
+            ::core::option::Option::Some(__changes.clone()),
+            ::core::option::Option::Some(__original_output.clone()),
+        );
+    };
+
+    let mut create_steps = vec![
+        CtxStep::Rebuild("seed"),
+        CtxStep::Read(create_required_reads_ctx),
+        CtxStep::Read(create_validate_reads_ctx),
+    ];
+    for (name, emitted, next_reads) in [
+        (
+            "validate",
+            create_validate_emitted,
+            create_re_validate_emitted,
+        ),
+        (
+            "re_validate",
+            create_re_validate_emitted,
+            post_validate_create_pre_emitted,
+        ),
+        (
+            "post_validate_pre",
+            post_validate_create_pre_emitted,
+            post_validate_create_main_emitted,
+        ),
+        (
+            "post_validate_main",
+            post_validate_create_main_emitted,
+            false,
+        ),
+    ] {
+        if emitted {
+            create_steps.push(CtxStep::Rebuild(name));
+        }
+        create_steps.push(CtxStep::Read(next_reads));
+    }
+    create_steps.extend([
+        CtxStep::Read(create_sanitize_reads_ctx),
+        CtxStep::Read(create_dependent_defaults_read_ctx),
+        CtxStep::Rebuild("before_dependents"),
+        CtxStep::Read(has_dependents),
+        CtxStep::Read(create_constants_read_ctx),
+    ]);
+    let create_observed = observed_rebuilds(&create_steps);
+    let create_rebuild_at = |name: &str| {
+        if create_observed.contains(name) {
+            create_rebuild.clone()
+        } else {
+            quote! {}
+        }
+    };
+
+    let mut update_steps = vec![
+        CtxStep::Rebuild("init"),
+        CtxStep::Read(update_ignore_reads_ctx),
+        CtxStep::Read(update_required_reads_ctx),
+        CtxStep::Read(update_validate_reads_ctx),
+    ];
+    // `update`'s post-validate phases run against their own scratch `ctx`
+    // (see `update_post_validate_phase`), so they never read this one.
+    for (name, emitted, next_reads) in [
+        (
+            "validate",
+            update_validate_emitted,
+            update_re_validate_emitted,
+        ),
+        ("re_validate", update_re_validate_emitted, false),
+    ] {
+        if emitted {
+            update_steps.push(CtxStep::Rebuild(name));
+        }
+        update_steps.push(CtxStep::Read(next_reads));
+    }
+    update_steps.extend([
+        CtxStep::Read(update_sanitize_reads_ctx),
+        CtxStep::Rebuild("before_dependents"),
+        CtxStep::Read(has_dependents),
+    ]);
+    let update_observed = observed_rebuilds(&update_steps);
+    let update_rebuild_at = |name: &str| {
+        if update_observed.contains(name) {
+            update_rebuild.clone()
+        } else {
+            quote! {}
+        }
+    };
+
+    let create_seed_phase = {
+        let rebuild = create_rebuild_at("seed");
+        quote! { #create_seed_phase #rebuild }
+    };
     let create_required_phase = quote! { #create_required_phase #create_error_check };
     let update_required_phase = quote! { #update_required_evaluations #update_error_check };
-    let create_validate_phase = quote! { #create_validate_phase #create_error_check };
-    let create_re_validate_phase = quote! { #create_re_validate_phase #create_error_check };
-    let post_validate_create_pre_phase =
-        quote! { #post_validate_create_pre_phase #create_error_check };
-    let post_validate_create_main_phase =
-        quote! { #post_validate_create_main_phase #create_error_check };
-    let update_validate_phase = quote! {
-        #update_validate_phase
-        #(#virtual_ignore_update_attempts)*
-        #update_error_check
+    let create_validate_phase = {
+        let rebuild = create_rebuild_at("validate");
+        quote! { #create_validate_phase #create_error_check #rebuild }
     };
-    let update_re_validate_phase = quote! { #update_re_validate_phase #update_error_check };
-    let post_validate_update_pre_phase =
-        quote! { #post_validate_update_pre_phase #update_error_check };
+    let create_re_validate_phase = {
+        let rebuild = create_rebuild_at("re_validate");
+        quote! { #create_re_validate_phase #create_error_check #rebuild }
+    };
+    let post_validate_create_pre_phase = {
+        let rebuild = create_rebuild_at("post_validate_pre");
+        quote! { #post_validate_create_pre_phase #create_error_check #rebuild }
+    };
+    let post_validate_create_main_phase = {
+        let rebuild = create_rebuild_at("post_validate_main");
+        quote! { #post_validate_create_main_phase #create_error_check #rebuild }
+    };
+    let create_before_dependents_rebuild = create_rebuild_at("before_dependents");
+    let update_initial_ctx = update_rebuild_at("init");
+    let update_validate_phase = {
+        let rebuild = update_rebuild_at("validate");
+        quote! {
+            #update_validate_phase
+            #(#virtual_ignore_update_attempts)*
+            #update_error_check
+            #rebuild
+        }
+    };
+    let update_re_validate_phase = {
+        let rebuild = update_rebuild_at("re_validate");
+        quote! { #update_re_validate_phase #update_error_check #rebuild }
+    };
+    let update_before_dependents_rebuild = update_rebuild_at("before_dependents");
+    // Inside `update`'s scratch post-validate scope, the main phase reads the
+    // snapshot taken after the pre phase.
+    let post_validate_update_pre_phase = {
+        let rebuild = if post_validate_update_pre_emitted && post_validate_update_main_emitted {
+            update_rebuild.clone()
+        } else {
+            quote! {}
+        };
+        quote! { #post_validate_update_pre_phase #update_error_check #rebuild }
+    };
 
     // `update`'s post-validate phase, as one self-contained unit: run
     // pre_validate then main validate against a scratch `input`/`ctx` seeded
@@ -5637,44 +5751,40 @@ fn generate_model(
     // check needs the recompute's results -- see the note on
     // `post_validate_create_main_phase` above for why the check can't move
     // any earlier than this.
-    let update_post_validate_phase = quote! {
-        let mut __post_input: #partial_input_name = ::core::default::Default::default();
-        #(#post_input_inits)*
-        {
-            let mut input = __post_input.clone();
-            let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                input.clone(),
-                updates.clone(),
-                ::core::convert::Into::into(output.clone()),
-                ::core::option::Option::Some(__changes.clone()),
-                ::core::option::Option::Some(__original_output.clone()),
-            );
-            #post_validate_update_pre_phase
+    // Only schemas with `#[post_validate]` groups need the scratch scope.
+    let update_post_validate_scope = if post_validate_groups.is_empty() {
+        quote! {}
+    } else {
+        quote! {
+            let mut __post_input: #partial_input_name = ::core::default::Default::default();
+            #(#post_input_inits)*
+            {
+                let mut input = __post_input;
+                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                    input.clone(),
+                    updates.clone(),
+                    ::core::convert::Into::into(output.clone()),
+                    ::core::option::Option::Some(__changes.clone()),
+                    ::core::option::Option::Some(__original_output.clone()),
+                );
+                #post_validate_update_pre_phase
 
-            #post_validate_update_main_phase
-            __post_input = input;
+                #post_validate_update_main_phase
+            }
         }
+    };
+    let update_post_validate_phase = quote! {
+        #update_post_validate_scope
 
         __changes = ::core::default::Default::default();
-        #(
-            if &__original_output.#change_field_names != &output.#change_field_names {
-                __changes.#change_field_setters(output.#change_field_names.clone());
-            }
-        )*
-        #(
-            if &__original_output.#input_strip_unchanged_output_names
-                == &output.#input_strip_unchanged_output_names
-            {
-                input.#input_strip_unchanged_input_names = ::core::option::Option::None;
-            }
-        )*
+        #(#change_recompute_stmts)*
 
         #update_error_check
     };
 
     let update_nothing_to_update_return = quote! {
-        let __return_opts = (*#update_options_read).clone();
         #update_failure_let
+        let __return_opts = _rw_ctx_options.__into_inner_or_clone();
         return ::core::result::Result::Err((::core::option::Option::None, __return_opts #update_failure_extra));
     };
 
@@ -5683,8 +5793,34 @@ fn generate_model(
     // there's nothing to evaluate at all -- fail with "nothing to update"
     // before even checking for missing required fields, rather than running
     // the whole pipeline against an effectively-empty update.
+    // The stored record's copy, the shared `updates` and the initial `ctx`
+    // are only needed past checkpoint 1, unless ignore handlers (which run
+    // before it) read `ctx`. Deferring them makes a rejected no-op update
+    // nearly free; its failure trigger, if any, builds them itself.
+    let update_shared_setup = quote! {
+        let __original_output = ::std::sync::Arc::new(output.clone());
+        let updates = ::std::sync::Arc::new(updates);
+    };
+    let update_defers_setup = !update_ignore_reads_ctx;
+    let (update_setup_before_checkpoint, update_setup_after_checkpoint) = if update_defers_setup {
+        (
+            quote! {},
+            quote! { #update_shared_setup #update_initial_ctx },
+        )
+    } else {
+        (
+            quote! { #update_shared_setup #update_initial_ctx },
+            quote! {},
+        )
+    };
+    let update_early_return_setup = if update_defers_setup && has_failure_handlers {
+        update_shared_setup.clone()
+    } else {
+        quote! {}
+    };
     let update_early_nothing_to_update_check = quote! {
         if !(#(#update_relevant_field_checks)||*) {
+            #update_early_return_setup
             #update_nothing_to_update_return
         }
     };
@@ -5766,7 +5902,7 @@ fn generate_model(
     };
     let create_initial_ctx = if create_needs_initial_ctx {
         quote! {
-            let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+            ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 input.clone(),
                 __original_input.clone(),
                 ::core::convert::Into::into(output.clone()),
@@ -5794,14 +5930,18 @@ fn generate_model(
                 I: ::core::convert::Into<#partial_input_name>,
             {
                 let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
-                let _ctx_options = _rw_ctx_options.__read_only();
 
                 let mut input: #partial_input_name = input.into();
-                let __original_input = input.clone();
+                // Never mutated, so every ctx shares it rather than cloning it.
+                let __original_input = ::std::sync::Arc::new(input.clone());
                 let mut errors: ::ivo::__ivo_internals::IvoErrorPayload<#metadata_ty> = ::std::collections::HashMap::new();
                 // Built up field by field as the pipeline runs, then converted
                 // into the full output once every field has been set.
                 let mut output: #partial_output_name = ::core::default::Default::default();
+                // One binding, reassigned by every rebuild, so a replaced
+                // snapshot is dropped right away rather than living on in
+                // this function's future until it returns.
+                let mut ctx: ::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>;
                 #create_initial_ctx
 
                 #create_ignore_phase
@@ -5822,13 +5962,7 @@ fn generate_model(
 
                 #create_dependent_defaults_phase
 
-                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    __original_input.clone(),
-                    ::core::convert::Into::into(output.clone()),
-                    ::core::option::Option::None,
-                    ::core::option::Option::None,
-                );
+                #create_before_dependents_rebuild
 
                 #dependent_create_phase
 
@@ -5838,8 +5972,8 @@ fn generate_model(
 
                 let output: #output_name = output.into();
 
-                let __return_opts = (*#create_options_read).clone();
                 #create_success_let
+                let __return_opts = _rw_ctx_options.__into_inner_or_clone();
                 ::core::result::Result::Ok((output, __return_opts #create_success_extra))
             }
 
@@ -5850,20 +5984,16 @@ fn generate_model(
                 _ctx_options: #ctx_options_ty,
             ) -> ::core::result::Result<#update_ok_ty, #update_err_ty> {
                 let _rw_ctx_options = ::ivo::__ivo_internals::IvoRwCtxOptions::new(_ctx_options);
-                let _ctx_options = _rw_ctx_options.__read_only();
 
                 let mut output = existing;
-                let __original_output = output.clone();
                 let mut __changes: #partial_output_name = ::core::default::Default::default();
                 let mut __update_attempted = false;
                 let mut input: #partial_input_name = updates.clone();
-                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    updates.clone(),
-                    ::core::convert::Into::into(output.clone()),
-                    ::core::option::Option::Some(__changes.clone()),
-                    ::core::option::Option::Some(__original_output.clone()),
-                );
+                // One binding, reassigned by every rebuild (see `create`).
+                let mut ctx: ::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>;
+                // `__original_output` and `updates` are never mutated, so
+                // every ctx shares them rather than cloning them.
+                #update_setup_before_checkpoint
 
                 let mut errors: ::ivo::__ivo_internals::IvoErrorPayload<#metadata_ty> =
                     ::std::collections::HashMap::new();
@@ -5873,6 +6003,8 @@ fn generate_model(
                 #(#update_relevant_flag_decls)*
 
                 #update_early_nothing_to_update_check
+
+                #update_setup_after_checkpoint
 
                 #update_required_phase
 
@@ -5885,13 +6017,7 @@ fn generate_model(
                 #update_mid_pipeline_nothing_to_update_check
 
                 #update_virtual_sanitize_phase
-                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    updates.clone(),
-                    ::core::convert::Into::into(output.clone()),
-                    ::core::option::Option::Some(__changes.clone()),
-                    ::core::option::Option::Some(__original_output.clone()),
-                );
+                #update_before_dependents_rebuild
 
                 #(#dependent_update_phase)*
 
@@ -5901,8 +6027,8 @@ fn generate_model(
 
                 #(#timestamp_update_phase)*
 
-                let __return_opts = (*#update_options_read).clone();
                 #update_success_let
+                let __return_opts = _rw_ctx_options.__into_inner_or_clone();
                 ::core::result::Result::Ok((__changes, __return_opts #update_success_extra))
             }
 

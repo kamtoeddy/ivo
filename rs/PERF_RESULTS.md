@@ -118,3 +118,111 @@ once validation has passed. Same machine, `HEAD` before the change vs after, Cri
 
 The remaining cost on all-integer schemas ("create 20 required fields") is the partial
 representation itself (seeding, `Option` wrapping and the final conversion), about 1.5 ns per field.
+
+## Fewer `ctx` rebuilds, clones and allocations (2026-10-18)
+
+`create`/`update` codegen and `IvoContext` changes. Handler-facing APIs are unchanged; only the
+hidden `IvoContext::new` (called by generated code) now takes the shared parts as `Arc`s:
+
+- A `ctx` snapshot is only rebuilt where a later handler reads it, and after a phase's fail-fast
+  check rather than before it.
+- `IvoContext` shares the never-mutated raw input and previous values through `Arc`s instead of
+  cloning them into every snapshot, and each method reassigns a single `ctx` binding so replaced
+  snapshots are dropped right away instead of living on in the method's future.
+- The context options are moved back out on return instead of locked and cloned, and the
+  read-only handle is only created for triggers.
+- Triggers build their `ctx` from the pipeline's state once (moving what's no longer needed)
+  instead of cloning it twice, and grouped `on_success` relevance uses per-field `bool`s instead of
+  a `HashSet`.
+- Dependent resolution tracks changed parents in `[bool; N]` arrays instead of a `HashSet` per
+  round, reuses `ctx` within a round, and skips rebuilds when nothing changed or nothing is left to
+  read them.
+- `update` defers copying the stored record and building its first `ctx` until after the early
+  "nothing to update" check (when no ignore handler reads `ctx`), reuses its relevance flags, and
+  recomputes changes in a single pass.
+- Values handed to validators, sanitizers and post-validate merges are moved instead of cloned
+  twice where the original isn't needed afterwards.
+
+Same machine, `HEAD` (`289776de`) before the change vs after, run one after the other,
+Criterion with `--warm-up-time 1 --measurement-time 3` (`cargo bench --bench throughput` and
+`cargo bench --features validators --bench main_demo`). Times are Criterion's median estimate.
+
+### Throughput
+
+| Benchmark | Before | After | Change |
+| --- | --- | --- | --- |
+| minimal create | 56.71 ns | 28.09 ns | -50.5% |
+| user create | 517.37 ns | 255.96 ns | -50.5% |
+| create 20 required fields (sync validators) | 201.10 ns | 151.70 ns | -24.6% |
+| dependent chain length 10 | 1.44 µs | 403.65 ns | -72.0% |
+| create 10 readonly lax fields | 1.62 µs | 789.21 ns | -51.3% |
+| no-op update | 202.75 ns | 56.65 ns | -72.1% |
+| single field update | 564.10 ns | 181.01 ns | -67.9% |
+
+### Main Demo
+
+| Benchmark | Before | After | Change |
+| --- | --- | --- | --- |
+| main_demo create [fail: required errors (email or phone_number)] | 310.31 ns | 246.25 ns | -20.6% |
+| main_demo create [fail: required errors (email or phone_number, username)] | 281.74 ns | 245.22 ns | -13.0% |
+| main_demo create [fail: validation error (email, slug_id, username)] | 670.43 ns | 410.86 ns | -38.7% |
+| main_demo create [fail: re_validation error (username taken)] | 582.93 ns | 425.43 ns | -27.0% |
+| main_demo create [fail: post-validation error (slug taken)] | 1.77 µs | 1.29 µs | -27.4% |
+| main_demo create [success: 2/4 inputs (a)] | 2.71 µs | 1.53 µs | -43.4% |
+| main_demo create [success: 2/4 inputs (b)] | 2.64 µs | 1.49 µs | -43.6% |
+| main_demo create [success: 3/4 inputs] | 3.13 µs | 1.80 µs | -42.7% |
+| main_demo create [success: 4/4 inputs] | 3.98 µs | 2.19 µs | -45.0% |
+| main_demo update [fail: required error (email or phone_number)] | 961.92 ns | 564.16 ns | -41.4% |
+| main_demo update [fail: validation error (email, slug_id, username)] | 924.14 ns | 503.04 ns | -45.6% |
+| main_demo update [fail: re_validation error (username taken)] | 892.80 ns | 513.25 ns | -42.5% |
+| main_demo update [fail: post-validation error (slug taken)] | 1.92 µs | 1.37 µs | -28.6% |
+| main_demo update [fail: nothing to update: 1/4 inputs (a)] | 341.27 ns | 242.59 ns | -28.9% |
+| main_demo update [fail: nothing to update: 1/4 inputs (b)] | 368.72 ns | 242.38 ns | -34.3% |
+| main_demo update [fail: nothing to update: 1/4 inputs (c)] | 2.34 µs | 1.43 µs | -38.9% |
+| main_demo update [fail: nothing to update: 1/4 inputs (d)] | 340.10 ns | 237.96 ns | -30.0% |
+| main_demo update [fail: nothing to update: 2/4 inputs] | 391.72 ns | 272.27 ns | -30.5% |
+| main_demo update [fail: nothing to update: 3/4 inputs] | 431.55 ns | 304.62 ns | -29.4% |
+| main_demo update [fail: nothing to update: 4/4 inputs] | 2.81 µs | 1.56 µs | -44.5% |
+| main_demo update [success: 1/4 inputs (a)] | 1.76 µs | 942.06 ns | -46.4% |
+| main_demo update [success: 1/4 inputs (b)] | 1.84 µs | 912.62 ns | -50.4% |
+| main_demo update [success: 1/4 inputs (c)] | 3.43 µs | 2.39 µs | -30.4% |
+| main_demo update [success: 1/4 inputs (d)] | 3.18 µs | 1.93 µs | -39.3% |
+| main_demo update [success: 3/4 inputs] | 3.54 µs | 1.86 µs | -47.4% |
+| main_demo update [success: 4/4 inputs] | 4.57 µs | 2.58 µs | -43.6% |
+| main_demo delete | 13.70 ns | 12.05 ns | -12.1% |
+
+### Main Demo Memory Stress
+
+| Benchmark | Before | After | Change |
+| --- | --- | --- | --- |
+| memory main_demo create x1000 | 3.98 ms | 2.21 ms | -44.4% |
+| memory main_demo update x1000 | 4.75 ms | 2.57 ms | -45.8% |
+| memory main_demo nothing to update x1000 | 2.49 ms | 1.53 ms | -38.5% |
+| memory main_demo delete x1000 | 15.28 µs | 11.85 µs | -22.5% |
+
+### Allocations per call
+
+Heap allocations (count and bytes requested) during one call, counted with a global allocator
+wrapper in a release build, plus the size of the returned future. Building the input (or cloning
+the stored record for `update`) is not counted.
+
+| Call | Before | After |
+| --- | --- | --- |
+| minimal create | 3 allocs, 200 B, 240 B future | 2 allocs, 80 B, 200 B future |
+| user create | 39 allocs, 476 B, 2000 B future | 17 allocs, 267 B, 1240 B future |
+| no-op update | 12 allocs, 269 B, 2192 B future | 1 alloc, 56 B, 1424 B future |
+| single field update | 39 allocs, 476 B, 2192 B future | 9 allocs, 294 B, 1424 B future |
+| dependent chain length 10 create | 13 allocs, 960 B, 5584 B future | 2 allocs, 80 B, 4448 B future |
+| main_demo create [success: 4/4 inputs] | 206 allocs, 6964 B, 5480 B future | 114 allocs, 4174 B, 2528 B future |
+| main_demo create [fail: required errors] | 15 allocs, 988 B, 5480 B future | 13 allocs, 949 B, 2528 B future |
+| main_demo update [success: 4/4 inputs] | 250 allocs, 7779 B, 5768 B future | 115 allocs, 4779 B, 3336 B future |
+
+### Notes
+
+- Every benchmark is faster; `main_demo` creates and updates run 13-50% faster, the no-op update
+  and the 10-level dependent chain about 72% faster.
+- Sharing the raw input through an `Arc` costs one allocation per call, which shows on schemas
+  whose input has no heap data at all (`minimal create` would allocate once rather than twice
+  without it); it removes far more on schemas whose input holds `String`s (`main_demo`).
+- `main_demo`'s "nothing to update" cases can't defer the stored record's copy and the first
+  `ctx`, since its schema has ignore handlers that read `ctx` before the early check.
