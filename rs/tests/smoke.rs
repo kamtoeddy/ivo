@@ -838,7 +838,8 @@ async fn smoke_model_on_success_trigger() {
     let input = user_on_success_schema::User {
         name: "test".to_string(),
     };
-    let (data, _ctx_options, handle_success) = user_on_success_schema::UserModel.create(input, ())
+    let (data, _ctx_options, handle_success) = user_on_success_schema::UserModel
+        .create(input, ())
         .ok()
         .unwrap();
     assert_eq!(data.name, "test");
@@ -891,7 +892,7 @@ mod user_post_validate_pass_schema {
         pub password_confirmation: String,
     }
 
-    #[post_validate(["password", "password_confirmation"], validate = async |_ctx, _opts| {
+    #[post_validate(["password", "password_confirmation"], async |_ctx, _opts| {
         if _ctx.input().password != _ctx.input().password_confirmation {
             let mut errors = UserErrors::new();
             errors.set_password("passwords do not match", None);
@@ -913,7 +914,7 @@ mod user_post_validate_fail_schema {
         pub password_confirmation: String,
     }
 
-    #[post_validate(["password", "password_confirmation"], validate = async |_ctx, _opts| {
+    #[post_validate(["password", "password_confirmation"], async |_ctx, _opts| {
         if _ctx.input().password != _ctx.input().password_confirmation {
             let mut errors = UserErrors::new();
             errors.set_password("passwords do not match", None);
@@ -935,7 +936,7 @@ mod user_post_validate_sync_schema {
         pub b: String,
     }
 
-    #[post_validate(["a", "b"], validate = |_ctx, _opts| {
+    #[post_validate(["a", "b"], |_ctx, _opts| {
         let mut updates = PartialUser::new();
         updates.set_a("updated_a".to_string());
         updates.set_b("updated_b".to_string());
@@ -1002,7 +1003,7 @@ mod user_post_validate_pre_schema {
             updates.set_b("pre_b".to_string());
             Ok(Some(updates))
         },
-        validate = async |_ctx, _opts| {
+        async |_ctx, _opts| {
             if _ctx.input().a != Some("pre_a".to_string()) {
                 let mut errors = UserErrors::new();
                 errors.set_a("a was not updated by pre_validate", None);
@@ -1041,7 +1042,7 @@ mod user_post_validate_update_fail_schema {
 
     #[post_validate(
         ["a", "b"],
-        validate = async |_ctx, _opts| {
+        async |_ctx, _opts| {
             if _ctx.input().a == Some("bad".to_string()) {
                 let mut errors = UserErrors::new();
                 errors.set_a("bad update value", None);
@@ -1066,7 +1067,7 @@ mod user_post_validate_update_update_schema {
 
     #[post_validate(
         ["a", "b"],
-        validate = async |_ctx, _opts| {
+        async |_ctx, _opts| {
             let mut updates = PartialUser::new();
             updates.set_a("updated".to_string());
             updates.set_b("updated_b".to_string());

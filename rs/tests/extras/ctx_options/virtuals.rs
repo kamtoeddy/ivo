@@ -728,7 +728,7 @@ mod post_validate_create_schema {
         pub virtual_field_1: i32,
     }
 
-    #[post_validate(["virtual_field", "virtual_field_1"], validate = async |_, opts| {
+    #[post_validate(["virtual_field", "virtual_field_1"], async |_, opts| {
         opts.write().await.add_message("ctx_options updated in post_validator");
         Ok(None)
     })]
@@ -801,7 +801,7 @@ mod post_validate_update_schema {
         pub virtual_field_1: i32,
     }
 
-    #[post_validate(["virtual_field", "virtual_field_1"], validate = async |_, opts| {
+    #[post_validate(["virtual_field", "virtual_field_1"], async |_, opts| {
         opts.write().await.add_message("ctx_options updated in post_validator");
         Ok(None)
     })]

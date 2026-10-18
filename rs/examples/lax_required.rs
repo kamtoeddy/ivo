@@ -100,12 +100,7 @@ fn main() {
     println!("\nfailed to update: {:#?}", failed);
 
     assert_eq!(
-        failed
-            .as_ref()
-            .unwrap()
-            .get("username")
-            .unwrap()
-            .reason,
+        failed.as_ref().unwrap().get("username").unwrap().reason,
         USERNAME_REQUIRED_ERROR
     );
 
@@ -131,12 +126,7 @@ fn main() {
     println!("\nfailed to update: {:#?}", failed);
 
     assert_eq!(
-        failed
-            .as_ref()
-            .unwrap()
-            .get("username")
-            .unwrap()
-            .reason,
+        failed.as_ref().unwrap().get("username").unwrap().reason,
         USERNAME_REQUIRED_ERROR
     );
 

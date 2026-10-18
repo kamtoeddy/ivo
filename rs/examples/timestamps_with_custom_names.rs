@@ -30,10 +30,7 @@ async fn should_properly_create_and_update() {
     println!("\ncreated: {:#?}", created);
 
     assert_eq!(created.username, username);
-    assert_eq!(
-        created.custom_created_at,
-        created.custom_updated_at
-    );
+    assert_eq!(created.custom_created_at, created.custom_updated_at);
     assert!(created.custom_created_at > datetime_before);
     assert!(created.custom_updated_at > datetime_before);
 

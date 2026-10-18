@@ -140,7 +140,7 @@ mod user_schema {
     })]
     const _: () = ();
 
-    #[post_validate(["email", "phone_number"], validate =  |ctx, _| {
+    #[post_validate(["email", "phone_number"], |ctx, _| {
         if !ctx.is_update() {
             return Ok(None);
         }
@@ -172,7 +172,7 @@ mod user_schema {
     })]
     const _: () = ();
 
-    #[post_validate(["username", "v_slug"], validate = async |ctx, o| {
+    #[post_validate(["username", "v_slug"], async |ctx, o| {
         let input = ctx.input();
         let input_slug_id = input.slug_id.clone();
 

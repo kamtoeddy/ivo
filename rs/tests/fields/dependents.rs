@@ -15,10 +15,7 @@ fn should_use_sync_static_default_value_of_dependent_if_resolver_is_not_run_at_c
         .ok()
         .unwrap();
 
-    assert_eq!(
-        created,
-        sync_static_default_schema::Data { dependent, lax }
-    );
+    assert_eq!(created, sync_static_default_schema::Data { dependent, lax });
 }
 
 async fn should_use_async_static_default_value_of_dependent_if_resolver_is_not_run_at_creation() {

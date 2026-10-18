@@ -156,7 +156,7 @@ mod contact_schema {
 - **`#[ignore_update([...], handler)]`** -- same, but update only (or entity-wide with the bare,
   arrayless form).
 - **`#[required([...], handler)]`** -- cross-field "at least one of these" requirement checks.
-- **`#[post_validate([...], validate = ..., pre_validate = ...)]`** -- cross-field validation that
+- **`#[post_validate([...], handler, pre_validate = ...)]`** -- cross-field validation that
   can also return updated values for the group's own fields.
 - **`#[on_success(...)]`** / **`#[on_delete(...)]`** -- grouped or entity-wide lifecycle triggers.
 - **`#[timestamps(|| ...)]`** -- the shared, synchronous resolver for `#[created_at]`/`#[updated_at]`.

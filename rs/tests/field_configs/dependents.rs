@@ -519,9 +519,7 @@ mod async_parallel_dependents_schema {
             }
             tokio::task::yield_now().await;
         }
-        panic!(
-            "dependent resolvers were not resolved concurrently: only one of them ever started"
-        );
+        panic!("dependent resolvers were not resolved concurrently: only one of them ever started");
     }
 
     struct Fields {

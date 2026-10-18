@@ -17,7 +17,8 @@ fn should_not_run_main_validate_once_pre_validate_has_failed() {
             },
             (),
         )
-        .err().unwrap();
+        .err()
+        .unwrap();
 
     assert_eq!(errors.get("field_a").unwrap().reason, "pre failed");
 }
@@ -42,7 +43,7 @@ mod pre_validate_aborts_main_schema {
             }
             Ok(None)
         },
-        validate = |_ctx, _opts| {
+        |_ctx, _opts| {
             panic!("main validate must not run once pre_validate has already failed");
         },
     )]
@@ -97,7 +98,7 @@ mod independent_post_validate_groups_schema {
 
     #[post_validate(
         ["shared", "field_a"],
-        validate = |ctx, _| {
+        |ctx, _| {
             let mut updates = PartialDataInput::new();
             updates.set_shared("from-a".to_string());
             let _ = &ctx;
@@ -108,7 +109,7 @@ mod independent_post_validate_groups_schema {
 
     #[post_validate(
         ["seen_by_b", "field_b"],
-        validate = |ctx, _| {
+        |ctx, _| {
             let mut updates = PartialDataInput::new();
             updates.set_seen_by_b(ctx.input().shared.clone().unwrap());
             Ok(Some(updates))
@@ -172,7 +173,7 @@ mod async_parallel_post_validate_groups_schema {
 
     #[post_validate(
         ["field_a", "field_b"],
-        validate = async |_ctx, _opts| {
+        async |_ctx, _opts| {
             rendezvous().await;
             Ok(None)
         },
@@ -181,7 +182,7 @@ mod async_parallel_post_validate_groups_schema {
 
     #[post_validate(
         ["field_b", "field_a"],
-        validate = async |_ctx, _opts| {
+        async |_ctx, _opts| {
             rendezvous().await;
             Ok(None)
         },

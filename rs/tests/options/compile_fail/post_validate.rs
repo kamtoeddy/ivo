@@ -11,7 +11,7 @@ mod post_validate_empty {
         pub lax_1: i32,
     }
 
-    #[post_validate([], validate = |_, _| Ok(None))]
+    #[post_validate([], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -26,7 +26,7 @@ mod post_validate_one_field {
         pub lax_1: i32,
     }
 
-    #[post_validate(["lax"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -41,7 +41,7 @@ mod post_validate_duplicates {
         pub lax_1: i32,
     }
 
-    #[post_validate(["lax", "lax"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "lax"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -56,7 +56,7 @@ mod post_validate_invalid_field {
         pub lax_1: i32,
     }
 
-    #[post_validate(["lax", "invalid_field"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "invalid_field"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -77,7 +77,7 @@ mod post_validate_constant {
         pub lax_1: i32,
     }
 
-    #[post_validate(["lax", "id"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "id"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -100,7 +100,7 @@ mod post_validate_dependent {
         pub dependent: i32,
     }
 
-    #[post_validate(["lax", "lax_1", "dependent"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "lax_1", "dependent"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -127,7 +127,7 @@ mod post_validate_alias_similar_to_dependent {
         pub virtual_field: i32,
     }
 
-    #[post_validate(["lax", "lax_1", "dependent"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "lax_1", "dependent"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -154,7 +154,7 @@ mod post_validate_alias_foreign_name {
         pub virtual_field: i32,
     }
 
-    #[post_validate(["lax", "lax_1", "alias"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "lax_1", "alias"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -178,7 +178,7 @@ mod post_validate_created_at_default {
     #[timestamps(|| String::from("timestamp"))]
     const _: () = ();
 
-    #[post_validate(["lax", "lax_1", "created_at"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "lax_1", "created_at"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -202,7 +202,7 @@ mod post_validate_created_at_custom {
     #[timestamps(|| String::from("timestamp"))]
     const _: () = ();
 
-    #[post_validate(["lax", "lax_1", "custom_created_at"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "lax_1", "custom_created_at"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -226,7 +226,7 @@ mod post_validate_updated_at_default {
     #[timestamps(|| String::from("timestamp"))]
     const _: () = ();
 
-    #[post_validate(["lax", "lax_1", "updated_at"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "lax_1", "updated_at"], |_, _| Ok(None))]
     const _: () = ();
 }
 
@@ -250,7 +250,7 @@ mod post_validate_updated_at_custom {
     #[timestamps(|| String::from("timestamp"))]
     const _: () = ();
 
-    #[post_validate(["lax", "lax_1", "custom_updated_at"], validate = |_, _| Ok(None))]
+    #[post_validate(["lax", "lax_1", "custom_updated_at"], |_, _| Ok(None))]
     const _: () = ();
 }
 

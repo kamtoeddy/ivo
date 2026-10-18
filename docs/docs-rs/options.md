@@ -155,7 +155,7 @@ pattern in
 
 Cross-field validation that runs after every individual field's `re_validate`. Can also return
 updated values for the group's own fields (`pre_validate` runs first and can feed updated values
-into the main `validate`). Requires at least two fields, from lax, required or virtual fields.
+into the main validator). Requires at least two fields, from lax, required or virtual fields.
 
 ```rust
 use ivo::ivo_schema;
@@ -170,7 +170,7 @@ mod post_validate_schema {
         pub confirm_password: String,
     }
 
-    #[post_validate(["password", "confirm_password"], validate = |ctx, _opts| {
+    #[post_validate(["password", "confirm_password"], |ctx, _opts| {
         let input = ctx.input();
 
         if input.password != input.confirm_password {

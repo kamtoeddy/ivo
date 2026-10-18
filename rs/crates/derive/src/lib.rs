@@ -509,7 +509,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
         _ => {
             return Err(syn::Error::new_spanned(
                 attr,
-                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, `#[on_delete(...)]`, `#[on_success(...)]`, `#[timestamps(...)]`, or `#[post_validate([...], validate = ..., pre_validate = ...)]`",
+                "expected `#[ignore(...)]`, `#[required(...)]`, `#[ignore_update(...)]`, `#[on_delete(...)]`, `#[on_success(...)]`, `#[timestamps(...)]`, or `#[post_validate([...], validator, pre_validate = ...)]`",
             ));
         }
     };
@@ -646,7 +646,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
                 None => {
                     return Err(syn::Error::new_spanned(
                         attr,
-                        "expected `#[post_validate([...], validate = ..., pre_validate = ...)]`",
+                        "expected `#[post_validate([...], validator, pre_validate = ...)]`",
                     ));
                 }
             };
@@ -669,12 +669,18 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
             let mut pre_validate: Option<proc_macro2::TokenStream> = None;
             let mut validate: Option<proc_macro2::TokenStream> = None;
 
+            // After the field list: one positional main validator and an
+            // optional `pre_validate = ...`, in either order.
             for expr in expr_iter {
                 let syn::Expr::Assign(assign) = expr else {
-                    return Err(syn::Error::new_spanned(
-                        expr,
-                        "expected `pre_validate = ...` or `validate = ...`",
-                    ));
+                    if validate.is_some() {
+                        return Err(syn::Error::new_spanned(
+                            expr,
+                            "`#[post_validate]` accepts only one validator",
+                        ));
+                    }
+                    validate = Some(expr.to_token_stream());
+                    continue;
                 };
                 let ident = match assign.left.as_ref() {
                     syn::Expr::Path(p) => p.path.get_ident().cloned(),
@@ -682,12 +688,23 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
                 };
                 let value = assign.right.to_token_stream();
                 match ident.as_ref().map(|i| i.to_string()).as_deref() {
+                    Some("pre_validate") if pre_validate.is_some() => {
+                        return Err(syn::Error::new_spanned(
+                            assign,
+                            "`#[post_validate]` accepts only one `pre_validate = ...`",
+                        ));
+                    }
                     Some("pre_validate") => pre_validate = Some(value),
-                    Some("validate") => validate = Some(value),
+                    Some("validate") => {
+                        return Err(syn::Error::new_spanned(
+                            assign.left,
+                            "`validate = ...` is no longer supported; pass the validator directly: `#[post_validate([...], |ctx, opts| ...)]`",
+                        ));
+                    }
                     _ => {
                         return Err(syn::Error::new_spanned(
                             assign,
-                            "expected `pre_validate = ...` or `validate = ...`",
+                            "expected a validator or `pre_validate = ...`",
                         ));
                     }
                 }
@@ -696,7 +713,7 @@ fn parse_option_attr(attr: &Attribute) -> syn::Result<Option<GroupedOption>> {
             let Some(handler) = validate else {
                 return Err(syn::Error::new_spanned(
                     attr,
-                    "`#[post_validate]` requires a `validate = ...` handler",
+                    "`#[post_validate]` requires a validator: `#[post_validate([...], |ctx, opts| ...)]`",
                 ));
             };
 
@@ -6252,7 +6269,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate([], validate = async |_ctx, _opts| { Ok(None) })]
+                #[post_validate([], async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -6274,7 +6291,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a"], validate = async |_ctx, _opts| { Ok(None) })]
+                #[post_validate(["a"], async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -6296,7 +6313,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a", "a"], validate = async |_ctx, _opts| { Ok(None) })]
+                #[post_validate(["a", "a"], async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -6318,7 +6335,7 @@ mod tests {
                     pub b: String,
                 }
 
-                #[post_validate(["a", "missing"], validate = async |_ctx, _opts| { Ok(None) })]
+                #[post_validate(["a", "missing"], async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -6340,7 +6357,7 @@ mod tests {
                     pub id: String,
                 }
 
-                #[post_validate(["a", "id"], validate = async |_ctx, _opts| { Ok(None) })]
+                #[post_validate(["a", "id"], async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -6363,7 +6380,7 @@ mod tests {
                     pub b: i32,
                 }
 
-                #[post_validate(["a", "b"], validate = async |_ctx, _opts| { Ok(None) })]
+                #[post_validate(["a", "b"], async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -6385,7 +6402,7 @@ mod tests {
                     pub created_at: String,
                 }
 
-                #[post_validate(["a", "created_at"], validate = async |_ctx, _opts| { Ok(None) })]
+                #[post_validate(["a", "created_at"], async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -6412,7 +6429,7 @@ mod tests {
                     pub email: String,
                 }
 
-                #[post_validate(["name", "email"], validate = async |_ctx, _opts| { Ok(None) })]
+                #[post_validate(["name", "email"], async |_ctx, _opts| { Ok(None) })]
                 const _: () = ();
             }
             "#,
@@ -6440,6 +6457,95 @@ mod tests {
             "#,
         );
         assert_compile_error(&out, "post_validate missing validate handler");
+    }
+
+    fn expand_post_validate(post_validate_attr: &str) -> String {
+        expand(
+            "input(User)",
+            &format!(
+                r#"
+            mod s {{
+                struct Fields {{
+                    #[required]
+                    pub a: String,
+
+                    #[required]
+                    pub b: String,
+                }}
+
+                {post_validate_attr}
+                const _: () = ();
+            }}
+            "#
+            ),
+        )
+    }
+
+    #[test]
+    fn accepts_post_validate_validator_without_keyword() {
+        let out = expand_post_validate(r#"#[post_validate(["a", "b"], |_ctx, _opts| Ok(None))]"#);
+        assert_no_compile_error(&out, "post_validate positional validator");
+    }
+
+    #[test]
+    fn accepts_post_validate_validator_before_or_after_pre_validate() {
+        let out = expand_post_validate(
+            r#"#[post_validate(["a", "b"], |_ctx, _opts| Ok(None), pre_validate = |_ctx, _opts| Ok(None))]"#,
+        );
+        assert_no_compile_error(&out, "post_validate validator before pre_validate");
+
+        let out = expand_post_validate(
+            r#"#[post_validate(["a", "b"], pre_validate = |_ctx, _opts| Ok(None), |_ctx, _opts| Ok(None))]"#,
+        );
+        assert_no_compile_error(&out, "post_validate validator after pre_validate");
+    }
+
+    #[test]
+    fn accepts_post_validate_validator_as_function_path() {
+        let out = expand_post_validate(r#"#[post_validate(["a", "b"], super::validate_pair)]"#);
+        assert_no_compile_error(&out, "post_validate validator as function path");
+    }
+
+    #[test]
+    fn rejects_post_validate_validate_keyword() {
+        let out = expand_post_validate(
+            r#"#[post_validate(["a", "b"], validate = |_ctx, _opts| Ok(None))]"#,
+        );
+        assert_compile_error(&out, "post_validate validate keyword");
+        assert!(
+            out.contains("is no longer supported"),
+            "expected a migration hint for `validate = ...`, got: {out}"
+        );
+    }
+
+    #[test]
+    fn rejects_post_validate_with_multiple_validators() {
+        let out = expand_post_validate(
+            r#"#[post_validate(["a", "b"], |_ctx, _opts| Ok(None), |_ctx, _opts| Ok(None))]"#,
+        );
+        assert_compile_error(&out, "post_validate multiple validators");
+        assert!(out.contains("accepts only one validator"), "got: {out}");
+    }
+
+    #[test]
+    fn rejects_post_validate_with_multiple_pre_validates() {
+        let out = expand_post_validate(
+            r#"#[post_validate(["a", "b"], pre_validate = |_ctx, _opts| Ok(None), pre_validate = |_ctx, _opts| Ok(None), |_ctx, _opts| Ok(None))]"#,
+        );
+        assert_compile_error(&out, "post_validate multiple pre_validates");
+        assert!(out.contains("accepts only one `pre_validate"), "got: {out}");
+    }
+
+    #[test]
+    fn rejects_post_validate_unknown_named_argument() {
+        let out = expand_post_validate(
+            r#"#[post_validate(["a", "b"], |_ctx, _opts| Ok(None), post_validate = |_ctx, _opts| Ok(None))]"#,
+        );
+        assert_compile_error(&out, "post_validate unknown named argument");
+        assert!(
+            out.contains("expected a validator or `pre_validate"),
+            "got: {out}"
+        );
     }
 
     // `create`'s `Result<Ok, Err>` return type is now a plain tuple whose

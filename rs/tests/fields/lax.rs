@@ -273,7 +273,7 @@ mod no_change_after_post_validation_sync_schema {
                 Ok(None)
             }
         },
-        validate = |ctx, _| {
+        |ctx, _| {
             let mut updates = PartialDataInput::new();
 
             if ctx.input().lax == Some(RESET_TO_PREV_VALUE_IN_POST_VALIDATOR.into()) {
@@ -321,7 +321,7 @@ mod no_change_after_post_validation_async_schema {
                 Ok(None)
             }
         },
-        validate = async |ctx, _| {
+        async |ctx, _| {
             let mut updates = PartialDataInput::new();
 
             if ctx.input().lax == Some(RESET_TO_PREV_VALUE_IN_POST_VALIDATOR.into()) {
@@ -2513,7 +2513,7 @@ mod post_validation_sync_schema {
                 Err(errors)
             }
         },
-        validate = |ctx, _| {
+        |ctx, _| {
             let mut errors = DataInputErrors::new();
 
             if let Some(lax) = ctx.input().lax.clone() {
@@ -2594,7 +2594,7 @@ mod post_validation_async_schema {
                 Err(errors)
             }
         },
-        validate = async |ctx, _| {
+        async |ctx, _| {
             let mut errors = DataInputErrors::new();
 
             if let Some(lax) = ctx.input().lax.clone() {
@@ -2660,7 +2660,7 @@ mod post_validate_updates_sync_schema {
                 Ok(None)
             }
         },
-        validate = |ctx, _| {
+        |ctx, _| {
             let mut updates = PartialDataInput::new();
 
             if let Some(lax) = ctx.input().lax.clone() {
@@ -2718,7 +2718,7 @@ mod post_validate_updates_async_schema {
                 Ok(None)
             }
         },
-        validate = async |ctx, _| {
+        async |ctx, _| {
             let mut updates = PartialDataInput::new();
 
             if let Some(lax) = ctx.input().lax.clone() {
@@ -3197,10 +3197,7 @@ fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default
         )
         .unwrap();
 
-    assert_eq!(
-        created,
-        readonly_after_updates_schema::DataInput { lax: 1 }
-    );
+    assert_eq!(created, readonly_after_updates_schema::DataInput { lax: 1 });
 
     let (updated, ..) = readonly_after_updates_schema::DataInputModel
         .update(
@@ -3303,10 +3300,7 @@ fn should_trigger_on_failure_handlers_at_creation() {
     );
 
     let (errors, _ctx_options, handle_failure) = result.err().unwrap();
-    assert_eq!(
-        errors.get("lax").unwrap().reason,
-        "validation failed"
-    );
+    assert_eq!(errors.get("lax").unwrap().reason, "validation failed");
     handle_failure();
 }
 
@@ -3350,10 +3344,7 @@ fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ignored()
 
     let (errors, _ctx_options, handle_failure) = result.err().unwrap();
     assert!(errors.get("lax").is_none());
-    assert_eq!(
-        errors.get("lax2").unwrap().reason,
-        "validation failed"
-    );
+    assert_eq!(errors.get("lax2").unwrap().reason, "validation failed");
     handle_failure();
 }
 
@@ -3609,16 +3600,17 @@ mod lax_on_success_creation_default_schema {
 fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
     let lax_1 = "lax_1".to_string();
 
-    let (created, _ctx_options, handle_success) = lax_on_success_creation_default_schema::DataInputModel
-        .create(
-            lax_on_success_creation_default_schema::PartialDataInput {
-                lax: None,
-                lax_1: Some(lax_1.clone()),
-            },
-            (),
-        )
-        .ok()
-        .unwrap();
+    let (created, _ctx_options, handle_success) =
+        lax_on_success_creation_default_schema::DataInputModel
+            .create(
+                lax_on_success_creation_default_schema::PartialDataInput {
+                    lax: None,
+                    lax_1: Some(lax_1.clone()),
+                },
+                (),
+            )
+            .ok()
+            .unwrap();
 
     assert_eq!(
         created,
@@ -3669,16 +3661,17 @@ fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ignored()
     let lax_value = "lax_value".to_string();
     let lax_1_value = "lax_1_value".to_string();
 
-    let (created, _ctx_options, handle_success) = lax_on_success_creation_ignored_schema::DataInputModel
-        .create(
-            lax_on_success_creation_ignored_schema::PartialDataInput {
-                lax: Some(lax_value),
-                lax_1: Some(lax_1_value.clone()),
-            },
-            (),
-        )
-        .ok()
-        .unwrap();
+    let (created, _ctx_options, handle_success) =
+        lax_on_success_creation_ignored_schema::DataInputModel
+            .create(
+                lax_on_success_creation_ignored_schema::PartialDataInput {
+                    lax: Some(lax_value),
+                    lax_1: Some(lax_1_value.clone()),
+                },
+                (),
+            )
+            .ok()
+            .unwrap();
 
     assert_eq!(
         created,
@@ -3799,17 +3792,18 @@ fn should_not_trigger_on_success_handlers_during_updates_if_not_provided() {
 
     let updated_lax_1_value = "updated_lax_1_value".to_string();
 
-    let (updated, _ctx_options, handle_success) = lax_on_success_update_not_provided_schema::DataInputModel
-        .update(
-            data,
-            lax_on_success_update_not_provided_schema::PartialDataInput {
-                lax: None,
-                lax_1: Some(updated_lax_1_value.clone()),
-            },
-            (),
-        )
-        .ok()
-        .unwrap();
+    let (updated, _ctx_options, handle_success) =
+        lax_on_success_update_not_provided_schema::DataInputModel
+            .update(
+                data,
+                lax_on_success_update_not_provided_schema::PartialDataInput {
+                    lax: None,
+                    lax_1: Some(updated_lax_1_value.clone()),
+                },
+                (),
+            )
+            .ok()
+            .unwrap();
 
     assert_eq!(
         updated,
@@ -3866,17 +3860,18 @@ fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored
     let updated_lax_value = "updated_lax_value".to_string();
     let updated_lax_1_value = "updated_lax_1_value".to_string();
 
-    let (updated, _ctx_options, handle_success) = lax_on_success_update_ignored_schema::DataInputModel
-        .update(
-            data,
-            lax_on_success_update_ignored_schema::PartialDataInput {
-                lax: Some(updated_lax_value),
-                lax_1: Some(updated_lax_1_value.clone()),
-            },
-            (),
-        )
-        .ok()
-        .unwrap();
+    let (updated, _ctx_options, handle_success) =
+        lax_on_success_update_ignored_schema::DataInputModel
+            .update(
+                data,
+                lax_on_success_update_ignored_schema::PartialDataInput {
+                    lax: Some(updated_lax_value),
+                    lax_1: Some(updated_lax_1_value.clone()),
+                },
+                (),
+            )
+            .ok()
+            .unwrap();
 
     assert_eq!(
         updated,
@@ -3910,13 +3905,14 @@ mod lax_on_success_empty_creation_schema {
 )]
 #[test]
 fn should_trigger_success_handlers_with_empty_fields_array_each_time_creation_is_successful() {
-    let (created, _ctx_options, handle_success) = lax_on_success_empty_creation_schema::DataInputModel
-        .create(
-            lax_on_success_empty_creation_schema::PartialDataInput::new(),
-            (),
-        )
-        .ok()
-        .unwrap();
+    let (created, _ctx_options, handle_success) =
+        lax_on_success_empty_creation_schema::DataInputModel
+            .create(
+                lax_on_success_empty_creation_schema::PartialDataInput::new(),
+                (),
+            )
+            .ok()
+            .unwrap();
 
     assert_eq!(
         created,
@@ -3957,17 +3953,18 @@ fn should_trigger_success_handlers_with_empty_fields_array_each_time_update_is_s
 
     let updated_lax_1 = data.lax_1 + 1;
 
-    let (updated, _ctx_options, handle_success) = lax_on_success_empty_update_schema::DataInputModel
-        .update(
-            data,
-            lax_on_success_empty_update_schema::PartialDataInput {
-                lax: None,
-                lax_1: Some(updated_lax_1),
-            },
-            (),
-        )
-        .ok()
-        .unwrap();
+    let (updated, _ctx_options, handle_success) =
+        lax_on_success_empty_update_schema::DataInputModel
+            .update(
+                data,
+                lax_on_success_empty_update_schema::PartialDataInput {
+                    lax: None,
+                    lax_1: Some(updated_lax_1),
+                },
+                (),
+            )
+            .ok()
+            .unwrap();
 
     assert_eq!(
         updated,

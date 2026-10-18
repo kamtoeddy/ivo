@@ -13,10 +13,7 @@ fn should_respect_sync_constants_with_static_values() {
         .ok()
         .unwrap();
 
-    assert_eq!(
-        created,
-        sync_static_constant_schema::Data { constant, lax }
-    );
+    assert_eq!(created, sync_static_constant_schema::Data { constant, lax });
 
     let lax = 700;
 
@@ -28,10 +25,7 @@ fn should_respect_sync_constants_with_static_values() {
         .ok()
         .unwrap();
 
-    assert_eq!(
-        created,
-        sync_static_constant_schema::Data { constant, lax }
-    );
+    assert_eq!(created, sync_static_constant_schema::Data { constant, lax });
 
     let lax = Some(200);
 
@@ -587,7 +581,9 @@ fn should_attach_constants_after_dependents_have_resolved() {
     // dependent's value via `ctx.values()`.
     let (created, ..) = constant_reads_dependent_schema::DataModel
         .create(
-            constant_reads_dependent_schema::PartialDataInput { name: Some("abc".into()) },
+            constant_reads_dependent_schema::PartialDataInput {
+                name: Some("abc".into()),
+            },
             (),
         )
         .ok()
@@ -625,7 +621,10 @@ async fn should_resolve_independent_constants_concurrently() {
     // Two constants' resolvers must be polled concurrently (not one `.await`
     // at a time). `rendezvous()` only returns once *both* have started.
     let (created, ..) = async_parallel_constants_schema::DataModel
-        .create(async_parallel_constants_schema::PartialDataInput { lax: Some(1) }, ())
+        .create(
+            async_parallel_constants_schema::PartialDataInput { lax: Some(1) },
+            (),
+        )
         .await
         .ok()
         .unwrap();

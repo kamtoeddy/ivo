@@ -73,10 +73,7 @@ fn main() {
 
     println!("\nfailed to create: {:#?}", failed);
 
-    assert_eq!(
-        failed.get("virtual_field").unwrap().reason,
-        REQUIRED_ERROR
-    );
+    assert_eq!(failed.get("virtual_field").unwrap().reason, REQUIRED_ERROR);
 
     handle_failure();
 

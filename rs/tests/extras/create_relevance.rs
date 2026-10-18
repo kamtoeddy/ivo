@@ -44,7 +44,7 @@ mod create_relevance_schema {
 
     #[post_validate(
         ["a", "b"],
-        validate = |_, _| panic!(
+        |_, _| panic!(
             "post_validate group must not run at creation when none of its fields were submitted"
         ),
     )]
@@ -93,7 +93,7 @@ mod create_relevance_positive_schema {
 
     #[post_validate(
         ["a", "b"],
-        validate = |_, _| {
+        |_, _| {
             let mut updates = PartialDataInput::new();
             updates.set_a(999);
             Ok(Some(updates))
@@ -170,7 +170,7 @@ mod create_relevance_virtual_schema {
 
     #[post_validate(
         ["a", "v_trigger"],
-        validate = |_, _| {
+        |_, _| {
             let mut updates = PartialDataInput::new();
             updates.set_a(999);
             Ok(Some(updates))

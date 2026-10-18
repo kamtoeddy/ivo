@@ -182,10 +182,7 @@ fn should_properly_handle_grouped_required_errors() {
 
     assert!(err.get("lax_2").is_none());
     assert_eq!(err.get("lax").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
-    assert_eq!(
-        err.get("lax_1").unwrap().reason,
-        EXPECTED_LAX_OR_LAX_1
-    );
+    assert_eq!(err.get("lax_1").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
 
     // create: distinct-errors-per-field path (lax_2 == IGNORE_WITH_DIFFERENT_ERRORS)
     let (err, ..) = grouped_required_errors_schema::DataInputModel

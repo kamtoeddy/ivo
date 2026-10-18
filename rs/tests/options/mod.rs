@@ -119,7 +119,8 @@ fn should_allow_named_consts_as_grouped_option_anchors() {
             },
             (),
         )
-        .err().unwrap();
+        .err()
+        .unwrap();
 
     assert!(errors.get("email").is_some());
     assert!(errors.get("phone_number").is_some());

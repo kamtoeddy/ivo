@@ -142,10 +142,7 @@ fn should_return_empty_updates_when_no_value_has_changed() {
         .ok()
         .unwrap();
 
-    assert_eq!(
-        created,
-        sync_no_change_schema::Data { dependent: value }
-    );
+    assert_eq!(created, sync_no_change_schema::Data { dependent: value });
 
     let (failed, ..) = sync_no_change_schema::DataModel
         .update(
@@ -175,10 +172,7 @@ async fn should_return_empty_updates_when_no_value_has_changed_async() {
         .ok()
         .unwrap();
 
-    assert_eq!(
-        created,
-        async_no_change_schema::Data { dependent: value }
-    );
+    assert_eq!(created, async_no_change_schema::Data { dependent: value });
 
     let (failed, ..) = async_no_change_schema::DataModel
         .update(
@@ -215,10 +209,7 @@ fn should_respect_the_required_rule() {
     );
 
     let (errors, ..) = result.err().unwrap();
-    assert_eq!(
-        errors.get("virtual_field").unwrap().reason,
-        required_error
-    );
+    assert_eq!(errors.get("virtual_field").unwrap().reason, required_error);
 
     let lax = "require_virtual_field_for_update".to_string();
 
@@ -233,10 +224,7 @@ fn should_respect_the_required_rule() {
         .ok()
         .unwrap();
 
-    assert_eq!(
-        created,
-        sync_required_schema::Data { dependent: 1, lax }
-    );
+    assert_eq!(created, sync_required_schema::Data { dependent: 1, lax });
 
     let (errors, ..) = sync_required_schema::DataModel
         .update(
@@ -276,10 +264,7 @@ async fn should_respect_the_required_rule_async() {
         .await;
 
     let (errors, ..) = result.err().unwrap();
-    assert_eq!(
-        errors.get("virtual_field").unwrap().reason,
-        required_error
-    );
+    assert_eq!(errors.get("virtual_field").unwrap().reason, required_error);
 
     let lax = "require_virtual_field_for_update".to_string();
 
@@ -295,10 +280,7 @@ async fn should_respect_the_required_rule_async() {
         .ok()
         .unwrap();
 
-    assert_eq!(
-        created,
-        async_required_schema::Data { dependent: 1, lax }
-    );
+    assert_eq!(created, async_required_schema::Data { dependent: 1, lax });
 
     let (errors, ..) = async_required_schema::DataModel
         .update(
@@ -347,10 +329,7 @@ fn should_properly_handle_grouped_required_errors() {
         errors.get("virtual_field").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
-    assert_eq!(
-        errors.get("lax_1").unwrap().reason,
-        EXPECTED_REQUIRED_ERROR
-    );
+    assert_eq!(errors.get("lax_1").unwrap().reason, EXPECTED_REQUIRED_ERROR);
 
     let (errors, ..) = sync_grouped_required_schema::DataModel
         .update(
@@ -406,10 +385,7 @@ async fn should_properly_handle_grouped_required_errors_async() {
         errors.get("virtual_field").unwrap().reason,
         EXPECTED_REQUIRED_ERROR
     );
-    assert_eq!(
-        errors.get("lax_1").unwrap().reason,
-        EXPECTED_REQUIRED_ERROR
-    );
+    assert_eq!(errors.get("lax_1").unwrap().reason, EXPECTED_REQUIRED_ERROR);
 
     let (errors, ..) = async_grouped_required_schema::DataModel
         .update(
@@ -810,10 +786,7 @@ fn should_use_input_value_if_validator_does_not_return_a_validated_value() {
         .ok()
         .unwrap();
 
-    assert_eq!(
-        created,
-        sync_pass_through_schema::Data { dependent: value }
-    );
+    assert_eq!(created, sync_pass_through_schema::Data { dependent: value });
 }
 
 async fn should_use_input_value_if_validator_does_not_return_a_validated_value_async() {
@@ -864,10 +837,7 @@ fn should_respect_post_validation_config() {
 
     assert!(errors.get("virtual_field_1").is_none());
     assert!(errors.get("virtual_field_2").is_none());
-    assert_eq!(
-        errors.get("virtual_field").unwrap().reason,
-        virtual_value
-    );
+    assert_eq!(errors.get("virtual_field").unwrap().reason, virtual_value);
 
     let virtual_value = BOTH_VALIDATION_FAIL.to_string();
 
@@ -884,14 +854,8 @@ fn should_respect_post_validation_config() {
         .unwrap();
 
     assert!(errors.get("virtual_field_2").is_none());
-    assert_eq!(
-        errors.get("virtual_field").unwrap().reason,
-        virtual_value
-    );
-    assert_eq!(
-        errors.get("virtual_field_1").unwrap().reason,
-        virtual_value
-    );
+    assert_eq!(errors.get("virtual_field").unwrap().reason, virtual_value);
+    assert_eq!(errors.get("virtual_field_1").unwrap().reason, virtual_value);
 }
 
 async fn should_respect_post_validation_config_async() {
@@ -916,10 +880,7 @@ async fn should_respect_post_validation_config_async() {
 
     assert!(errors.get("virtual_field_1").is_none());
     assert!(errors.get("virtual_field_2").is_none());
-    assert_eq!(
-        errors.get("virtual_field").unwrap().reason,
-        virtual_value
-    );
+    assert_eq!(errors.get("virtual_field").unwrap().reason, virtual_value);
 
     let virtual_value = BOTH_VALIDATION_FAIL.to_string();
 
@@ -937,14 +898,8 @@ async fn should_respect_post_validation_config_async() {
         .unwrap();
 
     assert!(errors.get("virtual_field_2").is_none());
-    assert_eq!(
-        errors.get("virtual_field").unwrap().reason,
-        virtual_value
-    );
-    assert_eq!(
-        errors.get("virtual_field_1").unwrap().reason,
-        virtual_value
-    );
+    assert_eq!(errors.get("virtual_field").unwrap().reason, virtual_value);
+    assert_eq!(errors.get("virtual_field_1").unwrap().reason, virtual_value);
 }
 
 async_test_matrix!(should_respect_post_validation_config_async);
@@ -973,7 +928,8 @@ fn should_surface_post_validate_errors_on_an_aliased_virtual_field() {
             },
             (),
         )
-        .err().unwrap();
+        .err()
+        .unwrap();
 
     assert_eq!(
         errors.get("aliased").unwrap().reason,
@@ -1002,7 +958,7 @@ mod post_validate_aliased_virtual_schema {
 
     #[post_validate(
         ["field_a", "v_field"],
-        validate = |ctx, _| {
+        |ctx, _| {
             if ctx.input().aliased.as_deref() == Some("reject-me") {
                 let mut errors = DataInputErrors::new();
                 errors.set_aliased("aliased field rejected", None);
@@ -1041,7 +997,8 @@ fn should_key_required_error_by_alias_for_an_aliased_virtual_field() {
             },
             (),
         )
-        .err().unwrap();
+        .err()
+        .unwrap();
 
     assert_eq!(
         create_errors.get("aliased").unwrap().reason,
@@ -1096,12 +1053,10 @@ fn should_key_validate_error_by_alias_for_an_aliased_virtual_field() {
             },
             (),
         )
-        .err().unwrap();
+        .err()
+        .unwrap();
 
-    assert_eq!(
-        errors.get("aliased").unwrap().reason,
-        "validate failed"
-    );
+    assert_eq!(errors.get("aliased").unwrap().reason, "validate failed");
     assert!(errors.get("v_field").is_none());
 }
 
@@ -1115,12 +1070,10 @@ fn should_key_re_validate_error_by_alias_for_an_aliased_virtual_field() {
             },
             (),
         )
-        .err().unwrap();
+        .err()
+        .unwrap();
 
-    assert_eq!(
-        errors.get("aliased").unwrap().reason,
-        "re_validate failed"
-    );
+    assert_eq!(errors.get("aliased").unwrap().reason, "re_validate failed");
     assert!(errors.get("v_field").is_none());
 }
 
@@ -1375,7 +1328,7 @@ mod sync_sanitize_after_post_validate_schema {
 
     #[post_validate(
         ["name", "virtual_field"],
-        validate = |ctx, _| {
+        |ctx, _| {
             assert_eq!(
                 ctx.input().virtual_field.clone().unwrap(),
                 "raw",
@@ -1813,7 +1766,7 @@ mod sync_post_validate_schema {
 
     #[post_validate(
         ["virtual_field", "virtual_field_1"],
-        validate = |ctx, _| {
+        |ctx, _| {
             let mut errors = DataInputErrors::new();
 
             if let Some(value) = ctx.input().virtual_field.clone() {
@@ -1866,7 +1819,7 @@ mod async_post_validate_schema {
 
     #[post_validate(
         ["virtual_field", "virtual_field_1"],
-        validate = async |ctx, _| {
+        async |ctx, _| {
             let mut errors = DataInputErrors::new();
 
             if let Some(value) = ctx.input().virtual_field.clone() {

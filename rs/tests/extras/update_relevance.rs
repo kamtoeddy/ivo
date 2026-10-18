@@ -95,7 +95,7 @@ mod update_relevance_schema {
 
     #[post_validate(
         ["name", "other"],
-        validate = |_, _| panic!(
+        |_, _| panic!(
             "post_validate group must not run when none of its fields are relevant"
         ),
     )]
@@ -190,7 +190,7 @@ mod update_relevance_virtual_no_alias_schema {
 
     #[post_validate(
         ["name", "other"],
-        validate = |_, _| panic!(
+        |_, _| panic!(
             "post_validate group must not run when none of its fields are relevant"
         ),
     )]
@@ -198,7 +198,7 @@ mod update_relevance_virtual_no_alias_schema {
 
     #[post_validate(
         ["v_trigger", "other"],
-        validate = |_, _| ::core::result::Result::Ok(::core::option::Option::None),
+        |_, _| ::core::result::Result::Ok(::core::option::Option::None),
     )]
     const _: () = ();
 }
@@ -277,7 +277,7 @@ mod update_relevance_virtual_alias_schema {
 
     #[post_validate(
         ["name", "other"],
-        validate = |_, _| panic!(
+        |_, _| panic!(
             "post_validate group must not run when none of its fields are relevant"
         ),
     )]
@@ -285,7 +285,7 @@ mod update_relevance_virtual_alias_schema {
 
     #[post_validate(
         ["v_trigger", "other"],
-        validate = |_, _| ::core::result::Result::Ok(::core::option::Option::None),
+        |_, _| ::core::result::Result::Ok(::core::option::Option::None),
     )]
     const _: () = ();
 }
@@ -360,7 +360,7 @@ mod update_relevance_virtual_alias_same_as_dependent_schema {
 
     #[post_validate(
         ["name", "other"],
-        validate = |_, _| panic!(
+        |_, _| panic!(
             "post_validate group must not run when none of its fields are relevant"
         ),
     )]
@@ -368,7 +368,7 @@ mod update_relevance_virtual_alias_same_as_dependent_schema {
 
     #[post_validate(
         ["v_trigger", "other"],
-        validate = |_, _| ::core::result::Result::Ok(::core::option::Option::None),
+        |_, _| ::core::result::Result::Ok(::core::option::Option::None),
     )]
     const _: () = ();
 }

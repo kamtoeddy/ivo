@@ -159,7 +159,7 @@ même schéma dans
 
 Validation transversale aux champs, exécutée après le `re_validate` de chaque champ individuel.
 Peut aussi retourner des valeurs mises à jour pour les champs du groupe lui-même (`pre_validate`
-s'exécute en premier et peut alimenter le `validate` principal avec des valeurs mises à jour).
+s'exécute en premier et peut alimenter le validateur principal avec des valeurs mises à jour).
 Nécessite au moins deux champs, parmi les champs lax, requis ou virtuels.
 
 ```rust
@@ -175,7 +175,7 @@ mod post_validate_schema {
         pub confirm_password: String,
     }
 
-    #[post_validate(["password", "confirm_password"], validate = |ctx, _opts| {
+    #[post_validate(["password", "confirm_password"], |ctx, _opts| {
         let input = ctx.input();
 
         if input.password != input.confirm_password {

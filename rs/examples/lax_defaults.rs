@@ -6,7 +6,8 @@ macro_rules! should_properly_create_and_update {
     ($module:ident) => {{
         use $module::*;
 
-        let (created, _ctx_options, handle_success) = DataModel.create(PartialData::new(), ()).ok().unwrap();
+        let (created, _ctx_options, handle_success) =
+            DataModel.create(PartialData::new(), ()).ok().unwrap();
 
         println!("\ncreated: {:#?}", created);
 
