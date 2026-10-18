@@ -28,6 +28,23 @@ describe('validateEmail', () => {
     }
   });
 
+  it('should reject values that only contain an email', () => {
+    const falsy = [
+      'not an email: example@gmail.com',
+      'example@gmail.com!!',
+      '<script>example@gmail.com</script>',
+      'example@gmail.com other@gmail.com',
+    ];
+
+    for (const value of falsy) {
+      expect(validateEmail(value)).toEqual({
+        reason: 'Invalid email',
+        valid: false,
+        metadata: null,
+      });
+    }
+  });
+
   it('should respect custom regular expression', () => {
     const regExp = /\w+@\w.\w/;
 
