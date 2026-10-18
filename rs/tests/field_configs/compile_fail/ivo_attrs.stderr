@@ -1,0 +1,67 @@
+error: `#[input(...)]` is no longer supported; use `#[ivo_input_attrs(...)]`
+ --> tests/field_configs/compile_fail/ivo_attrs.rs:7:11
+  |
+7 |         #[input(doc = "x")]
+  |           ^^^^^
+
+error: `#[output(...)]` is no longer supported; use `#[ivo_output_attrs(...)]`
+  --> tests/field_configs/compile_fail/ivo_attrs.rs:19:11
+   |
+19 |         #[output(doc = "x")]
+   |           ^^^^^^
+
+error: `#[partial(...)]` is no longer supported; use `#[ivo_partial_attrs(...)]`
+  --> tests/field_configs/compile_fail/ivo_attrs.rs:31:11
+   |
+31 |         #[partial(doc = "x")]
+   |           ^^^^^^^
+
+error: `#[input_partial(...)]` is no longer supported; use `#[ivo_input_partial_attrs(...)]`
+  --> tests/field_configs/compile_fail/ivo_attrs.rs:43:11
+   |
+43 |         #[input_partial(doc = "x")]
+   |           ^^^^^^^^^^^^^
+
+error: `#[output_partial(...)]` is no longer supported; use `#[ivo_output_partial_attrs(...)]`
+  --> tests/field_configs/compile_fail/ivo_attrs.rs:55:11
+   |
+55 |         #[output_partial(doc = "x")]
+   |           ^^^^^^^^^^^^^^
+
+error: field `constant`: `#[ivo_input_attrs(...)]` has no effect because this field is not part of the input struct
+  --> tests/field_configs/compile_fail/ivo_attrs.rs:70:11
+   |
+70 |         #[ivo_input_attrs(doc = "x")]
+   |           ^^^^^^^^^^^^^^^
+
+error: field `constant`: `#[ivo_input_partial_attrs(...)]` has no effect because this field is not part of the input struct
+  --> tests/field_configs/compile_fail/ivo_attrs.rs:82:11
+   |
+82 |         #[ivo_input_partial_attrs(doc = "x")]
+   |           ^^^^^^^^^^^^^^^^^^^^^^^
+
+error: field `virtual_field`: `#[ivo_output_attrs(...)]` has no effect because this field is not part of the output struct
+  --> tests/field_configs/compile_fail/ivo_attrs.rs:91:11
+   |
+91 |         #[ivo_output_attrs(doc = "x")]
+   |           ^^^^^^^^^^^^^^^^
+
+error: field `required`: `#[ivo_output_partial_attrs(...)]` requires the schema to declare `output(...)`
+   --> tests/field_configs/compile_fail/ivo_attrs.rs:105:11
+    |
+105 |         #[ivo_output_partial_attrs(doc = "x")]
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: expected `#[ivo_attrs(...)]` with the attributes to attach
+   --> tests/field_configs/compile_fail/ivo_attrs.rs:114:9
+    |
+114 |         #[ivo_attrs]
+    |         ^^^^^^^^^^^^
+
+error: unexpected end of input, expected an expression
+   --> tests/field_configs/compile_fail/ivo_attrs.rs:119:1
+    |
+119 | #[ivo_schema(input(DataInput, ivo_attrs(derive(Debug), serde = )))]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)

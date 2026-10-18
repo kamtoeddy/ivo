@@ -1,6 +1,6 @@
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod duplicate_lax_field {
     struct Fields {
         #[lax(1)]

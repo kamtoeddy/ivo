@@ -99,8 +99,8 @@ async fn should_properly_update_ctx_options() {
 async_test_matrix!(should_properly_update_ctx_options);
 
 #[ivo_schema(
-    input(ProductInput, derive(Debug, Clone, PartialEq)),
-    output(Product, derive(Debug, Clone, PartialEq)),
+    input(ProductInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Product, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(ProductCtxOptions)
 )]
 mod product_schema {

@@ -1158,8 +1158,8 @@ async_test_matrix!(
 // schemas
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod grouped_on_success_schema {
     struct Fields {
@@ -1181,8 +1181,8 @@ mod grouped_on_success_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod grouped_on_success_readonly_schema {
     struct Fields {
@@ -1205,8 +1205,8 @@ mod grouped_on_success_readonly_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod grouped_on_success_unrelated_schema {
     struct Fields {
@@ -1231,8 +1231,8 @@ mod grouped_on_success_unrelated_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_static_default_schema {
     struct Fields {
@@ -1247,8 +1247,8 @@ mod sync_static_default_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_static_default_schema {
     struct Fields {
@@ -1263,8 +1263,8 @@ mod async_static_default_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_computed_default_schema {
     struct Fields {
@@ -1279,8 +1279,8 @@ mod sync_computed_default_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_computed_default_schema {
     struct Fields {
@@ -1295,8 +1295,8 @@ mod async_computed_default_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_resolver_schema {
     struct Fields {
@@ -1311,8 +1311,8 @@ mod sync_resolver_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_resolver_schema {
     struct Fields {
@@ -1327,8 +1327,8 @@ mod async_resolver_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_multiple_parents_schema {
     struct Fields {
@@ -1346,8 +1346,8 @@ mod sync_multiple_parents_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_multiple_parents_schema {
     struct Fields {
@@ -1365,8 +1365,8 @@ mod async_multiple_parents_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_dependent_on_dependent_schema {
     struct Fields {
@@ -1389,8 +1389,8 @@ mod sync_dependent_on_dependent_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_dependent_on_dependent_schema {
     struct Fields {
@@ -1413,8 +1413,8 @@ mod async_dependent_on_dependent_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_readonly_schema {
     struct Fields {
@@ -1430,8 +1430,8 @@ mod sync_readonly_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_readonly_schema {
     struct Fields {
@@ -1447,8 +1447,8 @@ mod async_readonly_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_on_delete_static_default_schema {
     struct Fields {
@@ -1466,8 +1466,8 @@ mod sync_on_delete_static_default_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_on_delete_static_default_schema {
     struct Fields {
@@ -1485,8 +1485,8 @@ mod async_on_delete_static_default_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_on_delete_computed_default_schema {
     struct Fields {
@@ -1505,8 +1505,8 @@ mod sync_on_delete_computed_default_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_on_delete_computed_default_schema {
     struct Fields {
@@ -1525,8 +1525,8 @@ mod async_on_delete_computed_default_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_on_success_schema {
     struct Fields {
@@ -1547,8 +1547,8 @@ mod sync_on_success_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_on_success_schema {
     struct Fields {
@@ -1569,8 +1569,8 @@ mod async_on_success_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_on_success_multiple_schema {
     struct Fields {
@@ -1592,8 +1592,8 @@ mod sync_on_success_multiple_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_on_success_multiple_schema {
     struct Fields {
@@ -1615,8 +1615,8 @@ mod async_on_success_multiple_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod entity_level_on_success_schema {
     struct Fields {
@@ -1660,8 +1660,8 @@ fn should_trigger_sync_entity_level_on_success_with_no_args() {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod entity_level_on_success_no_args_schema {
     struct Fields {

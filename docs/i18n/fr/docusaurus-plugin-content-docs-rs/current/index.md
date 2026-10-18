@@ -27,8 +27,8 @@ use ivo::ivo_schema;
 type Timestamp = DateTime<Utc>;
 
 #[ivo_schema(
-    input(PostInput, derive(Debug, Clone, PartialEq)),
-    output(Post, derive(Debug, Clone, PartialEq))
+    input(PostInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Post, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_schema {
     use super::Timestamp;
@@ -96,8 +96,18 @@ fn main() {
   (`#[ivo_virtual]`) ou à la sortie (`#[constant]`, `#[depends_on(...)]`, horodatages). Un schéma
   ne contenant que des champs `#[required]`/`#[lax]` peut omettre `output(...)` entièrement et
   utiliser une seule struct pour les deux.
-- `derive(...)` ajoute des dérivations à la struct générée ; `derive_partial(...)` les ajoute à son
-  équivalent partiel (par ex. pour dériver `Serialize`/`Deserialize` pour le transport réseau).
+- `ivo_attrs(...)` attache des attributs à la struct générée et `ivo_partial_attrs(...)` à son
+  équivalent partiel, par ex. `input(Post, ivo_attrs(derive(Debug, Serialize), serde(rename_all =
+  "camelCase")), ivo_partial_attrs(derive(Deserialize)))`. Chaque entrée est émise telle quelle
+  (`#[...]`), et les `derive(...)` sont toujours émis avant les autres attributs. Les dérivations
+  dont ivo a lui-même besoin (`Clone` sur l'entrée ; `Clone` et `PartialEq` sur la sortie ;
+  `Clone`, `Debug`, `PartialEq` et `Default` sur les partiels) sont toujours ajoutées et peuvent
+  être omises.
+- Les mêmes attributs fonctionnent sur les champs : `#[ivo_attrs(...)]` et
+  `#[ivo_partial_attrs(...)]` s'attachent au champ dans chaque struct (partielle) dont il fait
+  partie, tandis que `#[ivo_input_attrs(...)]`, `#[ivo_output_attrs(...)]`,
+  `#[ivo_input_partial_attrs(...)]` et `#[ivo_output_partial_attrs(...)]` ciblent une seule struct,
+  par ex. `#[ivo_partial_attrs(serde(skip_serializing_if = "Option::is_none"))]`.
 - La macro génère une valeur unité `{OutputName}Model` (ou `{InputName}Model` pour un schéma à une
   seule struct) -- `post_schema::PostModel.create(...)` fonctionne directement, sans `::new()`.
 - `create`/`update`/`delete` ne sont `async` que si au moins un gestionnaire qu'ils invoquent est

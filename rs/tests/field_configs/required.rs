@@ -6,7 +6,7 @@ fn should_allow_required_fields_with_and_without_validators() {
     let _ = required_with_validator_schema::DataInputModel;
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod required_without_validator_schema {
     struct Fields {
         #[required]
@@ -14,7 +14,7 @@ mod required_without_validator_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod required_with_validator_schema {
     struct Fields {
         #[required]
@@ -53,7 +53,7 @@ async fn should_re_validate_independent_fields_concurrently() {
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_parallel_re_validate_schema {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -127,7 +127,7 @@ async fn should_validate_independent_updated_fields_concurrently() {
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_parallel_update_validate_schema {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -193,7 +193,7 @@ async fn should_validate_independent_fields_concurrently_on_create() {
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_parallel_create_validate_schema {
     use std::sync::atomic::{AtomicUsize, Ordering};
 

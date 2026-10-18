@@ -1527,8 +1527,8 @@ fn should_respect_grouped_ignore_update_rule_on_a_virtual_field_whose_alias_coll
 // -----------------------------------------------------------------------------
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_ignore_update_schema {
     struct Fields {
@@ -1548,8 +1548,8 @@ mod sync_ignore_update_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_ignore_update_schema {
     struct Fields {
@@ -1569,8 +1569,8 @@ mod async_ignore_update_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_grouped_ignore_schema {
     struct Fields {
@@ -1598,8 +1598,8 @@ mod sync_grouped_ignore_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_grouped_ignore_schema {
     struct Fields {
@@ -1627,8 +1627,8 @@ mod async_grouped_ignore_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_grouped_ignore_update_schema {
     struct Fields {
@@ -1656,8 +1656,8 @@ mod sync_grouped_ignore_update_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_grouped_ignore_update_schema {
     struct Fields {
@@ -1685,8 +1685,8 @@ mod async_grouped_ignore_update_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_ignore_update_alias_schema {
     struct Fields {
@@ -1706,8 +1706,8 @@ mod sync_ignore_update_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_ignore_update_alias_schema {
     struct Fields {
@@ -1727,8 +1727,8 @@ mod async_ignore_update_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_grouped_ignore_alias_schema {
     struct Fields {
@@ -1756,8 +1756,8 @@ mod sync_grouped_ignore_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_grouped_ignore_alias_schema {
     struct Fields {
@@ -1785,8 +1785,8 @@ mod async_grouped_ignore_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_grouped_ignore_update_alias_schema {
     struct Fields {
@@ -1814,8 +1814,8 @@ mod sync_grouped_ignore_update_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_grouped_ignore_update_alias_schema {
     struct Fields {
@@ -1843,8 +1843,8 @@ mod async_grouped_ignore_update_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_ignore_schema {
     struct Fields {
@@ -1864,8 +1864,8 @@ mod sync_ignore_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_ignore_alias_schema {
     struct Fields {
@@ -1885,8 +1885,8 @@ mod sync_ignore_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_ignore_dependent_alias_schema {
     struct Fields {
@@ -1906,8 +1906,8 @@ mod sync_ignore_dependent_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_ignore_init_schema {
     struct Fields {
@@ -1927,8 +1927,8 @@ mod sync_ignore_init_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_ignore_init_alias_schema {
     struct Fields {
@@ -1948,8 +1948,8 @@ mod sync_ignore_init_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_ignore_init_dependent_alias_schema {
     struct Fields {
@@ -1969,8 +1969,8 @@ mod sync_ignore_init_dependent_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_ignore_update_dependent_alias_schema {
     struct Fields {
@@ -1990,8 +1990,8 @@ mod sync_ignore_update_dependent_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_grouped_ignore_dependent_alias_schema {
     struct Fields {
@@ -2019,8 +2019,8 @@ mod sync_grouped_ignore_dependent_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_grouped_ignore_update_dependent_alias_schema {
     struct Fields {

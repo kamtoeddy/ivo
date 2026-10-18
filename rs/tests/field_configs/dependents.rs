@@ -64,8 +64,8 @@ async fn should_resolve_async_resolver_for_dependent_field() {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependent_on_lax_schema {
     struct Fields {
@@ -90,8 +90,8 @@ mod dependent_on_lax_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependent_on_required_schema {
     struct Fields {
@@ -116,8 +116,8 @@ mod dependent_on_required_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependent_on_both_schema {
     struct Fields {
@@ -142,8 +142,8 @@ mod dependent_on_both_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependent_on_dependent_schema {
     struct Fields {
@@ -173,8 +173,8 @@ mod dependent_on_dependent_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependent_on_dependent_and_required_schema {
     struct Fields {
@@ -204,8 +204,8 @@ mod dependent_on_dependent_and_required_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependent_on_virtual_schema {
     struct Fields {
@@ -239,8 +239,8 @@ mod dependent_on_virtual_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependent_on_virtual_and_required_schema {
     struct Fields {
@@ -274,8 +274,8 @@ mod dependent_on_virtual_and_required_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependent_on_dependent_and_virtual_schema {
     struct Fields {
@@ -309,8 +309,8 @@ mod dependent_on_dependent_and_virtual_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod chained_dependent_on_virtual_schema {
     struct Fields {
@@ -344,8 +344,8 @@ mod chained_dependent_on_virtual_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod virtual_alias_schema {
     struct Fields {
@@ -374,8 +374,8 @@ mod virtual_alias_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod virtual_alias_matching_dependent_schema {
     struct Fields {
@@ -404,8 +404,8 @@ mod virtual_alias_matching_dependent_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_dynamic_default_dependent_schema {
     struct Fields {
@@ -429,8 +429,8 @@ mod async_dynamic_default_dependent_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_resolve_dependent_schema {
     struct Fields {
@@ -503,8 +503,8 @@ async fn should_resolve_independent_async_dependents_of_the_same_round_concurren
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_parallel_dependents_schema {
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -597,8 +597,8 @@ fn should_still_use_paths_to_values_as_static_dependent_defaults() {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod fn_path_default_dependent_schema {
     struct Fields {
@@ -627,8 +627,8 @@ mod fn_path_default_dependent_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod value_path_default_dependent_schema {
     struct Fields {

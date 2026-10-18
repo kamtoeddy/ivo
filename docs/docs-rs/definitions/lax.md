@@ -23,7 +23,7 @@ A lax field is both an input and output field whose value may or may not be prov
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_schema {
     struct Fields {
         #[lax("default_bio".to_string())]

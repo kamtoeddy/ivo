@@ -8,7 +8,7 @@ fn default_dependent() -> i32 {
     1
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod readonly_lax_with_fn_path_default {
     struct Fields {
         #[lax(super::default_name)]
@@ -18,8 +18,8 @@ mod readonly_lax_with_fn_path_default {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod readonly_dependent_with_fn_path_default {
     struct Fields {

@@ -27,8 +27,8 @@ validated/sanitized like a real field, but never stored on the output struct dir
 use ivo::ivo_schema;
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod virtuals_schema {
     struct Fields {
@@ -66,8 +66,8 @@ input struct, while the field itself is still named (and referenced by `#[depend
 
 ```rust
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod virtuals_alias_schema {
     struct Fields {

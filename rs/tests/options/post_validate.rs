@@ -23,7 +23,7 @@ fn should_not_run_main_validate_once_pre_validate_has_failed() {
     assert_eq!(errors.get("field_a").unwrap().reason, "pre failed");
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod pre_validate_aborts_main_schema {
     struct Fields {
         #[required]
@@ -80,7 +80,7 @@ fn should_not_let_one_group_see_another_groups_pre_validate_updates() {
     assert_eq!(created.seen_by_b, "original");
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod independent_post_validate_groups_schema {
     struct Fields {
         #[required]
@@ -146,7 +146,7 @@ async fn should_run_independent_groups_main_validate_concurrently() {
     assert_eq!(created.field_b, "b");
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_parallel_post_validate_groups_schema {
     use std::sync::atomic::{AtomicUsize, Ordering};
 

@@ -19,7 +19,7 @@ Nécessite au moins deux champs, et s'applique à la fois à `create` et `update
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod ignore_group_schema {
     struct Fields {
         #[lax(String::new())]
@@ -64,7 +64,7 @@ omettez le tableau et utilisez plutôt la forme nue au niveau de l'entité,
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod ignore_update_group_schema {
     struct Fields {
         #[lax(0)]
@@ -112,7 +112,7 @@ téléphone".
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod required_group_schema {
     struct Fields {
         #[lax(None)]
@@ -165,7 +165,7 @@ Nécessite au moins deux champs, parmi les champs lax, requis ou virtuels.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validate_schema {
     struct Fields {
         #[lax(String::new())]
@@ -219,7 +219,7 @@ succès.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod hooks_schema {
     struct Fields {
         #[lax(0)]
@@ -306,7 +306,7 @@ pub struct AppCtxOptions {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(AppCtxOptions)
 )]
 mod ctx_options_schema {
@@ -377,7 +377,7 @@ impl IvoErrorSanitizer<()> for MyErrorSanitizer {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     error_sanitizer(MyErrorSanitizer)
 )]
 mod sanitized_schema {

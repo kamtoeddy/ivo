@@ -42,7 +42,7 @@ async fn should_evaluate_field_level_and_grouped_ignore_resolvers_concurrently_o
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_parallel_ignore_create_schema {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -107,7 +107,7 @@ async fn should_evaluate_field_level_and_grouped_ignore_resolvers_concurrently_o
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_parallel_ignore_update_schema {
     use std::sync::atomic::{AtomicUsize, Ordering};
 

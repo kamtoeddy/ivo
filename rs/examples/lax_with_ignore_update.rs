@@ -115,7 +115,7 @@ fn main() {
     data_schema::DataModel.delete(&data, ());
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod data_schema {
     struct Fields {
         #[lax(crate::DEFAULT_LAX_VALUE.to_string())]

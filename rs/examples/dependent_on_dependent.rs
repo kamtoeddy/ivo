@@ -11,7 +11,7 @@ async fn main() {
     timed().await;
 }
 
-#[ivo_schema(input(DataInput), output(Data, derive(Debug, PartialEq)))]
+#[ivo_schema(input(DataInput), output(Data, ivo_attrs(derive(Debug, PartialEq))))]
 mod data_schema {
     #[allow(dead_code)]
     pub const DEFAULT_DEPENDENT: i32 = 1;

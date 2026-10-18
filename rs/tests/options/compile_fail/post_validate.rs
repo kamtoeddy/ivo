@@ -1,7 +1,7 @@
 use ivo::ivo_schema;
 
 // should_reject_if_fields_array_is_empty
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validate_empty {
     struct Fields {
         #[lax(1234)]
@@ -16,7 +16,7 @@ mod post_validate_empty {
 }
 
 // should_reject_if_fields_array_has_just_one_field
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validate_one_field {
     struct Fields {
         #[lax(1234)]
@@ -31,7 +31,7 @@ mod post_validate_one_field {
 }
 
 // should_reject_if_the_fields_array_contains_any_duplicates
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validate_duplicates {
     struct Fields {
         #[lax(1234)]
@@ -46,7 +46,7 @@ mod post_validate_duplicates {
 }
 
 // should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_schema
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validate_invalid_field {
     struct Fields {
         #[lax(1234)]
@@ -62,8 +62,8 @@ mod post_validate_invalid_field {
 
 // should_reject_if_a_constant_is_provided_to_the_fields_array
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_validate_constant {
     struct Fields {
@@ -83,8 +83,8 @@ mod post_validate_constant {
 
 // should_reject_if_a_dependent_field_is_provided_to_the_fields_array
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_validate_dependent {
     struct Fields {
@@ -106,8 +106,8 @@ mod post_validate_dependent {
 
 // should_reject_if_an_alias_similar_to_a_dependent_field_is_provided_to_the_fields_array
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_validate_alias_similar_to_dependent {
     struct Fields {
@@ -133,8 +133,8 @@ mod post_validate_alias_similar_to_dependent {
 
 // should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_validate_alias_foreign_name {
     struct Fields {
@@ -160,8 +160,8 @@ mod post_validate_alias_foreign_name {
 
 // should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fields_array
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_validate_created_at_default {
     struct Fields {
@@ -184,8 +184,8 @@ mod post_validate_created_at_default {
 
 // should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fields_array
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_validate_created_at_custom {
     struct Fields {
@@ -208,8 +208,8 @@ mod post_validate_created_at_custom {
 
 // should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fields_array
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_validate_updated_at_default {
     struct Fields {
@@ -232,8 +232,8 @@ mod post_validate_updated_at_default {
 
 // should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fields_array
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_validate_updated_at_custom {
     struct Fields {

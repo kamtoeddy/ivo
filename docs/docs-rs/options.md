@@ -18,7 +18,7 @@ Requires at least two fields, and applies to both `create` and `update`.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod ignore_group_schema {
     struct Fields {
         #[lax(String::new())]
@@ -61,7 +61,7 @@ bare `#[ignore_update(handler)]` entity-level form instead.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod ignore_update_group_schema {
     struct Fields {
         #[lax(0)]
@@ -108,7 +108,7 @@ least two fields. Commonly used for "provide email or phone" style rules.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod required_group_schema {
     struct Fields {
         #[lax(None)]
@@ -160,7 +160,7 @@ into the main validator). Requires at least two fields, from lax, required or vi
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validate_schema {
     struct Fields {
         #[lax(String::new())]
@@ -213,7 +213,7 @@ when at least one of the listed fields is part of the success payload.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod hooks_schema {
     struct Fields {
         #[lax(0)]
@@ -296,7 +296,7 @@ pub struct AppCtxOptions {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(AppCtxOptions)
 )]
 mod ctx_options_schema {
@@ -365,7 +365,7 @@ impl IvoErrorSanitizer<()> for MyErrorSanitizer {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     error_sanitizer(MyErrorSanitizer)
 )]
 mod sanitized_schema {

@@ -39,7 +39,7 @@ fn should_properly_write_ctx_options_synchronously_in_a_sync_validator_and_read_
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod sync_write_schema {

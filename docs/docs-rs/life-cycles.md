@@ -20,7 +20,7 @@ any of them are.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod delete_schema {
     struct Fields {
         #[required]
@@ -65,7 +65,7 @@ async -- resolved once per schema at compile time, not behind a runtime check.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod notify_schema {
     struct Fields {
         #[required]

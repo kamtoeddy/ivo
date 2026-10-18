@@ -29,7 +29,7 @@ fn should_not_run_post_validate_group_at_creation_when_none_of_its_fields_were_s
     assert_eq!(data.trigger, "x");
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod create_relevance_schema {
     struct Fields {
         #[lax(0)]
@@ -78,7 +78,7 @@ fn should_run_post_validate_group_at_creation_when_one_of_its_fields_was_submitt
     assert_eq!(data.b, 7);
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod create_relevance_positive_schema {
     struct Fields {
         #[lax(0)]
@@ -145,8 +145,8 @@ fn should_run_post_validate_group_at_creation_when_its_virtual_field_was_provide
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod create_relevance_virtual_schema {
     struct Fields {

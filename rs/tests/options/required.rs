@@ -42,7 +42,7 @@ async fn should_evaluate_field_level_and_grouped_required_resolvers_concurrently
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_parallel_required_create_schema {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -110,7 +110,7 @@ async fn should_evaluate_field_level_and_grouped_required_resolvers_concurrently
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_parallel_required_update_schema {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -248,7 +248,7 @@ fn should_properly_handle_grouped_required_errors() {
     assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod grouped_required_errors_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]

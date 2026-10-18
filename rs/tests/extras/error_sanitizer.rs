@@ -146,7 +146,7 @@ struct Coordinates {
 type PlacesCtxOptions = Option<(String, Coordinates)>;
 
 #[ivo_schema(
-    input(PlaceInput, derive(Debug, Clone, PartialEq)),
+    input(PlaceInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(PlacesCtxOptions),
     error_sanitizer(ErrorSanitizer)
 )]

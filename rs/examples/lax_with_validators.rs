@@ -52,7 +52,7 @@ fn main() {
     handle_failure();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod data_schema {
     struct Fields {
         #[lax("default-username".to_string())]

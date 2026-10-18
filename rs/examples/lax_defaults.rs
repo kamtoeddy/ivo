@@ -64,7 +64,7 @@ fn main() {
     should_properly_create_and_update!(static_default_schema);
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod dynamic_default_schema {
     struct Fields {
         #[lax(|_, _| crate::DEFAULT_USERNAME.to_string())]
@@ -78,7 +78,7 @@ mod dynamic_default_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod static_default_schema {
     struct Fields {
         #[lax(crate::DEFAULT_USERNAME.to_string())]

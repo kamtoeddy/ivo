@@ -11,9 +11,10 @@ use syn::{
 
 struct StructArgs {
     name: Ident,
-    derives: Vec<Path>,
-    #[allow(dead_code)]
-    partial_derives: Vec<Path>,
+    /// Attributes from `ivo_attrs(...)`, attached to the generated struct.
+    attrs: Vec<syn::Meta>,
+    /// Attributes from `ivo_partial_attrs(...)`, attached to its partial struct.
+    partial_attrs: Vec<syn::Meta>,
 }
 
 struct SchemaArgs {
@@ -103,16 +104,19 @@ impl Parse for SchemaArgs {
 impl Parse for StructArgs {
     fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
         let name: Ident = input.parse()?;
-        let mut derives = Vec::new();
-        let mut partial_derives = Vec::new();
+        let mut attrs = Vec::new();
+        let mut partial_attrs = Vec::new();
 
         while input.peek(Token![,]) {
             input.parse::<Token![,]>()?;
+            if input.is_empty() {
+                break;
+            }
             let meta: syn::Meta = input.parse()?;
             let syn::Meta::List(inner) = meta else {
                 return Err(syn::Error::new_spanned(
                     meta,
-                    "expected `derive(...)` or `derive_partial(...)`",
+                    "expected `ivo_attrs(...)` or `ivo_partial_attrs(...)`",
                 ));
             };
             let ident = inner
@@ -120,20 +124,29 @@ impl Parse for StructArgs {
                 .get_ident()
                 .ok_or_else(|| syn::Error::new_spanned(&inner.path, "expected an identifier"))?;
             match ident.to_string().as_str() {
+                "ivo_attrs" => attrs.extend(parse_struct_attr_metas(&inner.tokens)?),
+                "ivo_partial_attrs" => {
+                    partial_attrs.extend(parse_struct_attr_metas(&inner.tokens)?)
+                }
                 "derive" => {
-                    let paths = syn::punctuated::Punctuated::<Path, Token![,]>::parse_terminated
-                        .parse2(inner.tokens.clone())?;
-                    derives.extend(paths);
+                    return Err(syn::Error::new_spanned(
+                        ident,
+                        "`derive(...)` is no longer supported here; use `ivo_attrs(derive(...))`",
+                    ));
                 }
                 "derive_partial" => {
-                    let paths = syn::punctuated::Punctuated::<Path, Token![,]>::parse_terminated
-                        .parse2(inner.tokens.clone())?;
-                    partial_derives.extend(paths);
+                    return Err(syn::Error::new_spanned(
+                        ident,
+                        "`derive_partial(...)` is no longer supported; use `ivo_partial_attrs(derive(...))`",
+                    ));
                 }
                 _ => {
                     return Err(syn::Error::new_spanned(
                         ident,
-                        format!("unknown struct argument `{}`", ident),
+                        format!(
+                            "unknown struct argument `{}`; expected `ivo_attrs(...)` or `ivo_partial_attrs(...)`",
+                            ident
+                        ),
                     ));
                 }
             }
@@ -141,10 +154,38 @@ impl Parse for StructArgs {
 
         Ok(StructArgs {
             name,
-            derives,
-            partial_derives,
+            attrs,
+            partial_attrs,
         })
     }
+}
+
+/// Like `parse_attr_metas`, but also checks that every `derive(...)` lists
+/// paths, since struct-level derives get merged with ivo's own.
+fn parse_struct_attr_metas(tokens: &proc_macro2::TokenStream) -> syn::Result<Vec<syn::Meta>> {
+    let metas = parse_attr_metas(tokens)?;
+    for meta in &metas {
+        if meta.path().is_ident("derive") {
+            let syn::Meta::List(list) = meta else {
+                return Err(syn::Error::new_spanned(meta, "expected `derive(...)`"));
+            };
+            syn::punctuated::Punctuated::<Path, Token![,]>::parse_terminated
+                .parse2(list.tokens.clone())?;
+        }
+    }
+    Ok(metas)
+}
+
+/// Parses the contents of `ivo_attrs(...)`-style lists: comma-separated
+/// attribute metas (`derive(..)`, `serde(..)`, `doc = ".."`, ...), each later
+/// emitted verbatim as `#[meta]`.
+fn parse_attr_metas(tokens: &proc_macro2::TokenStream) -> syn::Result<Vec<syn::Meta>> {
+    Ok(
+        syn::punctuated::Punctuated::<syn::Meta, Token![,]>::parse_terminated
+            .parse2(tokens.clone())?
+            .into_iter()
+            .collect(),
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -416,32 +457,53 @@ fn attr_values_tokens(attrs: &[Attribute], name: &str) -> Vec<proc_macro2::Token
         .collect()
 }
 
-fn passthrough_attrs(attrs: &[Attribute], name: &str) -> Vec<proc_macro2::TokenStream> {
-    attrs
-        .iter()
-        .filter(|a| a.path().is_ident(name))
-        .filter_map(|attr| match &attr.meta {
-            syn::Meta::List(list) => Some(list.tokens.clone()),
-            _ => None,
-        })
-        .map(|tokens| quote! { #[#tokens] })
-        .collect()
+/// A generated struct that field-level `ivo_*attrs` can target.
+#[derive(Clone, Copy, PartialEq)]
+enum AttrTarget {
+    Input,
+    PartialInput,
+    Output,
+    PartialOutput,
 }
 
-fn partial_passthrough_attrs(attrs: &[Attribute], target: &str) -> Vec<proc_macro2::TokenStream> {
-    let names: &[&str] = match target {
-        "input" => &["partial", "input_partial"],
-        "output" => &["partial", "output_partial"],
-        _ => &[],
-    };
-    attrs
+impl AttrTarget {
+    /// The attribute applying to every non-partial (or every partial) struct.
+    fn shared_attr_name(self) -> &'static str {
+        match self {
+            AttrTarget::Input | AttrTarget::Output => "ivo_attrs",
+            AttrTarget::PartialInput | AttrTarget::PartialOutput => "ivo_partial_attrs",
+        }
+    }
+
+    /// The attribute applying to this struct only.
+    fn scoped_attr_name(self) -> &'static str {
+        match self {
+            AttrTarget::Input => "ivo_input_attrs",
+            AttrTarget::PartialInput => "ivo_input_partial_attrs",
+            AttrTarget::Output => "ivo_output_attrs",
+            AttrTarget::PartialOutput => "ivo_output_partial_attrs",
+        }
+    }
+}
+
+const FIELD_PASSTHROUGH_ATTRS: &[&str] = &[
+    "ivo_attrs",
+    "ivo_partial_attrs",
+    "ivo_input_attrs",
+    "ivo_output_attrs",
+    "ivo_input_partial_attrs",
+    "ivo_output_partial_attrs",
+];
+
+/// Field passthrough attributes for `target`, emitted as `#[...]`: the shared
+/// `ivo_attrs`/`ivo_partial_attrs` first, then the target-scoped ones, each in
+/// source order. Their contents are checked in `validate_field_passthrough_attrs`.
+fn field_passthrough_attrs(attrs: &[Attribute], target: AttrTarget) -> Vec<proc_macro2::TokenStream> {
+    [target.shared_attr_name(), target.scoped_attr_name()]
         .iter()
-        .filter(|a| names.iter().any(|name| a.path().is_ident(name)))
-        .filter_map(|attr| match &attr.meta {
-            syn::Meta::List(list) => Some(list.tokens.clone()),
-            _ => None,
-        })
-        .map(|tokens| quote! { #[#tokens] })
+        .flat_map(|name| attr_values_tokens(attrs, name))
+        .flat_map(|tokens| parse_attr_metas(&tokens).unwrap_or_default())
+        .map(|meta| quote! { #[#meta] })
         .collect()
 }
 
@@ -1033,10 +1095,89 @@ fn validate_schema(
     options: &[GroupedOption],
 ) -> syn::Result<()> {
     validate_field_attributes(fields)?;
+    validate_field_passthrough_attrs(args, fields)?;
     validate_field_names(fields)?;
     validate_single_dual_mode(args, fields)?;
     validate_dependencies(fields)?;
     validate_grouped_options(fields, options)?;
+    Ok(())
+}
+
+/// Checks field-level `ivo_*attrs(...)`: their contents must be attribute
+/// metas, the scoped variants must target a struct the field is actually part
+/// of, and the removed `#[input(..)]`-style passthroughs get a migration hint.
+fn validate_field_passthrough_attrs(args: &SchemaArgs, fields: &[FieldDef]) -> syn::Result<()> {
+    let has_output = args.output.is_some();
+    for f in fields {
+        let in_input = matches!(
+            f.field_type,
+            FieldType::Required | FieldType::Lax | FieldType::Virtual { .. }
+        );
+        let in_output = has_output && !matches!(f.field_type, FieldType::Virtual { .. });
+
+        for attr in &f.attrs {
+            let Some(name) = attr.path().get_ident().map(|i| i.to_string()) else {
+                continue;
+            };
+
+            let replacement = match name.as_str() {
+                "input" => Some("ivo_input_attrs"),
+                "output" => Some("ivo_output_attrs"),
+                "partial" => Some("ivo_partial_attrs"),
+                "input_partial" => Some("ivo_input_partial_attrs"),
+                "output_partial" => Some("ivo_output_partial_attrs"),
+                _ => None,
+            };
+            if let Some(replacement) = replacement {
+                return Err(syn::Error::new_spanned(
+                    attr.path(),
+                    format!("`#[{name}(...)]` is no longer supported; use `#[{replacement}(...)]`"),
+                ));
+            }
+
+            if !FIELD_PASSTHROUGH_ATTRS.contains(&name.as_str()) {
+                continue;
+            }
+
+            let syn::Meta::List(list) = &attr.meta else {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    format!("expected `#[{name}(...)]` with the attributes to attach"),
+                ));
+            };
+            parse_attr_metas(&list.tokens)?;
+
+            let targets_input = name.starts_with("ivo_input_");
+            let targets_output = name.starts_with("ivo_output_");
+            if targets_input && !in_input {
+                return Err(syn::Error::new_spanned(
+                    attr.path(),
+                    format!(
+                        "field `{}`: `#[{name}(...)]` has no effect because this field is not part of the input struct",
+                        f.name
+                    ),
+                ));
+            }
+            if targets_output && !has_output {
+                return Err(syn::Error::new_spanned(
+                    attr.path(),
+                    format!(
+                        "field `{}`: `#[{name}(...)]` requires the schema to declare `output(...)`",
+                        f.name
+                    ),
+                ));
+            }
+            if targets_output && !in_output {
+                return Err(syn::Error::new_spanned(
+                    attr.path(),
+                    format!(
+                        "field `{}`: `#[{name}(...)]` has no effect because this field is not part of the output struct",
+                        f.name
+                    ),
+                ));
+            }
+        }
+    }
     Ok(())
 }
 
@@ -1748,6 +1889,40 @@ fn is_default_derive(path: &Path) -> bool {
     path.get_ident().map(|i| i == "Default").unwrap_or(false)
 }
 
+/// `ivo_attrs(...)`/`ivo_partial_attrs(...)` for a generated struct: every
+/// `derive(...)` is merged into one `#[derive(...)]` (minus the derives ivo
+/// always adds itself, per `is_builtin_derive`) emitted ahead of the other
+/// attributes, so derive helper attributes (`#[serde]`, `#[sqlx]`, ...) always
+/// follow the derive that introduces them.
+fn struct_passthrough_attrs(
+    metas: &[syn::Meta],
+    is_builtin_derive: impl Fn(&Path) -> bool,
+) -> proc_macro2::TokenStream {
+    let mut derives: Vec<Path> = Vec::new();
+    let mut others = Vec::new();
+    for meta in metas {
+        match meta {
+            syn::Meta::List(list) if list.path.is_ident("derive") => {
+                let paths = syn::punctuated::Punctuated::<Path, Token![,]>::parse_terminated
+                    .parse2(list.tokens.clone())
+                    .map(|p| p.into_iter().collect::<Vec<_>>())
+                    .unwrap_or_default();
+                derives.extend(paths.into_iter().filter(|p| !is_builtin_derive(p)));
+            }
+            _ => others.push(meta),
+        }
+    }
+    let derive_attr = if derives.is_empty() {
+        quote! {}
+    } else {
+        quote! { #[derive(#(#derives),*)] }
+    };
+    quote! {
+        #derive_attr
+        #(#[#others])*
+    }
+}
+
 struct PartialFieldInfo {
     name: Ident,
     ty: Type,
@@ -1758,19 +1933,13 @@ fn generate_partial_and_impls(
     name: &Ident,
     vis: &Visibility,
     fields: &[PartialFieldInfo],
-    partial_derives: &[Path],
+    partial_attrs: &[syn::Meta],
     is_input: bool,
 ) -> proc_macro2::TokenStream {
     let partial_name = format_ident!("Partial{}", name);
-    let partial_derives: Vec<_> = partial_derives
-        .iter()
-        .filter(|p| {
-            !is_clone_derive(p)
-                && !is_debug_derive(p)
-                && !is_partial_eq_derive(p)
-                && !is_default_derive(p)
-        })
-        .collect();
+    let partial_struct_attrs = struct_passthrough_attrs(partial_attrs, |p| {
+        is_clone_derive(p) || is_debug_derive(p) || is_partial_eq_derive(p) || is_default_derive(p)
+    });
 
     let partial_fields = fields.iter().map(|f| {
         let name = &f.name;
@@ -1864,7 +2033,8 @@ fn generate_partial_and_impls(
     };
 
     quote! {
-        #[derive(::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::PartialEq, ::core::default::Default, #(#partial_derives),*)]
+        #[derive(::core::clone::Clone, ::core::fmt::Debug, ::core::cmp::PartialEq, ::core::default::Default)]
+        #partial_struct_attrs
         #vis struct #partial_name {
             #(#partial_fields,)*
         }
@@ -2045,12 +2215,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
 
 fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::TokenStream {
     let input_name = &args.input.name;
-    let input_derives: Vec<_> = args
-        .input
-        .derives
-        .iter()
-        .filter(|p| !is_clone_derive(p))
-        .collect();
+    let input_struct_attrs = struct_passthrough_attrs(&args.input.attrs, is_clone_derive);
 
     let mut input_partial_fields = Vec::new();
     let input_fields = fields
@@ -2076,16 +2241,17 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
             input_partial_fields.push(PartialFieldInfo {
                 name: name.clone(),
                 ty: ty.clone(),
-                attrs: partial_passthrough_attrs(&f.attrs, "input"),
+                attrs: field_passthrough_attrs(&f.attrs, AttrTarget::PartialInput),
             });
 
-            let input_attrs = passthrough_attrs(&f.attrs, "input");
+            let input_attrs = field_passthrough_attrs(&f.attrs, AttrTarget::Input);
 
             quote! { #(#input_attrs)* #vis #name: #ty }
         });
 
     let input_struct = quote! {
-        #[derive(::core::clone::Clone, #(#input_derives),*)]
+        #[derive(::core::clone::Clone)]
+        #input_struct_attrs
         pub struct #input_name {
             #(#input_fields,)*
         }
@@ -2096,17 +2262,15 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
         input_name,
         &pub_vis,
         &input_partial_fields,
-        &args.input.partial_derives,
+        &args.input.partial_attrs,
         true,
     );
 
     let (output_struct, output_partial_impls) = if let Some(output_args) = &args.output {
         let output_name = &output_args.name;
-        let output_derives: Vec<_> = output_args
-            .derives
-            .iter()
-            .filter(|p| !is_clone_derive(p) && !is_partial_eq_derive(p))
-            .collect();
+        let output_struct_attrs = struct_passthrough_attrs(&output_args.attrs, |p| {
+            is_clone_derive(p) || is_partial_eq_derive(p)
+        });
 
         let mut output_partial_fields = Vec::new();
         let output_fields = fields
@@ -2120,16 +2284,17 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
                 output_partial_fields.push(PartialFieldInfo {
                     name: name.clone(),
                     ty: ty.clone(),
-                    attrs: partial_passthrough_attrs(&f.attrs, "output"),
+                    attrs: field_passthrough_attrs(&f.attrs, AttrTarget::PartialOutput),
                 });
 
-                let output_attrs = passthrough_attrs(&f.attrs, "output");
+                let output_attrs = field_passthrough_attrs(&f.attrs, AttrTarget::Output);
 
                 quote! { #(#output_attrs)* #vis #name: #ty }
             });
 
         let output_struct = quote! {
-            #[derive(::core::clone::Clone, ::core::cmp::PartialEq, #(#output_derives),*)]
+            #[derive(::core::clone::Clone, ::core::cmp::PartialEq)]
+            #output_struct_attrs
             pub struct #output_name {
                 #(#output_fields,)*
             }
@@ -2139,7 +2304,7 @@ fn generate_structs(args: &SchemaArgs, fields: &[FieldDef]) -> proc_macro2::Toke
             output_name,
             &pub_vis,
             &output_partial_fields,
-            &output_args.partial_derives,
+            &output_args.partial_attrs,
             false,
         );
 
@@ -6717,5 +6882,86 @@ mod tests {
             "expected delete method, got: {}",
             out
         );
+    }
+
+    fn expand_with_struct_args(input_args: &str) -> String {
+        expand(
+            &format!("input({input_args})"),
+            r#"
+            mod s {
+                struct Fields {
+                    #[required]
+                    pub a: String,
+                }
+            }
+            "#,
+        )
+    }
+
+    /// The `#[...]` attributes right before `pub struct #name`.
+    fn struct_header<'a>(out: &'a str, name: &str) -> &'a str {
+        let end = out
+            .find(&format!("pub struct {name} "))
+            .unwrap_or_else(|| panic!("struct {name} not found in: {out}"));
+        let start = out[..end].rfind('}').map_or(0, |i| i + 1);
+        &out[start..end]
+    }
+
+    #[test]
+    fn emits_ivo_attrs_on_the_struct_and_ivo_partial_attrs_on_its_partial() {
+        let out = expand_with_struct_args(
+            r#"User, ivo_attrs(derive(Debug), serde(rename_all = "camelCase")), ivo_partial_attrs(derive(Hash), doc = "partial")"#,
+        );
+        assert_no_compile_error(&out, "ivo_attrs");
+
+        let header = struct_header(&out, "User");
+        assert!(header.contains("# [derive (Debug)]"), "got: {header}");
+        assert!(header.contains("# [serde (rename_all = \"camelCase\")]"), "got: {header}");
+        assert!(!header.contains("Hash"), "got: {header}");
+
+        let header = struct_header(&out, "PartialUser");
+        assert!(header.contains("# [derive (Hash)]"), "got: {header}");
+        assert!(header.contains("# [doc = \"partial\"]"), "got: {header}");
+        assert!(!header.contains("serde"), "got: {header}");
+    }
+
+    #[test]
+    fn drops_derives_ivo_already_adds() {
+        let out = expand_with_struct_args(
+            "User, ivo_attrs(derive(Clone, Debug)), ivo_partial_attrs(derive(Clone, Debug, PartialEq, Default))",
+        );
+        assert_no_compile_error(&out, "builtin derives");
+
+        let header = struct_header(&out, "User");
+        assert!(header.contains("# [derive (Debug)]"), "got: {header}");
+        assert_eq!(header.matches("Clone").count(), 1, "got: {header}");
+
+        // nothing left to derive on the partial beyond ivo's own derives
+        let header = struct_header(&out, "PartialUser");
+        assert_eq!(header.matches("derive").count(), 1, "got: {header}");
+    }
+
+    #[test]
+    fn emits_user_derives_before_other_attributes_and_merges_repeated_clauses() {
+        let out = expand_with_struct_args(
+            r#"User, ivo_attrs(serde(rename_all = "camelCase"), derive(Debug)), ivo_attrs(derive(Hash))"#,
+        );
+        assert_no_compile_error(&out, "ordering");
+
+        let header = struct_header(&out, "User");
+        let derive_idx = header.find("# [derive (Debug , Hash)]").unwrap_or_else(|| panic!("got: {header}"));
+        let serde_idx = header.find("# [serde").unwrap();
+        assert!(derive_idx < serde_idx, "got: {header}");
+    }
+
+    #[test]
+    fn rejects_removed_derive_struct_arguments() {
+        let out = expand_with_struct_args("User, derive(Debug)");
+        assert_compile_error(&out, "derive");
+        assert!(out.contains("use `ivo_attrs(derive(...))`"), "got: {out}");
+
+        let out = expand_with_struct_args("User, derive_partial(Debug)");
+        assert_compile_error(&out, "derive_partial");
+        assert!(out.contains("use `ivo_partial_attrs(derive(...))`"), "got: {out}");
     }
 }

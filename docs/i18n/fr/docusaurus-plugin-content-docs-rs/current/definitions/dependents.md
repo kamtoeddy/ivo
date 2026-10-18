@@ -29,8 +29,8 @@ devrait être mis à jour que lorsque `username` change).
 use ivo::ivo_schema;
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependents_schema {
     struct Fields {

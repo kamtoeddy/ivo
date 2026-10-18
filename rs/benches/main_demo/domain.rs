@@ -31,8 +31,8 @@ impl UserCtxOptions {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq)),
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(UserCtxOptions)
 )]
 mod user_schema {

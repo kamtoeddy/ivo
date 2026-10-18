@@ -15,8 +15,8 @@ mod user_schema {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_schema_dual {
     struct Fields {
@@ -29,7 +29,7 @@ mod user_schema_dual {
     }
 }
 
-#[ivo_schema(input(UserWithValidation, derive(Debug, Clone)))]
+#[ivo_schema(input(UserWithValidation, ivo_attrs(derive(Debug, Clone))))]
 mod user_validation_schema {
     struct Fields {
         #[required]
@@ -145,8 +145,8 @@ async fn smoke_model_validator_fail() {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_sanitization_schema {
     struct Fields {
@@ -179,8 +179,8 @@ async fn smoke_model_sanitizer() {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_dependent_schema {
     struct Fields {
@@ -217,8 +217,8 @@ async fn smoke_model_resolver() {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_virtual_alias_schema {
     struct Fields {
@@ -251,8 +251,8 @@ async fn smoke_virtual_alias() {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_timestamps_schema {
     struct Fields {
@@ -281,7 +281,7 @@ async fn smoke_timestamps() {
     assert_eq!(data.updated_at, "timestamp");
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_lax_default_schema {
     struct Fields {
         #[required]
@@ -292,7 +292,7 @@ mod user_lax_default_schema {
     }
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_grouped_ignore_schema {
     struct Fields {
         #[lax(String::from("default_a"))]
@@ -306,7 +306,7 @@ mod user_grouped_ignore_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_grouped_required_schema {
     struct Fields {
         #[lax(String::from(""))]
@@ -363,7 +363,7 @@ async fn smoke_model_grouped_required() {
     assert_eq!(errors.get("b").unwrap().reason, "field is required");
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_field_ignore_schema {
     struct Fields {
         #[lax(String::from("default_a"))]
@@ -375,7 +375,7 @@ mod user_field_ignore_schema {
     }
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_field_ignore_init_schema {
     struct Fields {
         #[lax(String::from("default_a"))]
@@ -387,7 +387,7 @@ mod user_field_ignore_init_schema {
     }
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_field_required_schema {
     struct Fields {
         #[lax(String::from(""))]
@@ -399,7 +399,7 @@ mod user_field_required_schema {
     }
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_field_ignore_update_schema {
     struct Fields {
         #[required]
@@ -460,7 +460,7 @@ async fn smoke_model_field_ignore_update() {
     assert!(failed.is_none());
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_re_validate_schema {
     struct Fields {
         #[required]
@@ -476,7 +476,7 @@ mod user_re_validate_schema {
     }
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_readonly_schema {
     struct Fields {
         #[required]
@@ -490,8 +490,8 @@ mod user_readonly_schema {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_dependent_default_schema {
     struct Fields {
@@ -558,7 +558,7 @@ async fn smoke_model_dependent_default() {
     assert_eq!(data.status, "default-status");
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_required_error_schema {
     struct Fields {
         #[required]
@@ -568,8 +568,8 @@ mod user_required_error_schema {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_constant_static_schema {
     struct Fields {
@@ -582,8 +582,8 @@ mod user_constant_static_schema {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_constant_resolver_schema {
     struct Fields {
@@ -595,7 +595,7 @@ mod user_constant_resolver_schema {
     }
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_grouped_ignore_update_schema {
     struct Fields {
         #[required]
@@ -657,7 +657,7 @@ async fn smoke_model_grouped_ignore_update() {
     assert!(failed.is_none());
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq), derive_partial(Debug)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq)), ivo_partial_attrs(derive(Debug))))]
 mod user_derive_partial_schema {
     struct Fields {
         #[required]
@@ -677,8 +677,8 @@ fn smoke_derive_partial() {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_on_delete_field_schema {
     struct Fields {
@@ -691,7 +691,7 @@ mod user_on_delete_field_schema {
     }
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_on_delete_grouped_schema {
     struct Fields {
         #[required]
@@ -725,7 +725,7 @@ async fn smoke_model_on_delete_grouped() {
         .await;
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_readonly_lax_schema {
     struct Fields {
         #[required]
@@ -764,18 +764,18 @@ async fn smoke_model_readonly_lax_default() {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_passthrough_schema {
     struct Fields {
         #[required]
-        #[input(doc = "input name")]
-        #[output(doc = "output name")]
+        #[ivo_input_attrs(doc = "input name")]
+        #[ivo_output_attrs(doc = "output name")]
         pub name: String,
 
         #[constant(|| String::from("id"))]
-        #[output(doc = "output id only")]
+        #[ivo_output_attrs(doc = "output id only")]
         pub id: String,
     }
 }
@@ -793,15 +793,15 @@ fn smoke_passthrough_attrs() {
 }
 
 #[ivo_schema(
-    input(UserInput, derive(Debug, Clone, PartialEq)),
-    output(User, derive(Debug, Clone, PartialEq))
+    input(UserInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(User, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod user_partial_passthrough_schema {
     struct Fields {
         #[required]
-        #[partial(doc = "partial name")]
-        #[input_partial(allow(dead_code))]
-        #[output_partial(allow(unused_mut))]
+        #[ivo_partial_attrs(doc = "partial name")]
+        #[ivo_input_partial_attrs(allow(dead_code))]
+        #[ivo_output_partial_attrs(allow(unused_mut))]
         pub name: String,
 
         #[constant(|| String::from("id"))]
@@ -824,7 +824,7 @@ fn smoke_partial_passthrough_attrs() {
 async fn smoke_model_on_success_trigger() {
     ON_SUCCESS_COUNTER.store(0, Ordering::SeqCst);
 
-    #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+    #[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
     mod user_on_success_schema {
         struct Fields {
             #[required]
@@ -851,7 +851,7 @@ async fn smoke_model_on_success_trigger() {
 async fn smoke_model_on_failure_trigger() {
     ON_FAILURE_COUNTER.store(0, Ordering::SeqCst);
 
-    #[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+    #[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
     mod user_on_failure_schema {
         struct Fields {
             #[required]
@@ -882,7 +882,7 @@ async fn smoke_model_on_failure_trigger() {
     assert_eq!(ON_FAILURE_COUNTER.load(Ordering::SeqCst), 1);
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_post_validate_pass_schema {
     struct Fields {
         #[required]
@@ -904,7 +904,7 @@ mod user_post_validate_pass_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_post_validate_fail_schema {
     struct Fields {
         #[required]
@@ -926,7 +926,7 @@ mod user_post_validate_fail_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_post_validate_sync_schema {
     struct Fields {
         #[required]
@@ -985,7 +985,7 @@ async fn smoke_model_post_validate_sync() {
     assert_eq!(data.b, "updated_b");
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_post_validate_pre_schema {
     struct Fields {
         #[required]
@@ -1030,7 +1030,7 @@ async fn smoke_model_post_validate_pre_validate() {
     assert_eq!(data.b, "pre_b");
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_post_validate_update_fail_schema {
     struct Fields {
         #[required]
@@ -1055,7 +1055,7 @@ mod user_post_validate_update_fail_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(User, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(User, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod user_post_validate_update_update_schema {
     struct Fields {
         #[required]

@@ -7,7 +7,7 @@ mod required;
 
 use ivo::ivo_schema;
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod grouped_on_delete_schema {
     struct Fields {
         #[lax(1234)]
@@ -36,7 +36,7 @@ async_test_matrix!(
     should_properly_trigger_on_delete_handlers
 );
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod multiple_grouped_on_delete_schema {
     struct Fields {
         #[lax(1234)]
@@ -69,8 +69,8 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod allow_constant_and_dependents_on_success_schema {
     struct Fields {
@@ -138,7 +138,7 @@ fn should_allow_named_consts_as_grouped_option_anchors() {
     assert_eq!(created.email.as_deref(), Some("a@b.com"));
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod named_const_option_schema {
     struct Fields {
         #[lax(None)]

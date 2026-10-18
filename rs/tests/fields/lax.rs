@@ -188,7 +188,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation_asy
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_post_validation_async);
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod no_change_sync_schema {
     struct Fields {
         #[lax(1)]
@@ -196,7 +196,7 @@ mod no_change_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod no_change_async_schema {
     struct Fields {
         #[lax(async |_, _| 1)]
@@ -204,7 +204,7 @@ mod no_change_async_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod no_change_after_validation_sync_schema {
     struct Fields {
         #[lax(1)]
@@ -213,7 +213,7 @@ mod no_change_after_validation_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod no_change_after_validation_async_schema {
     struct Fields {
         #[lax(async |_, _| 1)]
@@ -222,7 +222,7 @@ mod no_change_after_validation_async_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod no_change_after_re_validation_sync_schema {
     struct Fields {
         #[lax(1)]
@@ -232,7 +232,7 @@ mod no_change_after_re_validation_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod no_change_after_re_validation_async_schema {
     struct Fields {
         #[lax(async |_, _| 1)]
@@ -242,7 +242,7 @@ mod no_change_after_re_validation_async_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod no_change_after_post_validation_sync_schema {
     const DEFAULT_VALUE: &str = "default_value";
     const RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR";
@@ -290,7 +290,7 @@ mod no_change_after_post_validation_sync_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod no_change_after_post_validation_async_schema {
     const DEFAULT_VALUE: &str = "default_value";
     const RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR";
@@ -486,7 +486,7 @@ async_test_matrix!(
     should_properly_use_lax_input_values_as_output_values_if_no_validator_is_provided_async
 );
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod default_value_sync_schema {
     struct Fields {
         #[lax(1)]
@@ -494,7 +494,7 @@ mod default_value_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod default_value_async_schema {
     struct Fields {
         #[lax(async |_, _| 1)]
@@ -502,7 +502,7 @@ mod default_value_async_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod default_fn_sync_schema {
     const DEFAULT_VALUE: i32 = 1_000;
 
@@ -512,7 +512,7 @@ mod default_fn_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod default_fn_async_schema {
     const DEFAULT_VALUE: i32 = 1_000;
 
@@ -522,7 +522,7 @@ mod default_fn_async_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_input_as_output_sync_schema {
     struct Fields {
         #[lax(|_, _| 1_000)]
@@ -530,7 +530,7 @@ mod lax_input_as_output_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_input_as_output_async_schema {
     struct Fields {
         #[lax(async |_, _| 1_000)]
@@ -662,7 +662,7 @@ async fn should_respect_the_required_rule_async() {
 
 async_test_matrix!(should_respect_the_required_rule_async);
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod required_sync_schema {
     struct Fields {
         #[lax(String::from("default_other_value"))]
@@ -690,7 +690,7 @@ mod required_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod required_async_schema {
     struct Fields {
         #[lax(async |_, _| String::from("default_other_value"))]
@@ -993,7 +993,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
 async_test_matrix!(should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value_async);
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod primary_validation_sync_schema {
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
@@ -1012,7 +1012,7 @@ mod primary_validation_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod primary_validation_async_schema {
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
@@ -1032,8 +1032,8 @@ mod primary_validation_async_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod primary_update_validation_sync_schema {
     const LAX_OUT_OF_RANGE_ERROR: &str = "lax must be between 1 & 5 inclussive";
@@ -1056,8 +1056,8 @@ mod primary_update_validation_sync_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod primary_update_validation_async_schema {
     const LAX_OUT_OF_RANGE_ERROR: &str = "lax must be between 1 & 5 inclussive";
@@ -1079,7 +1079,7 @@ mod primary_update_validation_async_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod primary_validation_none_sync_schema {
     struct Fields {
         #[lax(1)]
@@ -1088,7 +1088,7 @@ mod primary_validation_none_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod primary_validation_none_async_schema {
     struct Fields {
         #[lax(async |_, _| 1)]
@@ -1461,7 +1461,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
 async_test_matrix!(should_properly_use_input_values_as_output_values_if_re_validator_does_not_return_a_validated_value_async);
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod re_validation_sync_schema {
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
     const MIN_REVALIDATION_LENGTH_ERROR: &str = "expected lax to be at least 4 characters long";
@@ -1490,7 +1490,7 @@ mod re_validation_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod re_validation_async_schema {
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
     const MIN_REVALIDATION_LENGTH_ERROR: &str = "expected lax to be at least 4 characters long";
@@ -1520,8 +1520,8 @@ mod re_validation_async_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod re_validation_update_sync_schema {
     const LAX_OUT_OF_RANGE_ERROR: &str = "lax must be between 1 & 50 inclussive";
@@ -1554,8 +1554,8 @@ mod re_validation_update_sync_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod re_validation_update_async_schema {
     const LAX_OUT_OF_RANGE_ERROR: &str = "lax must be between 1 & 50 inclussive";
@@ -1587,7 +1587,7 @@ mod re_validation_update_async_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod re_validated_values_sync_schema {
     struct Fields {
         #[lax(0)]
@@ -1597,7 +1597,7 @@ mod re_validated_values_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod re_validated_values_async_schema {
     struct Fields {
         #[lax(async |_, _| 0)]
@@ -1607,7 +1607,7 @@ mod re_validated_values_async_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod re_validation_none_sync_schema {
     struct Fields {
         #[lax(1)]
@@ -1617,7 +1617,7 @@ mod re_validation_none_sync_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod re_validation_none_async_schema {
     struct Fields {
         #[lax(async |_, _| 1)]
@@ -2461,7 +2461,7 @@ async_test_matrix!(
     should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_async
 );
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validation_sync_schema {
     const LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
         "lax failed pre-validation with unrelated errors";
@@ -2542,7 +2542,7 @@ mod post_validation_sync_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validation_async_schema {
     const LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
         "lax failed pre-validation with unrelated errors";
@@ -2623,7 +2623,7 @@ mod post_validation_async_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validate_updates_sync_schema {
     const LAX_PRE_VALIDATED_WITH_UPDATED_VALUES: &str = "LAX_PRE_VALIDATED_WITH_UPDATED_VALUES";
     const LAX_POST_VALIDATED_WITH_UPDATED_VALUES: &str = "LAX_POST_VALIDATED_WITH_UPDATED_VALUES";
@@ -2681,7 +2681,7 @@ mod post_validate_updates_sync_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod post_validate_updates_async_schema {
     const LAX_PRE_VALIDATED_WITH_UPDATED_VALUES: &str = "LAX_PRE_VALIDATED_WITH_UPDATED_VALUES";
     const LAX_POST_VALIDATED_WITH_UPDATED_VALUES: &str = "LAX_POST_VALIDATED_WITH_UPDATED_VALUES";
@@ -2741,7 +2741,7 @@ mod post_validate_updates_async_schema {
 
 // Section: ignore / ignore_init / ignore_update / readonly / grouped ignore
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod respect_ignore_rule_schema {
     struct Fields {
         #[lax("default_other_value".to_string())]
@@ -2829,7 +2829,7 @@ fn should_respect_the_ignore_rule() {
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod respect_ignore_init_rule_schema {
     struct Fields {
         #[lax("default_other_value".to_string())]
@@ -2888,7 +2888,7 @@ fn should_respect_the_ignore_init_rule() {
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod respect_ignore_update_rule_schema {
     struct Fields {
         #[lax("default_other_value".to_string())]
@@ -2948,7 +2948,7 @@ fn should_respect_the_ignore_update_rule() {
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod grouped_ignore_rule_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
@@ -3056,7 +3056,7 @@ fn should_properly_handle_grouped_ignore_rule() {
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod grouped_ignore_update_rule_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
@@ -3144,7 +3144,7 @@ fn should_properly_handle_grouped_ignore_update_rule() {
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod readonly_after_creation_schema {
     struct Fields {
         #[lax(1)]
@@ -3179,7 +3179,7 @@ fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default
     assert!(err.is_none());
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod readonly_after_updates_schema {
     struct Fields {
         #[lax(1)]
@@ -3230,7 +3230,7 @@ fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default
 
 // Section: on_delete
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_delete_schema {
     struct Fields {
         #[lax("default_value".into())]
@@ -3266,7 +3266,7 @@ async_test_matrix!(
 
 // Section: on_failure
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_failure_creation_schema {
     struct Fields {
         #[lax("default_value".into())]
@@ -3304,7 +3304,7 @@ fn should_trigger_on_failure_handlers_at_creation() {
     handle_failure();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_failure_creation_ignored_schema {
     struct Fields {
         #[lax("default_value".to_string())]
@@ -3348,7 +3348,7 @@ fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ignored()
     handle_failure();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_failure_update_schema {
     struct Fields {
         #[lax("default_value".into())]
@@ -3394,7 +3394,7 @@ fn should_trigger_on_failure_handlers_during_updates() {
     handle_failure();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_failure_update_unchanged_schema {
     struct Fields {
         #[lax("default_value".into())]
@@ -3440,7 +3440,7 @@ fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
     handle_failure();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_failure_update_ignored_schema {
     struct Fields {
         #[lax("default_value".into())]
@@ -3502,7 +3502,7 @@ fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignore
 
 // Section: on_success
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_success_creation_schema {
     struct Fields {
         #[lax("default_value".into())]
@@ -3563,7 +3563,7 @@ fn should_trigger_on_success_handlers_at_creation_if_provided() {
     handle_success();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_success_creation_default_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
@@ -3623,7 +3623,7 @@ fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
     handle_success();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_success_creation_ignored_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
@@ -3684,7 +3684,7 @@ fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ignored()
     handle_success();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_success_update_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
@@ -3750,7 +3750,7 @@ fn should_trigger_on_success_handlers_during_updates_if_provided() {
     handle_success();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_success_update_not_provided_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
@@ -3816,7 +3816,7 @@ fn should_not_trigger_on_success_handlers_during_updates_if_not_provided() {
     handle_success();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_success_update_ignored_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
@@ -3884,7 +3884,7 @@ fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_ignored
     handle_success();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_success_empty_creation_schema {
     struct Fields {
         #[lax(1234)]
@@ -3925,7 +3925,7 @@ fn should_trigger_success_handlers_with_empty_fields_array_each_time_creation_is
     handle_success();
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_on_success_empty_update_schema {
     struct Fields {
         #[lax(1234)]

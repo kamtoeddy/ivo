@@ -40,7 +40,7 @@ async fn should_run_independent_on_success_hooks_concurrently_on_create() {
     handle_success().await;
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod on_success_create_schema {
     use std::sync::atomic::AtomicUsize;
 
@@ -77,7 +77,7 @@ async fn should_run_independent_on_failure_hooks_concurrently_on_create() {
     handle_failure().await;
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod on_failure_create_schema {
     use std::sync::atomic::AtomicUsize;
 
@@ -120,7 +120,7 @@ async fn should_run_independent_on_success_hooks_concurrently_on_update() {
     handle_success().await;
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod on_success_update_schema {
     use std::sync::atomic::AtomicUsize;
 
@@ -151,7 +151,7 @@ async fn should_run_independent_on_delete_hooks_concurrently() {
     on_delete_schema::DataInputModel.delete(&data, ()).await;
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod on_delete_schema {
     use std::sync::atomic::AtomicUsize;
 

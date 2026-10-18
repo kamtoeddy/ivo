@@ -20,8 +20,8 @@ impl PostCtxOptions {
 }
 
 #[ivo_schema(
-    input(PostInput, derive(Debug, Clone, PartialEq)),
-    output(Post, derive(Debug, Clone, PartialEq)),
+    input(PostInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Post, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(PostCtxOptions)
 )]
 mod post_schema {
@@ -132,8 +132,8 @@ impl CommentCtxOptions {
 }
 
 #[ivo_schema(
-    input(CommentInput, derive(Debug, Clone, PartialEq)),
-    output(Comment, derive(Debug, Clone, PartialEq)),
+    input(CommentInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Comment, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CommentCtxOptions)
 )]
 mod comment_schema {

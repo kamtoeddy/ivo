@@ -27,8 +27,8 @@ use ivo::ivo_schema;
 type Timestamp = DateTime<Utc>;
 
 #[ivo_schema(
-    input(PostInput, derive(Debug, Clone, PartialEq)),
-    output(Post, derive(Debug, Clone, PartialEq))
+    input(PostInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Post, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_schema {
     use super::Timestamp;
@@ -95,8 +95,17 @@ fn main() {
   output struct and is required only when the schema has input-only fields (`#[ivo_virtual]`) or
   output-only fields (`#[constant]`, `#[depends_on(...)]`, timestamps). A schema with only
   `#[required]`/`#[lax]` fields can omit `output(...)` entirely and use one struct for both.
-- `derive(...)` adds derives to the generated struct; `derive_partial(...)` adds them to its
-  partial counterpart (e.g. to derive `Serialize`/`Deserialize` for wire transport).
+- `ivo_attrs(...)` attaches attributes to the generated struct and `ivo_partial_attrs(...)` to its
+  partial counterpart, e.g. `input(Post, ivo_attrs(derive(Debug, Serialize), serde(rename_all =
+  "camelCase")), ivo_partial_attrs(derive(Deserialize)))`. Each entry is emitted as-is (`#[...]`),
+  and `derive(...)`s are always emitted before the other attributes. The derives ivo needs itself
+  (`Clone` on the input; `Clone` and `PartialEq` on the output; `Clone`, `Debug`, `PartialEq` and
+  `Default` on partials) are always added and can be omitted.
+- The same attributes work on fields: `#[ivo_attrs(...)]` and `#[ivo_partial_attrs(...)]` attach
+  to the field in every (partial) struct it's part of, while `#[ivo_input_attrs(...)]`,
+  `#[ivo_output_attrs(...)]`, `#[ivo_input_partial_attrs(...)]` and
+  `#[ivo_output_partial_attrs(...)]` target a single struct, e.g.
+  `#[ivo_partial_attrs(serde(skip_serializing_if = "Option::is_none"))]`.
 - The macro generates a `{OutputName}Model` unit value (or `{InputName}Model` for a single-struct
   schema) -- `post_schema::PostModel.create(...)` works directly, no `::new()` needed.
 - `create`/`update`/`delete` are `async` only if at least one handler they invoke is async --

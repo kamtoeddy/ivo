@@ -1,32 +1,32 @@
 error: post-validation expects at least 2 fields
  --> tests/options/compile_fail/post_validate.rs:4:1
   |
-4 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+4 | #[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: post-validation expects at least 2 fields
   --> tests/options/compile_fail/post_validate.rs:19:1
    |
-19 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 | #[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: remove duplicates of `lax` in your post-validation config
   --> tests/options/compile_fail/post_validate.rs:34:1
    |
-34 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+34 | #[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: `invalid_field` does not exist in your schema
   --> tests/options/compile_fail/post_validate.rs:49:1
    |
-49 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+49 | #[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
 
@@ -34,8 +34,8 @@ error: only required, lax and virtual fields can be post-validated; remove `id`
   --> tests/options/compile_fail/post_validate.rs:64:1
    |
 64 | / #[ivo_schema(
-65 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
-66 | |     output(Data, derive(Debug, Clone, PartialEq))
+65 | |     input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+66 | |     output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 67 | | )]
    | |__^
    |
@@ -45,8 +45,8 @@ error: only required, lax and virtual fields can be post-validated; remove `depe
   --> tests/options/compile_fail/post_validate.rs:85:1
    |
 85 | / #[ivo_schema(
-86 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
-87 | |     output(Data, derive(Debug, Clone, PartialEq))
+86 | |     input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+87 | |     output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 88 | | )]
    | |__^
    |
@@ -56,8 +56,8 @@ error: `dependent` is an alias; use `virtual_field` instead
    --> tests/options/compile_fail/post_validate.rs:108:1
     |
 108 | / #[ivo_schema(
-109 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
-110 | |     output(Data, derive(Debug, Clone, PartialEq))
+109 | |     input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+110 | |     output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 111 | | )]
     | |__^
     |
@@ -67,8 +67,8 @@ error: `alias` is an alias; use `virtual_field` instead
    --> tests/options/compile_fail/post_validate.rs:135:1
     |
 135 | / #[ivo_schema(
-136 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
-137 | |     output(Data, derive(Debug, Clone, PartialEq))
+136 | |     input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+137 | |     output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 138 | | )]
     | |__^
     |
@@ -78,8 +78,8 @@ error: only required, lax and virtual fields can be post-validated; remove `crea
    --> tests/options/compile_fail/post_validate.rs:162:1
     |
 162 | / #[ivo_schema(
-163 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
-164 | |     output(Data, derive(Debug, Clone, PartialEq))
+163 | |     input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+164 | |     output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 165 | | )]
     | |__^
     |
@@ -89,8 +89,8 @@ error: only required, lax and virtual fields can be post-validated; remove `cust
    --> tests/options/compile_fail/post_validate.rs:186:1
     |
 186 | / #[ivo_schema(
-187 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
-188 | |     output(Data, derive(Debug, Clone, PartialEq))
+187 | |     input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+188 | |     output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 189 | | )]
     | |__^
     |
@@ -100,8 +100,8 @@ error: only required, lax and virtual fields can be post-validated; remove `upda
    --> tests/options/compile_fail/post_validate.rs:210:1
     |
 210 | / #[ivo_schema(
-211 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
-212 | |     output(Data, derive(Debug, Clone, PartialEq))
+211 | |     input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+212 | |     output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 213 | | )]
     | |__^
     |
@@ -111,8 +111,8 @@ error: only required, lax and virtual fields can be post-validated; remove `cust
    --> tests/options/compile_fail/post_validate.rs:234:1
     |
 234 | / #[ivo_schema(
-235 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
-236 | |     output(Data, derive(Debug, Clone, PartialEq))
+235 | |     input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+236 | |     output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 237 | | )]
     | |__^
     |

@@ -55,7 +55,7 @@ async fn main() {
 
 pub use schema::{Data, DataModel, PartialData};
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod schema {
     use super::MIN_USERNAME_LEN;
 

@@ -20,7 +20,7 @@ schéma déclare au moins un gestionnaire `on_delete` (au niveau du champ ou du 
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod delete_schema {
     struct Fields {
         #[required]
@@ -67,7 +67,7 @@ l'exécution.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod notify_schema {
     struct Fields {
         #[required]

@@ -20,8 +20,8 @@ from input or changed by an update (e.g. `id`).
 use ivo::ivo_schema;
 
 #[ivo_schema(
-    input(ItemInput, derive(Debug, Clone, PartialEq)),
-    output(Item, derive(Debug, Clone, PartialEq))
+    input(ItemInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Item, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod item_schema {
     struct Fields {

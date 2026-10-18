@@ -1,6 +1,6 @@
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod empty_grouped_ignore_update_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]

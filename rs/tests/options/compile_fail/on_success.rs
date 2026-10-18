@@ -1,7 +1,7 @@
 use ivo::ivo_schema;
 
 // should_reject_if_the_fields_array_contains_any_duplicates
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod on_success_duplicates {
     struct Fields {
         #[lax(1234)]
@@ -16,7 +16,7 @@ mod on_success_duplicates {
 }
 
 // should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_schema
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod on_success_invalid_field {
     struct Fields {
         #[lax(1234)]
@@ -32,8 +32,8 @@ mod on_success_invalid_field {
 
 // should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod on_success_alias_foreign_name {
     struct Fields {
@@ -60,7 +60,7 @@ mod on_success_alias_foreign_name {
 // should_reject_an_empty_fields_array: `#[on_success([...], handler)]` still
 // requires at least one field; "always fire" is spelled only via the bare,
 // arrayless `#[on_success(handler)]` entity-level form.
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod on_success_empty_fields_array {
     struct Fields {
         #[lax(1234)]

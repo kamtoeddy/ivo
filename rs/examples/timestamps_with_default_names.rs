@@ -98,8 +98,8 @@ pub use optional_updated_at_schema::{
 };
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod default_name_schema {
     use super::Timestamp;
@@ -121,8 +121,8 @@ mod default_name_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(DataWithOptionalUpdatedAt, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(DataWithOptionalUpdatedAt, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod optional_updated_at_schema {
     use super::Timestamp;

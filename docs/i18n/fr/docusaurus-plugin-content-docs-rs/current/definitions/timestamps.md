@@ -26,8 +26,8 @@ use ivo::ivo_schema;
 type Timestamp = DateTime<Utc>;
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod timestamps_schema {
     use super::Timestamp;

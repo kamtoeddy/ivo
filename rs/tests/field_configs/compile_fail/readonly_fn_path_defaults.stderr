@@ -1,8 +1,8 @@
 error[E0277]: can't compare `String` with `fn() -> String {default_name}`
   --> tests/field_configs/compile_fail/readonly_fn_path_defaults.rs:11:1
    |
-11 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no implementation for `String == fn() -> String {default_name}`
+11 | #[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no implementation for `String == fn() -> String {default_name}`
 ...
 14 |         #[lax(super::default_name)]
    |               -------------------
@@ -26,8 +26,8 @@ error[E0308]: mismatched types
    |   ----------------------------- function `default_dependent` defined here
 ...
 20 | / #[ivo_schema(
-21 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
-22 | |     output(Data, derive(Debug, Clone, PartialEq))
+21 | |     input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+22 | |     output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 23 | | )]
    | |__- expected because this is `i32`
 ...

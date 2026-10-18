@@ -30,8 +30,8 @@ fn should_expose_the_original_raw_input_distinct_from_current_input_during_creat
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod raw_input_create_schema {
     struct Fields {
@@ -84,8 +84,8 @@ fn should_expose_the_original_raw_input_distinct_from_current_input_during_updat
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod raw_input_update_schema {
     struct Fields {
@@ -142,8 +142,8 @@ fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_trigge
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod raw_input_trigger_create_schema {
     struct Fields {
@@ -194,8 +194,8 @@ fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_trigge
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod raw_input_trigger_update_schema {
     struct Fields {

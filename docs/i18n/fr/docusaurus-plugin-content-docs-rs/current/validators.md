@@ -21,7 +21,7 @@ Option<Metadata>)>`.
 ```rust
 use ivo::ivo_schema;
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod re_validate_schema {
     struct Fields {
         #[required]

@@ -1458,7 +1458,7 @@ fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
     handle_failure();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_failure_no_change_schema {
     struct Fields {
         #[required]
@@ -1500,7 +1500,7 @@ async_test_matrix!(
     should_trigger_on_failure_handlers_during_updates_with_unchanged_values_async
 );
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_failure_no_change_schema {
     struct Fields {
         #[required]
@@ -2003,7 +2003,7 @@ fn should_trigger_entity_level_success_handlers_each_time_creation_is_successful
     handle_success();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_success_entity_level_schema {
     struct Fields {
         #[required]
@@ -2055,7 +2055,7 @@ fn should_trigger_entity_level_success_handlers_each_time_update_is_successful()
     handle_success();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_success_entity_level_update_schema {
     struct Fields {
         #[required]
@@ -2775,7 +2775,7 @@ async_test_matrix!(
 // Schemas
 // -----------------------------------------------------------------------------
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_default_required_error_schema {
     struct Fields {
         #[required]
@@ -2783,7 +2783,7 @@ mod sync_default_required_error_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_default_required_error_schema {
     struct Fields {
         #[required]
@@ -2792,7 +2792,7 @@ mod async_default_required_error_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_static_required_error_schema {
     struct Fields {
         #[required]
@@ -2801,7 +2801,7 @@ mod sync_static_required_error_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_static_required_error_schema {
     struct Fields {
         #[required]
@@ -2811,7 +2811,7 @@ mod async_static_required_error_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_dynamic_required_error_schema {
     struct Fields {
         #[required]
@@ -2820,7 +2820,7 @@ mod sync_dynamic_required_error_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_dynamic_required_error_schema {
     struct Fields {
         #[required]
@@ -2830,7 +2830,7 @@ mod async_dynamic_required_error_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_primary_validation_schema {
     struct Fields {
         #[required]
@@ -2846,7 +2846,7 @@ mod sync_primary_validation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_primary_validation_schema {
     struct Fields {
         #[required]
@@ -2863,8 +2863,8 @@ mod async_primary_validation_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_update_primary_validation_schema {
     struct Fields {
@@ -2885,8 +2885,8 @@ mod sync_update_primary_validation_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_update_primary_validation_schema {
     struct Fields {
@@ -2906,7 +2906,7 @@ mod async_update_primary_validation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_pass_through_validation_schema {
     struct Fields {
         #[required]
@@ -2915,7 +2915,7 @@ mod sync_pass_through_validation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_pass_through_validation_schema {
     struct Fields {
         #[required]
@@ -2924,7 +2924,7 @@ mod async_pass_through_validation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_re_validation_schema {
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
     pub const MIN_REVALIDATION_LENGTH_ERROR: &str =
@@ -2951,7 +2951,7 @@ mod sync_re_validation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_re_validation_schema {
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
     pub const MIN_REVALIDATION_LENGTH_ERROR: &str =
@@ -2979,8 +2979,8 @@ mod async_re_validation_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod sync_update_re_validation_schema {
     use std::ops::RangeInclusive;
@@ -3017,8 +3017,8 @@ mod sync_update_re_validation_schema {
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod async_update_re_validation_schema {
     use std::ops::RangeInclusive;
@@ -3053,7 +3053,7 @@ mod async_update_re_validation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_re_validated_values_schema {
     struct Fields {
         #[required]
@@ -3063,7 +3063,7 @@ mod sync_re_validated_values_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_re_validated_values_schema {
     struct Fields {
         #[required]
@@ -3073,7 +3073,7 @@ mod async_re_validated_values_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_re_validator_pass_through_schema {
     struct Fields {
         #[required]
@@ -3083,7 +3083,7 @@ mod sync_re_validator_pass_through_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_re_validator_pass_through_schema {
     struct Fields {
         #[required]
@@ -3093,7 +3093,7 @@ mod async_re_validator_pass_through_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_ignore_update_schema {
     struct Fields {
         #[required]
@@ -3106,7 +3106,7 @@ mod sync_ignore_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_ignore_update_schema {
     struct Fields {
         #[required]
@@ -3119,7 +3119,7 @@ mod async_ignore_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_readonly_schema {
     struct Fields {
         #[required]
@@ -3131,7 +3131,7 @@ mod sync_readonly_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_readonly_schema {
     struct Fields {
         #[required]
@@ -3144,7 +3144,7 @@ mod async_readonly_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_grouped_ignore_update_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
@@ -3162,7 +3162,7 @@ mod sync_grouped_ignore_update_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_grouped_ignore_update_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
@@ -3180,7 +3180,7 @@ mod async_grouped_ignore_update_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_delete_schema {
     struct Fields {
         #[required]
@@ -3194,7 +3194,7 @@ mod sync_on_delete_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_delete_schema {
     struct Fields {
         #[required]
@@ -3209,7 +3209,7 @@ mod async_on_delete_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_failure_creation_schema {
     struct Fields {
         #[required]
@@ -3230,7 +3230,7 @@ mod sync_on_failure_creation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_failure_creation_schema {
     struct Fields {
         #[required]
@@ -3251,7 +3251,7 @@ mod async_on_failure_creation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_failure_update_schema {
     struct Fields {
         #[required]
@@ -3272,7 +3272,7 @@ mod sync_on_failure_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_failure_update_schema {
     struct Fields {
         #[required]
@@ -3293,7 +3293,7 @@ mod async_on_failure_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_failure_ignored_update_schema {
     struct Fields {
         #[required]
@@ -3325,7 +3325,7 @@ mod sync_on_failure_ignored_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_failure_ignored_update_schema {
     struct Fields {
         #[required]
@@ -3357,7 +3357,7 @@ mod async_on_failure_ignored_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_failure_readonly_update_schema {
     struct Fields {
         #[required]
@@ -3389,7 +3389,7 @@ mod sync_on_failure_readonly_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_failure_readonly_update_schema {
     struct Fields {
         #[required]
@@ -3421,7 +3421,7 @@ mod async_on_failure_readonly_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_success_creation_schema {
     struct Fields {
         #[required]
@@ -3452,7 +3452,7 @@ mod sync_on_success_creation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_success_creation_schema {
     struct Fields {
         #[required]
@@ -3483,7 +3483,7 @@ mod async_on_success_creation_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_success_update_schema {
     struct Fields {
         #[required]
@@ -3514,7 +3514,7 @@ mod sync_on_success_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_success_update_schema {
     struct Fields {
         #[required]
@@ -3545,7 +3545,7 @@ mod async_on_success_update_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_post_validation_schema {
     struct Fields {
         #[required]
@@ -3627,7 +3627,7 @@ mod sync_post_validation_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_post_validation_schema {
     struct Fields {
         #[required]
@@ -3709,7 +3709,7 @@ mod async_post_validation_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_post_validate_updates_schema {
     struct Fields {
         #[required]
@@ -3761,7 +3761,7 @@ mod sync_post_validate_updates_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_post_validate_updates_schema {
     struct Fields {
         #[required]
@@ -3813,7 +3813,7 @@ mod async_post_validate_updates_schema {
     const _: () = ();
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_success_update_ignored_schema {
     struct Fields {
         #[required]
@@ -3845,7 +3845,7 @@ mod sync_on_success_update_ignored_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_success_update_ignored_schema {
     struct Fields {
         #[required]
@@ -3877,7 +3877,7 @@ mod async_on_success_update_ignored_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod sync_on_success_update_readonly_schema {
     struct Fields {
         #[required]
@@ -3909,7 +3909,7 @@ mod sync_on_success_update_readonly_schema {
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_on_success_update_readonly_schema {
     struct Fields {
         #[required]
@@ -3958,7 +3958,7 @@ fn should_not_run_validate_once_missing_required_fields_have_already_failed() {
     assert_eq!(errors.get("field_a").unwrap().reason, "field is required");
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod fail_fast_required_then_validate_schema {
     struct Fields {
         #[required]
@@ -3984,7 +3984,7 @@ fn should_not_run_re_validate_once_validate_has_already_failed() {
     assert_eq!(errors.get("field_a").unwrap().reason, "invalid");
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod fail_fast_validate_then_re_validate_schema {
     struct Fields {
         #[required]
@@ -4031,7 +4031,7 @@ fn should_not_run_validate_once_missing_required_fields_have_already_failed_on_u
     );
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod fail_fast_update_required_then_validate_schema {
     struct Fields {
         #[lax(String::new())]
@@ -4082,7 +4082,7 @@ fn should_return_nothing_to_update_early_when_all_provided_fields_are_ignored() 
     assert!(err.is_none());
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod nothing_to_update_checkpoint1_schema {
     struct Fields {
         #[lax(String::new())]
@@ -4125,8 +4125,8 @@ fn should_return_nothing_to_update_before_dependent_resolution_when_validate_rev
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod nothing_to_update_checkpoint2_schema {
     struct Fields {

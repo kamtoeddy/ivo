@@ -29,8 +29,8 @@ champ, mais n'est jamais stocké directement sur la struct de sortie.
 use ivo::ivo_schema;
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod virtuals_schema {
     struct Fields {
@@ -68,8 +68,8 @@ la struct d'entrée, tandis que le champ lui-même reste nommé (et référencé
 
 ```rust
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod virtuals_alias_schema {
     struct Fields {

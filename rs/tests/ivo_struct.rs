@@ -2,7 +2,7 @@ use ivo::{ivo_schema, IvoStruct};
 use seahash::SeaHasher;
 use std::hash::{Hash, Hasher};
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq), derive_partial(Hash)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq)), ivo_partial_attrs(derive(Hash))))]
 mod hash_schema {
     struct Fields {
         #[required]
@@ -12,8 +12,8 @@ mod hash_schema {
 
 #[ivo_schema(input(
     Post,
-    derive(Debug, Clone, PartialEq, Deserialize, Serialize),
-    derive_partial(Deserialize, Serialize)
+    ivo_attrs(derive(Debug, Clone, PartialEq, Deserialize, Serialize)),
+    ivo_partial_attrs(derive(Deserialize, Serialize))
 ))]
 mod post_schema {
     use serde::{Deserialize, Serialize};
@@ -24,19 +24,19 @@ mod post_schema {
 
     struct Fields {
         #[required]
-        #[partial(serde(default = "default_partial_post_id"))]
+        #[ivo_partial_attrs(serde(default = "default_partial_post_id"))]
         pub id: u64,
 
         #[required]
         pub title: String,
 
         #[lax(None)]
-        #[partial(serde(skip_serializing_if = "Option::is_none"))]
+        #[ivo_partial_attrs(serde(skip_serializing_if = "Option::is_none"))]
         pub tags: Option<Vec<String>>,
     }
 }
 
-#[ivo_schema(input(Data, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(Data, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod append_schema {
     struct Fields {
         #[required]
@@ -163,4 +163,174 @@ fn should_properly_append_partial_values_to_ivo_structs() {
             string_value: updated_string_value,
         }
     )
+}
+
+// -----------------------------------------------------------------------------
+// `ivo_attrs` / `ivo_partial_attrs` and their field-level scoped variants
+// -----------------------------------------------------------------------------
+
+#[ivo_schema(
+    input(
+        Account,
+        // helper attribute written before the derive introducing it, plus
+        // derives ivo already adds itself (`Clone`, `PartialEq`)
+        ivo_attrs(
+            serde(rename_all = "camelCase"),
+            derive(Debug, Clone, PartialEq, Serialize, Deserialize)
+        ),
+        ivo_partial_attrs(
+            derive(Serialize, Deserialize, Hash),
+            serde(rename_all = "SCREAMING_SNAKE_CASE")
+        ),
+    ),
+    output(
+        AccountRow,
+        // repeated clauses are merged
+        ivo_attrs(derive(Debug, Serialize)),
+        ivo_attrs(serde(rename_all = "kebab-case")),
+        ivo_partial_attrs(derive(Serialize)),
+    ),
+)]
+mod attrs_schema {
+    use serde::{Deserialize, Serialize};
+
+    struct Fields {
+        #[required]
+        #[ivo_attrs(serde(rename = "accountId"))]
+        #[ivo_partial_attrs(serde(rename = "partialId"))]
+        pub id: u64,
+
+        #[required]
+        pub full_name: String,
+
+        #[lax(String::new())]
+        #[ivo_attrs(serde(rename = "name"))]
+        #[ivo_output_attrs(serde(skip_serializing_if = "String::is_empty"))]
+        pub display_name: String,
+
+        #[lax(None)]
+        #[ivo_input_attrs(serde(skip))]
+        #[ivo_input_partial_attrs(serde(skip_serializing_if = "Option::is_none"))]
+        pub nickname: Option<String>,
+
+        #[ivo_virtual("password")]
+        #[ivo_attrs(serde(rename = "secret"))]
+        #[ivo_partial_attrs(serde(skip_serializing))]
+        pub v_password: String,
+
+        #[depends_on("v_password")]
+        #[default(String::new())]
+        #[resolve(|ctx, _| ctx.input().password.clone().unwrap_or_default())]
+        #[ivo_output_partial_attrs(serde(skip_serializing))]
+        pub password_hash: String,
+
+        #[constant(1)]
+        #[ivo_attrs(serde(rename = "v"))]
+        pub version: i32,
+    }
+}
+
+fn json_keys(value: &serde_json::Value) -> Vec<String> {
+    let mut keys: Vec<_> = value.as_object().unwrap().keys().cloned().collect();
+    keys.sort();
+    keys
+}
+
+fn account() -> attrs_schema::Account {
+    attrs_schema::Account {
+        id: 1,
+        full_name: "Ada".into(),
+        display_name: String::new(),
+        nickname: Some("ada".into()),
+        password: "pwd".into(),
+    }
+}
+
+fn account_row() -> attrs_schema::AccountRow {
+    attrs_schema::AccountRow {
+        id: 1,
+        full_name: "Ada".into(),
+        display_name: String::new(),
+        nickname: Some("ada".into()),
+        password_hash: "hash".into(),
+        version: 1,
+    }
+}
+
+#[test]
+fn should_attach_ivo_attrs_to_the_input_struct_and_its_fields() {
+    let value = serde_json::to_value(account()).unwrap();
+
+    // struct-level `rename_all = "camelCase"` (`fullName`), shared field
+    // renames (`accountId`, `name`, `secret` on the virtual's alias), the
+    // input-only `skip` on `nickname`, and no output-only attrs: the empty
+    // `name` is still serialized
+    assert_eq!(
+        json_keys(&value),
+        ["accountId", "fullName", "name", "secret"]
+    );
+
+    let back: attrs_schema::Account = serde_json::from_value(value).unwrap();
+    assert_eq!(back.nickname, None);
+}
+
+#[test]
+fn should_attach_ivo_partial_attrs_to_the_partial_input_struct_and_its_fields() {
+    let partial = attrs_schema::PartialAccount {
+        id: Some(1),
+        full_name: Some("Ada".into()),
+        display_name: None,
+        nickname: None,
+        password: Some("pwd".into()),
+    };
+    let value = serde_json::to_value(&partial).unwrap();
+
+    // struct-level `SCREAMING_SNAKE_CASE`, shared partial rename
+    // (`partialId`), partial-input-only `skip_serializing_if` on `nickname`
+    // and shared partial `skip_serializing` on the virtual; non-partial field
+    // attrs (`rename = "name"`) don't leak into partials
+    assert_eq!(json_keys(&value), ["DISPLAY_NAME", "FULL_NAME", "partialId"]);
+
+    fn assert_hash<T: Hash>() {}
+    assert_hash::<attrs_schema::PartialAccount>();
+}
+
+#[test]
+fn should_attach_ivo_attrs_to_the_output_struct_and_its_fields() {
+    let value = serde_json::to_value(account_row()).unwrap();
+
+    // merged `ivo_attrs` clauses (`kebab-case`), shared renames, the
+    // output-only `skip_serializing_if` dropping the empty `name`, and no
+    // input-only `skip` on `nickname`
+    assert_eq!(
+        json_keys(&value),
+        ["accountId", "full-name", "nickname", "password-hash", "v"]
+    );
+
+    let mut row = account_row();
+    row.display_name = "Ada L.".into();
+    let value = serde_json::to_value(row).unwrap();
+    assert_eq!(value["name"], "Ada L.");
+}
+
+#[test]
+fn should_attach_ivo_partial_attrs_to_the_partial_output_struct_and_its_fields() {
+    let partial = attrs_schema::PartialAccountRow {
+        id: Some(1),
+        full_name: None,
+        display_name: None,
+        nickname: None,
+        password_hash: Some("hash".into()),
+        version: Some(1),
+    };
+    let value = serde_json::to_value(&partial).unwrap();
+
+    // no struct-level `rename_all` here, shared partial rename
+    // (`partialId`), partial-output-only `skip_serializing` on
+    // `password_hash`, and no partial-input-only `skip_serializing_if` on
+    // `nickname`
+    assert_eq!(
+        json_keys(&value),
+        ["display_name", "full_name", "nickname", "partialId", "version"]
+    );
 }

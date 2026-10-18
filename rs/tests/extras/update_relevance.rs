@@ -61,8 +61,8 @@ fn should_not_run_validate_re_validate_post_validate_or_dependent_resolution_for
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod update_relevance_schema {
     struct Fields {
@@ -151,8 +151,8 @@ fn should_correctly_gate_unrelated_fields_when_the_relevant_trigger_is_an_unalia
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod update_relevance_virtual_no_alias_schema {
     struct Fields {
@@ -238,8 +238,8 @@ fn should_correctly_gate_unrelated_fields_when_the_relevant_trigger_is_a_virtual
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod update_relevance_virtual_alias_schema {
     struct Fields {
@@ -323,8 +323,8 @@ fn should_correctly_gate_unrelated_fields_when_the_relevant_trigger_is_a_virtual
 }
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
-    output(Data, derive(Debug, Clone, PartialEq))
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Data, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod update_relevance_virtual_alias_same_as_dependent_schema {
     struct Fields {

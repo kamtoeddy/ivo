@@ -26,8 +26,8 @@ use ivo::ivo_schema;
 type Timestamp = DateTime<Utc>;
 
 #[ivo_schema(
-    input(PostInput, derive(Debug, Clone, PartialEq)),
-    output(Post, derive(Debug, Clone, PartialEq))
+    input(PostInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(Post, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod post_schema {
     use super::Timestamp;
@@ -130,7 +130,7 @@ macro call:
 
 ```rust
 // illustrative -- not a continuation of the `post_schema` example above
-#[ivo_schema(input(ContactInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(ContactInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod contact_schema {
     struct Fields {
         #[lax(None)]

@@ -21,7 +21,7 @@ async fn should_resolve_async_dynamic_lax_default() {
     assert_eq!(created.name, "default");
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod static_lax_schema {
     struct Fields {
         #[lax(String::from("default"))]
@@ -29,7 +29,7 @@ mod static_lax_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod dynamic_lax_schema {
     struct Fields {
         #[lax(|_, _| String::from("default"))]
@@ -37,7 +37,7 @@ mod dynamic_lax_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod async_dynamic_lax_schema {
     struct Fields {
         #[lax(async |_, _| String::from("default"))]
@@ -125,7 +125,7 @@ fn should_still_use_paths_to_values_as_static_lax_defaults() {
     assert_eq!(created.nickname, None);
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod fn_path_lax_schema {
     struct Fields {
         #[lax(super::default_name)]
@@ -136,7 +136,7 @@ mod fn_path_lax_schema {
     }
 }
 
-#[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod value_path_lax_schema {
     struct Fields {
         #[lax(super::STATIC_COUNT)]

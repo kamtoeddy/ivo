@@ -43,7 +43,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod default_fn_schema {
@@ -94,7 +94,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod ignore_create_schema {
@@ -149,7 +149,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod ignore_update_schema {
@@ -195,7 +195,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod required_create_schema {
@@ -251,7 +251,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod required_update_schema {
@@ -303,7 +303,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod validate_create_schema {
@@ -372,7 +372,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod validate_update_schema {
@@ -429,7 +429,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod re_validate_create_schema {
@@ -499,7 +499,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod re_validate_update_schema {
@@ -567,7 +567,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod post_validate_create_schema {
@@ -632,7 +632,7 @@ async_test_matrix!(
 );
 
 #[ivo_schema(
-    input(DataInput, derive(Debug, Clone, PartialEq)),
+    input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
     ctx_options(CtxOptions)
 )]
 mod post_validate_update_schema {
