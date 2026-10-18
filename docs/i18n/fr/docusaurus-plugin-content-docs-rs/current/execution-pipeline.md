@@ -70,6 +70,9 @@ constante ni d'horodatage.
 Pendant un `update` (et dans ses gestionnaires `on_success`/`on_failure`), chaque champ vaut
 `Some` : l'enregistrement stocké, avec les changements de cette mise à jour appliqués jusque-là.
 
+Chaque gestionnaire reçoit `ctx` par référence (`&IvoContext`) ; clonez-le pour le conserver
+au-delà du gestionnaire.
+
 ## `update`
 
 1. **Ignore** -- évalue `#[ignore]`/`#[ignore_update]`, puis applique les remplacements

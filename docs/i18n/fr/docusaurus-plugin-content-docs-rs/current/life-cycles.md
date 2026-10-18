@@ -54,6 +54,17 @@ appelant le handle retourné comme troisième élément du tuple `Err` d'un `cre
 tableau, se déclenche à chaque succès quels que soient les champs modifiés). Déclenché en appelant
 le handle retourné comme troisième élément du tuple `Ok` d'un `create` ou `update` réussi.
 
+Comme tous les autres gestionnaires, les gestionnaires `on_success`/`on_failure` reçoivent `ctx` par
+référence. Pour le conserver au-delà du gestionnaire, par ex. dans une tâche lancée, clonez-le
+d'abord :
+
+```rust
+#[on_success(|ctx, _| {
+    let ctx = ctx.clone();
+    std::thread::spawn(move || audit(ctx.values()));
+})]
+```
+
 ## Déclencher les gestionnaires
 
 `create`/`update` retournent `(data, ctx_options)` lorsque le schéma n'a aucun gestionnaire

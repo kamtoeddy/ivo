@@ -2613,11 +2613,11 @@ fn generate_model(
     // may pass either the full input struct or a partial.
     let ctx_ty = quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
     let resolver_ctx_ty =
-        quote!(::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
+        quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
     let opts_ty = quote!(&::ivo::__ivo_internals::IvoRwCtxOptions<#ctx_options_ty>);
     let hook_opts_ty = quote!(&::ivo::__ivo_internals::IvoCtxOptions<#ctx_options_ty>);
     let post_validate_ctx_ty =
-        quote!(::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
+        quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
     let post_validate_opts_ty = quote!(::ivo::__ivo_internals::IvoRwCtxOptions<#ctx_options_ty>);
     let raw_input_ty = quote!(&#partial_input_name);
 
@@ -2721,7 +2721,7 @@ fn generate_model(
                     }
                 }
                 Some(_) => {
-                    let ctx_expr = quote!(ctx.clone());
+                    let ctx_expr = quote!(&ctx);
                     let opts_expr = quote!(&_rw_ctx_options);
                     make_resolver_call(tokens, &ctx_expr, &opts_expr)
                 }
@@ -2788,7 +2788,7 @@ fn generate_model(
                 true,
                 quote! {
                     ::ivo::__ivo_internals::run_post_validator(
-                        #ctx_expr.clone(),
+                        &#ctx_expr,
                         #opts_expr.clone(),
                         #annotated,
                     )
@@ -2800,7 +2800,7 @@ fn generate_model(
                 false,
                 quote! {
                     ::ivo::__ivo_internals::run_post_validator_sync(
-                        #ctx_expr.clone(),
+                        &#ctx_expr,
                         #opts_expr.clone(),
                         #annotated,
                     )
@@ -3253,7 +3253,7 @@ fn generate_model(
                     }
                 }
                 Some(_) => {
-                    let ctx_expr = quote!(ctx.clone());
+                    let ctx_expr = quote!(&ctx);
                     let opts_expr = quote!(&_rw_ctx_options);
                     make_resolver_call(&tokens, &ctx_expr, &opts_expr)
                 }
@@ -3378,7 +3378,7 @@ fn generate_model(
     let dependent_async_count = dependent_infos
         .iter()
         .filter(|d| {
-            let ctx_expr = quote!(ctx.clone());
+            let ctx_expr = quote!(&ctx);
             let opts_expr = quote!(&_rw_ctx_options);
             make_resolver_call(&d.resolver, &ctx_expr, &opts_expr).0
         })
@@ -3402,7 +3402,7 @@ fn generate_model(
         // after every change (an unchanged value leaves the snapshot as is).
         let dependent_create_phase = dependent_infos.iter().map(|d| {
             let DependentInfo { name, parent_index, ty, parent_guard, resolver, .. } = d;
-            let ctx_expr = quote!(ctx.clone());
+            let ctx_expr = quote!(&ctx);
             let opts_expr = quote!(&_rw_ctx_options);
             let (_, resolver_expr) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
             let mark_changed = mark_dependent_changed(parent_index);
@@ -3454,7 +3454,7 @@ fn generate_model(
                     resolver,
                     ..
                 } = d;
-                let ctx_expr = quote!(ctx.clone());
+                let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (_, resolver_expr) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
                 quote! {
@@ -3473,7 +3473,7 @@ fn generate_model(
         let mut async_idents = Vec::new();
         for ((d, ident), value_expr) in dependent_infos.iter().zip(&result_idents).zip(&value_exprs)
         {
-            let ctx_expr = quote!(ctx.clone());
+            let ctx_expr = quote!(&ctx);
             let opts_expr = quote!(&_rw_ctx_options);
             let (is_async, _) = make_resolver_call(&d.resolver, &ctx_expr, &opts_expr);
             if is_async {
@@ -4774,7 +4774,7 @@ fn generate_model(
         match closure_input_count(resolver) {
             Some(0) => is_async_handler(resolver),
             Some(_) => {
-                let ctx_expr = quote!(ctx.clone());
+                let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 make_resolver_call(resolver, &ctx_expr, &opts_expr).0
             }
@@ -4836,7 +4836,7 @@ fn generate_model(
                         readonly_guard,
                         resolver,
                     } = d;
-                    let ctx_expr = quote!(ctx.clone());
+                    let ctx_expr = quote!(&ctx);
                     let resolver_expr = resolver_call_expr(resolver, &ctx_expr);
                     let rebuild = if is_last_level && i + 1 == level_len {
                         quote! {}
@@ -4879,7 +4879,7 @@ fn generate_model(
                         resolver,
                         ..
                     } = d;
-                    let ctx_expr = quote!(ctx.clone());
+                    let ctx_expr = quote!(&ctx);
                     let resolver_expr = resolver_call_expr(resolver, &ctx_expr);
                     quote! {
                         if #parent_guard {
@@ -5102,9 +5102,9 @@ fn generate_model(
     };
 
     // Success / failure triggers.
-    let hook_ctx_ty = quote!(::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
+    let hook_ctx_ty = quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
     let update_hook_ctx_ty =
-        quote!(::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
+        quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
 
     let hook_field_filter = |f: &&FieldDef| {
         matches!(
@@ -5132,9 +5132,9 @@ fn generate_model(
                     type_annotate_handler(handler.clone(), &[ctx_ty.clone(), hook_opts_ty.clone()]);
                 let is_async = is_async_handler(handler);
                 let value_expr = if is_async {
-                    quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+                    quote! { ::ivo::__ivo_internals::run_hook(&ctx, &_ctx_options, #annotated).await; }
                 } else {
-                    quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                    quote! { ::ivo::__ivo_internals::run_hook_sync(&ctx, &_ctx_options, #annotated); }
                 };
                 AsyncPhaseItem {
                     is_async,
@@ -5171,9 +5171,9 @@ fn generate_model(
                 type_annotate_handler(handler.clone(), &[hook_ctx_ty.clone(), hook_opts_ty.clone()]);
             let is_async = is_async_handler(handler);
             let call = if is_async {
-                quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+                quote! { ::ivo::__ivo_internals::run_hook(&ctx, &_ctx_options, #annotated).await; }
             } else {
-                quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                quote! { ::ivo::__ivo_internals::run_hook_sync(&ctx, &_ctx_options, #annotated); }
             };
             let name_str = f.name.to_string();
             let input_name = input_field_name(f);
@@ -5234,9 +5234,9 @@ fn generate_model(
             );
             let is_async = is_async_handler(handler);
             let call = if is_async {
-                quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await; }
+                quote! { ::ivo::__ivo_internals::run_hook(&ctx, &_ctx_options, #annotated).await; }
             } else {
-                quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated); }
+                quote! { ::ivo::__ivo_internals::run_hook_sync(&ctx, &_ctx_options, #annotated); }
             };
             let name = &f.name;
             let name_str = name.to_string();
@@ -5296,17 +5296,17 @@ fn generate_model(
                 let call = if is_async {
                     match input_count {
                         0 => quote! { (#annotated)().await },
-                        1 => quote! { (#annotated)(ctx.clone()).await },
+                        1 => quote! { (#annotated)(&ctx).await },
                         _ => {
-                            quote! { ::ivo::__ivo_internals::run_hook(ctx.clone(), &_ctx_options, #annotated).await }
+                            quote! { ::ivo::__ivo_internals::run_hook(&ctx, &_ctx_options, #annotated).await }
                         }
                     }
                 } else {
                     match input_count {
                         0 => quote! { ::ivo::__ivo_internals::run_callback_sync(#annotated) },
-                        1 => quote! { (#annotated)(ctx.clone()) },
+                        1 => quote! { (#annotated)(&ctx) },
                         _ => {
-                            quote! { ::ivo::__ivo_internals::run_hook_sync(ctx.clone(), &_ctx_options, #annotated) }
+                            quote! { ::ivo::__ivo_internals::run_hook_sync(&ctx, &_ctx_options, #annotated) }
                         }
                     }
                 };

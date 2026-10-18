@@ -68,6 +68,8 @@ creation, a field is `None` until the phase that sets it:
 During an `update` (and in its `on_success`/`on_failure` handlers), every field is `Some`: the
 stored record with this update's changes applied so far.
 
+Every handler receives `ctx` by reference (`&IvoContext`); clone it to keep it beyond the handler.
+
 ## `update`
 
 1. **Ignore** -- evaluate `#[ignore]`/`#[ignore_update]`, then apply bare `#[ignore_update]`

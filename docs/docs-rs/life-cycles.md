@@ -54,6 +54,16 @@ or `update`.
 on every success regardless of which fields changed). Triggered by calling the handle returned as
 the third element of the `Ok` tuple from a successful `create` or `update`.
 
+Like every other handler, `on_success`/`on_failure` handlers receive `ctx` by reference. To keep it
+beyond the handler, e.g. in a spawned task, clone it first:
+
+```rust
+#[on_success(|ctx, _| {
+    let ctx = ctx.clone();
+    std::thread::spawn(move || audit(ctx.values()));
+})]
+```
+
 ## Triggering handlers
 
 `create`/`update` return `(data, ctx_options)` when the schema has no matching `on_success`/

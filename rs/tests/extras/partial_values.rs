@@ -336,3 +336,42 @@ fn should_panic_when_converting_an_incomplete_partial_into_the_full_struct() {
     }
     .into();
 }
+
+// -----------------------------------------------------------------------------
+// Handlers receive `ctx` by reference; a hook keeps it by cloning it
+// -----------------------------------------------------------------------------
+
+static SPAWNED_HOOK_NAME: Mutex<Option<String>> = Mutex::new(None);
+
+#[ivo_schema(input(DataInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
+mod borrowed_ctx_schema {
+    struct Fields {
+        #[required]
+        #[on_success(|ctx, _| {
+            // `ctx` is borrowed; clone it to move it into a 'static thread
+            let ctx = ctx.clone();
+            std::thread::spawn(move || {
+                *super::SPAWNED_HOOK_NAME.lock().unwrap() = ctx.values().name.clone();
+            })
+            .join()
+            .unwrap();
+        })]
+        pub name: String,
+    }
+}
+
+#[test]
+fn should_let_hooks_keep_ctx_beyond_the_handler_by_cloning_it() {
+    let (_, _, handle_success) = borrowed_ctx_schema::DataInputModel
+        .create(
+            borrowed_ctx_schema::PartialDataInput {
+                name: Some("Ada".into()),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+    handle_success();
+
+    assert_eq!(*SPAWNED_HOOK_NAME.lock().unwrap(), Some("Ada".to_string()));
+}

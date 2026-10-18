@@ -16,9 +16,9 @@ pub struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
 
 pub type IvoErrorPayload<Metadata> = HashMap<String, FieldError<Metadata>>;
 
-pub async fn run_resolver<T, Ctx, Opts, F>(ctx: Ctx, opts: &Opts, resolver: F) -> T
+pub async fn run_resolver<T, Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, resolver: F) -> T
 where
-    F: AsyncFn(Ctx, &Opts) -> T,
+    F: AsyncFn(&Ctx, &Opts) -> T,
 {
     resolver(ctx, opts).await
 }
@@ -75,18 +75,18 @@ where
     resolver(ctx, opts).await
 }
 
-pub async fn run_hook<Ctx, Opts, F>(ctx: Ctx, opts: &Opts, handler: F)
+pub async fn run_hook<Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, handler: F)
 where
-    F: AsyncFn(Ctx, &Opts),
+    F: AsyncFn(&Ctx, &Opts),
 {
     handler(ctx, opts).await
 }
 
 // Synchronous counterparts used when a generated method has no async handlers.
 
-pub fn run_resolver_sync<T, Ctx, Opts, F>(ctx: Ctx, opts: &Opts, resolver: F) -> T
+pub fn run_resolver_sync<T, Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, resolver: F) -> T
 where
-    F: Fn(Ctx, &Opts) -> T,
+    F: Fn(&Ctx, &Opts) -> T,
 {
     resolver(ctx, opts)
 }
@@ -143,9 +143,9 @@ where
     resolver(ctx, opts)
 }
 
-pub fn run_hook_sync<Ctx, Opts, F>(ctx: Ctx, opts: &Opts, handler: F)
+pub fn run_hook_sync<Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, handler: F)
 where
-    F: Fn(Ctx, &Opts),
+    F: Fn(&Ctx, &Opts),
 {
     handler(ctx, opts)
 }
@@ -197,23 +197,23 @@ impl<T> ResolveStaticPathValue<T> for &mut PathValue<T> {
 }
 
 pub async fn run_post_validator<Ctx, Opts, F, Partial, Errors>(
-    ctx: Ctx,
+    ctx: &Ctx,
     opts: Opts,
     validator: F,
 ) -> Result<Option<Partial>, Errors>
 where
-    F: AsyncFn(Ctx, Opts) -> Result<Option<Partial>, Errors>,
+    F: AsyncFn(&Ctx, Opts) -> Result<Option<Partial>, Errors>,
 {
     validator(ctx, opts).await
 }
 
 pub fn run_post_validator_sync<Ctx, Opts, F, Partial, Errors>(
-    ctx: Ctx,
+    ctx: &Ctx,
     opts: Opts,
     validator: F,
 ) -> Result<Option<Partial>, Errors>
 where
-    F: Fn(Ctx, Opts) -> Result<Option<Partial>, Errors>,
+    F: Fn(&Ctx, Opts) -> Result<Option<Partial>, Errors>,
 {
     validator(ctx, opts)
 }
