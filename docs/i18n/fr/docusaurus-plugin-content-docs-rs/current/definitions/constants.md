@@ -35,7 +35,7 @@ mod item_schema {
         pub label: String,
 
         #[required]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(None))]
         pub name: String,
     }
 }

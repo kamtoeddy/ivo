@@ -45,7 +45,7 @@ mod post_schema {
         pub updated_at: Timestamp,
 
         #[required]
-        #[validate(|title: String, _, _| {
+        #[validate(|title: &String, _, _| {
             if title.trim().len() < 3 {
                 return Err(("title must be at least 3 characters long".into(), None));
             }

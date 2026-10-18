@@ -947,7 +947,7 @@ mod post_validate_aliased_virtual_schema {
         pub field_a: String,
 
         #[ivo_virtual("aliased")]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|v, _, _| Ok(Some(v.clone())))]
         pub v_field: String,
 
         #[depends_on("v_field")]
@@ -1092,13 +1092,13 @@ mod alias_field_level_errors_schema {
         // inserts the error when the field is missing, so this is safe for
         // both create and update.
         #[required(|_ctx, _| ::core::option::Option::Some("aliased is required".to_string()))]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail-validate" {
                 return Err(("validate failed".to_string(), None));
             }
-            Ok(Some(v))
+            Ok(None)
         })]
-        #[re_validate(|v: String, _, _| {
+        #[re_validate(|v: &String, _, _| {
             if v == "fail-re-validate" {
                 return Err(("re_validate failed".to_string(), None));
             }
@@ -1206,8 +1206,8 @@ mod sync_re_validate_schema {
         pub dependent: i32,
 
         #[ivo_virtual]
-        #[validate(|_: i32, _, _| Ok(None))]
-        #[re_validate(|v: i32, _, _| Ok(Some(v + 1)))]
+        #[validate(|_: &i32, _, _| Ok(None))]
+        #[re_validate(|v: &i32, _, _| Ok(Some(v + 1)))]
         pub virtual_field: i32,
     }
 }
@@ -1224,8 +1224,8 @@ mod async_re_validate_schema {
         pub dependent: i32,
 
         #[ivo_virtual]
-        #[validate(async |_: i32, _, _| Ok(None))]
-        #[re_validate(async |v: i32, _, _| Ok(Some(v + 1)))]
+        #[validate(async |_: &i32, _, _| Ok(None))]
+        #[re_validate(async |v: &i32, _, _| Ok(Some(v + 1)))]
         pub virtual_field: i32,
     }
 }
@@ -1242,8 +1242,8 @@ mod sync_re_validate_not_provided_schema {
         pub dependent: i32,
 
         #[ivo_virtual]
-        #[validate(|v: i32, _, _| Ok(Some(v)))]
-        #[re_validate(|_: i32, _, _| panic!("re_validate must not run for a field that was not provided"))]
+        #[validate(|_v: &i32, _, _| Ok(None))]
+        #[re_validate(|_: &i32, _, _| panic!("re_validate must not run for a field that was not provided"))]
         pub virtual_field: i32,
     }
 }
@@ -1264,7 +1264,7 @@ mod sync_sanitize_schema {
         pub dependent: String,
 
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|_v: &String, _, _| Ok(None))]
         #[sanitize(|v: String, _, _| format!("sanitized-{v}"))]
         pub virtual_field: String,
     }
@@ -1282,7 +1282,7 @@ mod async_sanitize_schema {
         pub dependent: String,
 
         #[ivo_virtual]
-        #[validate(async |v: String, _, _| Ok(Some(v)))]
+        #[validate(async |_v: &String, _, _| Ok(None))]
         #[sanitize(async |v: String, _, _| format!("sanitized-{v}"))]
         pub virtual_field: String,
     }
@@ -1300,7 +1300,7 @@ mod sync_sanitize_not_provided_schema {
         pub dependent: String,
 
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|_v: &String, _, _| Ok(None))]
         #[sanitize(|_: String, _, _| panic!("sanitize must not run for a field that was not provided"))]
         pub virtual_field: String,
     }
@@ -1321,7 +1321,7 @@ mod sync_sanitize_after_post_validate_schema {
         pub dependent: String,
 
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|_v: &String, _, _| Ok(None))]
         #[sanitize(|v: String, _, _| format!("sanitized-{v}"))]
         pub virtual_field: String,
     }
@@ -1351,7 +1351,7 @@ mod sync_sanitize_after_post_validate_schema {
 mod sync_no_alias_schema {
     struct Fields {
         #[ivo_virtual]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]
@@ -1368,7 +1368,7 @@ mod sync_no_alias_schema {
 mod async_no_alias_schema {
     struct Fields {
         #[ivo_virtual]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]
@@ -1385,7 +1385,7 @@ mod async_no_alias_schema {
 mod sync_alias_schema {
     struct Fields {
         #[ivo_virtual("virtual_alias")]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]
@@ -1402,7 +1402,7 @@ mod sync_alias_schema {
 mod async_alias_schema {
     struct Fields {
         #[ivo_virtual("virtual_alias")]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]
@@ -1419,7 +1419,7 @@ mod async_alias_schema {
 mod sync_alias_as_dependent_schema {
     struct Fields {
         #[ivo_virtual("dependent")]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]
@@ -1436,7 +1436,7 @@ mod sync_alias_as_dependent_schema {
 mod async_alias_as_dependent_schema {
     struct Fields {
         #[ivo_virtual("dependent")]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]
@@ -1937,13 +1937,13 @@ mod async_parallel_virtuals_schema {
         pub dependent_b: String,
 
         #[ivo_virtual]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |_v: &String, _, _| {
             rendezvous(&VALIDATE_STARTED, "validate").await;
-            Ok(Some(v))
+            Ok(None)
         })]
-        #[re_validate(async |v: String, _, _| {
+        #[re_validate(async |_v: &String, _, _| {
             rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
-            Ok(Some(v))
+            Ok(None)
         })]
         #[sanitize(async |v: String, _, _| {
             rendezvous(&SANITIZE_STARTED, "sanitize").await;
@@ -1952,13 +1952,13 @@ mod async_parallel_virtuals_schema {
         pub virtual_a: String,
 
         #[ivo_virtual]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |_v: &String, _, _| {
             rendezvous(&VALIDATE_STARTED, "validate").await;
-            Ok(Some(v))
+            Ok(None)
         })]
-        #[re_validate(async |v: String, _, _| {
+        #[re_validate(async |_v: &String, _, _| {
             rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
-            Ok(Some(v))
+            Ok(None)
         })]
         #[sanitize(async |v: String, _, _| {
             rendezvous(&SANITIZE_STARTED, "sanitize").await;
@@ -2047,11 +2047,11 @@ mod async_merged_validate_schema {
 
     struct Fields {
         #[required]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |_v: &String, _, _| {
             rendezvous(&VALIDATE_STARTED, "validate").await;
-            Ok(Some(v))
+            Ok(None)
         })]
-        #[re_validate(async |v: String, _, _| {
+        #[re_validate(async |v: &String, _, _| {
             rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
             Ok(Some(format!("revalidated-{v}")))
         })]
@@ -2063,11 +2063,11 @@ mod async_merged_validate_schema {
         pub dependent: String,
 
         #[ivo_virtual]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |_v: &String, _, _| {
             rendezvous(&VALIDATE_STARTED, "validate").await;
-            Ok(Some(v))
+            Ok(None)
         })]
-        #[re_validate(async |v: String, _, _| {
+        #[re_validate(async |v: &String, _, _| {
             rendezvous(&RE_VALIDATE_STARTED, "re_validate").await;
             Ok(Some(format!("revalidated-{v}")))
         })]

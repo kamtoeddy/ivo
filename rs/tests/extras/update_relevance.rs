@@ -82,7 +82,7 @@ mod update_relevance_schema {
         pub other: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub trigger: String,
 
         #[depends_on("name")]
@@ -172,7 +172,7 @@ mod update_relevance_virtual_no_alias_schema {
         pub other: String,
 
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|_v: &String, _, _| Ok(None))]
         pub v_trigger: String,
 
         #[depends_on("name")]
@@ -259,7 +259,7 @@ mod update_relevance_virtual_alias_schema {
         pub other: String,
 
         #[ivo_virtual("trigger")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|_v: &String, _, _| Ok(None))]
         pub v_trigger: String,
 
         #[depends_on("name")]
@@ -349,7 +349,7 @@ mod update_relevance_virtual_alias_same_as_dependent_schema {
         // must not confuse `update_group_relevance_guard` or the dependent
         // resolver's own `parent_guard` into looking up the wrong flag.
         #[ivo_virtual("touch_count")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|_v: &String, _, _| Ok(None))]
         pub v_trigger: String,
 
         #[depends_on("v_trigger")]

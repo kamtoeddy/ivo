@@ -27,7 +27,7 @@ use ivo::ivo_schema;
 mod required_schema {
     struct Fields {
         #[required]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v.len() < 3 {
                 return Err(("username too short".into(), None));
             }
@@ -60,7 +60,7 @@ fn main() {
 ```rust
 #[required]
 #[required_error(|_raw_input, _opts| "\"username\" was not provided!".to_string())]
-#[validate(|v: String, _, _| Ok(Some(v)))]
+#[validate(|v: &String, _, _| Ok(None))]
 pub username: String,
 ```
 

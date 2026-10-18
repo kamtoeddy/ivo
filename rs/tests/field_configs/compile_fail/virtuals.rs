@@ -7,11 +7,11 @@ use ivo::ivo_schema;
 mod duplicate_virtual_alias {
     struct Fields {
         #[ivo_virtual("shared")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_a: String,
 
         #[ivo_virtual("shared")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_b: String,
     }
 }
@@ -23,7 +23,7 @@ mod duplicate_virtual_alias {
 mod alias_same_as_own_field_name {
     struct Fields {
         #[ivo_virtual("virtual_field")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_field: String,
     }
 }
@@ -38,7 +38,7 @@ mod alias_collides_with_required_field {
         pub name: String,
 
         #[ivo_virtual("name")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_field: String,
     }
 }
@@ -58,7 +58,7 @@ mod alias_collides_with_unrelated_dependent_field {
         pub other: i32,
 
         #[ivo_virtual("other")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_field: String,
     }
 }
@@ -76,7 +76,7 @@ mod alias_collides_with_default_created_at {
         pub created_at: String,
 
         #[ivo_virtual("created_at")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_field: String,
     }
 
@@ -97,7 +97,7 @@ mod alias_collides_with_custom_created_at {
         pub custom_created_at: String,
 
         #[ivo_virtual("custom_created_at")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_field: String,
     }
 
@@ -118,7 +118,7 @@ mod alias_collides_with_default_updated_at {
         pub updated_at: String,
 
         #[ivo_virtual("updated_at")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_field: String,
     }
 
@@ -139,7 +139,7 @@ mod alias_collides_with_custom_updated_at {
         pub custom_updated_at: String,
 
         #[ivo_virtual("custom_updated_at")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_field: String,
     }
 

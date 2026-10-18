@@ -2758,9 +2758,10 @@ fn generate_model(
                                ctx_expr: &proc_macro2::TokenStream,
                                opts_expr: &proc_macro2::TokenStream|
      -> (bool, proc_macro2::TokenStream) {
+        // validators borrow the value; they hand back a new one or `None` to keep it
         let annotated = type_annotate_handler(
             handler.clone(),
-            &[value_ty.clone(), ctx_ty.clone(), opts_ty.clone()],
+            &[quote!(&#value_ty), ctx_ty.clone(), opts_ty.clone()],
         );
         if is_async_handler(handler) {
             (
@@ -3101,8 +3102,9 @@ fn generate_model(
     let create_seed_phase = emit_async_phase(create_seed_items);
 
     // Validate takes each seeded value out of `output` rather than cloning
-    // it: the item hands back the value to keep (validated, or unchanged when
-    // ignored), and a value that failed validation is left unset.
+    // it: validators borrow it, and the item's `apply` puts back either the
+    // validator's new value or the seeded one. A value that failed validation
+    // is left unset.
     let create_validate_takes = fields
         .iter()
         .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax))
@@ -3136,37 +3138,32 @@ fn generate_model(
             // not borrow-check. So validation failure is threaded out as a
             // `Result` instead, and only the (always-sequential) `apply` step
             // -- which runs after the join! completes -- touches `errors`.
+            // Validators only borrow the seeded value (`__seeded_*`, taken
+            // out of `output` before the phase); the item reports `Ok(None)`
+            // to keep it, and `apply` -- after every item is done -- moves it
+            // back into `output`. The value is never copied, and async items
+            // only hold a reference to it.
             let validator_assignment = if let Some(ref validator) = validator {
-                let value_expr = quote!(value.clone());
+                let value_expr = quote!(value);
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (is_async, call) =
                     make_validator_call(validator, &ty_tokens, &value_expr, &ctx_expr, &opts_expr);
                 item_is_async |= is_async;
-                quote! {
-                    match #call {
-                        ::core::result::Result::Ok(::core::option::Option::Some(v)) => {
-                            ::core::result::Result::Ok(v)
-                        }
-                        ::core::result::Result::Ok(::core::option::Option::None) => {
-                            ::core::result::Result::Ok(value)
-                        }
-                        ::core::result::Result::Err(e) => ::core::result::Result::Err(e),
-                    }
-                }
+                quote! { #call }
             } else {
-                quote! { ::core::result::Result::Ok(value) }
+                quote! { ::core::result::Result::Ok(::core::option::Option::None) }
             };
 
             let seeded = format_ident!("__seeded_{}", name);
             let value_expr = quote! {
-                match #seeded {
+                match &#seeded {
                     ::core::option::Option::Some(value) => {
-                        let value: #ty = value;
+                        let value: &#ty = value;
                         ::core::option::Option::Some(if !#ignore_flag_tokens {
                             #validator_assignment
                         } else {
-                            ::core::result::Result::Ok(value)
+                            ::core::result::Result::Ok(::core::option::Option::None)
                         })
                     }
                     ::core::option::Option::None => ::core::option::Option::None,
@@ -3174,8 +3171,11 @@ fn generate_model(
             };
             let apply = quote! {
                 match __phase_result {
-                    ::core::option::Option::Some(::core::result::Result::Ok(__value)) => {
+                    ::core::option::Option::Some(::core::result::Result::Ok(::core::option::Option::Some(__value))) => {
                         output.#name = ::core::option::Option::Some(__value);
+                    }
+                    ::core::option::Option::Some(::core::result::Result::Ok(::core::option::Option::None)) => {
+                        output.#name = #seeded;
                     }
                     ::core::option::Option::Some(::core::result::Result::Err(e)) => {
                         errors.insert(::std::string::String::from(#name_str), e);
@@ -3618,7 +3618,7 @@ fn generate_model(
                 any_async |= is_async;
                 let value_expr = quote! {
                     if #provided_flag {
-                        let __value: #ty_tokens = input.#input_name_tokens.clone().unwrap();
+                        let __value: &#ty_tokens = input.#input_name_tokens.as_ref().unwrap();
                         ::core::option::Option::Some(#call)
                     } else {
                         ::core::option::Option::None
@@ -3669,7 +3669,7 @@ fn generate_model(
                 any_async |= is_async;
                 let value_expr = quote! {
                     if #provided_flag && !errors.contains_key(#name_str) {
-                        let __value: #ty_tokens = input.#input_name_tokens.clone().unwrap();
+                        let __value: &#ty_tokens = input.#input_name_tokens.as_ref().unwrap();
                         ::core::option::Option::Some(#call)
                     } else {
                         ::core::option::Option::None
@@ -3821,16 +3821,16 @@ fn generate_model(
                         &opts_expr,
                     );
                     let guard = extra_guard(f);
-                    // Reads the current value as an `Option`: `create`'s
-                    // partial output already is one, `update`'s isn't.
+                    // Borrows the current value as an `Option`: `create`'s
+                    // partial output already holds one, `update`'s doesn't.
                     let (read_value, write_value) = if output_is_partial {
                         (
-                            quote! { output.#name.clone() },
+                            quote! { output.#name.as_ref() },
                             quote! { ::core::option::Option::Some(__new_value) },
                         )
                     } else {
                         (
-                            quote! { ::core::option::Option::Some(output.#name.clone()) },
+                            quote! { ::core::option::Option::Some(&output.#name) },
                             quote! { __new_value },
                         )
                     };
@@ -3838,7 +3838,7 @@ fn generate_model(
                         if !errors.contains_key(#name_str) && #guard {
                             match #read_value {
                                 ::core::option::Option::Some(__value) => {
-                                    let __value: #ty = __value;
+                                    let __value: &#ty = __value;
                                     ::core::option::Option::Some(#call)
                                 }
                                 ::core::option::Option::None => ::core::option::Option::None,
@@ -4492,7 +4492,7 @@ fn generate_model(
 
             let mut is_async = false;
             let validated_expr = if let Some(ref validator) = validator {
-                let value_expr = quote!(v.clone());
+                let value_expr = quote!(v);
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
                 let (a, call) =
@@ -5102,7 +5102,8 @@ fn generate_model(
     };
 
     // Success / failure triggers.
-    let hook_ctx_ty = quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
+    let hook_ctx_ty =
+        quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
     let update_hook_ctx_ty =
         quote!(&::ivo::__ivo_internals::IvoContext<#partial_input_name, #output_name>);
 

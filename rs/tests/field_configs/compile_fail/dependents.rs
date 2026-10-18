@@ -23,7 +23,7 @@ mod bare_ident_depends_on {
 mod bare_ident_ivo_virtual_alias {
     struct Fields {
         #[ivo_virtual(alias)]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v)))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]

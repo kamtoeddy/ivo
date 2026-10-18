@@ -10,8 +10,8 @@ Un validateur évalue (et peut transformer) la valeur d'un champ. Les champs
 primaire et un `#[re_validate]` secondaire, qui ne s'exécute qu'une fois le validateur primaire
 déjà réussi.
 
-Les deux partagent la même signature : `|value, ctx, opts| -> Result<Option<T>, (String,
-Option<Metadata>)>`.
+Les deux partagent la même signature : `|value: &T, ctx, opts| -> Result<Option<T>, (String,
+Option<Metadata>)>`. La valeur est empruntée : l'accepter telle quelle ne la copie jamais.
 
 - `Ok(None)` accepte la valeur telle quelle.
 - `Ok(Some(nouvelle_valeur))` la remplace.
@@ -25,8 +25,8 @@ use ivo::ivo_schema;
 mod re_validate_schema {
     struct Fields {
         #[required]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
-        #[re_validate(|v: String, _, _| Ok(Some(format!("revalidated-{v}"))))]
+        #[validate(|v: &String, _, _| Ok(None))]
+        #[re_validate(|v: &String, _, _| Ok(Some(format!("revalidated-{v}"))))]
         pub username: String,
     }
 }
@@ -68,7 +68,7 @@ Activez la fonctionnalité optionnelle `validators` (`ivo = { version = "*", fea
 
 ```rust
 #[lax(None)]
-#[validate(|v: Option<String>, _, _| {
+#[validate(|v: &Option<String>, _, _| {
     let Some(email) = v else { return Ok(None) };
     match validate_email(&email) {
         Ok(validated) => Ok(Some(Some(validated))),

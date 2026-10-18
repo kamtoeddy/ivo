@@ -18,7 +18,7 @@ mod required_without_validator_schema {
 mod required_with_validator_schema {
     struct Fields {
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub name: String,
     }
 }
@@ -72,16 +72,16 @@ mod async_parallel_re_validate_schema {
 
     struct Fields {
         #[required]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
-        #[re_validate(async |v: String, _, _| {
+        #[validate(|_v: &String, _, _| Ok(None))]
+        #[re_validate(async |v: &String, _, _| {
             rendezvous().await;
             Ok(Some(format!("revalidated-{v}")))
         })]
         pub field_a: String,
 
         #[required]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
-        #[re_validate(async |v: String, _, _| {
+        #[validate(|_v: &String, _, _| Ok(None))]
+        #[re_validate(async |v: &String, _, _| {
             rendezvous().await;
             Ok(Some(format!("revalidated-{v}")))
         })]
@@ -146,14 +146,14 @@ mod async_parallel_update_validate_schema {
 
     struct Fields {
         #[required]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |v: &String, _, _| {
             rendezvous().await;
             Ok(Some(format!("validated-{v}")))
         })]
         pub field_a: String,
 
         #[required]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |v: &String, _, _| {
             rendezvous().await;
             Ok(Some(format!("validated-{v}")))
         })]
@@ -212,14 +212,14 @@ mod async_parallel_create_validate_schema {
 
     struct Fields {
         #[required]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |v: &String, _, _| {
             rendezvous().await;
             Ok(Some(format!("validated-{v}")))
         })]
         pub field_a: String,
 
         #[required]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |v: &String, _, _| {
             rendezvous().await;
             Ok(Some(format!("validated-{v}")))
         })]

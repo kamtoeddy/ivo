@@ -29,7 +29,7 @@ use ivo::ivo_schema;
 mod lax_schema {
     struct Fields {
         #[lax("default_bio".to_string())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v.len() > 100 {
                 return Err(("bio too long".into(), None));
             }

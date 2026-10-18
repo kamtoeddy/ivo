@@ -155,7 +155,7 @@ mod place_schema {
 
     struct Fields {
         #[required]
-        #[validate(|c: Coordinates, _, _| {
+        #[validate(|c: &Coordinates, _, _| {
             if c.lat.is_nan() || c.lon.is_nan() {
                 return Err(("InvalidNumber".into(), None));
             }

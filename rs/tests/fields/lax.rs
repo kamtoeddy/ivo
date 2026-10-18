@@ -999,7 +999,7 @@ mod primary_validation_sync_schema {
 
     struct Fields {
         #[lax(String::from("default_value"))]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             let validated = v.trim();
 
             if validated.len() < 2 {
@@ -1018,7 +1018,7 @@ mod primary_validation_async_schema {
 
     struct Fields {
         #[lax(async |_, _| String::from("default_value"))]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |v: &String, _, _| {
             let validated = v.trim();
 
             if validated.len() < 2 {
@@ -1044,7 +1044,7 @@ mod primary_update_validation_sync_schema {
         pub id: i32,
 
         #[lax(1)]
-        #[validate(|v: i32, _, _| {
+        #[validate(|v: &i32, _, _| {
             if !LAX_VALUE_RANGE.contains(&v) {
                 return Err((String::from(LAX_OUT_OF_RANGE_ERROR), None));
             }
@@ -1068,7 +1068,7 @@ mod primary_update_validation_async_schema {
         pub id: i32,
 
         #[lax(async |_, _| 1)]
-        #[validate(async |v: i32, _, _| {
+        #[validate(async |v: &i32, _, _| {
             if !LAX_VALUE_RANGE.contains(&v) {
                 return Err((String::from(LAX_OUT_OF_RANGE_ERROR), None));
             }
@@ -1083,7 +1083,7 @@ mod primary_update_validation_async_schema {
 mod primary_validation_none_sync_schema {
     struct Fields {
         #[lax(1)]
-        #[validate(|_: i32, _, _| Ok(None))]
+        #[validate(|_: &i32, _, _| Ok(None))]
         pub lax: i32,
     }
 }
@@ -1092,7 +1092,7 @@ mod primary_validation_none_sync_schema {
 mod primary_validation_none_async_schema {
     struct Fields {
         #[lax(async |_, _| 1)]
-        #[validate(async |_: i32, _, _| Ok(None))]
+        #[validate(async |_: &i32, _, _| Ok(None))]
         pub lax: i32,
     }
 }
@@ -1468,7 +1468,7 @@ mod re_validation_sync_schema {
 
     struct Fields {
         #[lax(String::from("default_value"))]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             let validated = v.trim();
 
             if validated.len() < 2 {
@@ -1477,7 +1477,7 @@ mod re_validation_sync_schema {
 
             Ok(Some(validated.into()))
         })]
-        #[re_validate(|v: String, _, _| {
+        #[re_validate(|v: &String, _, _| {
             let validated = v.trim();
 
             if validated.len() < 4 {
@@ -1497,7 +1497,7 @@ mod re_validation_async_schema {
 
     struct Fields {
         #[lax(async |_, _| String::from("default_value"))]
-        #[validate(async |v: String, _, _| {
+        #[validate(async |v: &String, _, _| {
             let validated = v.trim();
 
             if validated.len() < 2 {
@@ -1506,7 +1506,7 @@ mod re_validation_async_schema {
 
             Ok(Some(validated.into()))
         })]
-        #[re_validate(async |v: String, _, _| {
+        #[re_validate(async |v: &String, _, _| {
             let validated = v.trim();
 
             if validated.len() < 4 {
@@ -1535,14 +1535,14 @@ mod re_validation_update_sync_schema {
         pub id: i32,
 
         #[lax(1)]
-        #[validate(|v: i32, _, _| {
+        #[validate(|v: &i32, _, _| {
             if !LAX_VALUE_RANGE.contains(&v) {
                 return Err((String::from(LAX_OUT_OF_RANGE_ERROR), None));
             }
 
             Ok(None)
         })]
-        #[re_validate(|v: i32, _, _| {
+        #[re_validate(|v: &i32, _, _| {
             if !REVALIDATED_LAX_VALUE_RANGE.contains(&v) {
                 return Err((String::from(REVALIDATED_LAX_OUT_OF_RANGE_ERROR), None));
             }
@@ -1569,14 +1569,14 @@ mod re_validation_update_async_schema {
         pub id: i32,
 
         #[lax(async |_, _| 1)]
-        #[validate(async |v: i32, _, _| {
+        #[validate(async |v: &i32, _, _| {
             if !LAX_VALUE_RANGE.contains(&v) {
                 return Err((String::from(LAX_OUT_OF_RANGE_ERROR), None));
             }
 
             Ok(None)
         })]
-        #[re_validate(async |v: i32, _, _| {
+        #[re_validate(async |v: &i32, _, _| {
             if !REVALIDATED_LAX_VALUE_RANGE.contains(&v) {
                 return Err((String::from(REVALIDATED_LAX_OUT_OF_RANGE_ERROR), None));
             }
@@ -1592,7 +1592,7 @@ mod re_validated_values_sync_schema {
     struct Fields {
         #[lax(0)]
         #[validate(|_, _, _| Ok(None))]
-        #[re_validate(|v: i32, _, _| Ok(Some(v + 1)))]
+        #[re_validate(|v: &i32, _, _| Ok(Some(v + 1)))]
         pub lax: i32,
     }
 }
@@ -1602,7 +1602,7 @@ mod re_validated_values_async_schema {
     struct Fields {
         #[lax(async |_, _| 0)]
         #[validate(async |_, _, _| Ok(None))]
-        #[re_validate(async |v: i32, _, _| Ok(Some(v + 1)))]
+        #[re_validate(async |v: &i32, _, _| Ok(Some(v + 1)))]
         pub lax: i32,
     }
 }
@@ -1611,8 +1611,8 @@ mod re_validated_values_async_schema {
 mod re_validation_none_sync_schema {
     struct Fields {
         #[lax(1)]
-        #[validate(|v: i32, _, _| Ok(Some(v + 1)))]
-        #[re_validate(|_: i32, _, _| Ok(None))]
+        #[validate(|v: &i32, _, _| Ok(Some(v + 1)))]
+        #[re_validate(|_: &i32, _, _| Ok(None))]
         pub lax: i32,
     }
 }
@@ -1621,8 +1621,8 @@ mod re_validation_none_sync_schema {
 mod re_validation_none_async_schema {
     struct Fields {
         #[lax(async |_, _| 1)]
-        #[validate(async |v: i32, _, _| Ok(Some(v + 1)))]
-        #[re_validate(async |_: i32, _, _| Ok(None))]
+        #[validate(async |v: &i32, _, _| Ok(Some(v + 1)))]
+        #[re_validate(async |_: &i32, _, _| Ok(None))]
         pub lax: i32,
     }
 }
@@ -3234,7 +3234,7 @@ fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default
 mod lax_on_delete_schema {
     struct Fields {
         #[lax("default_value".into())]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|_v: &String, _, _| Ok(None))]
         #[on_delete(async |_, _| {})]
         #[on_delete(|data, _| {
             if true {
@@ -3270,12 +3270,12 @@ async_test_matrix!(
 mod lax_on_failure_creation_schema {
     struct Fields {
         #[lax("default_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[on_failure(|ctx, _| {
             if true {
@@ -3320,12 +3320,12 @@ mod lax_on_failure_creation_ignored_schema {
         pub lax: String,
 
         #[lax("default_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         pub lax2: String,
     }
@@ -3352,12 +3352,12 @@ fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ignored()
 mod lax_on_failure_update_schema {
     struct Fields {
         #[lax("default_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[on_failure(|ctx, _| {
             if true {
@@ -3398,12 +3398,12 @@ fn should_trigger_on_failure_handlers_during_updates() {
 mod lax_on_failure_update_unchanged_schema {
     struct Fields {
         #[lax("default_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[on_failure(|ctx, _| {
             if true {
@@ -3444,12 +3444,12 @@ fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
 mod lax_on_failure_update_ignored_schema {
     struct Fields {
         #[lax("default_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[ignore_update]
         #[on_failure(|ctx, _| {
@@ -3463,12 +3463,12 @@ mod lax_on_failure_update_ignored_schema {
         pub lax: String,
 
         #[lax("default_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         pub lax2: String,
     }
@@ -3506,12 +3506,12 @@ fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_ignore
 mod lax_on_success_creation_schema {
     struct Fields {
         #[lax("default_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[ignore_update]
         #[on_failure(|ctx, _| {
@@ -3529,12 +3529,12 @@ mod lax_on_success_creation_schema {
         pub lax: String,
 
         #[lax("default_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         pub lax_1: String,
     }
@@ -3567,12 +3567,12 @@ fn should_trigger_on_success_handlers_at_creation_if_provided() {
 mod lax_on_success_creation_default_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[ignore_update]
         #[on_success(|ctx, _| {
@@ -3584,12 +3584,12 @@ mod lax_on_success_creation_default_schema {
         pub lax: String,
 
         #[lax("default_lax_1_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         pub lax_1: String,
     }
@@ -3627,12 +3627,12 @@ fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
 mod lax_on_success_creation_ignored_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[ignore_init]
         #[on_success(|ctx, _| {
@@ -3644,12 +3644,12 @@ mod lax_on_success_creation_ignored_schema {
         pub lax: String,
 
         #[lax("default_lax_1_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         pub lax_1: String,
     }
@@ -3688,12 +3688,12 @@ fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ignored()
 mod lax_on_success_update_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[on_success(|ctx, _| {
             panic!(
@@ -3704,12 +3704,12 @@ mod lax_on_success_update_schema {
         pub lax: String,
 
         #[lax("default_lax_1_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         pub lax_1: String,
     }
@@ -3754,12 +3754,12 @@ fn should_trigger_on_success_handlers_during_updates_if_provided() {
 mod lax_on_success_update_not_provided_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[on_success(|ctx, _| {
             panic!(
@@ -3770,12 +3770,12 @@ mod lax_on_success_update_not_provided_schema {
         pub lax: String,
 
         #[lax("default_lax_1_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         pub lax_1: String,
     }
@@ -3820,12 +3820,12 @@ fn should_not_trigger_on_success_handlers_during_updates_if_not_provided() {
 mod lax_on_success_update_ignored_schema {
     struct Fields {
         #[lax("default_lax_value".to_string())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         #[ignore_update]
         #[on_success(|ctx, _| {
@@ -3837,12 +3837,12 @@ mod lax_on_success_update_ignored_schema {
         pub lax: String,
 
         #[lax("default_lax_1_value".into())]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "fail_validation" {
                 return Err(("validation failed".into(), None));
             }
 
-            Ok(Some(v))
+            Ok(None)
         })]
         pub lax_1: String,
     }

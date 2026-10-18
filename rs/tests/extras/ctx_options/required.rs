@@ -58,7 +58,7 @@ mod ignore_update_schema {
 
     struct Fields {
         #[required]
-        #[validate(|_: i32, _, _| Ok(None))]
+        #[validate(|_: &i32, _, _| Ok(None))]
         #[ignore_update(async |_, opts| {
             opts.write().await.add_message("ctx_options updated in ignore_update resolver");
             false
@@ -110,7 +110,7 @@ mod validate_create_schema {
 
     struct Fields {
         #[required]
-        #[validate(async |v: String, _, opts| {
+        #[validate(async |v: &String, _, opts| {
             opts.write().await.add_message("ctx_options updated in validator");
 
             let validated = v.trim();
@@ -175,7 +175,7 @@ mod validate_update_schema {
 
     struct Fields {
         #[required]
-        #[validate(async |v: String, _, opts| {
+        #[validate(async |v: &String, _, opts| {
             opts.write().await.add_message("ctx_options updated in validator");
 
             let validated = v.trim();
@@ -234,7 +234,7 @@ mod re_validate_create_schema {
     struct Fields {
         #[required]
         #[validate(|_, _, _| Ok(None))]
-        #[re_validate(async |v: String, _, opts| {
+        #[re_validate(async |v: &String, _, opts| {
             opts.write().await.add_message("ctx_options updated in re_validator");
 
             let validated = v.trim();
@@ -300,7 +300,7 @@ mod re_validate_update_schema {
     struct Fields {
         #[required]
         #[validate(|_, _, _| Ok(None))]
-        #[re_validate(async |v: String, _, opts| {
+        #[re_validate(async |v: &String, _, opts| {
             opts.write().await.add_message("ctx_options updated in re_validator");
 
             let validated = v.trim();

@@ -9,7 +9,8 @@ A validator assesses (and may transform) a field's value. [Lax](./definitions/la
 up to two: a primary `#[validate]` and a secondary `#[re_validate]`, which only runs once the
 primary validator has already succeeded.
 
-Both share the same signature: `|value, ctx, opts| -> Result<Option<T>, (String, Option<Metadata>)>`.
+Both share the same signature: `|value: &T, ctx, opts| -> Result<Option<T>, (String, Option<Metadata>)>`.
+The value is borrowed, so accepting it as-is never copies it.
 
 - `Ok(None)` accepts the value as-is.
 - `Ok(Some(new_value))` replaces it.
@@ -23,8 +24,8 @@ use ivo::ivo_schema;
 mod re_validate_schema {
     struct Fields {
         #[required]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
-        #[re_validate(|v: String, _, _| Ok(Some(format!("revalidated-{v}"))))]
+        #[validate(|v: &String, _, _| Ok(None))]
+        #[re_validate(|v: &String, _, _| Ok(Some(format!("revalidated-{v}"))))]
         pub username: String,
     }
 }
@@ -63,7 +64,7 @@ crate `ivo-validators`) for a small set of built-in validators:
 
 ```rust
 #[lax(None)]
-#[validate(|v: Option<String>, _, _| {
+#[validate(|v: &Option<String>, _, _| {
     let Some(email) = v else { return Ok(None) };
     match validate_email(&email) {
         Ok(validated) => Ok(Some(Some(validated))),

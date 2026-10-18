@@ -264,7 +264,7 @@ mod validate_create_schema {
         pub dependent: String,
 
         #[ivo_virtual]
-        #[validate(async |v: String, _, opts| {
+        #[validate(async |v: &String, _, opts| {
             opts.write().await.add_message(MESSAGE);
 
             let validated = v.trim();
@@ -344,7 +344,7 @@ mod validate_update_schema {
         pub dependent: String,
 
         #[ivo_virtual]
-        #[validate(async |v: String, _, opts| {
+        #[validate(async |v: &String, _, opts| {
             opts.write().await.add_message(MESSAGE);
 
             let validated = v.trim();
@@ -415,7 +415,7 @@ mod re_validate_create_schema {
 
         #[ivo_virtual]
         #[validate(|_, _, _| Ok(None))]
-        #[re_validate(async |v: String, _, opts| {
+        #[re_validate(async |v: &String, _, opts| {
             opts.write().await.add_message(MESSAGE);
 
             let validated = v.trim();
@@ -496,7 +496,7 @@ mod re_validate_update_schema {
 
         #[ivo_virtual]
         #[validate(|_, _, _| Ok(None))]
-        #[re_validate(async |v: String, _, opts| {
+        #[re_validate(async |v: &String, _, opts| {
             opts.write().await.add_message(MESSAGE);
 
             let validated = v.trim();
@@ -577,7 +577,7 @@ mod sanitize_create_schema {
         pub dependent: String,
 
         #[ivo_virtual]
-        #[validate(|_: String, _, _| Ok(None))]
+        #[validate(|_: &String, _, _| Ok(None))]
         #[sanitize(async |value: String, _, opts| {
             opts.write().await.add_message("ctx_options updated in sanitizer");
             format!("sanitized-{value}")
@@ -656,7 +656,7 @@ mod sanitize_update_schema {
         pub dependent: String,
 
         #[ivo_virtual]
-        #[validate(|_: String, _, _| Ok(None))]
+        #[validate(|_: &String, _, _| Ok(None))]
         #[sanitize(async |value: String, _, opts| {
             opts.write().await.add_message("ctx_options updated in sanitizer");
             format!("sanitized-{value}")
@@ -720,11 +720,11 @@ mod post_validate_create_schema {
         pub dependent: i32,
 
         #[ivo_virtual]
-        #[validate(|_: i32, _, _| Ok(None))]
+        #[validate(|_: &i32, _, _| Ok(None))]
         pub virtual_field: i32,
 
         #[ivo_virtual]
-        #[validate(|_: i32, _, _| Ok(None))]
+        #[validate(|_: &i32, _, _| Ok(None))]
         pub virtual_field_1: i32,
     }
 
@@ -793,11 +793,11 @@ mod post_validate_update_schema {
         pub dependent: i32,
 
         #[ivo_virtual]
-        #[validate(|_: i32, _, _| Ok(None))]
+        #[validate(|_: &i32, _, _| Ok(None))]
         pub virtual_field: i32,
 
         #[ivo_virtual]
-        #[validate(|_: i32, _, _| Ok(None))]
+        #[validate(|_: &i32, _, _| Ok(None))]
         pub virtual_field_1: i32,
     }
 

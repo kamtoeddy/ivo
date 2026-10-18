@@ -315,7 +315,7 @@ mod validate_create_schema {
 
     struct Fields {
         #[lax(DEFAULT_VALUE.into())]
-        #[validate(async |v: String, _, opts| {
+        #[validate(async |v: &String, _, opts| {
             opts.write().await.add_message(MESSAGE);
 
             let validated = v.trim();
@@ -380,7 +380,7 @@ mod validate_update_schema {
 
     struct Fields {
         #[lax("default_value".into())]
-        #[validate(async |v: String, _, opts| {
+        #[validate(async |v: &String, _, opts| {
             opts.write().await.add_message("ctx_options updated in validator");
 
             let validated = v.trim();
@@ -442,7 +442,7 @@ mod re_validate_create_schema {
     struct Fields {
         #[lax(DEFAULT_VALUE.into())]
         #[validate(|_, _, _| Ok(None))]
-        #[re_validate(async |v: String, _, opts| {
+        #[re_validate(async |v: &String, _, opts| {
             opts.write().await.add_message(MESSAGE);
 
             let validated = v.trim();
@@ -508,7 +508,7 @@ mod re_validate_update_schema {
     struct Fields {
         #[lax("default_value".into())]
         #[validate(|_, _, _| Ok(None))]
-        #[re_validate(async |v: String, _, opts| {
+        #[re_validate(async |v: &String, _, opts| {
             opts.write().await.add_message("ctx_options updated in re_validator");
 
             let validated = v.trim();

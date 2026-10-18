@@ -1462,7 +1462,7 @@ fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
 mod sync_on_failure_no_change_schema {
     struct Fields {
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         #[on_failure(|ctx, _| {
             panic!(
                 "[required]: on_failure triggered with value: ({}, {:?})",
@@ -1504,7 +1504,7 @@ async_test_matrix!(
 mod async_on_failure_no_change_schema {
     struct Fields {
         #[required]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         #[on_failure(async |ctx, _| {
             panic!(
                 "[required]: on_failure triggered with value: ({}, {:?})",
@@ -2007,11 +2007,11 @@ fn should_trigger_entity_level_success_handlers_each_time_creation_is_successful
 mod sync_on_success_entity_level_schema {
     struct Fields {
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required_1: String,
     }
 
@@ -2059,11 +2059,11 @@ fn should_trigger_entity_level_success_handlers_each_time_update_is_successful()
 mod sync_on_success_entity_level_update_schema {
     struct Fields {
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required_1: String,
     }
 
@@ -2787,7 +2787,7 @@ mod sync_default_required_error_schema {
 mod async_default_required_error_schema {
     struct Fields {
         #[required]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         pub required: i32,
     }
 }
@@ -2806,7 +2806,7 @@ mod async_static_required_error_schema {
     struct Fields {
         #[required]
         #[required_error("Yooo! you did not provide: \"required\"")]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         pub required: i32,
     }
 }
@@ -2825,7 +2825,7 @@ mod async_dynamic_required_error_schema {
     struct Fields {
         #[required]
         #[required_error(|_, _| "Yooo! you did not provide: \"required\"".to_string())]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         pub required: i32,
     }
 }
@@ -3098,7 +3098,7 @@ mod sync_ignore_update_schema {
     struct Fields {
         #[required]
         #[ignore_update(|ctx, _| ctx.values().lax.clone().unwrap() == "ignore_required_for_update")]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: i32,
 
         #[lax("default_lax_value".to_string())]
@@ -3111,7 +3111,7 @@ mod async_ignore_update_schema {
     struct Fields {
         #[required]
         #[ignore_update(async |ctx, _| ctx.values().lax.clone().unwrap() == "ignore_required_for_update")]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         pub required: i32,
 
         #[lax("default_lax_value".to_string())]
@@ -3136,7 +3136,7 @@ mod async_readonly_schema {
     struct Fields {
         #[required]
         #[readonly]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         pub required: i32,
 
         #[lax("default_lax_value".to_string())]
@@ -3154,7 +3154,7 @@ mod sync_grouped_ignore_update_schema {
         pub lax_1: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
     }
 
@@ -3172,7 +3172,7 @@ mod async_grouped_ignore_update_schema {
         pub lax_1: String,
 
         #[required]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         pub required: String,
     }
 
@@ -3198,7 +3198,7 @@ mod sync_on_delete_schema {
 mod async_on_delete_schema {
     struct Fields {
         #[required]
-        #[validate(async |v, _, _| Ok(Some(v)))]
+        #[validate(async |_v, _, _| Ok(None))]
         #[on_delete(async |data, _| {
             panic!(
                 "[required]: on_delete triggered with value: {}",
@@ -3962,7 +3962,7 @@ fn should_not_run_validate_once_missing_required_fields_have_already_failed() {
 mod fail_fast_required_then_validate_schema {
     struct Fields {
         #[required]
-        #[validate(|_v: String, _, _| {
+        #[validate(|_v: &String, _, _| {
             panic!("validate must not run once a required field is already missing");
         })]
         pub field_a: String,
@@ -3988,14 +3988,14 @@ fn should_not_run_re_validate_once_validate_has_already_failed() {
 mod fail_fast_validate_then_re_validate_schema {
     struct Fields {
         #[required]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "bad" {
                 Err(("invalid".into(), None))
             } else {
                 Ok(None)
             }
         })]
-        #[re_validate(|_v: String, _, _| {
+        #[re_validate(|_v: &String, _, _| {
             panic!("re_validate must not run once validate has already failed");
         })]
         pub field_a: String,
@@ -4035,7 +4035,7 @@ fn should_not_run_validate_once_missing_required_fields_have_already_failed_on_u
 mod fail_fast_update_required_then_validate_schema {
     struct Fields {
         #[lax(String::new())]
-        #[validate(|_v: String, _, _| {
+        #[validate(|_v: &String, _, _| {
             panic!("validate must not run once a conditionally-required field is already missing");
         })]
         pub field_a: String,
@@ -4131,7 +4131,7 @@ fn should_return_nothing_to_update_before_dependent_resolution_when_validate_rev
 mod nothing_to_update_checkpoint2_schema {
     struct Fields {
         #[lax(String::new())]
-        #[validate(|_v: String, _, _| Ok(Some("original".to_string())))]
+        #[validate(|_v: &String, _, _| Ok(Some("original".to_string())))]
         pub field_a: String,
 
         #[depends_on("field_a")]

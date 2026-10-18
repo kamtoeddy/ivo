@@ -23,7 +23,7 @@ fn take_snapshots() -> Vec<(&'static str, snapshot_schema::PartialData)> {
 mod snapshot_schema {
     struct Fields {
         #[required]
-        #[validate(|v: String, ctx, _| {
+        #[validate(|v: &String, ctx, _| {
             super::record("validate", ctx.values());
             Ok(Some(v.trim().to_string()))
         })]
@@ -179,11 +179,11 @@ fn calls() -> [usize; 3] {
 mod lazy_schema {
     struct Fields {
         #[required]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v == "invalid" {
                 return Err(("invalid".into(), None));
             }
-            Ok(Some(v))
+            Ok(None)
         })]
         pub name: String,
 

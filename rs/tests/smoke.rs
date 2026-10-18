@@ -37,7 +37,7 @@ mod user_validation_schema {
             if name.is_empty() {
                 Err((String::from("name must not be empty"), None))
             } else {
-                Ok(Some(name))
+                Ok(None)
             }
         })]
         pub name: String,
@@ -464,12 +464,12 @@ async fn smoke_model_field_ignore_update() {
 mod user_re_validate_schema {
     struct Fields {
         #[required]
-        #[validate(async |name, _ctx, _opts| { Ok(Some(name)) })]
+        #[validate(async |_name, _ctx, _opts| { Ok(None) })]
         #[re_validate(async |name, _ctx, _opts| {
             if name == "bad" {
                 Err((String::from("name cannot be bad"), None))
             } else {
-                Ok(Some(name))
+                Ok(None)
             }
         })]
         pub name: String,
@@ -484,7 +484,7 @@ mod user_readonly_schema {
 
         #[required]
         #[readonly]
-        #[validate(async |id, _ctx, _opts| { Ok(Some(id)) })]
+        #[validate(async |_id, _ctx, _opts| { Ok(None) })]
         pub id: String,
     }
 }
@@ -863,7 +863,7 @@ async fn smoke_model_on_failure_trigger() {
                 if name.is_empty() {
                     Err((String::from("name must not be empty"), None))
                 } else {
-                    Ok(Some(name))
+                    Ok(None)
                 }
             })]
             #[on_failure(async |_ctx, _opts| {

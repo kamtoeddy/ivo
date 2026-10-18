@@ -24,7 +24,7 @@ use ivo::ivo_schema;
 mod delete_schema {
     struct Fields {
         #[required]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(None))]
         #[on_delete(|data, _opts| {
             println!("[username]: on_delete: {}", data.username);
         })]
@@ -82,11 +82,11 @@ use ivo::ivo_schema;
 mod notify_schema {
     struct Fields {
         #[required]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v.is_empty() {
                 return Err(("username must not be empty".into(), None));
             }
-            Ok(Some(v))
+            Ok(None)
         })]
         #[on_success(|ctx, _| {
             println!("[username]: on_success: {}", ctx.values().username.clone().unwrap());

@@ -36,8 +36,8 @@ fn should_expose_the_original_raw_input_distinct_from_current_input_during_creat
 mod raw_input_create_schema {
     struct Fields {
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
-        #[re_validate(|v: String, ctx, _| {
+        #[validate(|v: &String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
+        #[re_validate(|v: &String, ctx, _| {
             assert_eq!(
                 ctx.raw_input().virtual_field.as_deref(),
                 Some("original"),
@@ -90,8 +90,8 @@ fn should_expose_the_original_raw_input_distinct_from_current_input_during_updat
 mod raw_input_update_schema {
     struct Fields {
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
-        #[re_validate(|v: String, ctx, _| {
+        #[validate(|v: &String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
+        #[re_validate(|v: &String, ctx, _| {
             assert_eq!(
                 ctx.raw_input().virtual_field.as_deref(),
                 Some("original-update"),
@@ -148,7 +148,7 @@ fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_trigge
 mod raw_input_trigger_create_schema {
     struct Fields {
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
+        #[validate(|v: &String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]
@@ -200,7 +200,7 @@ fn should_expose_the_final_rewritten_input_not_the_original_in_on_success_trigge
 mod raw_input_trigger_update_schema {
     struct Fields {
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
+        #[validate(|v: &String, _, _| Ok(Some(format!("REWRITTEN-{v}"))))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]

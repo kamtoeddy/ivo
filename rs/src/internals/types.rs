@@ -31,14 +31,14 @@ where
 }
 
 pub async fn run_validator<T, Ctx, Opts, F, Metadata>(
-    value: T,
+    value: &T,
     ctx: &Ctx,
     opts: &Opts,
     validator: F,
 ) -> Result<Option<T>, FieldError<Metadata>>
 where
     Metadata: Clone,
-    F: AsyncFn(T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
+    F: AsyncFn(&T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
 {
     match validator(value, ctx, opts).await {
         Ok(v) => Ok(v),
@@ -99,14 +99,14 @@ where
 }
 
 pub fn run_validator_sync<T, Ctx, Opts, F, Metadata>(
-    value: T,
+    value: &T,
     ctx: &Ctx,
     opts: &Opts,
     validator: F,
 ) -> Result<Option<T>, FieldError<Metadata>>
 where
     Metadata: Clone,
-    F: Fn(T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
+    F: Fn(&T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
 {
     match validator(value, ctx, opts) {
         Ok(v) => Ok(v),

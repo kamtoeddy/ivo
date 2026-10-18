@@ -47,10 +47,10 @@ mod sync_write_schema {
 
     struct Fields {
         #[required]
-        #[validate(|v: i32, _, opts| {
+        #[validate(|_v: &i32, _, opts| {
             opts.write_sync()
                 .add_message("ctx_options updated synchronously in validator");
-            Ok(Some(v))
+            Ok(None)
         })]
         #[on_success(|_, opts| {
             panic!("{}", opts.read_sync().messages[0])

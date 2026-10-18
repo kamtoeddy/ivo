@@ -33,7 +33,7 @@ use ivo::ivo_schema;
 mod virtuals_schema {
     struct Fields {
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(None))]
         pub trigger: String,
 
         #[depends_on("trigger")]
@@ -72,7 +72,7 @@ input struct, while the field itself is still named (and referenced by `#[depend
 mod virtuals_alias_schema {
     struct Fields {
         #[ivo_virtual("password_confirmation")]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(None))]
         pub password_confirm: String,
 
         #[depends_on("password_confirm")]

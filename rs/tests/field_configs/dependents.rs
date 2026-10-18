@@ -78,7 +78,7 @@ mod dependent_on_lax_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[updated_at]
@@ -104,7 +104,7 @@ mod dependent_on_required_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[updated_at]
@@ -130,7 +130,7 @@ mod dependent_on_both_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[updated_at]
@@ -161,7 +161,7 @@ mod dependent_on_dependent_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[updated_at]
@@ -192,7 +192,7 @@ mod dependent_on_dependent_and_required_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[updated_at]
@@ -223,11 +223,11 @@ mod dependent_on_virtual_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[ivo_virtual]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[updated_at]
@@ -258,11 +258,11 @@ mod dependent_on_virtual_and_required_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[ivo_virtual]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[updated_at]
@@ -293,11 +293,11 @@ mod dependent_on_dependent_and_virtual_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[ivo_virtual]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[updated_at]
@@ -328,11 +328,11 @@ mod chained_dependent_on_virtual_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[ivo_virtual]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[updated_at]
@@ -358,11 +358,11 @@ mod virtual_alias_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[ivo_virtual("alias_name")]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[updated_at]
@@ -388,11 +388,11 @@ mod virtual_alias_matching_dependent_schema {
         pub lax: String,
 
         #[required]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub required: String,
 
         #[ivo_virtual("dependent")]
-        #[validate(|v, _, _| Ok(Some(v)))]
+        #[validate(|_v, _, _| Ok(None))]
         pub virtual_field: String,
 
         #[updated_at]

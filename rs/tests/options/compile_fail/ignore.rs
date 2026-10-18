@@ -118,7 +118,7 @@ mod ignore_required {
         pub lax_1: i32,
 
         #[required]
-        #[validate(|_: i32, _, _| Ok(None))]
+        #[validate(|_: &i32, _, _| Ok(None))]
         pub required: i32,
     }
 

@@ -304,9 +304,9 @@ mod ctx_options_schema {
 
     struct Fields {
         #[required]
-        #[validate(|v: String, _, opts| {
+        #[validate(|v: &String, _, opts| {
             opts.write_sync().calls += 1;
-            Ok(Some(v))
+            Ok(None)
         })]
         pub name: String,
     }
@@ -373,7 +373,7 @@ mod sanitized_schema {
 
     struct Fields {
         #[required]
-        #[validate(|v: String, _, _| {
+        #[validate(|v: &String, _, _| {
             if v.len() < 3 {
                 return Err(("too short".into(), Some(vec!["min length is 3".into()])));
             }
