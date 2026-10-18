@@ -1,0 +1,42 @@
+error[E0277]: can't compare `String` with `fn() -> String {default_name}`
+  --> tests/field_configs/compile_fail/readonly_fn_path_defaults.rs:11:1
+   |
+11 | #[ivo_schema(input(DataInput, derive(Debug, Clone, PartialEq)))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no implementation for `String == fn() -> String {default_name}`
+...
+14 |         #[lax(super::default_name)]
+   |               -------------------
+   |
+   = help: the trait `PartialEq<fn() -> String {default_name}>` is not implemented for `String`
+   = help: `String` implements trait `PartialEq<Rhs>`:
+             PartialEq<&str>
+             PartialEq<ByteStr>
+             PartialEq<ByteString>
+             PartialEq<Cow<'_, str>>
+             PartialEq<Path>
+             PartialEq<PathBuf>
+             PartialEq<str>
+             PartialEq
+   = note: this error originates in the attribute macro `ivo_schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+  --> tests/field_configs/compile_fail/readonly_fn_path_defaults.rs:27:19
+   |
+ 7 |   fn default_dependent() -> i32 {
+   |   ----------------------------- function `default_dependent` defined here
+...
+20 | / #[ivo_schema(
+21 | |     input(DataInput, derive(Debug, Clone, PartialEq)),
+22 | |     output(Data, derive(Debug, Clone, PartialEq))
+23 | | )]
+   | |__- expected because this is `i32`
+...
+27 |           #[default(super::default_dependent)]
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^ expected `i32`, found fn item
+   |
+   = note: expected type `i32`
+           found fn item `fn() -> i32 {default_dependent}`
+help: use parentheses to call this function
+   |
+27 |         #[default(super::default_dependent())]
+   |                                           ++

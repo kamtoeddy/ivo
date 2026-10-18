@@ -545,3 +545,115 @@ mod async_parallel_dependents_schema {
         pub dependent_b: i32,
     }
 }
+
+// -----------------------------------------------------------------------------
+// Zero-argument functions passed directly as dynamic dependent defaults
+// -----------------------------------------------------------------------------
+
+static NEXT_DEFAULT: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(100);
+
+fn next_default() -> i32 {
+    NEXT_DEFAULT.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+}
+
+const STATIC_DEFAULT: i32 = 42;
+
+#[test]
+fn should_resolve_dependent_default_from_zero_argument_function_on_every_create() {
+    let create = || {
+        fn_path_default_dependent_schema::DataModel
+            .create(
+                fn_path_default_dependent_schema::PartialDataInput {
+                    lax: None,
+                    required: Some(String::from("x")),
+                },
+                (),
+            )
+            .ok()
+            .unwrap()
+            .0
+    };
+
+    let first = create();
+    let second = create();
+
+    assert_eq!(second.dependent, first.dependent + 1);
+    assert_eq!(first.labels, Vec::<String>::new());
+}
+
+#[test]
+fn should_still_use_paths_to_values_as_static_dependent_defaults() {
+    let (created, ..) = value_path_default_dependent_schema::DataModel
+        .create(
+            value_path_default_dependent_schema::PartialDataInput {
+                lax: None,
+                required: Some(String::from("x")),
+            },
+            (),
+        )
+        .ok()
+        .unwrap();
+
+    assert_eq!(created.dependent, STATIC_DEFAULT);
+    assert_eq!(created.parent, None);
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod fn_path_default_dependent_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(super::next_default)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[depends_on("lax")]
+        #[default(Vec::new)]
+        #[resolve(|ctx, _| vec![ctx.values().lax.clone()])]
+        pub labels: Vec<String>,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}
+
+#[ivo_schema(
+    input(DataInput, derive(Debug, Clone, PartialEq)),
+    output(Data, derive(Debug, Clone, PartialEq))
+)]
+mod value_path_default_dependent_schema {
+    struct Fields {
+        #[depends_on("lax")]
+        #[default(super::STATIC_DEFAULT)]
+        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        pub dependent: i32,
+
+        #[depends_on("lax")]
+        #[default(None)]
+        #[resolve(|_, _| Some(1))]
+        pub parent: Option<i32>,
+
+        #[lax(String::from("default"))]
+        pub lax: String,
+
+        #[required]
+        pub required: String,
+
+        #[updated_at]
+        pub updated_at: String,
+    }
+
+    #[timestamps(|| String::from("timestamp"))]
+    const _: () = ();
+}

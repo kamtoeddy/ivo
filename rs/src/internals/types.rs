@@ -164,6 +164,38 @@ where
     resolver()
 }
 
+/// Wraps a bare path given to `#[constant(...)]`, `#[lax(...)]` or a
+/// dependent field's `#[default(...)]`. The derive macro can't tell
+/// `CONSTANT_VALUE` from `make_value` syntactically, so the choice is left to
+/// method resolution (autoref specialization): `ResolveFnPathValue` is
+/// implemented on the wrapper itself and wins whenever the path is a
+/// zero-argument function (`Fn() -> T`); otherwise resolution falls through to
+/// `ResolveStaticPathValue` on `&mut` and the path is used as the value.
+pub struct PathValue<V>(pub Option<V>);
+
+pub trait ResolveFnPathValue<T> {
+    fn __ivo_resolve_path_value(self) -> T;
+}
+
+impl<T, F> ResolveFnPathValue<T> for PathValue<F>
+where
+    F: Fn() -> T,
+{
+    fn __ivo_resolve_path_value(self) -> T {
+        (self.0.expect("path value is only resolved once"))()
+    }
+}
+
+pub trait ResolveStaticPathValue<T> {
+    fn __ivo_resolve_path_value(self) -> T;
+}
+
+impl<T> ResolveStaticPathValue<T> for &mut PathValue<T> {
+    fn __ivo_resolve_path_value(self) -> T {
+        self.0.take().expect("path value is only resolved once")
+    }
+}
+
 pub async fn run_post_validator<Ctx, Opts, F, Partial, Errors>(
     ctx: Ctx,
     opts: Opts,

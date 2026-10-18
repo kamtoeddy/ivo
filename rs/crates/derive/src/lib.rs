@@ -267,6 +267,25 @@ fn closure_input_count(tokens: &proc_macro2::TokenStream) -> Option<usize> {
         .map(|c| c.inputs.len())
 }
 
+/// Expression for a non-closure `#[constant(...)]`, `#[lax(...)]` or dependent
+/// `#[default(...)]` value. A bare path may name either a value
+/// (`CONSTANT_VALUE`) or a zero-argument function (`make_value`), which can't
+/// be told apart syntactically, so it's dispatched at the type level via
+/// `PathValue`. Any other expression is used as the value as-is.
+fn static_or_fn_path_value_expr(tokens: &proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    if syn::parse2::<syn::ExprPath>(tokens.clone()).is_err() {
+        return tokens.clone();
+    }
+    quote! {
+        {
+            #[allow(unused_imports)]
+            use ::ivo::__ivo_internals::{ResolveFnPathValue as _, ResolveStaticPathValue as _};
+            ::ivo::__ivo_internals::PathValue(::core::option::Option::Some(#tokens))
+                .__ivo_resolve_path_value()
+        }
+    }
+}
+
 fn find_attr<'a>(attrs: &'a [Attribute], name: &str) -> Option<&'a Attribute> {
     attrs.iter().find(|a| a.path().is_ident(name))
 }
@@ -2448,7 +2467,7 @@ fn generate_model(
                     let opts_expr = quote!(&_rw_ctx_options);
                     make_resolver_call(tokens, &ctx_expr, &opts_expr)
                 }
-                None => (false, tokens.clone()),
+                None => (false, static_or_fn_path_value_expr(tokens)),
             }
         };
 
@@ -2924,7 +2943,7 @@ fn generate_model(
                     let opts_expr = quote!(&_rw_ctx_options);
                     make_resolver_call(&tokens, &ctx_expr, &opts_expr)
                 }
-                None => (false, quote! { #tokens }),
+                None => (false, static_or_fn_path_value_expr(&tokens)),
             };
             let apply = quote! {
                 output.#name = __phase_result;
