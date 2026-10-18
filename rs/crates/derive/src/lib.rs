@@ -2200,7 +2200,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
         quote! {
             pub fn #setter(
                 &mut self,
-                reason: impl ::core::convert::Into<::std::string::String>,
+                reason: impl ::core::convert::Into<::ivo::__ivo_internals::IvoErrorReason>,
                 metadata: ::core::option::Option<Metadata>,
             ) -> &mut Self {
                 self.0.#name = ::core::option::Option::Some(::ivo::__ivo_internals::FieldError {
@@ -2219,7 +2219,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
         quote! {
             pub fn #setter(
                 mut self,
-                reason: impl ::core::convert::Into<::std::string::String>,
+                reason: impl ::core::convert::Into<::ivo::__ivo_internals::IvoErrorReason>,
                 metadata: ::core::option::Option<Metadata>,
             ) -> Self {
                 self.0.#name = ::core::option::Option::Some(::ivo::__ivo_internals::FieldError {
@@ -2237,7 +2237,7 @@ fn generate_errors_struct(name: &Ident, fields: &[PartialFieldInfo]) -> proc_mac
 
         quote! {
             if let ::core::option::Option::Some(e) = self.0.#name {
-                payload.insert(::std::string::String::from(#name_str), e);
+                payload.insert(#name_str, e);
             }
         }
     });
@@ -2982,7 +2982,7 @@ fn generate_model(
                     if let ::core::option::Option::Some(__msg) = __phase_result {
                         if input.#input_tokens.is_none() {
                             errors.insert(
-                                ::std::string::String::from(#name_str),
+                                #name_str,
                                 ::ivo::__ivo_internals::FieldError {
                                     reason: __msg,
                                     metadata: ::core::option::Option::None,
@@ -3015,15 +3015,17 @@ fn generate_model(
                 Some(tokens) if is_closure(&tokens) => {
                     let handler =
                         type_annotate_handler(tokens, &[raw_input_ty.clone(), opts_ty.clone()]);
-                    quote! { (#handler)(&input, &_rw_ctx_options) }
+                    quote! { ::core::convert::Into::into((#handler)(&input, &_rw_ctx_options)) }
                 }
-                Some(tokens) => quote! { ::std::string::String::from(#tokens) },
-                None => quote! { ::std::string::String::from("field is required") },
+                Some(tokens) => quote! { ::core::convert::Into::into(#tokens) },
+                None => {
+                    quote! { ::ivo::__ivo_internals::IvoErrorReason::Borrowed("field is required") }
+                }
             };
             quote! {
                 if input.#input_tokens.is_none() {
                     errors.insert(
-                        ::std::string::String::from(#name_str),
+                        #name_str,
                         ::ivo::__ivo_internals::FieldError {
                             reason: #error_expr,
                             metadata: ::core::option::Option::None,
@@ -3178,7 +3180,7 @@ fn generate_model(
                         output.#name = #seeded;
                     }
                     ::core::option::Option::Some(::core::result::Result::Err(e)) => {
-                        errors.insert(::std::string::String::from(#name_str), e);
+                        errors.insert(#name_str, e);
                     }
                     ::core::option::Option::None => {}
                 }
@@ -3632,7 +3634,7 @@ fn generate_model(
                             }
                             ::core::result::Result::Ok(::core::option::Option::None) => {}
                             ::core::result::Result::Err(e) => {
-                                errors.insert(::std::string::String::from(#name_str), e);
+                                errors.insert(#name_str, e);
                             }
                         }
                     }
@@ -3683,7 +3685,7 @@ fn generate_model(
                             }
                             ::core::result::Result::Ok(::core::option::Option::None) => {}
                             ::core::result::Result::Err(e) => {
-                                errors.insert(::std::string::String::from(#name_str), e);
+                                errors.insert(#name_str, e);
                             }
                         }
                     }
@@ -3855,7 +3857,7 @@ fn generate_model(
                                 }
                                 ::core::result::Result::Ok(::core::option::Option::None) => {}
                                 ::core::result::Result::Err(e) => {
-                                    errors.insert(::std::string::String::from(#name_str), e);
+                                    errors.insert(#name_str, e);
                                 }
                             }
                         }
@@ -4030,7 +4032,7 @@ fn generate_model(
                                 __post_errors.into();
                             let __allowed: &[&str] = &#allowed_names_expr;
                             for (__field_name, __field_error) in __post_payload {
-                                if __allowed.contains(&__field_name.as_str()) {
+                                if __allowed.contains(&__field_name) {
                                     errors.insert(__field_name, __field_error);
                                 }
                             }
@@ -4451,7 +4453,7 @@ fn generate_model(
                     if let ::core::option::Option::Some(__msg) = __phase_result {
                         if updates.#input_tokens.is_none() {
                             errors.insert(
-                                ::std::string::String::from(#name_str),
+                                #name_str,
                                 ::ivo::__ivo_internals::FieldError {
                                     reason: __msg,
                                     metadata: ::core::option::Option::None,
@@ -4552,7 +4554,7 @@ fn generate_model(
                             }
                         }
                         ::core::result::Result::Err(e) => {
-                            errors.insert(::std::string::String::from(#name_str), e);
+                            errors.insert(#name_str, e);
                         }
                     }
                 }

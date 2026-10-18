@@ -35,7 +35,7 @@ mod user_validation_schema {
         #[required]
         #[validate(async |name, _ctx, _opts| {
             if name.is_empty() {
-                Err((String::from("name must not be empty"), None))
+                Err(("name must not be empty".into(), None))
             } else {
                 Ok(None)
             }
@@ -391,7 +391,7 @@ mod user_field_ignore_init_schema {
 mod user_field_required_schema {
     struct Fields {
         #[lax(String::from(""))]
-        #[required(|_ctx, _opts| Some(String::from("a is required")))]
+        #[required(|_ctx, _opts| Some("a is required".into()))]
         pub a: String,
 
         #[lax(String::from(""))]
@@ -467,7 +467,7 @@ mod user_re_validate_schema {
         #[validate(async |_name, _ctx, _opts| { Ok(None) })]
         #[re_validate(async |name, _ctx, _opts| {
             if name == "bad" {
-                Err((String::from("name cannot be bad"), None))
+                Err(("name cannot be bad".into(), None))
             } else {
                 Ok(None)
             }
@@ -861,7 +861,7 @@ async fn smoke_model_on_failure_trigger() {
             #[required]
             #[validate(async |name, _ctx, _opts| {
                 if name.is_empty() {
-                    Err((String::from("name must not be empty"), None))
+                    Err(("name must not be empty".into(), None))
                 } else {
                     Ok(None)
                 }

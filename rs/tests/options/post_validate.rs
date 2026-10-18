@@ -43,7 +43,7 @@ mod pre_validate_aborts_main_schema {
             }
             Ok(None)
         },
-        |_ctx, _opts| {
+        |_, _| {
             panic!("main validate must not run once pre_validate has already failed");
         },
     )]
@@ -98,10 +98,9 @@ mod independent_post_validate_groups_schema {
 
     #[post_validate(
         ["shared", "field_a"],
-        |ctx, _| {
+        |_, _| {
             let mut updates = PartialDataInput::new();
             updates.set_shared("from-a".to_string());
-            let _ = &ctx;
             Ok(Some(updates))
         },
     )]
@@ -173,7 +172,7 @@ mod async_parallel_post_validate_groups_schema {
 
     #[post_validate(
         ["field_a", "field_b"],
-        async |_ctx, _opts| {
+        async |_, _| {
             rendezvous().await;
             Ok(None)
         },
@@ -182,7 +181,7 @@ mod async_parallel_post_validate_groups_schema {
 
     #[post_validate(
         ["field_b", "field_a"],
-        async |_ctx, _opts| {
+        async |_, _| {
             rendezvous().await;
             Ok(None)
         },

@@ -1003,7 +1003,7 @@ mod primary_validation_sync_schema {
             let validated = v.trim();
 
             if validated.len() < 2 {
-                return Err((String::from(MIN_LENGTH_ERROR), None));
+                return Err((MIN_LENGTH_ERROR.into(), None));
             }
 
             Ok(Some(validated.into()))
@@ -1022,7 +1022,7 @@ mod primary_validation_async_schema {
             let validated = v.trim();
 
             if validated.len() < 2 {
-                return Err((String::from(MIN_LENGTH_ERROR), None));
+                return Err((MIN_LENGTH_ERROR.into(), None));
             }
 
             Ok(Some(validated.into()))
@@ -1046,7 +1046,7 @@ mod primary_update_validation_sync_schema {
         #[lax(1)]
         #[validate(|v: &i32, _, _| {
             if !LAX_VALUE_RANGE.contains(&v) {
-                return Err((String::from(LAX_OUT_OF_RANGE_ERROR), None));
+                return Err((LAX_OUT_OF_RANGE_ERROR.into(), None));
             }
 
             Ok(None)
@@ -1070,7 +1070,7 @@ mod primary_update_validation_async_schema {
         #[lax(async |_, _| 1)]
         #[validate(async |v: &i32, _, _| {
             if !LAX_VALUE_RANGE.contains(&v) {
-                return Err((String::from(LAX_OUT_OF_RANGE_ERROR), None));
+                return Err((LAX_OUT_OF_RANGE_ERROR.into(), None));
             }
 
             Ok(None)
@@ -1472,7 +1472,7 @@ mod re_validation_sync_schema {
             let validated = v.trim();
 
             if validated.len() < 2 {
-                return Err((String::from(MIN_LENGTH_ERROR), None));
+                return Err((MIN_LENGTH_ERROR.into(), None));
             }
 
             Ok(Some(validated.into()))
@@ -1481,7 +1481,7 @@ mod re_validation_sync_schema {
             let validated = v.trim();
 
             if validated.len() < 4 {
-                return Err((String::from(MIN_REVALIDATION_LENGTH_ERROR), None));
+                return Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None));
             }
 
             Ok(Some(validated.into()))
@@ -1501,7 +1501,7 @@ mod re_validation_async_schema {
             let validated = v.trim();
 
             if validated.len() < 2 {
-                return Err((String::from(MIN_LENGTH_ERROR), None));
+                return Err((MIN_LENGTH_ERROR.into(), None));
             }
 
             Ok(Some(validated.into()))
@@ -1510,7 +1510,7 @@ mod re_validation_async_schema {
             let validated = v.trim();
 
             if validated.len() < 4 {
-                return Err((String::from(MIN_REVALIDATION_LENGTH_ERROR), None));
+                return Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None));
             }
 
             Ok(Some(validated.into()))
@@ -1537,14 +1537,14 @@ mod re_validation_update_sync_schema {
         #[lax(1)]
         #[validate(|v: &i32, _, _| {
             if !LAX_VALUE_RANGE.contains(&v) {
-                return Err((String::from(LAX_OUT_OF_RANGE_ERROR), None));
+                return Err((LAX_OUT_OF_RANGE_ERROR.into(), None));
             }
 
             Ok(None)
         })]
         #[re_validate(|v: &i32, _, _| {
             if !REVALIDATED_LAX_VALUE_RANGE.contains(&v) {
-                return Err((String::from(REVALIDATED_LAX_OUT_OF_RANGE_ERROR), None));
+                return Err((REVALIDATED_LAX_OUT_OF_RANGE_ERROR.into(), None));
             }
 
             Ok(None)
@@ -1571,14 +1571,14 @@ mod re_validation_update_async_schema {
         #[lax(async |_, _| 1)]
         #[validate(async |v: &i32, _, _| {
             if !LAX_VALUE_RANGE.contains(&v) {
-                return Err((String::from(LAX_OUT_OF_RANGE_ERROR), None));
+                return Err((LAX_OUT_OF_RANGE_ERROR.into(), None));
             }
 
             Ok(None)
         })]
         #[re_validate(async |v: &i32, _, _| {
             if !REVALIDATED_LAX_VALUE_RANGE.contains(&v) {
-                return Err((String::from(REVALIDATED_LAX_OUT_OF_RANGE_ERROR), None));
+                return Err((REVALIDATED_LAX_OUT_OF_RANGE_ERROR.into(), None));
             }
 
             Ok(None)

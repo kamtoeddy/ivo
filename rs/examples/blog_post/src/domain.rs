@@ -53,14 +53,14 @@ mod post_schema {
 
             if validated.len() < MIN_TITLE_LENGTH {
                 return Err((
-                    format!("\"title\" must be at least {MIN_TITLE_LENGTH} characters long"),
+                    format!("\"title\" must be at least {MIN_TITLE_LENGTH} characters long").into(),
                     None,
                 ));
             }
 
             if validated.len() > MAX_TITLE_LENGTH {
                 return Err((
-                    format!("\"title\" must be at most {MAX_TITLE_LENGTH} characters long"),
+                    format!("\"title\" must be at most {MAX_TITLE_LENGTH} characters long").into(),
                     None,
                 ));
             }
@@ -82,14 +82,14 @@ mod post_schema {
 
             if validated.len() < MIN_CONTENT_LENGTH {
                 return Err((
-                    format!("\"content\" must be at least {MIN_CONTENT_LENGTH} characters long"),
+                    format!("\"content\" must be at least {MIN_CONTENT_LENGTH} characters long").into(),
                     None,
                 ));
             }
 
             if validated.len() > MAX_CONTENT_LENGTH {
                 return Err((
-                    format!("\"content\" must be at most {MAX_CONTENT_LENGTH} characters long"),
+                    format!("\"content\" must be at most {MAX_CONTENT_LENGTH} characters long").into(),
                     None,
                 ));
             }
@@ -164,14 +164,14 @@ mod comment_schema {
 
             if validated.len() < MIN_CONTENT_LENGTH {
                 return Err((
-                    format!("\"content\" must be at least {MIN_CONTENT_LENGTH} characters long"),
+                    format!("\"content\" must be at least {MIN_CONTENT_LENGTH} characters long").into(),
                     None,
                 ));
             }
 
             if validated.len() > MAX_CONTENT_LENGTH {
                 return Err((
-                    format!("\"content\" must be at most {MAX_CONTENT_LENGTH} characters long"),
+                    format!("\"content\" must be at most {MAX_CONTENT_LENGTH} characters long").into(),
                     None,
                 ));
             }
@@ -188,7 +188,7 @@ mod comment_schema {
 
             let Some(post) = guard.get_post_by_id(&id).await.cloned() else {
                 return Err((
-                    POST_NOT_FOUND_ERROR.to_string(),
+                    POST_NOT_FOUND_ERROR.into(),
                     None,
                 ));
             };
@@ -214,13 +214,13 @@ mod comment_schema {
                 // cannot reply to a comment that does not belong to the same post
                 if c.post != post_id {
                     return Err((
-                        COMMENT_NOT_FOUND_ERROR.to_string(),
+                        COMMENT_NOT_FOUND_ERROR.into(),
                         None,
                     ));
                 }
             } else {
                 return Err((
-                    COMMENT_NOT_FOUND_ERROR.to_string(),
+                    COMMENT_NOT_FOUND_ERROR.into(),
                     None,
                 ));
             }

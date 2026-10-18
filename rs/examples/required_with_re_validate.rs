@@ -66,7 +66,7 @@ mod schema {
         #[re_validate(|v, _, _| {
             if v.len() < MIN_USERNAME_LEN {
                 return Err((
-                    format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long"),
+                    format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long").into(),
                     None,
                 ));
             }

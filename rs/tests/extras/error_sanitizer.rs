@@ -198,7 +198,7 @@ impl IvoErrorSanitizer<PlacesCtxOptions> for ErrorSanitizer {
                 }
             }
 
-            errors.insert(field_name, field_errors);
+            errors.insert(field_name.to_string(), field_errors);
         }
 
         if let Some((s, coordinates)) = o {

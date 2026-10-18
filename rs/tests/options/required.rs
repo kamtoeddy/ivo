@@ -48,7 +48,7 @@ mod async_parallel_required_create_schema {
 
     static STARTED: AtomicUsize = AtomicUsize::new(0);
 
-    async fn rendezvous() -> Option<String> {
+    async fn rendezvous() -> Option<ivo::IvoErrorReason> {
         STARTED.fetch_add(1, Ordering::SeqCst);
         for _ in 0..10_000 {
             if STARTED.load(Ordering::SeqCst) >= 2 {
@@ -116,7 +116,7 @@ mod async_parallel_required_update_schema {
 
     static STARTED: AtomicUsize = AtomicUsize::new(0);
 
-    async fn rendezvous() -> Option<String> {
+    async fn rendezvous() -> Option<ivo::IvoErrorReason> {
         STARTED.fetch_add(1, Ordering::SeqCst);
         for _ in 0..10_000 {
             if STARTED.load(Ordering::SeqCst) >= 2 {

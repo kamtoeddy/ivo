@@ -62,7 +62,7 @@ mod data_schema {
                     format!(
                         "\"username\" must be at least {} characters long",
                         crate::MIN_USERNAME_LEN
-                    ),
+                    ).into(),
                     None,
                 ))
             } else {

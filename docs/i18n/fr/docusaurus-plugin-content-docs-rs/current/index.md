@@ -156,12 +156,16 @@ Le payload par défaut retourné pour les opérations échouées a la signature 
 ```rust
 type DefaultFieldErrorMetadata = ();
 
+// a literal reason is borrowed (no allocation); a reason built at runtime is owned
+type IvoErrorReason = Cow<'static, str>;
+
 struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
-    pub reason: String,
+    pub reason: IvoErrorReason,
     pub metadata: Option<Metadata>,
 }
 
-type IvoErrorPayload<Metadata> = HashMap<String, FieldError<Metadata>>;
+// keyed by the schema's own field names
+type IvoErrorPayload<Metadata> = HashMap<&'static str, FieldError<Metadata>>;
 ```
 
 Pour personnaliser ce payload, fournissez une implémentation du trait `IvoErrorSanitizer` via

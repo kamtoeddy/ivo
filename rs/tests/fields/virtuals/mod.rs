@@ -1091,16 +1091,16 @@ mod alias_field_level_errors_schema {
         // `Some(..)`, but the generated required-check only actually
         // inserts the error when the field is missing, so this is safe for
         // both create and update.
-        #[required(|_ctx, _| ::core::option::Option::Some("aliased is required".to_string()))]
+        #[required(|_ctx, _| ::core::option::Option::Some("aliased is required".into()))]
         #[validate(|v: &String, _, _| {
             if v == "fail-validate" {
-                return Err(("validate failed".to_string(), None));
+                return Err(("validate failed".into(), None));
             }
             Ok(None)
         })]
         #[re_validate(|v: &String, _, _| {
             if v == "fail-re-validate" {
-                return Err(("re_validate failed".to_string(), None));
+                return Err(("re_validate failed".into(), None));
             }
             Ok(None)
         })]

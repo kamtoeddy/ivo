@@ -268,7 +268,7 @@ mod data_schema {
             if ctx.input().lax == Some(crate::REQUIRED_TRIGGER_VALUE.to_string())
                 || ctx.values().lax.clone().unwrap() == crate::REQUIRED_TRIGGER_VALUE.to_string()
             {
-                Some(crate::USERNAME_REQUIRED_ERROR.to_string())
+                Some(crate::USERNAME_REQUIRED_ERROR.into())
             } else {
                 None
             }

@@ -16,6 +16,8 @@ The value is borrowed, so accepting it as-is never copies it.
 - `Ok(Some(new_value))` replaces it.
 - `Err((reason, metadata))` rejects it -- `metadata` is `None` unless you're using a
   [custom `IvoErrorSanitizer`](./options.md#custom-error-payloads-with-ivoerrorsanitizer).
+  `reason` is an `IvoErrorReason`: a literal (`"too short".into()`) is used as-is, without
+  allocating, and a message built at runtime works too (`format!("...").into()`).
 
 ```rust
 use ivo::ivo_schema;
@@ -68,7 +70,7 @@ crate `ivo-validators`) for a small set of built-in validators:
     let Some(email) = v else { return Ok(None) };
     match validate_email(&email) {
         Ok(validated) => Ok(Some(Some(validated))),
-        Err(e) => Err((e, None)),
+        Err(e) => Err((e.into(), None)),
     }
 })]
 pub email: Option<String>,

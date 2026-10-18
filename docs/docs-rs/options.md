@@ -337,7 +337,7 @@ several handlers in the same call).
 
 ## Custom error payloads with `IvoErrorSanitizer`
 
-By default `ivo` returns errors as `HashMap<String, FieldError<()>>`. Change the shape of the
+By default `ivo` returns errors as `HashMap<&'static str, FieldError<()>>`. Change the shape of the
 error payload by implementing `IvoErrorSanitizer` and passing it via `error_sanitizer(...)`:
 
 ```rust
@@ -354,11 +354,11 @@ impl IvoErrorSanitizer<()> for MyErrorSanitizer {
         payload
             .into_iter()
             .map(|(name, err)| {
-                let mut messages = vec![err.reason];
+                let mut messages = vec![err.reason.into_owned()];
                 if let Some(meta) = err.metadata {
                     messages.extend(meta);
                 }
-                (name, messages)
+                (name.to_string(), messages)
             })
             .collect()
     }

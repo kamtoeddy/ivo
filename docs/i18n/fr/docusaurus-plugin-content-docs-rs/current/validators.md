@@ -17,6 +17,8 @@ Option<Metadata>)>`. La valeur est empruntée : l'accepter telle quelle ne la co
 - `Ok(Some(nouvelle_valeur))` la remplace.
 - `Err((raison, metadata))` la rejette -- `metadata` vaut `None` sauf si vous utilisez un
   [`IvoErrorSanitizer` personnalisé](./options.md#payloads-derreur-personnalisés-avec-ivoerrorsanitizer).
+  `raison` est un `IvoErrorReason` : un littéral (`"trop court".into()`) est utilisé tel quel, sans
+  allocation, et un message construit à l'exécution fonctionne aussi (`format!("...").into()`).
 
 ```rust
 use ivo::ivo_schema;
@@ -72,7 +74,7 @@ Activez la fonctionnalité optionnelle `validators` (`ivo = { version = "*", fea
     let Some(email) = v else { return Ok(None) };
     match validate_email(&email) {
         Ok(validated) => Ok(Some(Some(validated))),
-        Err(e) => Err((e, None)),
+        Err(e) => Err((e.into(), None)),
     }
 })]
 pub email: Option<String>,

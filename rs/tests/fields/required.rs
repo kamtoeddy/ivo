@@ -4043,7 +4043,7 @@ mod fail_fast_update_required_then_validate_schema {
         #[lax(String::new())]
         #[required(|ctx, _| {
             if ctx.is_update() {
-                Some("field_b is required for this update".to_string())
+                Some("field_b is required for this update".into())
             } else {
                 None
             }

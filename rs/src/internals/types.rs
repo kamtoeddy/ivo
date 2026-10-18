@@ -8,13 +8,19 @@ use std::pin::Pin;
 pub type DefaultFieldErrorMetadata = ();
 pub type DefaultErrorPayload = IvoErrorPayload<DefaultFieldErrorMetadata>;
 
+/// Why a field was rejected. A string literal is borrowed as-is (no
+/// allocation); a message built at runtime is owned. Produce one with
+/// `.into()` from a `&'static str` or a `String`.
+pub type IvoErrorReason = std::borrow::Cow<'static, str>;
+
 #[derive(Debug, Clone)]
 pub struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
-    pub reason: String,
+    pub reason: IvoErrorReason,
     pub metadata: Option<Metadata>,
 }
 
-pub type IvoErrorPayload<Metadata> = HashMap<String, FieldError<Metadata>>;
+/// Errors keyed by field name (the schema's own, `'static`, names).
+pub type IvoErrorPayload<Metadata> = HashMap<&'static str, FieldError<Metadata>>;
 
 pub async fn run_resolver<T, Ctx, Opts, F>(ctx: &Ctx, opts: &Opts, resolver: F) -> T
 where
@@ -38,7 +44,7 @@ pub async fn run_validator<T, Ctx, Opts, F, Metadata>(
 ) -> Result<Option<T>, FieldError<Metadata>>
 where
     Metadata: Clone,
-    F: AsyncFn(&T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
+    F: AsyncFn(&T, &Ctx, &Opts) -> Result<Option<T>, (IvoErrorReason, Option<Metadata>)>,
 {
     match validator(value, ctx, opts).await {
         Ok(v) => Ok(v),
@@ -57,9 +63,9 @@ pub async fn run_required_resolver<Ctx, Opts, F>(
     ctx: &Ctx,
     opts: &Opts,
     resolver: F,
-) -> Option<String>
+) -> Option<IvoErrorReason>
 where
-    F: AsyncFn(&Ctx, &Opts) -> Option<String>,
+    F: AsyncFn(&Ctx, &Opts) -> Option<IvoErrorReason>,
 {
     resolver(ctx, opts).await
 }
@@ -106,7 +112,7 @@ pub fn run_validator_sync<T, Ctx, Opts, F, Metadata>(
 ) -> Result<Option<T>, FieldError<Metadata>>
 where
     Metadata: Clone,
-    F: Fn(&T, &Ctx, &Opts) -> Result<Option<T>, (String, Option<Metadata>)>,
+    F: Fn(&T, &Ctx, &Opts) -> Result<Option<T>, (IvoErrorReason, Option<Metadata>)>,
 {
     match validator(value, ctx, opts) {
         Ok(v) => Ok(v),
@@ -125,9 +131,9 @@ pub fn run_required_resolver_sync<Ctx, Opts, F>(
     ctx: &Ctx,
     opts: &Opts,
     resolver: F,
-) -> Option<String>
+) -> Option<IvoErrorReason>
 where
-    F: Fn(&Ctx, &Opts) -> Option<String>,
+    F: Fn(&Ctx, &Opts) -> Option<IvoErrorReason>,
 {
     resolver(ctx, opts)
 }

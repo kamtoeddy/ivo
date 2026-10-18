@@ -59,7 +59,7 @@ fn main() {
 
 ```rust
 #[required]
-#[required_error(|_raw_input, _opts| "\"username\" was not provided!".to_string())]
+#[required_error(|_raw_input, _opts| "\"username\" was not provided!")]
 #[validate(|v: &String, _, _| Ok(None))]
 pub username: String,
 ```

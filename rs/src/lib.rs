@@ -4,7 +4,7 @@ pub use ivo_derive::ivo_schema;
 
 pub use internals::types::{
     DefaultErrorPayload, DefaultErrorSanitizer, DefaultFieldErrorMetadata, FieldError,
-    IvoErrorPayload, IvoErrorSanitizer, IvoStruct,
+    IvoErrorPayload, IvoErrorReason, IvoErrorSanitizer, IvoStruct,
 };
 
 #[cfg(feature = "validators")]

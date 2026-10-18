@@ -348,7 +348,7 @@ mutation à travers plusieurs gestionnaires dans le même appel).
 
 ## Payloads d'erreur personnalisés avec `IvoErrorSanitizer`
 
-Par défaut, `ivo` retourne les erreurs sous forme de `HashMap<String, FieldError<()>>`. Changez la
+Par défaut, `ivo` retourne les erreurs sous forme de `HashMap<&'static str, FieldError<()>>`. Changez la
 forme du payload d'erreur en implémentant `IvoErrorSanitizer` et en le passant via
 `error_sanitizer(...)` :
 
@@ -366,11 +366,11 @@ impl IvoErrorSanitizer<()> for MyErrorSanitizer {
         payload
             .into_iter()
             .map(|(name, err)| {
-                let mut messages = vec![err.reason];
+                let mut messages = vec![err.reason.into_owned()];
                 if let Some(meta) = err.metadata {
                     messages.extend(meta);
                 }
-                (name, messages)
+                (name.to_string(), messages)
             })
             .collect()
     }

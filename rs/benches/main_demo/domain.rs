@@ -56,7 +56,7 @@ mod user_schema {
             if let Some(email) = v {
                 match validate_email(&email) {
                     Ok(validated) => Ok(Some(Some(validated))),
-                    Err(e) => Err((e, None)),
+                    Err(e) => Err((e.into(), None)),
                 }
             } else {
                 Ok(None)
@@ -74,7 +74,7 @@ mod user_schema {
             const MIN_LEN: usize = 4;
             if v.len() < MIN_LEN {
                 return Err((
-                    format!("\"username\" must be at least {MIN_LEN} characters long"),
+                    format!("\"username\" must be at least {MIN_LEN} characters long").into(),
                     None,
                 ));
             }
@@ -192,7 +192,7 @@ mod user_schema {
         drop(options);
 
         let (reason, metadata) = (
-            &format!("A user with a slug id: \"{slug_id}\" already exists"),
+            format!("A user with a slug id: \"{slug_id}\" already exists"),
             None,
         );
 
