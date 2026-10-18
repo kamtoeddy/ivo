@@ -247,7 +247,7 @@ mod data_schema {
     struct Fields {
         #[lax(crate::DEFAULT_LAX_VALUE.to_string())]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: lax = {}", ctx.values().lax);
+            println!("\n[on_success]: lax = {}", ctx.values().lax.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: lax = {}", data.lax);
@@ -266,7 +266,7 @@ mod data_schema {
         #[lax(crate::DEFAULT_USERNAME.to_string())]
         #[required(|ctx, _| {
             if ctx.input().lax == Some(crate::REQUIRED_TRIGGER_VALUE.to_string())
-                || ctx.values().lax == crate::REQUIRED_TRIGGER_VALUE.to_string()
+                || ctx.values().lax.clone().unwrap() == crate::REQUIRED_TRIGGER_VALUE.to_string()
             {
                 Some(crate::USERNAME_REQUIRED_ERROR.to_string())
             } else {
@@ -274,7 +274,7 @@ mod data_schema {
             }
         })]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);

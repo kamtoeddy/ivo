@@ -235,9 +235,9 @@ mod dynamic_defaults_schema {
     struct Fields {
         #[depends_on("lax", "username")]
         #[default(|_, _| crate::DEFAULT_DEPENDENT)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: dependent = {}", data.dependent);
@@ -246,7 +246,7 @@ mod dynamic_defaults_schema {
 
         #[lax(|_, _| crate::DEFAULT_USERNAME.to_string())]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);
@@ -255,13 +255,13 @@ mod dynamic_defaults_schema {
 
         #[lax(crate::DEFAULT_LAX_VALUE)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: lax = {}", ctx.values().lax);
+            println!("\n[on_success]: lax = {}", ctx.values().lax.clone().unwrap());
         })]
         pub lax: i32,
 
         #[lax(crate::DEFAULT_LAX_VALUE)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: unrelated_lax = {}", ctx.values().unrelated_lax);
+            println!("\n[on_success]: unrelated_lax = {}", ctx.values().unrelated_lax.clone().unwrap());
         })]
         pub unrelated_lax: i32,
     }
@@ -275,9 +275,9 @@ mod static_defaults_schema {
     struct Fields {
         #[depends_on("lax", "username")]
         #[default(crate::DEFAULT_DEPENDENT)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: dependent = {}", data.dependent);
@@ -286,7 +286,7 @@ mod static_defaults_schema {
 
         #[lax(|_, _| crate::DEFAULT_USERNAME.to_string())]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);
@@ -295,13 +295,13 @@ mod static_defaults_schema {
 
         #[lax(crate::DEFAULT_LAX_VALUE)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: lax = {}", ctx.values().lax);
+            println!("\n[on_success]: lax = {}", ctx.values().lax.clone().unwrap());
         })]
         pub lax: i32,
 
         #[lax(crate::DEFAULT_LAX_VALUE)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: unrelated_lax = {}", ctx.values().unrelated_lax);
+            println!("\n[on_success]: unrelated_lax = {}", ctx.values().unrelated_lax.clone().unwrap());
         })]
         pub unrelated_lax: i32,
     }

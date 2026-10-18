@@ -76,7 +76,7 @@ mod notify_schema {
             Ok(Some(v))
         })]
         #[on_success(|ctx, _| {
-            println!("[username]: on_success: {}", ctx.values().username);
+            println!("[username]: on_success: {}", ctx.values().username.clone().unwrap());
         })]
         #[on_failure(|ctx, _| {
             println!("[username]: on_failure: {:?}", ctx.input().username);

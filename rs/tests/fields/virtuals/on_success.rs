@@ -3360,7 +3360,7 @@ mod sync_creation_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3386,7 +3386,7 @@ mod async_creation_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3412,7 +3412,7 @@ mod sync_update_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3438,7 +3438,7 @@ mod async_update_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3464,7 +3464,7 @@ mod sync_creation_not_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3490,7 +3490,7 @@ mod async_creation_not_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3516,7 +3516,7 @@ mod sync_update_not_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3542,7 +3542,7 @@ mod async_update_not_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3569,7 +3569,7 @@ mod sync_creation_ignored_by_ignore_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3596,7 +3596,7 @@ mod async_creation_ignored_by_ignore_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3623,7 +3623,7 @@ mod sync_update_ignored_by_ignore_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3650,7 +3650,7 @@ mod async_update_ignored_by_ignore_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3678,7 +3678,7 @@ mod sync_creation_ignored_by_ignore_init_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3706,7 +3706,7 @@ mod async_creation_ignored_by_ignore_init_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3733,7 +3733,7 @@ mod sync_update_ignored_by_ignore_update_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3760,7 +3760,7 @@ mod async_update_ignored_by_ignore_update_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3786,7 +3786,7 @@ mod sync_creation_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3812,7 +3812,7 @@ mod async_creation_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3838,7 +3838,7 @@ mod sync_update_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3864,7 +3864,7 @@ mod async_update_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3890,7 +3890,7 @@ mod sync_creation_not_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3916,7 +3916,7 @@ mod async_creation_not_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3942,7 +3942,7 @@ mod sync_update_not_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3968,7 +3968,7 @@ mod async_update_not_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -3995,7 +3995,7 @@ mod sync_creation_ignored_by_ignore_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4022,7 +4022,7 @@ mod async_creation_ignored_by_ignore_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4049,7 +4049,7 @@ mod sync_update_ignored_by_ignore_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4076,7 +4076,7 @@ mod async_update_ignored_by_ignore_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4104,7 +4104,7 @@ mod sync_creation_ignored_by_ignore_init_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4132,7 +4132,7 @@ mod async_creation_ignored_by_ignore_init_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4159,7 +4159,7 @@ mod sync_update_ignored_by_ignore_update_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4186,7 +4186,7 @@ mod async_update_ignored_by_ignore_update_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4212,7 +4212,7 @@ mod sync_creation_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4238,7 +4238,7 @@ mod async_creation_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4264,7 +4264,7 @@ mod sync_update_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4290,7 +4290,7 @@ mod async_update_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4316,7 +4316,7 @@ mod sync_creation_not_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4342,7 +4342,7 @@ mod async_creation_not_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4368,7 +4368,7 @@ mod sync_update_not_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4394,7 +4394,7 @@ mod async_update_not_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4421,7 +4421,7 @@ mod sync_creation_ignored_by_ignore_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4448,7 +4448,7 @@ mod async_creation_ignored_by_ignore_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4475,7 +4475,7 @@ mod sync_update_ignored_by_ignore_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4502,7 +4502,7 @@ mod async_update_ignored_by_ignore_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4530,7 +4530,7 @@ mod sync_creation_ignored_by_ignore_init_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4558,7 +4558,7 @@ mod async_creation_ignored_by_ignore_init_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4585,7 +4585,7 @@ mod sync_update_ignored_by_ignore_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4612,7 +4612,7 @@ mod async_update_ignored_by_ignore_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -4632,7 +4632,7 @@ mod sync_grouped_creation_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -4656,7 +4656,7 @@ mod async_grouped_creation_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -4680,7 +4680,7 @@ mod sync_grouped_update_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -4704,7 +4704,7 @@ mod async_grouped_update_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -4728,7 +4728,7 @@ mod sync_grouped_creation_not_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -4752,7 +4752,7 @@ mod async_grouped_creation_not_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -4776,7 +4776,7 @@ mod sync_grouped_update_not_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -4800,7 +4800,7 @@ mod async_grouped_update_not_provided_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -4825,7 +4825,7 @@ mod sync_grouped_creation_ignored_by_ignore_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -4850,7 +4850,7 @@ mod async_grouped_creation_ignored_by_ignore_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -4875,7 +4875,7 @@ mod sync_grouped_update_ignored_by_ignore_update_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -4900,7 +4900,7 @@ mod async_grouped_update_ignored_by_ignore_update_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -4926,7 +4926,7 @@ mod sync_grouped_creation_ignored_by_ignore_init_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -4952,7 +4952,7 @@ mod async_grouped_creation_ignored_by_ignore_init_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -4976,7 +4976,7 @@ mod sync_grouped_creation_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5000,7 +5000,7 @@ mod async_grouped_creation_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5024,7 +5024,7 @@ mod sync_grouped_update_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5048,7 +5048,7 @@ mod async_grouped_update_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5072,7 +5072,7 @@ mod sync_grouped_creation_not_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5096,7 +5096,7 @@ mod async_grouped_creation_not_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5120,7 +5120,7 @@ mod sync_grouped_update_not_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5144,7 +5144,7 @@ mod async_grouped_update_not_provided_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5169,7 +5169,7 @@ mod sync_grouped_creation_ignored_by_ignore_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5194,7 +5194,7 @@ mod async_grouped_creation_ignored_by_ignore_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5219,7 +5219,7 @@ mod sync_grouped_update_ignored_by_ignore_update_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5244,7 +5244,7 @@ mod async_grouped_update_ignored_by_ignore_update_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5270,7 +5270,7 @@ mod sync_grouped_creation_ignored_by_ignore_init_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5296,7 +5296,7 @@ mod async_grouped_creation_ignored_by_ignore_init_alias_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5320,7 +5320,7 @@ mod sync_grouped_creation_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5344,7 +5344,7 @@ mod async_grouped_creation_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5368,7 +5368,7 @@ mod sync_grouped_update_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5392,7 +5392,7 @@ mod async_grouped_update_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5416,7 +5416,7 @@ mod sync_grouped_creation_not_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5440,7 +5440,7 @@ mod async_grouped_creation_not_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5464,7 +5464,7 @@ mod sync_grouped_update_not_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5488,7 +5488,7 @@ mod async_grouped_update_not_provided_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5513,7 +5513,7 @@ mod sync_grouped_creation_ignored_by_ignore_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5538,7 +5538,7 @@ mod async_grouped_creation_ignored_by_ignore_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5563,7 +5563,7 @@ mod sync_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5588,7 +5588,7 @@ mod async_grouped_update_ignored_by_ignore_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {
@@ -5614,7 +5614,7 @@ mod sync_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], |_, _| {
@@ -5640,7 +5640,7 @@ mod async_grouped_creation_ignored_by_ignore_init_alias_as_dependent_schema {
 
         #[depends_on("virtual_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
     #[on_success(["virtual_field"], async |_, _| {

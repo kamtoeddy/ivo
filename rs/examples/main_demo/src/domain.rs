@@ -172,7 +172,7 @@ mod user_schema {
     const _: () = ();
 
     #[post_validate(["username", "v_slug"], pre_validate = |ctx, _| {
-        let Some(dt) = ctx.values().username_last_updated_at else {
+        let Some(dt) = ctx.values().username_last_updated_at.unwrap() else {
             return Ok(None);
         };
 

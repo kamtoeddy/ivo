@@ -88,7 +88,7 @@ mod static_schema {
     struct Fields {
         #[constant(crate::CONSTANT_VALUE)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: id = {}", ctx.values().id);
+            println!("\n[on_success]: id = {}", ctx.values().id.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: id = {}", data.id);
@@ -109,7 +109,7 @@ mod dynamic_schema {
     struct Fields {
         #[constant(|_, _| crate::CONSTANT_VALUE)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: id = {}", ctx.values().id);
+            println!("\n[on_success]: id = {}", ctx.values().id.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: id = {}", data.id);

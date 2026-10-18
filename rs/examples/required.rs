@@ -60,7 +60,7 @@ mod schema {
         #[required_error(|_, _| "\"username\" is required!".to_string())]
         #[validate(|_, _, _| Ok(None))]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);

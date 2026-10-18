@@ -500,7 +500,7 @@ mod sync_static_on_success_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[constant]: on_success triggered with value: {}",
-                ctx.values().constant
+                ctx.values().constant.clone().unwrap()
             );
         })]
         pub constant: u32,
@@ -520,7 +520,7 @@ mod async_static_on_success_schema {
         #[on_success(async |ctx, _| {
             panic!(
                 "[constant]: on_success triggered with value: {}",
-                ctx.values().constant
+                ctx.values().constant.clone().unwrap()
             );
         })]
         pub constant: u32,
@@ -540,7 +540,7 @@ mod sync_dynamic_on_success_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[constant]: on_success triggered with value: {}",
-                ctx.values().constant
+                ctx.values().constant.clone().unwrap()
             );
         })]
         pub constant: u32,
@@ -560,7 +560,7 @@ mod async_dynamic_on_success_schema {
         #[on_success(async |ctx, _| {
             panic!(
                 "[constant]: on_success triggered with value: {}",
-                ctx.values().constant
+                ctx.values().constant.clone().unwrap()
             );
         })]
         pub constant: u32,
@@ -607,7 +607,7 @@ mod constant_reads_dependent_schema {
         #[resolve(|ctx, _| ctx.input().name.clone().unwrap())]
         pub dependent: String,
 
-        #[constant(|ctx, _| format!("constant-saw-{}", ctx.values().dependent))]
+        #[constant(|ctx, _| format!("constant-saw-{}", ctx.values().dependent.clone().unwrap()))]
         pub constant: String,
     }
 }
@@ -678,8 +678,8 @@ mod async_parallel_constants_schema {
 #[test]
 fn should_attach_constants_before_timestamps() {
     // Per GOAL.md §17, constants (step 9) are attached before timestamps
-    // (step 10), so a constant's resolver observes the timestamp field still
-    // at its default (unset) value.
+    // (step 10), so a constant's resolver observes the timestamp field as
+    // not set yet.
     let (created, ..) = constant_runs_before_timestamps_schema::DataModel
         .create(
             constant_runs_before_timestamps_schema::PartialDataInput { lax: Some(1) },
@@ -688,7 +688,7 @@ fn should_attach_constants_before_timestamps() {
         .ok()
         .unwrap();
 
-    assert_eq!(created.constant, "constant-saw-created_at=0");
+    assert_eq!(created.constant, "constant-saw-created_at=None");
     assert_eq!(created.created_at, 1234);
 }
 
@@ -701,7 +701,7 @@ mod constant_runs_before_timestamps_schema {
         #[lax(20)]
         pub lax: i32,
 
-        #[constant(|ctx, _| format!("constant-saw-created_at={}", ctx.values().created_at))]
+        #[constant(|ctx, _| format!("constant-saw-created_at={:?}", ctx.values().created_at))]
         pub constant: String,
 
         #[created_at]

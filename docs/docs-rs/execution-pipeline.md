@@ -17,29 +17,56 @@ runtime branch for schemas that don't use a given feature.
 
 ## `create`
 
+`create` builds a partial output (every field an `Option`) as it goes, which `ctx.values()`
+exposes. Values are only computed once they're needed: a create that fails validation never
+computes a dependent default, a constant or a timestamp.
+
 1. **Ignore** -- evaluate `#[ignore]`/`#[ignore_init]` (field-level and grouped together), then
    apply `#[ignore_init]` overrides.
-2. **Required** -- evaluate conditional `#[required(...)]` and check bare `#[required]` fields for
+2. **Seed values** -- every provided, non-ignored required/lax value is copied as-is, and every
+   missing or ignored `#[lax]` field gets its default.
+3. **Required** -- evaluate conditional `#[required(...)]` and check bare `#[required]` fields for
    a missing value. *Fails fast.*
-3. **Validate** -- `#[validate]` runs for required/lax and virtual fields together, as one phase.
-   Defaults for unset `#[lax]` fields are applied here too. *Fails fast.*
-4. **Re-validate** -- `#[re_validate]`, same grouping as validate, only for fields that validated
+4. **Validate** -- `#[validate]` runs for required/lax and virtual fields together, as one phase.
+   Each accepted value replaces the seeded one. *Fails fast.*
+5. **Re-validate** -- `#[re_validate]`, same grouping as validate, only for fields that validated
    successfully. *Fails fast.*
-5. **Post-validate (pre)** -- every `#[post_validate(...)]` group's `pre_validate` handler, against
+6. **Post-validate (pre)** -- every `#[post_validate(...)]` group's `pre_validate` handler, against
    a snapshot from before this phase. *Fails fast.*
-6. **Post-validate (main)** -- every group's main `validate` handler; skipped entirely if step 5
-   produced any error. *Fails fast.*
-7. **Sanitize** -- `#[sanitize]` on virtual fields that were provided and not ignored, once step 6
+7. **Post-validate (main)** -- every group's main validator; skipped entirely if step 6 produced
+   any error. *Fails fast.*
+8. **Sanitize** -- `#[sanitize]` on virtual fields that were provided and not ignored, once step 7
    has succeeded.
-8. **Resolve dependents** -- `#[resolve]`, one round per dependency-graph level, looping until
-   nothing new changes. `ctx.values()` inside a resolver reflects everything resolved in earlier
-   rounds.
-9. **Attach constants** -- `#[constant]`, after dependents resolve, so a constant resolver can read
-   resolved dependent values via `ctx.values()`.
-10. **Attach timestamps** -- `#[created_at]`/`#[updated_at]`, after constants. The shared resolver
+9. **Dependent defaults** -- every dependent field gets its `#[default(...)]`.
+10. **Resolve dependents** -- `#[resolve]`, one round per dependency-graph level, looping until
+    nothing new changes. `ctx.values()` inside a resolver reflects everything resolved in earlier
+    rounds.
+11. **Attach constants** -- `#[constant]`, after dependents resolve, so a constant resolver can
+    read resolved dependent values via `ctx.values()`.
+12. **Attach timestamps** -- `#[created_at]`/`#[updated_at]`, after constants. The shared resolver
     is called at most once.
-11. Prepare `on_success`/`on_failure` triggers for the returned tuple (see
+13. **Convert** -- the partial output, complete by now, is converted into the output struct.
+14. Prepare `on_success`/`on_failure` triggers for the returned tuple (see
     [Life Cycles - Triggering handlers](./life-cycles.md#triggering-handlers)).
+
+### What `ctx.values()` holds
+
+`ctx.values()` returns the schema's partial output struct, so every field is an `Option`. At
+creation, a field is `None` until the phase that sets it:
+
+| Handler | Fields that are `Some` |
+| --- | --- |
+| ignore | none |
+| required, validate | provided required/lax values (raw) and the defaults of missing lax fields |
+| re-validate, post-validate, sanitize | the same, with validated values in place of raw ones |
+| dependent default | every required/lax field |
+| dependent resolver | every required/lax and dependent field (defaults or resolved values) |
+| constant | everything except timestamps |
+| `on_success` | every field |
+| `on_failure` | whatever was set when validation failed |
+
+During an `update` (and in its `on_success`/`on_failure` handlers), every field is `Some`: the
+stored record with this update's changes applied so far.
 
 ## `update`
 
@@ -50,17 +77,17 @@ runtime branch for schemas that don't use a given feature.
    required check even runs.
 3. **Required** -- conditional `#[required(...)]` only (bare `#[required]` is creation-only).
    *Fails fast.*
-4. **Validate** -- same as create's step 3. *Fails fast.*
-5. **Re-validate** -- same as create's step 4. *Fails fast.*
+4. **Validate** -- same as create's step 4. *Fails fast.*
+5. **Re-validate** -- same as create's step 5. *Fails fast.*
 6. **Post-validate** -- `pre_validate` then main `validate`, gated the same way as create's steps
-   5-6. *Fails fast.*
+   6-7. *Fails fast.*
 7. **Evaluate update validity** -- recompute the change set and drop any field whose value turned
    out unchanged, once, right after post-validate (`raw_input()` still shows what was actually
    submitted; `input()` reflects this filtering). *Fails fast.*
 8. **Nothing-to-update checkpoint 2** -- if nothing is left to change after step 7 *and* no virtual
    field is still relevant (its dependent(s) haven't resolved yet), fail immediately, before
    dependent resolution runs.
-9. **Sanitize** -- same condition as create's step 7.
+9. **Sanitize** -- same condition as create's step 8.
 10. **Resolve dependents** -- one pass per dependency-graph level.
 11. **Nothing-to-update checkpoint 3** -- if the change set is still empty after dependent
     resolution, fail with "nothing to update".

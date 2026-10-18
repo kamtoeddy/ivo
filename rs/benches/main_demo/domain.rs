@@ -165,7 +165,7 @@ mod user_schema {
     const _: () = ();
 
     #[ignore_update(["username", "v_slug"], async |ctx, _| {
-        match ctx.values().username_last_updated_at {
+        match ctx.values().username_last_updated_at.clone().unwrap() {
             Some(dt) => (Utc::now() - dt).num_days() < 30,
             _ => false,
         }

@@ -269,7 +269,7 @@ pub trait IvoInputStruct<CtxOptions, ErrorSanitizer: IvoErrorSanitizer<CtxOption
 pub struct IvoContext<I, O: WithPartialStruct> {
     input: I,
     raw_input: I,
-    values: O,
+    values: O::Partial,
     changes: Option<O::Partial>,
     previous_values: Option<O>,
 }
@@ -289,7 +289,7 @@ impl<I, O: WithPartialStruct> IvoContext<I, O> {
     pub fn new(
         input: I,
         raw_input: I,
-        values: O,
+        values: O::Partial,
         changes: Option<O::Partial>,
         previous_values: Option<O>,
     ) -> Self {
@@ -310,9 +310,16 @@ impl<I, O: WithPartialStruct> IvoContext<I, O> {
         &self.raw_input
     }
 
-    /// The full, most-up-to-date set of output values, at creation or during
-    /// an update (includes whatever this pipeline run has resolved so far).
-    pub fn values(&self) -> &O {
+    /// The most up-to-date output values.
+    ///
+    /// At creation this starts as the provided (non-ignored, non-virtual)
+    /// input values plus the defaults of missing lax fields, and fills in as
+    /// the pipeline runs: validated values replace raw ones, then dependent
+    /// defaults/resolved values, constants and timestamps are added once
+    /// validation has passed. A field not reached yet is `None`.
+    ///
+    /// During an update (and in `on_success` handlers) every field is `Some`.
+    pub fn values(&self) -> &O::Partial {
         &self.values
     }
 

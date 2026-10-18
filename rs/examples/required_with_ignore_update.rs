@@ -84,12 +84,12 @@ mod schema {
             let username = ctx.input().username.clone().unwrap();
 
             println!("\n[ignore_update]: raw username = {}", username);
-            println!("\n[ignore_update]: previous username = {}", ctx.values().username);
+            println!("\n[ignore_update]: previous username = {}", ctx.values().username.clone().unwrap());
 
             username == "ignore-update"
         })]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);

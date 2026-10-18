@@ -36,7 +36,7 @@ mod dependents_schema {
 
         #[depends_on("value")]
         #[default(1)]
-        #[resolve(|ctx, _opts| ctx.values().value + 1)]
+        #[resolve(|ctx, _opts| ctx.values().value.unwrap() + 1)]
         pub computed: i32,
     }
 }

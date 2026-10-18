@@ -172,7 +172,7 @@ mod data_schema {
     struct Fields {
         #[lax(crate::DEFAULT_LAX_VALUE.to_string())]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: lax = {}", ctx.values().lax);
+            println!("\n[on_success]: lax = {}", ctx.values().lax.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: lax = {}", data.lax);
@@ -194,10 +194,10 @@ mod data_schema {
             ctx.input()
                 .virtual_field
                 .clone()
-                .unwrap_or_else(|| ctx.values().dependent.clone())
+                .unwrap_or_else(|| ctx.values().dependent.clone().unwrap())
         })]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: dependent = {}", data.dependent);
@@ -207,7 +207,7 @@ mod data_schema {
         #[ivo_virtual]
         #[ignore(|ctx, _| {
             ctx.input().lax == Some(crate::IGNORE_TRIGGER_VALUE.to_string())
-                || (ctx.is_update() && ctx.values().lax == crate::IGNORE_TRIGGER_VALUE.to_string())
+                || (ctx.is_update() && ctx.values().lax.clone().unwrap() == crate::IGNORE_TRIGGER_VALUE.to_string())
         })]
         #[validate(|_, _, _| Ok(None))]
         #[on_success(|ctx, _| {

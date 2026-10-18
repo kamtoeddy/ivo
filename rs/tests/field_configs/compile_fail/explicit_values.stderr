@@ -1,0 +1,29 @@
+error: field `lax`: lax fields require a default value: `#[lax(value)]`
+ --> tests/field_configs/compile_fail/explicit_values.rs:7:13
+  |
+7 |         pub lax: i32,
+  |             ^^^
+
+error: field `lax`: lax fields require a default value: `#[lax(value)]`
+  --> tests/field_configs/compile_fail/explicit_values.rs:15:13
+   |
+15 |         pub lax: i32,
+   |             ^^^
+
+error: field `constant`: constant fields require a value: `#[constant(value)]`
+  --> tests/field_configs/compile_fail/explicit_values.rs:26:13
+   |
+26 |         pub constant: i32,
+   |             ^^^^^^^^
+
+error: field `dependent`: dependent fields require a default value: `#[default(value)]`
+  --> tests/field_configs/compile_fail/explicit_values.rs:38:13
+   |
+38 |         pub dependent: i32,
+   |             ^^^^^^^^^
+
+error: field `created_at`: timestamp fields require a `#[timestamps(resolver)]` option, e.g. `#[timestamps(|| now())] const _: () = ();`
+  --> tests/field_configs/compile_fail/explicit_values.rs:49:13
+   |
+49 |         pub created_at: u64,
+   |             ^^^^^^^^^^

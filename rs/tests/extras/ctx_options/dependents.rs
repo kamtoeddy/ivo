@@ -64,7 +64,7 @@ mod default_fn_schema {
             opts.write().await.add_message("ctx_options updated in default value resolver");
             1
         })]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         #[on_success(|_, opts| {
             if true {
                 panic!("[on_success]: {}", opts.read_sync().messages[0])
@@ -128,7 +128,7 @@ mod resolver_create_schema {
         #[default(async |_, _| 1)]
         #[resolve(async |ctx, opts| {
             opts.write().await.add_message("ctx_options updated in value resolver");
-            ctx.values().dependent + 1
+            ctx.values().dependent.unwrap() + 1
         })]
         #[on_success(|_, opts| {
             if true {
@@ -199,7 +199,7 @@ mod resolver_update_schema {
         #[default(async |_, _| 1)]
         #[resolve(async |ctx, opts| {
             opts.write().await.add_message("ctx_options updated in value resolver");
-            ctx.values().dependent + 1
+            ctx.values().dependent.unwrap() + 1
         })]
         #[on_success(|_, opts| {
             if true {

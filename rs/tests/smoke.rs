@@ -192,10 +192,10 @@ mod user_dependent_schema {
 
         #[depends_on("first_name", "last_name")]
         #[default(|ctx, _opts| {
-            format!("{} {}", ctx.values().first_name, ctx.values().last_name)
+            format!("{} {}", ctx.values().first_name.clone().unwrap(), ctx.values().last_name.clone().unwrap())
         })]
         #[resolve(async |ctx, _opts| {
-            format!("{} {}", ctx.values().first_name, ctx.values().last_name)
+            format!("{} {}", ctx.values().first_name.clone().unwrap(), ctx.values().last_name.clone().unwrap())
         })]
         pub full_name: String,
     }
@@ -406,7 +406,7 @@ mod user_field_ignore_update_schema {
         pub name: String,
 
         #[lax(String::from(""))]
-        #[ignore_update(|ctx, _opts| ctx.values().role == *"admin")]
+        #[ignore_update(|ctx, _opts| ctx.values().role.clone().unwrap() == *"admin")]
         pub role: String,
     }
 }

@@ -69,7 +69,7 @@ mod dynamic_default_schema {
     struct Fields {
         #[lax(|_, _| crate::DEFAULT_USERNAME.to_string())]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);
@@ -83,7 +83,7 @@ mod static_default_schema {
     struct Fields {
         #[lax(crate::DEFAULT_USERNAME.to_string())]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);

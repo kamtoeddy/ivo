@@ -70,7 +70,7 @@ mod data_schema {
             }
         })]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_failure(|ctx, _| {
             println!("\n[on_failure]: raw username = {}", ctx.raw_input().username.as_ref().unwrap());

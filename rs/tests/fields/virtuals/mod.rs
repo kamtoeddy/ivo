@@ -1527,7 +1527,7 @@ mod sync_required_schema {
         #[validate(|_, _, _| Ok(None))]
         #[required(|ctx, _| {
             if ctx.is_update() {
-                if ctx.values().lax == "require_virtual_field_for_update" {
+                if ctx.values().lax.clone().unwrap() == "require_virtual_field_for_update" {
                     Some("virtual_field is required for this update".into())
                 } else {
                     None
@@ -1560,7 +1560,7 @@ mod async_required_schema {
         #[validate(async |_, _, _| Ok(None))]
         #[required(async |ctx, _| {
             if ctx.is_update() {
-                if ctx.values().lax == "require_virtual_field_for_update" {
+                if ctx.values().lax.clone().unwrap() == "require_virtual_field_for_update" {
                     Some("virtual_field is required for this update".into())
                 } else {
                     None

@@ -1016,7 +1016,7 @@ mod sync_on_failure_creation_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1053,7 +1053,7 @@ mod async_on_failure_creation_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1090,7 +1090,7 @@ mod sync_on_failure_update_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1127,7 +1127,7 @@ mod async_on_failure_update_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1164,7 +1164,7 @@ mod sync_on_failure_creation_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1201,7 +1201,7 @@ mod async_on_failure_creation_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1238,7 +1238,7 @@ mod sync_on_failure_update_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1275,7 +1275,7 @@ mod async_on_failure_update_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1312,7 +1312,7 @@ mod sync_on_failure_creation_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1349,7 +1349,7 @@ mod async_on_failure_creation_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1386,7 +1386,7 @@ mod sync_on_failure_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1423,7 +1423,7 @@ mod async_on_failure_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1461,7 +1461,7 @@ mod sync_on_failure_ignore_at_creation_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1499,7 +1499,7 @@ mod async_on_failure_ignore_at_creation_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1537,7 +1537,7 @@ mod sync_on_failure_ignore_during_update_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1575,7 +1575,7 @@ mod async_on_failure_ignore_during_update_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1614,7 +1614,7 @@ mod sync_on_failure_ignore_init_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1653,7 +1653,7 @@ mod async_on_failure_ignore_init_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1691,7 +1691,7 @@ mod sync_on_failure_ignore_update_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1729,7 +1729,7 @@ mod async_on_failure_ignore_update_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1767,7 +1767,7 @@ mod sync_on_failure_ignore_at_creation_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1805,7 +1805,7 @@ mod async_on_failure_ignore_at_creation_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1843,7 +1843,7 @@ mod sync_on_failure_ignore_during_update_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1881,7 +1881,7 @@ mod async_on_failure_ignore_during_update_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1920,7 +1920,7 @@ mod sync_on_failure_ignore_init_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1959,7 +1959,7 @@ mod async_on_failure_ignore_init_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -1997,7 +1997,7 @@ mod sync_on_failure_ignore_update_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -2035,7 +2035,7 @@ mod async_on_failure_ignore_update_alias_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -2073,7 +2073,7 @@ mod sync_on_failure_ignore_at_creation_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -2111,7 +2111,7 @@ mod async_on_failure_ignore_at_creation_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -2149,7 +2149,7 @@ mod sync_on_failure_ignore_during_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -2187,7 +2187,7 @@ mod async_on_failure_ignore_during_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -2226,7 +2226,7 @@ mod sync_on_failure_ignore_init_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -2265,7 +2265,7 @@ mod async_on_failure_ignore_init_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -2303,7 +2303,7 @@ mod sync_on_failure_ignore_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }
@@ -2341,7 +2341,7 @@ mod async_on_failure_ignore_update_alias_as_dependent_schema {
 
         #[depends_on("virtual_field", "lax_field")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
     }
 }

@@ -93,3 +93,28 @@ These are fresh, same-machine results for both implementations.
   `target/criterion/` (replacing filesystem-unsafe characters with `_` and
   truncating to 64 characters); `criterion_dir_name()` in this script
   replicates both so lookups for the longer `main_demo` names don't miss.
+
+## Partial output at creation (2026-10-18)
+
+`create` now builds a partial output (`ctx.values()` is the partial output struct) and converts it
+into the full output at the end; dependent defaults, constants and timestamps are only computed
+once validation has passed. Same machine, `HEAD` before the change vs after, Criterion with
+`--warm-up-time 1 --measurement-time 3`.
+
+| Benchmark | Before | After | Change |
+| --- | --- | --- | --- |
+| minimal create | 56.35 ns | 56.91 ns | +1.0% |
+| user create | 488.58 ns | 523.96 ns | +7.2% |
+| create 20 required fields (sync validators) | 169.52 ns | 201.29 ns | +18.7% |
+| dependent chain length 10 | 1.42 µs | 1.46 µs | +2.5% |
+| create 10 readonly lax fields | 1.57 µs | 1.61 µs | +2.6% |
+| no-op update | 218.06 ns | 205.81 ns | -5.6% |
+| single field update | 594.96 ns | 576.87 ns | -3.0% |
+| main_demo create [fail: required errors (email or phone_number)] | 276.41 ns | 292.66 ns | +5.9% |
+| main_demo create [fail: validation error (email, slug_id, username)] | 632.87 ns | 612.29 ns | -3.3% |
+| main_demo create [fail: re_validation error (username taken)] | 709.53 ns | 556.12 ns | -21.6% |
+| main_demo create [fail: post-validation error (slug taken)] | 1.63 µs | 1.55 µs | -4.8% |
+| main_demo create [success: 4/4 inputs] | 3.81 µs | 3.77 µs | -1.1% |
+
+The remaining cost on all-integer schemas ("create 20 required fields") is the partial
+representation itself (seeding, `Option` wrapping and the final conversion), about 1.5 ns per field.

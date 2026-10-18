@@ -673,7 +673,7 @@ mod required_sync_schema {
         #[validate(|_, _, _| Ok(None))]
         #[required(|ctx, _| {
             if ctx.is_update() {
-                if ctx.values().other == "require_lax_for_update" {
+                if ctx.values().other.clone().unwrap() == "require_lax_for_update" {
                     return Some("lax is required for this update".into());
                 }
 
@@ -701,7 +701,7 @@ mod required_async_schema {
         #[validate(async |_, _, _| Ok(None))]
         #[required(async |ctx, _| {
             if ctx.is_update() {
-                if ctx.values().other == "require_lax_for_update" {
+                if ctx.values().other.clone().unwrap() == "require_lax_for_update" {
                     return Some("lax is required for this update".into());
                 }
 
@@ -2502,7 +2502,7 @@ mod post_validation_sync_schema {
                 }
             }
 
-            let lax_1 = ctx.values().lax_1.clone();
+            let lax_1 = ctx.values().lax_1.clone().unwrap();
             if errors.is_empty() && lax_1 == LAX_1_PRE_VALIDATION_FAIL {
                 errors.set_lax_1(LAX_1_PRE_VALIDATION_FAIL, None);
             }
@@ -2583,7 +2583,7 @@ mod post_validation_async_schema {
                 }
             }
 
-            let lax_1 = ctx.values().lax_1.clone();
+            let lax_1 = ctx.values().lax_1.clone().unwrap();
             if errors.is_empty() && lax_1 == LAX_1_PRE_VALIDATION_FAIL {
                 errors.set_lax_1(LAX_1_PRE_VALIDATION_FAIL, None);
             }
@@ -3578,7 +3578,7 @@ mod lax_on_success_creation_default_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[lax]: on_success triggered with value: {}",
-                ctx.values().lax.as_str()
+                ctx.values().lax.as_deref().unwrap()
             );
         })]
         pub lax: String,
@@ -3638,7 +3638,7 @@ mod lax_on_success_creation_ignored_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[lax]: on_success triggered with value: {}",
-                ctx.values().lax.as_str()
+                ctx.values().lax.as_deref().unwrap()
             );
         })]
         pub lax: String,
@@ -3698,7 +3698,7 @@ mod lax_on_success_update_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[lax]: on_success triggered with value: {}",
-                ctx.values().lax.as_str()
+                ctx.values().lax.as_deref().unwrap()
             );
         })]
         pub lax: String,
@@ -3764,7 +3764,7 @@ mod lax_on_success_update_not_provided_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[lax]: on_success triggered with value: {}",
-                ctx.values().lax.as_str()
+                ctx.values().lax.as_deref().unwrap()
             );
         })]
         pub lax: String,
@@ -3831,7 +3831,7 @@ mod lax_on_success_update_ignored_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[lax]: on_success triggered with value: {}",
-                ctx.values().lax.as_str()
+                ctx.values().lax.as_deref().unwrap()
             );
         })]
         pub lax: String,

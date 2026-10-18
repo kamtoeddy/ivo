@@ -160,9 +160,9 @@ mod data_schema {
         #[depends_on("username")]
         #[default(crate::DEFAULT_DEPENDENT)]
         #[readonly]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: dependent = {}", data.dependent);
@@ -171,7 +171,7 @@ mod data_schema {
 
         #[lax(|_, _| crate::DEFAULT_USERNAME.to_string())]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);

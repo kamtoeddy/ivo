@@ -900,6 +900,28 @@ fn parse_grouped_options(item_mod: &ItemMod) -> syn::Result<Vec<GroupedOption>> 
 }
 
 fn validate_grouped_options(fields: &[FieldDef], options: &[GroupedOption]) -> syn::Result<()> {
+    // Timestamp fields get their value from the schema's resolver; there's no
+    // `Default::default()` fallback.
+    let has_timestamps_resolver = options
+        .iter()
+        .any(|o| matches!(o.kind, GroupedOptionKind::Timestamps));
+    if !has_timestamps_resolver {
+        if let Some(f) = fields.iter().find(|f| {
+            matches!(
+                f.field_type,
+                FieldType::CreatedAt | FieldType::UpdatedAt { .. }
+            )
+        }) {
+            return Err(syn::Error::new_spanned(
+                &f.name,
+                format!(
+                    "field `{}`: timestamp fields require a `#[timestamps(resolver)]` option, e.g. `#[timestamps(|| now())] const _: () = ();`",
+                    f.name
+                ),
+            ));
+        }
+    }
+
     for opt in options {
         match opt.kind {
             GroupedOptionKind::Ignore | GroupedOptionKind::Required => {
@@ -1223,6 +1245,29 @@ fn validate_field_attributes(fields: &[FieldDef]) -> syn::Result<()> {
                     f.name,
                     field_type_attrs.join(", ")
                 ),
+            ));
+        }
+
+        // Fields that ivo fills in itself need an explicit value: there's no
+        // `Default::default()` fallback, so field types never need `Default`.
+        let has_value =
+            |name: &str| attr_value_tokens(&f.attrs, name).is_some_and(|tokens| !tokens.is_empty());
+        let missing_value = match &f.field_type {
+            FieldType::Lax if !has_value("lax") => {
+                Some("lax fields require a default value: `#[lax(value)]`")
+            }
+            FieldType::Constant if !has_value("constant") => {
+                Some("constant fields require a value: `#[constant(value)]`")
+            }
+            FieldType::Dependent if !has_value("default") => {
+                Some("dependent fields require a default value: `#[default(value)]`")
+            }
+            _ => None,
+        };
+        if let Some(message) = missing_value {
+            return Err(syn::Error::new_spanned(
+                &f.name,
+                format!("field `{}`: {message}", f.name),
             ));
         }
 
@@ -1956,10 +2001,16 @@ fn generate_partial_and_impls(
         quote! { #name: ::core::option::Option::None }
     });
 
-    let struct_defaults = fields.iter().map(|f| {
-        let name = &f.name;
-        quote! { #name: ::core::default::Default::default() }
-    });
+    let into_full_fields: Vec<_> = fields
+        .iter()
+        .map(|f| {
+            let field = &f.name;
+            let message = format!(
+                "ivo: field `{field}` was not set before converting `{partial_name}` into `{name}`"
+            );
+            quote! { #field: value.#field.expect(#message) }
+        })
+        .collect();
 
     let update_fields: Vec<_> = fields
         .iter()
@@ -2058,9 +2109,11 @@ fn generate_partial_and_impls(
             #(#setters)*
         }
 
-        impl ::core::default::Default for #name {
-            fn default() -> Self {
-                Self { #(#struct_defaults,)* }
+        /// Panics if a field is still `None`. ivo only performs this
+        /// conversion once every field has been set.
+        impl ::core::convert::From<#partial_name> for #name {
+            fn from(value: #partial_name) -> Self {
+                Self { #(#into_full_fields,)* }
             }
         }
 
@@ -2439,10 +2492,10 @@ fn generate_model(
         let name = &f.name;
         match f.field_type {
             FieldType::CreatedAt | FieldType::UpdatedAt { optional: false } => Some(quote! {
-                output.#name = __ivo_timestamp_value.clone();
+                output.#name = ::core::option::Option::Some(__ivo_timestamp_value.clone());
             }),
             FieldType::UpdatedAt { optional: true } => Some(quote! {
-                output.#name = ::core::default::Default::default();
+                output.#name = ::core::option::Option::Some(::core::option::Option::None);
             }),
             _ => None,
         }
@@ -2828,6 +2881,10 @@ fn generate_model(
         grouped.into_iter().chain(field_level).collect()
     };
     create_has_async |= create_ignore_items.iter().any(|i| i.is_async);
+    // Only ignore handlers and lax default resolvers taking `ctx` run before
+    // the seed phase rebuilds `ctx`, so `create` only builds its initial
+    // `ctx` for them (the latter are checked with the seed items below).
+    let mut create_needs_initial_ctx = !create_ignore_items.is_empty();
     let ignore_evaluations = emit_async_phase(create_ignore_items, &quote! {});
 
     let ignore_init_assignments = field_ignore_init.iter().map(|name| {
@@ -2964,74 +3021,104 @@ fn generate_model(
         #(#required_field_checks)*
     };
 
-    // Early create phase: required/lax base-value + validate, timestamps
-    // (already deduped to a single resolver call above), and dependent-field
-    // defaults. Every handler here gets the same full `IvoContext` (there's
-    // no cut-down context type for defaults/resolvers), but -- matching the
-    // reference implementation -- every item in this phase is evaluated
-    // against the *same* pre-phase `ctx` snapshot, not one another's results,
-    // so none of them can actually observe a sibling's output from this same
-    // phase, making the whole phase safe to batch: sequential when 0/1
-    // handlers are async, `join!`-concurrent when 2+ are. `#[constant]`
-    // fields are handled separately, in their own phase after dependent
-    // resolution (see below), since their ctx *does* expose `ctx.values()`
-    // and per GOAL.md §17 they're only meant to be attached once dependents
-    // have already resolved.
+    // Seed phase for `create`, right after ignore: `output` (a partial
+    // output) gets every provided, non-ignored required/lax value as-is, and
+    // every missing or ignored lax field gets its default. Required/validate
+    // handlers then observe these through `ctx.values()`. A missing required
+    // field stays `None` (the required phase rejects it next). Items only
+    // read `input`, so they're safe to batch like any other phase.
+    let field_ignore_flag = |f: &FieldDef| -> proc_macro2::TokenStream {
+        if ignore_field_names.contains(&f.name.to_string()) {
+            let flag = format_ident!("ignore_{}", f.name);
+            quote! { #flag }
+        } else {
+            quote! { false }
+        }
+    };
+    let create_seed_items: Vec<AsyncPhaseItem> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax))
+        .map(|f| {
+            let name = &f.name;
+            let ty = &f.ty;
+            let input_name_tokens = input_field_name(f);
+            let ignore_flag_tokens = field_ignore_flag(f);
+            let (is_async, missing_expr) = match &f.field_type {
+                FieldType::Lax => {
+                    let tokens = attr_value_tokens(&f.attrs, "lax")
+                        .expect("lax fields always have a default (checked during validation)");
+                    create_needs_initial_ctx |= closure_input_count(&tokens).is_some_and(|n| n > 0);
+                    let (is_async, expr) = make_default_value_expr(&tokens);
+                    (is_async, quote! { ::core::option::Option::Some(#expr) })
+                }
+                _ => (false, quote! { ::core::option::Option::None }),
+            };
+            let value_expr = quote! {
+                {
+                    let __provided: ::core::option::Option<#ty> = if #ignore_flag_tokens {
+                        ::core::option::Option::None
+                    } else {
+                        input.#input_name_tokens.clone()
+                    };
+                    match __provided {
+                        ::core::option::Option::Some(__v) => ::core::option::Option::Some(__v),
+                        ::core::option::Option::None => #missing_expr,
+                    }
+                }
+            };
+            let apply = quote! {
+                output.#name = __phase_result;
+            };
+            AsyncPhaseItem {
+                is_async,
+                value_expr,
+                apply,
+            }
+        })
+        .collect();
+    create_has_async |= create_seed_items.iter().any(|i| i.is_async);
+    let create_seed_phase = {
+        let seed = emit_async_phase(create_seed_items, &quote! {});
+        quote! {
+            #seed
+            let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                input.clone(),
+                __original_input.clone(),
+                ::core::convert::Into::into(output.clone()),
+                ::core::option::Option::None,
+                ::core::option::Option::None,
+            );
+        }
+    };
+
+    // Validate takes each seeded value out of `output` rather than cloning
+    // it: the item hands back the value to keep (validated, or unchanged when
+    // ignored), and a value that failed validation is left unset.
+    let create_validate_takes = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax))
+        .map(|f| {
+            let name = &f.name;
+            let seeded = format_ident!("__seeded_{}", name);
+            quote! { let #seeded = output.#name.take(); }
+        })
+        .collect::<Vec<_>>();
+
+    // Validate phase items for required/lax fields, over the seeded values.
+    // Every item is evaluated against the same pre-phase `ctx` snapshot, not
+    // one another's results, so the phase is safe to batch: sequential when
+    // 0/1 handlers are async, `join!`-concurrent when 2+ are.
     let create_early_items: Vec<AsyncPhaseItem> = fields
         .iter()
-        .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax | FieldType::Dependent))
+        .filter(|f| matches!(f.field_type, FieldType::Required | FieldType::Lax))
         .map(|f| {
             let name = &f.name;
             let name_str = name.to_string();
             let ty = &f.ty;
             let ty_tokens = quote!(#ty);
             let validator = attr_value_tokens(&f.attrs, "validate");
-
-            let ignore_flag_tokens = if ignore_field_names.contains(&name_str) {
-                let flag = format_ident!("ignore_{}", name);
-                quote! { #flag }
-            } else {
-                quote! { false }
-            };
-
-            let (lax_default_is_async, lax_default_expr) = match &f.field_type {
-                FieldType::Lax => attr_value_tokens(&f.attrs, "lax")
-                    .map(|t| make_default_value_expr(&t))
-                    .unwrap_or((false, quote! { ::core::default::Default::default() })),
-                _ => (false, quote! { ::core::default::Default::default() }),
-            };
-
-            let mut item_is_async = lax_default_is_async;
-
-            let base_value = match &f.field_type {
-                FieldType::Required | FieldType::Lax => {
-                    let input_name_tokens = input_field_name(f);
-                    quote! {
-                        {
-                            let __provided: ::core::option::Option<#ty_tokens> = if #ignore_flag_tokens {
-                                ::core::option::Option::None
-                            } else {
-                                input.#input_name_tokens.clone()
-                            };
-                            if let ::core::option::Option::Some(__v) = __provided {
-                                __v
-                            } else {
-                                #lax_default_expr
-                            }
-                        }
-                    }
-                }
-                FieldType::Dependent => {
-                    let default_expr = attr_value_tokens(&f.attrs, "default")
-                        .unwrap_or_else(|| quote!(::core::default::Default::default()));
-                    let (is_async, expr) = make_default_value_expr(&default_expr);
-                    item_is_async |= is_async;
-                    expr
-                }
-                FieldType::Constant | FieldType::CreatedAt | FieldType::UpdatedAt { .. } | FieldType::Virtual { .. } => {
-                    unreachable!()
-                }
-            };
+            let ignore_flag_tokens = field_ignore_flag(f);
+            let mut item_is_async = false;
 
             // The value_expr must not mutate `errors` (or anything else)
             // directly: when 2+ items in this phase are async, each becomes
@@ -3062,35 +3149,70 @@ fn generate_model(
                 quote! { ::core::result::Result::Ok(value) }
             };
 
+            let seeded = format_ident!("__seeded_{}", name);
             let value_expr = quote! {
-                {
-                    let value: #ty = #base_value;
-                    if !#ignore_flag_tokens {
-                        #validator_assignment
-                    } else {
-                        ::core::result::Result::Ok(value)
+                match #seeded {
+                    ::core::option::Option::Some(value) => {
+                        let value: #ty = value;
+                        ::core::option::Option::Some(if !#ignore_flag_tokens {
+                            #validator_assignment
+                        } else {
+                            ::core::result::Result::Ok(value)
+                        })
                     }
+                    ::core::option::Option::None => ::core::option::Option::None,
                 }
             };
             let apply = quote! {
                 match __phase_result {
-                    ::core::result::Result::Ok(__value) => {
-                        output.#name = __value;
+                    ::core::option::Option::Some(::core::result::Result::Ok(__value)) => {
+                        output.#name = ::core::option::Option::Some(__value);
                     }
-                    ::core::result::Result::Err(e) => {
+                    ::core::option::Option::Some(::core::result::Result::Err(e)) => {
                         errors.insert(::std::string::String::from(#name_str), e);
                     }
+                    ::core::option::Option::None => {}
                 }
             };
-            AsyncPhaseItem { is_async: item_is_async, value_expr, apply }
+            AsyncPhaseItem {
+                is_async: item_is_async,
+                value_expr,
+                apply,
+            }
         })
         .collect();
+
+    // Dependent defaults for `create`: only attached once every validation
+    // phase has passed (just before dependent resolution), so a create that
+    // fails validation never computes them.
+    let create_dependent_default_items: Vec<AsyncPhaseItem> = fields
+        .iter()
+        .filter(|f| matches!(f.field_type, FieldType::Dependent))
+        .map(|f| {
+            let name = &f.name;
+            let tokens = attr_value_tokens(&f.attrs, "default")
+                .expect("dependent fields always have a default (checked during validation)");
+            let (is_async, value_expr) = make_default_value_expr(&tokens);
+            let apply = quote! {
+                output.#name = ::core::option::Option::Some(__phase_result);
+            };
+            AsyncPhaseItem {
+                is_async,
+                value_expr,
+                apply,
+            }
+        })
+        .collect();
+    create_has_async |= create_dependent_default_items.iter().any(|i| i.is_async);
+    let create_dependent_defaults_phase =
+        emit_async_phase(create_dependent_default_items, &quote! {});
+
     create_has_async |= create_early_items.iter().any(|i| i.is_async);
     let create_early_ctx_rebuild = quote! {
         let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
             input.clone(),
             __original_input.clone(),
-            output.clone(),
+            ::core::convert::Into::into(output.clone()),
             ::core::option::Option::None,
             ::core::option::Option::None,
         );
@@ -3111,7 +3233,7 @@ fn generate_model(
         .map(|f| {
             let name = &f.name;
             let tokens = attr_value_tokens(&f.attrs, "constant")
-                .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                .expect("constant fields always have a value (checked during validation)");
             let (is_async, value_expr) = match closure_input_count(&tokens) {
                 Some(0) => {
                     if is_async_handler(&tokens) {
@@ -3131,7 +3253,7 @@ fn generate_model(
                 None => (false, static_or_fn_path_value_expr(&tokens)),
             };
             let apply = quote! {
-                output.#name = __phase_result;
+                output.#name = ::core::option::Option::Some(__phase_result);
             };
             AsyncPhaseItem {
                 is_async,
@@ -3145,7 +3267,7 @@ fn generate_model(
         let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
             input.clone(),
             __original_input.clone(),
-            output.clone(),
+            ::core::convert::Into::into(output.clone()),
             ::core::option::Option::None,
             ::core::option::Option::None,
         );
@@ -3257,14 +3379,14 @@ fn generate_model(
             quote! {
                 if #parent_guard {
                     let __new_value: #ty = #resolver_expr;
-                    if &__new_value != &output.#name {
-                        output.#name = __new_value.clone();
+                    if output.#name.as_ref() != ::core::option::Option::Some(&__new_value) {
+                        output.#name = ::core::option::Option::Some(__new_value.clone());
                         __dependent_next_parents.insert(#name_str);
                     }
                     ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                         input.clone(),
                         __original_input.clone(),
-                        output.clone(),
+                        ::core::convert::Into::into(output.clone()),
                         ::core::option::Option::None,
                         ::core::option::Option::None,
                     );
@@ -3344,8 +3466,8 @@ fn generate_model(
                 let DependentInfo { name, name_str, .. } = d;
                 quote! {
                     if let ::core::option::Option::Some(__new_value) = #ident {
-                        if &__new_value != &output.#name {
-                            output.#name = __new_value.clone();
+                        if output.#name.as_ref() != ::core::option::Option::Some(&__new_value) {
+                            output.#name = ::core::option::Option::Some(__new_value.clone());
                             __dependent_next_parents.insert(#name_str);
                         }
                     }
@@ -3370,7 +3492,7 @@ fn generate_model(
                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     __original_input.clone(),
-                    output.clone(),
+                    ::core::convert::Into::into(output.clone()),
                     ::core::option::Option::None,
                     ::core::option::Option::None,
                 );
@@ -3456,7 +3578,7 @@ fn generate_model(
             let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 input.clone(),
                 #raw_input_expr,
-                output.clone(),
+                ::core::convert::Into::into(output.clone()),
                 #changes_expr,
                 #previous_values_expr,
             );
@@ -3642,7 +3764,7 @@ fn generate_model(
             .collect();
         let setup = &create_virtual.setup;
         let phase = emit_async_phase(items, &create_early_ctx_rebuild);
-        quote! { #setup #phase }
+        quote! { #setup #(#create_validate_takes)* #phase }
     };
 
     // Re-validation pass: run secondary validators over the built output.
@@ -3660,9 +3782,12 @@ fn generate_model(
     // that was never submitted (or submitted unchanged) still gets
     // re-validated against its already-stored value and silently
     // overwritten with whatever the re-validator produces.
-    let build_re_validate_items =
-        |extra_guard: &dyn Fn(&FieldDef) -> proc_macro2::TokenStream| -> Vec<AsyncPhaseItem> {
-            fields
+    // `output_is_partial`: `create` builds a partial output (every
+    // required/lax field is `Some` by now), `update` a full one.
+    let build_re_validate_items = |extra_guard: &dyn Fn(&FieldDef) -> proc_macro2::TokenStream,
+                                   output_is_partial: bool|
+     -> Vec<AsyncPhaseItem> {
+        fields
                 .iter()
                 .filter(|f| !matches!(f.field_type, FieldType::Virtual { .. }))
                 .filter_map(|f| {
@@ -3682,10 +3807,28 @@ fn generate_model(
                         &opts_expr,
                     );
                     let guard = extra_guard(f);
+                    // Reads the current value as an `Option`: `create`'s
+                    // partial output already is one, `update`'s isn't.
+                    let (read_value, write_value) = if output_is_partial {
+                        (
+                            quote! { output.#name.clone() },
+                            quote! { ::core::option::Option::Some(__new_value) },
+                        )
+                    } else {
+                        (
+                            quote! { ::core::option::Option::Some(output.#name.clone()) },
+                            quote! { __new_value },
+                        )
+                    };
                     let value_expr = quote! {
                         if !errors.contains_key(#name_str) && #guard {
-                            let __value: #ty = output.#name.clone();
-                            ::core::option::Option::Some(#call)
+                            match #read_value {
+                                ::core::option::Option::Some(__value) => {
+                                    let __value: #ty = __value;
+                                    ::core::option::Option::Some(#call)
+                                }
+                                ::core::option::Option::None => ::core::option::Option::None,
+                            }
                         } else {
                             ::core::option::Option::None
                         }
@@ -3694,7 +3837,7 @@ fn generate_model(
                         if let ::core::option::Option::Some(__result) = __phase_result {
                             match __result {
                                 ::core::result::Result::Ok(::core::option::Option::Some(__new_value)) => {
-                                    output.#name = __new_value.clone();
+                                    output.#name = #write_value;
                                 }
                                 ::core::result::Result::Ok(::core::option::Option::None) => {}
                                 ::core::result::Result::Err(e) => {
@@ -3710,8 +3853,9 @@ fn generate_model(
                     })
                 })
                 .collect()
-        };
-    let re_validate_items: Vec<AsyncPhaseItem> = build_re_validate_items(&|_| quote! { true });
+    };
+    let re_validate_items: Vec<AsyncPhaseItem> =
+        build_re_validate_items(&|_| quote! { true }, true);
     let re_validate_any_async = re_validate_items.iter().any(|i| i.is_async);
     create_has_async |= re_validate_any_async;
     update_has_async |= re_validate_any_async;
@@ -3767,9 +3911,7 @@ fn generate_model(
                     } else {
                         quote! {
                             if let ::core::option::Option::Some(__v) = &__post_updates.#input_name {
-                                if &output.#input_name != __v {
-                                    output.#input_name = __v.clone();
-                                }
+                                output.#input_name = ::core::option::Option::Some(__v.clone());
                             }
                         }
                     };
@@ -3891,7 +4033,7 @@ fn generate_model(
                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     #raw_input_expr,
-                    output.clone(),
+                    ::core::convert::Into::into(output.clone()),
                     #changes_expr,
                     #previous_values_expr,
                 );
@@ -4161,7 +4303,7 @@ fn generate_model(
             match &f.field_type {
                 FieldType::Lax => {
                     let default_expr = attr_value_tokens(&f.attrs, "lax")
-                        .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                        .expect("lax fields always have a default (checked during validation)");
                     quote! { output.#name == #default_expr }
                 }
                 // Required fields can't be readonly-updated at all; virtual
@@ -4368,7 +4510,7 @@ fn generate_model(
                 match &f.field_type {
                     FieldType::Lax => {
                         let default_expr = attr_value_tokens(&f.attrs, "lax")
-                            .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                            .expect("lax fields always have a default (checked during validation)");
                         quote! { output.#name == #default_expr }
                     }
                     _ => quote! { false },
@@ -4469,7 +4611,7 @@ fn generate_model(
     // re-validators, batched together as one combined phase, same as
     // validate above.
     let update_re_validate_phase = {
-        let items: Vec<AsyncPhaseItem> = build_re_validate_items(&update_relevant_flag_for)
+        let items: Vec<AsyncPhaseItem> = build_re_validate_items(&update_relevant_flag_for, false)
             .into_iter()
             .chain(update_virtual.re_validate_items.clone())
             .collect();
@@ -4622,7 +4764,7 @@ fn generate_model(
             let is_readonly = find_attr(&f.attrs, "readonly").is_some();
             let readonly_guard = if is_readonly {
                 let default_expr = attr_value_tokens(&f.attrs, "default")
-                    .unwrap_or_else(|| quote!(::core::default::Default::default()));
+                    .expect("dependent fields always have a default (checked during validation)");
                 let name = &f.name;
                 quote! { output.#name == #default_expr }
             } else {
@@ -4710,7 +4852,7 @@ fn generate_model(
                                     ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                                         input.clone(),
                                         updates.clone(),
-                                        output.clone(),
+                                        ::core::convert::Into::into(output.clone()),
                                         ::core::option::Option::Some(__changes.clone()),
                                         ::core::option::Option::Some(__original_output.clone()),
                                     );
@@ -4791,7 +4933,7 @@ fn generate_model(
                     ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                         input.clone(),
                         updates.clone(),
-                        output.clone(),
+                        ::core::convert::Into::into(output.clone()),
                         ::core::option::Option::Some(__changes.clone()),
                         ::core::option::Option::Some(__original_output.clone()),
                     );
@@ -4809,11 +4951,11 @@ fn generate_model(
             let name = &f.name;
             let setter = format_ident!("set_{}", name);
             let optional = matches!(f.field_type, FieldType::UpdatedAt { optional: true });
-            let resolver_expr = if let Some(resolver) = &timestamps_resolver {
-                quote! { ::ivo::__ivo_internals::run_value_resolver_sync(#resolver) }
-            } else {
-                quote! { ::core::default::Default::default() }
-            };
+            let resolver = timestamps_resolver
+                .as_ref()
+                .expect("timestamp fields always have a resolver (checked during validation)");
+            let resolver_expr =
+                quote! { ::ivo::__ivo_internals::run_value_resolver_sync(#resolver) };
             let stmt = if optional {
                 quote! {
                     let __timestamp_value = #resolver_expr;
@@ -5319,7 +5461,7 @@ fn generate_model(
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
                 __trigger_raw_input.clone(),
-                __trigger_output.clone(),
+                ::core::convert::Into::into(__trigger_output.clone()),
                 ::core::option::Option::None,
                 ::core::option::Option::None,
             );
@@ -5335,7 +5477,7 @@ fn generate_model(
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
                 __trigger_raw_input.clone(),
-                __trigger_output.clone(),
+                ::core::convert::Into::into(__trigger_output.clone()),
                 ::core::option::Option::None,
                 ::core::option::Option::None,
             );
@@ -5352,7 +5494,7 @@ fn generate_model(
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
                 __trigger_raw_input.clone(),
-                __trigger_output.clone(),
+                ::core::convert::Into::into(__trigger_output.clone()),
                 ::core::option::Option::Some(__trigger_changes.clone()),
                 ::core::option::Option::Some(__original_output.clone()),
             );
@@ -5368,7 +5510,7 @@ fn generate_model(
             let ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 __trigger_input.clone(),
                 __trigger_raw_input.clone(),
-                __trigger_output.clone(),
+                ::core::convert::Into::into(__trigger_output.clone()),
                 ::core::option::Option::Some(__trigger_changes.clone()),
                 ::core::option::Option::Some(__original_output.clone()),
             );
@@ -5503,7 +5645,7 @@ fn generate_model(
             let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                 input.clone(),
                 updates.clone(),
-                output.clone(),
+                ::core::convert::Into::into(output.clone()),
                 ::core::option::Option::Some(__changes.clone()),
                 ::core::option::Option::Some(__original_output.clone()),
             );
@@ -5622,6 +5764,19 @@ fn generate_model(
     } else {
         (quote! {}, quote! {})
     };
+    let create_initial_ctx = if create_needs_initial_ctx {
+        quote! {
+            let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                input.clone(),
+                __original_input.clone(),
+                ::core::convert::Into::into(output.clone()),
+                ::core::option::Option::None,
+                ::core::option::Option::None,
+            );
+        }
+    } else {
+        quote! {}
+    };
 
     quote! {
         pub struct #model_type_name;
@@ -5644,16 +5799,14 @@ fn generate_model(
                 let mut input: #partial_input_name = input.into();
                 let __original_input = input.clone();
                 let mut errors: ::ivo::__ivo_internals::IvoErrorPayload<#metadata_ty> = ::std::collections::HashMap::new();
-                let mut output: #output_name = ::core::default::Default::default();
-                let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    __original_input.clone(),
-                    output.clone(),
-                    ::core::option::Option::None,
-                    ::core::option::Option::None,
-                );
+                // Built up field by field as the pipeline runs, then converted
+                // into the full output once every field has been set.
+                let mut output: #partial_output_name = ::core::default::Default::default();
+                #create_initial_ctx
 
                 #create_ignore_phase
+
+                #create_seed_phase
 
                 #create_required_phase
 
@@ -5667,10 +5820,12 @@ fn generate_model(
 
                 #create_virtual_sanitize_phase
 
+                #create_dependent_defaults_phase
+
                 let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     __original_input.clone(),
-                    output.clone(),
+                    ::core::convert::Into::into(output.clone()),
                     ::core::option::Option::None,
                     ::core::option::Option::None,
                 );
@@ -5680,6 +5835,8 @@ fn generate_model(
                 #create_constants_phase
 
                 #create_timestamps_phase
+
+                let output: #output_name = output.into();
 
                 let __return_opts = (*#create_options_read).clone();
                 #create_success_let
@@ -5703,7 +5860,7 @@ fn generate_model(
                 let mut ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     updates.clone(),
-                    output.clone(),
+                    ::core::convert::Into::into(output.clone()),
                     ::core::option::Option::Some(__changes.clone()),
                     ::core::option::Option::Some(__original_output.clone()),
                 );
@@ -5731,7 +5888,7 @@ fn generate_model(
                 ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
                     input.clone(),
                     updates.clone(),
-                    output.clone(),
+                    ::core::convert::Into::into(output.clone()),
                     ::core::option::Option::Some(__changes.clone()),
                     ::core::option::Option::Some(__original_output.clone()),
                 );
@@ -6391,7 +6548,7 @@ mod tests {
                         #[depends_on("first_name", "last_name")]
                         #[default(String::from(""))]
                         #[resolve(async |ctx, _opts| {
-                            format!("{} {}", ctx.values().first_name, ctx.values().last_name)
+                            format!("{} {}", ctx.values().first_name.clone().unwrap(), ctx.values().last_name.clone().unwrap())
                         })]
                         pub full_name: String,
                     }

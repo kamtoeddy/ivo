@@ -20,9 +20,9 @@ mod data_schema {
     struct Fields {
         #[depends_on("lax")]
         #[default(DEFAULT_DEPENDENT)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: dependent = {}", data.dependent);
@@ -31,9 +31,9 @@ mod data_schema {
 
         #[depends_on("dependent")]
         #[default(DEFAULT_DEPENDENT)]
-        #[resolve(|ctx, _| {ctx.values().dependent + 10})]
+        #[resolve(|ctx, _| {ctx.values().dependent.unwrap() + 10})]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: dependent_1 = {}", ctx.values().dependent_1);
+            println!("\n[on_success]: dependent_1 = {}", ctx.values().dependent_1.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: dependent_1 = {}", data.dependent_1);
@@ -42,7 +42,7 @@ mod data_schema {
 
         #[lax(String::from(DEFAULT_LAX))]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: lax = {}", ctx.values().lax);
+            println!("\n[on_success]: lax = {}", ctx.values().lax.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: lax = {}", data.lax);
@@ -51,7 +51,7 @@ mod data_schema {
 
         #[lax(DEFAULT_LAX.to_string())]
         #[on_success(async |ctx, _| {
-            println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1);
+            println!("\n[on_success]: lax_1 = {}", ctx.values().lax_1.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: lax_1 = {}", data.lax_1);

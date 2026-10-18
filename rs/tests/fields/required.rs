@@ -3097,7 +3097,7 @@ mod async_re_validator_pass_through_schema {
 mod sync_ignore_update_schema {
     struct Fields {
         #[required]
-        #[ignore_update(|ctx, _| ctx.values().lax == "ignore_required_for_update")]
+        #[ignore_update(|ctx, _| ctx.values().lax.clone().unwrap() == "ignore_required_for_update")]
         #[validate(|v, _, _| Ok(Some(v)))]
         pub required: i32,
 
@@ -3110,7 +3110,7 @@ mod sync_ignore_update_schema {
 mod async_ignore_update_schema {
     struct Fields {
         #[required]
-        #[ignore_update(async |ctx, _| ctx.values().lax == "ignore_required_for_update")]
+        #[ignore_update(async |ctx, _| ctx.values().lax.clone().unwrap() == "ignore_required_for_update")]
         #[validate(async |v, _, _| Ok(Some(v)))]
         pub required: i32,
 
@@ -3497,7 +3497,7 @@ mod sync_on_success_update_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[required]: on_success triggered with value: {}",
-                ctx.values().required.as_str()
+                ctx.values().required.as_deref().unwrap()
             );
         })]
         pub required: String,
@@ -3528,7 +3528,7 @@ mod async_on_success_update_schema {
         #[on_success(async |ctx, _| {
             panic!(
                 "[required]: on_success triggered with value: {}",
-                ctx.values().required.as_str()
+                ctx.values().required.as_deref().unwrap()
             );
         })]
         pub required: String,
@@ -3584,7 +3584,7 @@ mod sync_post_validation_schema {
                 }
             }
 
-            if errors.is_empty() && ctx.values().required_1 == REQUIRED_1_PRE_VALIDATION_FAIL {
+            if errors.is_empty() && ctx.values().required_1.clone().unwrap() == REQUIRED_1_PRE_VALIDATION_FAIL {
                 errors.set_required_1(REQUIRED_1_PRE_VALIDATION_FAIL, None);
             }
 
@@ -3666,7 +3666,7 @@ mod async_post_validation_schema {
                 }
             }
 
-            if errors.is_empty() && ctx.values().required_1 == REQUIRED_1_PRE_VALIDATION_FAIL {
+            if errors.is_empty() && ctx.values().required_1.clone().unwrap() == REQUIRED_1_PRE_VALIDATION_FAIL {
                 errors.set_required_1(REQUIRED_1_PRE_VALIDATION_FAIL, None);
             }
 
@@ -3828,7 +3828,7 @@ mod sync_on_success_update_ignored_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[required]: on_success triggered with value: {}",
-                ctx.values().required.as_str()
+                ctx.values().required.as_deref().unwrap()
             );
         })]
         pub required: String,
@@ -3860,7 +3860,7 @@ mod async_on_success_update_ignored_schema {
         #[on_success(async |ctx, _| {
             panic!(
                 "[required]: on_success triggered with value: {}",
-                ctx.values().required.as_str()
+                ctx.values().required.as_deref().unwrap()
             );
         })]
         pub required: String,
@@ -3892,7 +3892,7 @@ mod sync_on_success_update_readonly_schema {
         #[on_success(|ctx, _| {
             panic!(
                 "[required]: on_success triggered with value: {}",
-                ctx.values().required.as_str()
+                ctx.values().required.as_deref().unwrap()
             );
         })]
         pub required: String,
@@ -3924,7 +3924,7 @@ mod async_on_success_update_readonly_schema {
         #[on_success(async |ctx, _| {
             panic!(
                 "[required]: on_success triggered with value: {}",
-                ctx.values().required.as_str()
+                ctx.values().required.as_deref().unwrap()
             );
         })]
         pub required: String,

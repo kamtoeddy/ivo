@@ -120,7 +120,7 @@ mod data_schema {
     struct Fields {
         #[lax(crate::DEFAULT_LAX_VALUE.to_string())]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: lax = {}", ctx.values().lax);
+            println!("\n[on_success]: lax = {}", ctx.values().lax.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: lax = {}", data.lax);
@@ -139,7 +139,7 @@ mod data_schema {
         #[lax(crate::DEFAULT_USERNAME.to_string())]
         #[ignore_update]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);

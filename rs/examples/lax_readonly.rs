@@ -75,7 +75,7 @@ mod data_schema {
         #[lax(crate::DEFAULT_USERNAME.to_string())]
         #[readonly]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: username = {}", ctx.values().username);
+            println!("\n[on_success]: username = {}", ctx.values().username.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: username = {}", data.username);

@@ -89,10 +89,10 @@ mod data_schema {
             ctx.input()
                 .dependent
                 .clone()
-                .unwrap_or_else(|| ctx.values().dependent.clone())
+                .unwrap_or_else(|| ctx.values().dependent.clone().unwrap())
         })]
         #[on_success(|ctx, _| {
-            println!("\n[on_success]: dependent = {}", ctx.values().dependent);
+            println!("\n[on_success]: dependent = {}", ctx.values().dependent.clone().unwrap());
         })]
         #[on_delete(|data, _| {
             println!("\n[on_delete]: dependent = {}", data.dependent);

@@ -206,7 +206,7 @@ mod comment_schema {
                 return Ok(None);
             }
 
-            let post_id = ctx.values().post;
+            let post_id = ctx.values().post.unwrap();
 
             let guard = o.read().await;
 

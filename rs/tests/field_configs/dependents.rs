@@ -411,7 +411,7 @@ mod async_dynamic_default_dependent_schema {
     struct Fields {
         #[depends_on("lax")]
         #[default(async |_, _| 1)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
 
         #[lax(String::from("default"))]
@@ -436,7 +436,7 @@ mod async_resolve_dependent_schema {
     struct Fields {
         #[depends_on("lax")]
         #[default(1)]
-        #[resolve(async |ctx, _| ctx.values().dependent + 1)]
+        #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
 
         #[lax(String::from("default"))]
@@ -530,7 +530,7 @@ mod async_parallel_dependents_schema {
         #[default(0)]
         #[resolve(async |ctx, _| {
             rendezvous().await;
-            ctx.values().name.len() as i32
+            ctx.values().name.as_ref().unwrap().len() as i32
         })]
         pub dependent_a: i32,
 
@@ -538,7 +538,7 @@ mod async_parallel_dependents_schema {
         #[default(0)]
         #[resolve(async |ctx, _| {
             rendezvous().await;
-            ctx.values().name.len() as i32 + 1
+            ctx.values().name.as_ref().unwrap().len() as i32 + 1
         })]
         pub dependent_b: i32,
     }
@@ -604,12 +604,12 @@ mod fn_path_default_dependent_schema {
     struct Fields {
         #[depends_on("lax")]
         #[default(super::next_default)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
 
         #[depends_on("lax")]
         #[default(Vec::new)]
-        #[resolve(|ctx, _| vec![ctx.values().lax.clone()])]
+        #[resolve(|ctx, _| vec![ctx.values().lax.clone().unwrap()])]
         pub labels: Vec<String>,
 
         #[lax(String::from("default"))]
@@ -634,7 +634,7 @@ mod value_path_default_dependent_schema {
     struct Fields {
         #[depends_on("lax")]
         #[default(super::STATIC_DEFAULT)]
-        #[resolve(|ctx, _| ctx.values().dependent + 1)]
+        #[resolve(|ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
 
         #[depends_on("lax")]
