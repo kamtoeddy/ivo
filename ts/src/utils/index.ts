@@ -39,11 +39,81 @@ export {
 };
 
 function deepCloneValue<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value;
+
+  try {
+    return clonePlain(value, new Map());
+  } catch (error) {
+    if (error !== notPlainData) throw error;
+  }
+
   try {
     return structuredClone(value);
   } catch {
     return JSON.parse(JSON.stringify(value));
   }
+}
+
+const notPlainData = Symbol('not plain data');
+
+/**
+ * `structuredClone` for plain data (primitives, Dates, plain arrays and
+ * objects), without its serialization overhead. Like `structuredClone`, it
+ * keeps shared references and cycles shared. Anything else throws
+ * `notPlainData`, so the caller falls back to `structuredClone`.
+ */
+function clonePlain<T>(value: T, seen: Map<object, unknown>): T {
+  if (value === null || typeof value !== 'object') {
+    if (typeof value === 'function' || typeof value === 'symbol')
+      throw notPlainData;
+
+    return value;
+  }
+
+  const existing = seen.get(value);
+  if (existing !== undefined) return existing as T;
+
+  if (value instanceof Date) {
+    const clone = new Date(value.getTime());
+    seen.set(value, clone);
+    return clone as T;
+  }
+
+  if (Array.isArray(value)) {
+    if (Object.getPrototypeOf(value) !== Array.prototype) throw notPlainData;
+
+    // arrays of primitives only: `structuredClone` copies those fastest
+    // (and exactly, holes and extra properties included)
+    if (value.every((item) => item === null || typeof item !== 'object')) {
+      let clone: unknown[];
+
+      try {
+        clone = structuredClone(value);
+      } catch {
+        throw notPlainData;
+      }
+
+      seen.set(value, clone);
+      return clone as T;
+    }
+
+    if (Object.keys(value).length !== value.length) throw notPlainData;
+
+    const clone: unknown[] = new Array(value.length);
+    seen.set(value, clone);
+    for (let i = 0; i < value.length; i++)
+      clone[i] = clonePlain(value[i], seen);
+    return clone as T;
+  }
+
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) throw notPlainData;
+
+  const clone: Record<string, unknown> = {};
+  seen.set(value, clone);
+  for (const key of Object.keys(value))
+    clone[key] = clonePlain((value as Record<string, unknown>)[key], seen);
+  return clone as T;
 }
 
 // function cloneWithMethods<T extends object | null>(data: T): T {
@@ -260,21 +330,22 @@ function hasAnyOf(object: unknown, props: string[]): boolean {
  */
 
 function isEqual<T>(a: unknown, b: T, depth = 1): a is T {
-  if (a instanceof Date && b instanceof Date)
-    return a.getTime() === b.getTime();
+  if (a instanceof Date || b instanceof Date)
+    return (
+      a instanceof Date && b instanceof Date && a.getTime() === b.getTime()
+    );
 
-  if (!a || !b || (typeof a !== 'object' && typeof b !== 'object'))
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object')
     return a === b;
 
-  let keysOfA = Object.keys(a),
-    keysOfB = Object.keys(b as never);
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
 
-  if (keysOfA.length !== keysOfB.length) return false;
+  const keysOfA = Object.keys(a);
 
-  keysOfA = sort(keysOfA);
-  keysOfB = sort(keysOfB);
+  // same key sets: same size, and every key of `a` is one of `b`'s
+  if (keysOfA.length !== Object.keys(b as never).length) return false;
 
-  if (JSON.stringify(keysOfA) !== JSON.stringify(keysOfB)) return false;
+  for (const key of keysOfA) if (!Object.hasOwn(b as never, key)) return false;
 
   if (depth > 0 && keysOfA.length)
     return keysOfA.every((key) =>
@@ -334,24 +405,37 @@ function sortKeys<T extends ObjectType>(object: T): T {
   }, {} as T);
 }
 
+/**
+ * the items whose serialization hasn't been seen yet, in order; the items
+ * themselves are kept (a JSON round-trip would turn Dates into strings and
+ * drop class instances' prototypes)
+ */
 function getUnique<T>(list: T[]) {
-  let _list = list.map((dt) => _serialize(dt));
+  const seen = new Set<unknown>();
+  const unique: T[] = [];
 
-  _list = Array.from(new Set(_list));
+  for (const dt of list) {
+    const key = _serialize(dt);
 
-  return _list.map((dt) => _serialize(dt, true));
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    unique.push(dt);
+  }
+
+  return unique;
 }
 
 function getUniqueBy<T>(list: T[], key?: string) {
   if (!key) return getUnique(list);
 
-  const obj: ObjectType = {};
+  // a Map keeps keys of different types apart (`1` vs `"1"`) and keeps the
+  // order in which each key was first seen; the last item for a key wins
+  const byKey = new Map<unknown, T>();
 
-  list.forEach((dt) => {
-    obj[_getDeepValue(dt as ObjectType, key) as never] = dt;
-  });
+  for (const dt of list) byKey.set(_getDeepValue(dt as ObjectType, key), dt);
 
-  return Object.values(obj) as T[];
+  return Array.from(byKey.values());
 }
 
 function _getDeepValue(data: ObjectType, key: string): unknown {

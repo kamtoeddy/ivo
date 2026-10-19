@@ -148,6 +148,23 @@ export const commonUtilTests = ({
       });
     });
 
+    describe('isEqual with values of different kinds', () => {
+      it('should not treat values of different kinds as equal', () => {
+        expect(isEqual(5, {})).toBe(false);
+        expect(isEqual({}, 5)).toBe(false);
+        expect(isEqual('', {})).toBe(false);
+        expect(isEqual(new Date(0), {})).toBe(false);
+        expect(isEqual({}, new Date(0))).toBe(false);
+        expect(isEqual([], {})).toBe(false);
+        expect(isEqual({}, [])).toBe(false);
+
+        expect(isEqual(new Date(0), new Date(0))).toBe(true);
+        expect(isEqual(new Date(0), new Date(1))).toBe(false);
+        expect(isEqual([], [])).toBe(true);
+        expect(isEqual({}, {})).toBe(true);
+      });
+    });
+
     describe('getUnique', () => {
       it('should return an array of unique values', () => {
         const values = [
@@ -186,6 +203,22 @@ export const commonUtilTests = ({
 
         expect(getUniqueBy(values, 'name').length).toBe(2);
         expect(getUniqueBy(values, 'age').length).toBe(1);
+      });
+
+      it('should keep keys of different types apart and keep first-seen order', () => {
+        const values = [
+          { id: 'b', v: 1 },
+          { id: 1, v: 2 },
+          { id: '1', v: 3 },
+          { id: 'b', v: 4 },
+        ];
+
+        // the last item for a key wins, at the position its key was first seen
+        expect(getUniqueBy(values, 'id')).toEqual([
+          { id: 'b', v: 4 },
+          { id: 1, v: 2 },
+          { id: '1', v: 3 },
+        ]);
       });
     });
 

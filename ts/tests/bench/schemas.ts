@@ -1,4 +1,4 @@
-import { Schema } from '../../src';
+import { makeStringValidator, Schema, validateEmail } from '../../src';
 
 export interface SimpleUser {
   id: string;
@@ -146,3 +146,125 @@ export function userSchema() {
       .field(b.required('age').validate(okNumber)),
   ).getModel();
 }
+
+// Realistic schema (the TS counterpart of the Rust `main_demo`): a constant
+// id resolver, nullable contact fields with validators, a required username
+// with an async availability check (reValidate), a virtual password with a
+// sanitizer feeding a dependent, dependents of the username, a readonly lax
+// field, timestamps, a grouped required rule, post-validation and an
+// onSuccess handler.
+
+export interface RealisticUserInput {
+  email?: string | null;
+  phone?: string | null;
+  username: string;
+  password: string;
+  role?: string;
+}
+
+export interface RealisticUser {
+  id: number;
+  email: string | null;
+  phone: string | null;
+  username: string;
+  slug: string;
+  usernameChanges: number;
+  passwordHash: string;
+  role: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const takenUsernames = new Set(['taken', 'admin', 'root']);
+
+const validateUsername = makeStringValidator({ min: 3, max: 20 });
+const validatePassword = makeStringValidator({ min: 8, max: 64 });
+
+export function realisticUserSchema() {
+  let nextId = 0;
+
+  return new Schema<RealisticUserInput, RealisticUser>(
+    (b: any) =>
+      b
+        .field(b.constant('id', () => ++nextId))
+        .field(
+          b
+            .lax('email', null)
+            .validate((v: unknown) =>
+              v === null ? { valid: true, validated: null } : validateEmail(v),
+            ),
+        )
+        .field(
+          b
+            .lax('phone', null)
+            .validate((v: unknown) =>
+              v === null || (typeof v === 'string' && v.length >= 7)
+                ? { valid: true, validated: v }
+                : { valid: false, reason: 'Invalid phone number' },
+            ),
+        )
+        .field(
+          b
+            .required('username')
+            .validate(validateUsername)
+            .reValidate(async (v: string) =>
+              takenUsernames.has(v)
+                ? { valid: false, reason: `"${v}" is already taken` }
+                : { valid: true },
+            ),
+        )
+        .field(
+          b
+            .virtual('password')
+            .validate(validatePassword)
+            .sanitize(({ input }: any) => `hashed:${input.password}`),
+        )
+        .field(
+          b
+            .dependent('passwordHash', 'password')
+            .default('')
+            .resolve(({ input }: any) => input.password),
+        )
+        .field(
+          b
+            .dependent('slug', 'username')
+            .default('')
+            .resolve(({ values }: any) => values.username.toLowerCase()),
+        )
+        .field(
+          b
+            .dependent('usernameChanges', 'username')
+            .default(0)
+            .resolve(({ isUpdate, values }: any) =>
+              isUpdate ? values.usernameChanges + 1 : 0,
+            ),
+        )
+        .field(b.lax('role', 'member').readonly()),
+    {
+      timestamps: true,
+      required: {
+        fields: ['email', 'phone'],
+        // only on creation: an update only carries the fields it changes
+        handler: ({ input, isUpdate }: any) =>
+          !isUpdate && input.email == null && input.phone == null
+            ? { email: 'provide an email or a phone number' }
+            : undefined,
+      },
+      postValidate: {
+        fields: ['username', 'password'],
+        validator: ({ input }: any) =>
+          input.password?.includes(input.username)
+            ? { password: 'must not contain the username' }
+            : undefined,
+      },
+      onSuccess: () => {},
+    } as any,
+  ).getModel();
+}
+
+export const realisticUserInput: RealisticUserInput = {
+  email: 'ada@example.com',
+  phone: '123 4567 890',
+  username: 'Ada_L',
+  password: 'correct horse battery',
+};

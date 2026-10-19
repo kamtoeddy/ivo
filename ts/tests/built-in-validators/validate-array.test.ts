@@ -218,3 +218,30 @@ describe('makeArrayValidator', () => {
     expect(res).toEqual({ valid: true, validated: [-20, 0, 1, 7, 18] });
   });
 });
+
+describe('makeArrayValidator with async filters', () => {
+  it('should await async filter and postModFilter verdicts', async () => {
+    const validate = makeArrayValidator<number, number, number>({
+      filter: async (value) => (value as number) > 1,
+      modifier: (value) => value * 10,
+      postModFilter: async (value: number) => value < 30,
+    });
+
+    expect(await validate([1, 2, 3])).toEqual({ valid: true, validated: [20] });
+  });
+});
+
+describe('makeArrayValidator unique', () => {
+  it('should keep the first of each duplicate as it is (no JSON round-trip)', async () => {
+    const first = new Date(0);
+    const validate = makeArrayValidator({ filter: () => true, unique: true });
+
+    const res = await validate([first, new Date(0), new Date(1)]);
+
+    expect(res.valid).toBe(true);
+    const validated = (res as { validated: unknown[] }).validated;
+    expect(validated).toHaveLength(2);
+    expect(validated[0]).toBe(first);
+    expect(validated[1]).toBeInstanceOf(Date);
+  });
+});

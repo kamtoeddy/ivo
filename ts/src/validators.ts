@@ -1,10 +1,4 @@
-import {
-  deepCloneValue,
-  getUniqueBy,
-  isNullOrUndefined,
-  isOneOf,
-  makeResponse,
-} from './utils';
+import { getUniqueBy, isNullOrUndefined, isOneOf, makeResponse } from './utils';
 import type { ArrayOfMinSizeTwo, ValidationResponse, XOR } from './utils/types';
 
 export type {
@@ -88,11 +82,12 @@ function makeArrayValidator<
     if (!Array.isArray(value))
       return makeResponse({ reason: 'Expected an array', valid: false });
 
-    let _array = await Promise.all(value.filter(filter));
+    let _array = await Promise.all(await _filterBy(value, filter as never));
 
     if (modifier) _array = await Promise.all(_array.map(modifier));
 
-    if (postModFilter) _array = await Promise.all(_array.filter(postModFilter));
+    if (postModFilter)
+      _array = await Promise.all(await _filterBy(_array, postModFilter));
 
     if (unique && _array.length)
       _array = uniqueKey ? getUniqueBy(_array, uniqueKey) : getUniqueBy(_array);
@@ -112,11 +107,22 @@ function makeArrayValidator<
         // @ts-expect-error lol
         typeof sort === 'boolean' ? (a, b) => (a < b ? order : -order) : sort;
 
-      _array = deepCloneValue(_array).sort(sorter);
+      // `_array` is always a fresh array by now, so it can be sorted in place
+      _array.sort(sorter);
     }
 
     return makeResponse({ valid: true, validated: _array });
   };
+}
+
+/** keeps the items `predicate` (sync or async) accepts */
+async function _filterBy<T>(
+  list: T[],
+  predicate: (value: T, index: number, array: T[]) => unknown,
+): Promise<T[]> {
+  const verdicts = await Promise.all(list.map(predicate));
+
+  return list.filter((_, index) => verdicts[index]);
 }
 
 const _getArrayOrder = (sortOrder: unknown) => {
@@ -143,47 +149,36 @@ const validateCreditCard = (value: unknown) => {
 
   if (_value.length !== 16) return invalidCardResponse;
 
-  const singleDigits = _getSingleDigits(_value);
+  // Luhn check in one pass: every other digit (from the first) is doubled,
+  // and a doubled value's digits are summed (12 -> 1 + 2, i.e. 12 - 9)
+  let sum = 0;
 
-  if (singleDigits.length !== 16) return invalidCardResponse;
+  for (let i = 0; i < 15; i++) {
+    const digit = _value.charCodeAt(i) - 48;
 
-  if (!_isCheckSumOk(singleDigits)) return invalidCardResponse;
+    if (digit < 0 || digit > 9) return invalidCardResponse;
+
+    const v = i % 2 === 0 ? digit * 2 : digit;
+
+    sum += v > 9 ? v - 9 : v;
+  }
+
+  const controlNumber = _value.charCodeAt(15) - 48;
+
+  // `% 10` again so a sum that's already a multiple of 10 expects a control
+  // number of 0, not 10
+  if (
+    controlNumber < 0 ||
+    controlNumber > 9 ||
+    (10 - (sum % 10)) % 10 !== controlNumber
+  )
+    return invalidCardResponse;
 
   const validated = typeof value === 'number' ? value : _value;
 
   return makeResponse<string | number>({ valid: true, validated });
 };
 
-function _isEven(num: number) {
-  return num % 2 === 0;
-}
-
-function _getSingleDigits(value: string) {
-  return value
-    .split('')
-    .filter((v) => !isNaN(Number.parseInt(v, 10)))
-    .map(Number);
-}
-
-function _getCheckSum(values: number[]) {
-  const separated = _getSingleDigits(values.map((v) => String(v)).join(''));
-
-  return separated.map(Number).reduce((prev, next) => {
-    prev += next;
-    return prev;
-  });
-}
-
-function _isCheckSumOk(values: number[]) {
-  const controlNumber = values[15];
-  const toCheck = values.slice(0, 15).map((v, i) => (_isEven(i) ? 2 * v : v));
-
-  // `% 10` again so a sum that's already a multiple of 10 expects a control
-  // number of 0, not 10
-  return (10 - (_getCheckSum(toCheck) % 10)) % 10 === controlNumber;
-}
-
-// Anchored so the whole (trimmed) value must be an email, not just contain one.
 const EMAIL_REGEXP =
   // biome-ignore lint/suspicious/noControlCharactersInRegex: lol
   /^(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])$/;
@@ -285,7 +280,10 @@ function makeNumberValidator<const T extends number | unknown = number>({
     if (nullable && isOneOf(value, [null, undefined]))
       return makeResponse({ valid: true, validated: null as never as T });
 
-    if (!['number', 'bigint'].includes(typeof value) || isNaN(value as never))
+    if (
+      !['number', 'bigint'].includes(typeof value) ||
+      (typeof value === 'number' && isNaN(value))
+    )
       return makeResponse({ reason: 'Expected a number', valid: false });
 
     const _value = Number(value);

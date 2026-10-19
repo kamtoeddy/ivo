@@ -181,3 +181,8 @@ it('should respect nullable if provided', () => {
     expect(res).toEqual({ valid: true, validated });
   }
 });
+
+it('should accept bigint values instead of throwing', () => {
+  expect(makeNumberValidator()(10n)).toEqual({ valid: true, validated: 10 });
+  expect(makeNumberValidator({ max: 5 } as never)(10n).valid).toBe(false);
+});

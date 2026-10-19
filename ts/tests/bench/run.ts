@@ -1,3 +1,11 @@
+import { readFileSync, rmSync } from 'node:fs';
+import {
+  makeArrayValidator,
+  makeNumberValidator,
+  makeStringValidator,
+  validateCreditCard,
+  validateEmail,
+} from '../../src';
 import {
   allowListSchema,
   dependentChainSchema,
@@ -6,19 +14,24 @@ import {
   minimalSchema,
   optionsReaderSchema,
   readonlyHeavySchema,
+  realisticUserInput,
+  realisticUserSchema,
   userSchema,
   virtualHeavySchema,
   wideDependencySchema,
 } from './schemas';
 import {
   type BenchResult,
+  formatResult,
   measureMemory,
   measureThroughput,
   runSuite,
   saveResults,
 } from './utils';
 
-async function runThroughput(): Promise<BenchResult[]> {
+async function throughputBenchmarks(): Promise<
+  Array<() => Promise<BenchResult>>
+> {
   const benchmarks: Array<() => Promise<BenchResult>> = [];
 
   {
@@ -87,6 +100,11 @@ async function runThroughput(): Promise<BenchResult[]> {
     const Model = dependentChainSchema(10);
     benchmarks.push(() =>
       measureThroughput('dependent chain length 10', () =>
+        Model.create({ field_0: 5 }, {}),
+      ),
+    );
+    benchmarks.push(() =>
+      measureThroughput('dependent chain length 10 (defaults only)', () =>
         Model.create({}, {}),
       ),
     );
@@ -156,6 +174,87 @@ async function runThroughput(): Promise<BenchResult[]> {
   }
 
   {
+    const Model = realisticUserSchema();
+    const { data } = await Model.create(realisticUserInput, {});
+    const user = data!;
+    benchmarks.push(() =>
+      measureThroughput('realistic create (success)', async () => {
+        const { handleSuccess } = await Model.create(realisticUserInput, {});
+        await handleSuccess?.();
+      }),
+    );
+    benchmarks.push(() =>
+      measureThroughput('realistic create (username taken)', () =>
+        Model.create({ ...realisticUserInput, username: 'taken' }, {}),
+      ),
+    );
+    benchmarks.push(() =>
+      measureThroughput('realistic update (username + dependents)', () =>
+        Model.update(user, { username: 'Ada_Lovelace' }, {}),
+      ),
+    );
+    benchmarks.push(() =>
+      measureThroughput('realistic update (nothing to update)', () =>
+        Model.update(user, { username: user.username }, {}),
+      ),
+    );
+  }
+
+  {
+    const validateString = makeStringValidator({ min: 3, max: 50 });
+    const validateNumber = makeNumberValidator({ min: 0, max: 100 });
+    const people = Array.from({ length: 200 }, (_, i) => ({
+      id: i % 100,
+      name: `person_${i}`,
+    }));
+    const numbers = Array.from({ length: 200 }, (_, i) => (i * 7919) % 200);
+    const uniqueById = makeArrayValidator({
+      filter: () => true,
+      unique: true,
+      uniqueKey: 'id',
+    });
+    const uniqueObjects = makeArrayValidator({
+      filter: () => true,
+      unique: true,
+    });
+    const sorted = makeArrayValidator({ filter: () => true, sort: true });
+
+    benchmarks.push(() =>
+      measureThroughput('validator: string', () =>
+        validateString('hello world'),
+      ),
+    );
+    benchmarks.push(() =>
+      measureThroughput('validator: number', () => validateNumber(42)),
+    );
+    benchmarks.push(() =>
+      measureThroughput('validator: email', () =>
+        validateEmail('ada@example.com'),
+      ),
+    );
+    benchmarks.push(() =>
+      measureThroughput('validator: credit card', () =>
+        validateCreditCard('5420596721435293'),
+      ),
+    );
+    benchmarks.push(() =>
+      measureThroughput('validator: array unique by key (200 objects)', () =>
+        uniqueById(people),
+      ),
+    );
+    benchmarks.push(() =>
+      measureThroughput('validator: array unique (200 objects)', () =>
+        uniqueObjects(people),
+      ),
+    );
+    benchmarks.push(() =>
+      measureThroughput('validator: array sort (200 numbers)', () =>
+        sorted(numbers),
+      ),
+    );
+  }
+
+  {
     const Model = userSchema();
     const { data } = await Model.create(
       { name: 'Alice', email: 'alice@example.com', age: 30 },
@@ -188,7 +287,7 @@ async function runThroughput(): Promise<BenchResult[]> {
     );
   }
 
-  return runSuite('Throughput benchmarks', benchmarks);
+  return benchmarks;
 }
 
 async function runMemory(): Promise<BenchResult[]> {
@@ -237,7 +336,7 @@ async function runMemory(): Promise<BenchResult[]> {
           const { handleSuccess } = await Model.create(input, {});
           (globalThis as any).__retainedHandle = handleSuccess;
         },
-        { iterations: 100 },
+        { iterations: 10_000 },
       ),
     );
   }
@@ -268,26 +367,91 @@ async function runMemory(): Promise<BenchResult[]> {
     );
   }
 
+  {
+    const Model = realisticUserSchema();
+    benchmarks.push(() =>
+      measureMemory('realistic create retained memory', () =>
+        Model.create(realisticUserInput, {}),
+      ),
+    );
+  }
+
   return runSuite('Memory benchmarks', benchmarks);
 }
 
+/**
+ * Runs each throughput benchmark in its own process: every schema shares the
+ * same `ModelTool` code, so in one process the JIT state left by earlier
+ * benchmarks shifts later results (by up to ~50% between identical runs).
+ */
+async function runThroughput(): Promise<BenchResult[]> {
+  const count = (await throughputBenchmarks()).length;
+
+  console.log(`\n${'='.repeat(70)}`);
+  console.log('Throughput benchmarks (one process each)');
+  console.log('='.repeat(70));
+
+  const results: BenchResult[] = [];
+  for (let index = 0; index < count; index++) {
+    const [result] = runChild(['--suite=throughput', `--index=${index}`]);
+    results.push(result!);
+    console.log(formatResult(result!));
+  }
+
+  return results;
+}
+
+/** runs this script with `args` and returns the results it saved */
+function runChild(args: string[]): BenchResult[] {
+  const path = `tests/bench/results/.child-${process.pid}.json`;
+  const child = Bun.spawnSync(['bun', 'run', import.meta.path, ...args, path], {
+    stdout: 'inherit',
+    stderr: 'inherit',
+  });
+  if (!child.success) throw new Error(`benchmark child failed: ${args}`);
+
+  const { results } = JSON.parse(readFileSync(path, 'utf8'));
+  rmSync(path);
+
+  return results;
+}
+
 async function main() {
-  const outputPath = process.argv[2] ?? 'tests/bench/results/baseline.json';
+  const args = process.argv.slice(2);
+  const option = (name: string) =>
+    args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+  const suite = option('suite');
+  const outputPath =
+    args.find((a) => !a.startsWith('--')) ??
+    'tests/bench/results/baseline.json';
   const runName = outputPath.includes('/')
     ? outputPath.split('/').pop()!.replace('.json', '')
     : outputPath.replace('.json', '');
+  const save = (results: BenchResult[]) =>
+    saveResults(
+      {
+        name: runName,
+        date: new Date().toISOString(),
+        runtime: `Bun ${Bun.version}`,
+        results,
+      },
+      outputPath,
+    );
+
+  if (suite === 'throughput') {
+    const benchmarks = await throughputBenchmarks();
+    return save([await benchmarks[Number(option('index'))]!()]);
+  }
+
+  if (suite === 'memory') return save(await runMemory());
 
   const throughput = await runThroughput();
-  const memory = await runMemory();
 
-  const run = {
-    name: runName,
-    date: new Date().toISOString(),
-    runtime: `Bun ${Bun.version}`,
-    results: [...throughput, ...memory],
-  };
+  // The memory suite also runs in its own process, so no garbage left by
+  // other benchmarks can skew its heap measurements.
+  const memory = runChild(['--suite=memory']);
 
-  saveResults(run, outputPath);
+  save([...throughput, ...memory]);
   console.log(`\nResults saved to ${outputPath}`);
 }
 
