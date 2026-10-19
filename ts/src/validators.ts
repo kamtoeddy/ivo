@@ -223,6 +223,11 @@ type StringValidatorOptions<T extends string | unknown = string> = {
 } & XOR<
   { allow: AllowConfig<T> },
   {
+    /**
+     * escape `&`, `<`, `>`, `"` and `'` as HTML entities in the validated
+     * value (default: `true`). Length limits apply to the escaped text.
+     */
+    escapeHTML?: boolean;
     max?: number | ValueError;
     min?: number | ValueError;
     normalForm?: 'NFC' | 'NFD' | 'NFKC' | 'NFKD';
@@ -301,9 +306,28 @@ function makeNumberValidator<const T extends number | unknown = number>({
 const MAX_STRING_LENGTH = 255,
   MIN_STRING_LENGTH = 1;
 
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+const HTML_SPECIAL_CHARS = /[&<>"']/;
+const HTML_SPECIAL_CHARS_GLOBAL = /[&<>"']/g;
+
+function _escapeHTML(value: string) {
+  // most strings have nothing to escape: skip building a copy for them
+  return HTML_SPECIAL_CHARS.test(value)
+    ? value.replace(HTML_SPECIAL_CHARS_GLOBAL, (char) => HTML_ESCAPES[char]!)
+    : value;
+}
+
 function makeStringValidator<const T extends string | unknown = string>({
   exclude,
   allow,
+  escapeHTML = true,
   max = MAX_STRING_LENGTH,
   min = MIN_STRING_LENGTH,
   normalForm,
@@ -368,6 +392,8 @@ function makeStringValidator<const T extends string | unknown = string>({
     if (normalize) _value = _value.normalize(normalForm);
 
     if (trim) _value = _value.trim();
+
+    if (escapeHTML) _value = _escapeHTML(_value);
 
     if (hasMinLength && _value.length < minLength!)
       return makeResponse({ valid: false, reason: minError, metadata });

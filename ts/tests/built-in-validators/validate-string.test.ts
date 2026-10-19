@@ -267,4 +267,63 @@ describe('makeStringValidator', () => {
       });
     }
   });
+
+  describe('escapeHTML', () => {
+    it('should escape html characters by default', () => {
+      const validate = makeStringValidator();
+
+      expect(validate('<b>Tom & "Jerry"</b> it\'s')).toEqual({
+        valid: true,
+        validated: '&lt;b&gt;Tom &amp; &quot;Jerry&quot;&lt;/b&gt; it&#39;s',
+      });
+      expect(validate('<script>alert(1)</script>')).toEqual({
+        valid: true,
+        validated: '&lt;script&gt;alert(1)&lt;/script&gt;',
+      });
+    });
+
+    it('should leave strings without html characters as they are', () => {
+      expect(makeStringValidator()('plain text / 100%')).toEqual({
+        valid: true,
+        validated: 'plain text / 100%',
+      });
+    });
+
+    it('should not escape when escapeHTML is false', () => {
+      const value = '<b>Tom & Jerry</b>';
+
+      expect(makeStringValidator({ escapeHTML: false })(value)).toEqual({
+        valid: true,
+        validated: value,
+      });
+    });
+
+    it('should apply length limits to the escaped text', () => {
+      const validate = makeStringValidator({ max: 5 });
+
+      expect(validate('<')).toEqual({ valid: true, validated: '&lt;' });
+      expect(validate('<&')).toEqual({
+        valid: false,
+        reason: 'too_long',
+        metadata: { max: 5, min: 1 },
+      });
+      expect(makeStringValidator({ escapeHTML: false, max: 5 })('<&')).toEqual({
+        valid: true,
+        validated: '<&',
+      });
+    });
+
+    it('should escape after trimming', () => {
+      expect(makeStringValidator({ trim: true })('  <a>  ')).toEqual({
+        valid: true,
+        validated: '&lt;a&gt;',
+      });
+    });
+
+    it('should not escape allowed values', () => {
+      const validate = makeStringValidator({ allow: ['<a>', '<b>'] });
+
+      expect(validate('<a>')).toEqual({ valid: true, validated: '<a>' });
+    });
+  });
 });
