@@ -132,6 +132,12 @@ worst 6.1%. Raw results: `tests/bench/results/baseline-v2-run{1,2}.json` (gitign
   `sort`: sorts the already-fresh array in place, 13.2 → 11.7 µs. **Behaviour change:** `unique`
   now returns the original items (not `JSON.parse`d copies, so `Date`s stay `Date`s).
 
+- [x] **P10** `ModelTool`'s arrow-function properties → prototype methods, so `new ModelTool()` stops
+  allocating 5 closures per call. `_updateCtxOptions` is handed out detached as `ctx.updateOptions`,
+  so it stays a bound function, created lazily once per call (same identity across a call's ctxs).
+  Two runs vs P9: model benchmarks 1–7% faster (user create / 50 sync required ~20%), validators
+  (untouched control) within ±2%.
+
 ## Log
 
 - **2026-10-19 · Phase 1 done.** B1–B6 fixed, each with a regression test (`tests/utils/index.ts`,
@@ -152,3 +158,5 @@ worst 6.1%. Raw results: `tests/bench/results/baseline-v2-run{1,2}.json` (gitign
   clean (≤ 20 B/op everywhere); the `handleSuccess` bench now runs 10k iterations instead of 100,
   whose ~28 KB totals had read as 230–375 B/op of noise since P3. 668 tests pass; typecheck and
   Biome clean.
+- **2026-10-19 · P10 done.** Arrow properties → methods (see P10). 668 tests pass; typecheck and
+  Biome clean; leak check unchanged (≤ 19 B/op).

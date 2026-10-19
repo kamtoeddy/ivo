@@ -621,19 +621,35 @@ class ModelTool<
     });
   }
 
-  private _setCxtInput = (updates: Partial<I>) => (this._ctxInput = updates);
-  private _setCxtValues = (updates: Partial<O>) => (this._ctxValues = updates);
+  private _setCxtInput(updates: Partial<I>) {
+    this._ctxInput = updates;
+  }
 
-  private _updateCxtInput = (updates: Partial<I>) => {
+  private _setCxtValues(updates: Partial<O>) {
+    this._ctxValues = updates;
+  }
+
+  private _updateCxtInput(updates: Partial<I>) {
     Object.assign(this.ctxInput, updates);
-  };
+  }
 
-  private _updateCxtValues = (updates: Partial<O>) => {
+  private _updateCxtValues(updates: Partial<O>) {
     Object.assign(this.ctxValues, updates);
-  };
+  }
 
-  private _updateCtxOptions = (options: Partial<CtxOptions>) =>
-    Object.assign(this._ctxOptions, options);
+  private _boundUpdateCtxOptions:
+    | ((options: Partial<CtxOptions>) => CtxOptions)
+    | null = null;
+
+  // handed out detached as `ctx.updateOptions`, so it's bound -- lazily, and
+  // once per call, so every ctx of a call exposes the same function
+  private get _updateCtxOptions() {
+    if (!this._boundUpdateCtxOptions)
+      this._boundUpdateCtxOptions = (options: Partial<CtxOptions>) =>
+        Object.assign(this._ctxOptions, options);
+
+    return this._boundUpdateCtxOptions;
+  }
 
   private _cleanInput(
     rawInput: Partial<I>,
