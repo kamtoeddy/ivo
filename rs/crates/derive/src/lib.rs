@@ -5170,8 +5170,10 @@ fn generate_model(
     let create_success_items: Vec<AsyncPhaseItem> = create_success_handlers
         .iter()
         .map(|(f, handler)| {
-            let annotated =
-                type_annotate_handler(handler.clone(), &[hook_ctx_ty.clone(), hook_opts_ty.clone()]);
+            let annotated = type_annotate_handler(
+                handler.clone(),
+                &[hook_ctx_ty.clone(), hook_opts_ty.clone()],
+            );
             let is_async = is_async_handler(handler);
             let call = if is_async {
                 quote! { ::ivo::__ivo_internals::run_hook(&ctx, &_ctx_options, #annotated).await; }
