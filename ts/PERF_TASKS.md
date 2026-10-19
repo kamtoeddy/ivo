@@ -138,6 +138,15 @@ worst 6.1%. Raw results: `tests/bench/results/baseline-v2-run{1,2}.json` (gitign
   Two runs vs P9: model benchmarks 1–7% faster (user create / 50 sync required ~20%), validators
   (untouched control) within ±2%.
 
+- [x] **P11** handler contexts are class instances (`src/model/ctx.ts`): the snapshot lives in
+  private fields, the getters are shared on the prototype, so a build allocates one object instead
+  of one object + a closure per getter (~100 → ~10–18 ns per build, micro-benchmark). Same property
+  set per kind of ctx, still frozen, `options` still a fresh copy per read (`tests/ctx.test.ts`).
+  Two runs each vs P10: minimal create −15%, defaults-only chain −18%, user create / allow list /
+  single field update −9 to −12%, realistic create −6 to −11%; large schemas −0 to −5%, about noise.
+  **Behaviour change:** the getters are no longer own properties, so `{ ...ctx }`,
+  `Object.keys(ctx)` and `JSON.stringify(ctx)` see nothing; reading or destructuring is unchanged.
+
 ## Log
 
 - **2026-10-19 · Phase 1 done.** B1–B6 fixed, each with a regression test (`tests/utils/index.ts`,
@@ -160,3 +169,5 @@ worst 6.1%. Raw results: `tests/bench/results/baseline-v2-run{1,2}.json` (gitign
   Biome clean.
 - **2026-10-19 · P10 done.** Arrow properties → methods (see P10). 668 tests pass; typecheck and
   Biome clean; leak check unchanged (≤ 19 B/op).
+- **2026-10-19 · P11 done.** Ctx classes (see P11). 671 tests pass (+3 ctx tests); typecheck and
+  Biome clean; leak check unchanged (≤ 20 B/op).

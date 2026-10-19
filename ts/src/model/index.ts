@@ -33,7 +33,7 @@ import type {
   UpdateResolverCtx,
   ValidatorResponseObject,
 } from '../utils/types';
-
+import * as Ctx from './ctx';
 import {
   allOrThrow,
   isThenable,
@@ -421,204 +421,82 @@ class ModelTool<
   }
 
   private _buildReadonlyCtx(): ReadonlyIvoContext<I, O, CtxOptions> {
-    const values = this.ctxValues;
-    const isUpdate = this.isUpdate,
-      changes = isUpdate ? values : null,
-      previousValues = isUpdate ? this.ctxPreviousValues : null,
-      input = this.ctxInput,
-      rawInput = this.ctxRawInput,
-      options = this.ctxOptions;
+    const ctx = this.isUpdate
+      ? new Ctx.ReadonlyUpdateCtx(
+          this.ctxInput,
+          this.ctxRawInput,
+          this.ctxValues,
+          this.ctxPreviousValues!,
+          this.ctxOptions,
+        )
+      : new Ctx.ReadonlyCreateCtx(
+          this.ctxInput,
+          this.ctxRawInput,
+          this.ctxValues,
+          this.ctxOptions,
+        );
 
-    return isUpdate
-      ? Object.freeze({
-          get changes() {
-            return changes as Partial<O>;
-          },
-          get input() {
-            return input;
-          },
-          get rawInput() {
-            return rawInput;
-          },
-          get isUpdate() {
-            return true as const;
-          },
-          get previousValues() {
-            return previousValues as O;
-          },
-          get values() {
-            return Object.assign({}, previousValues, values);
-          },
-          get options() {
-            return cloneWithMethods(options);
-          },
-        })
-      : Object.freeze({
-          get changes() {
-            return null;
-          },
-          get input() {
-            return input;
-          },
-          get rawInput() {
-            return rawInput;
-          },
-          get isUpdate() {
-            return false as const;
-          },
-          get previousValues() {
-            return null;
-          },
-          get values() {
-            return values;
-          },
-          get options() {
-            return cloneWithMethods(options);
-          },
-        });
+    return Object.freeze(ctx) as unknown as ReadonlyIvoContext<
+      I,
+      O,
+      CtxOptions
+    >;
   }
 
-  // the readonly ctx plus `updateOptions`, built directly rather than by
-  // copying the readonly ctx's property descriptors
   private _buildContext(): IvoContext<I, O, CtxOptions> {
-    const values = this.ctxValues;
-    const isUpdate = this.isUpdate,
-      changes = isUpdate ? values : null,
-      previousValues = isUpdate ? this.ctxPreviousValues : null,
-      input = this.ctxInput,
-      rawInput = this.ctxRawInput,
-      options = this.ctxOptions,
-      updateOptions = this._updateCtxOptions;
+    const ctx = this.isUpdate
+      ? new Ctx.UpdateCtx(
+          this.ctxInput,
+          this.ctxRawInput,
+          this.ctxValues,
+          this.ctxPreviousValues!,
+          this.ctxOptions,
+          this._updateCtxOptions,
+        )
+      : new Ctx.CreateCtx(
+          this.ctxInput,
+          this.ctxRawInput,
+          this.ctxValues,
+          this.ctxOptions,
+          this._updateCtxOptions,
+        );
 
-    return (
-      isUpdate
-        ? Object.freeze({
-            get changes() {
-              return changes as Partial<O>;
-            },
-            get input() {
-              return input;
-            },
-            get rawInput() {
-              return rawInput;
-            },
-            get isUpdate() {
-              return true as const;
-            },
-            get previousValues() {
-              return previousValues as O;
-            },
-            get values() {
-              return Object.assign({}, previousValues, values);
-            },
-            get options() {
-              return cloneWithMethods(options);
-            },
-            get updateOptions() {
-              return updateOptions;
-            },
-          })
-        : Object.freeze({
-            get changes() {
-              return null;
-            },
-            get input() {
-              return input;
-            },
-            get rawInput() {
-              return rawInput;
-            },
-            get isUpdate() {
-              return false as const;
-            },
-            get previousValues() {
-              return null;
-            },
-            get values() {
-              return values;
-            },
-            get options() {
-              return cloneWithMethods(options);
-            },
-            get updateOptions() {
-              return updateOptions;
-            },
-          })
-    ) as IvoContext<I, O, CtxOptions>;
+    return Object.freeze(ctx) as unknown as IvoContext<I, O, CtxOptions>;
   }
 
   private _getConstantCtx(): ConstantResolverCtx<I, O, CtxOptions> {
-    const input = this.ctxInput,
-      options = this.ctxOptions,
-      rawInput = this.ctxRawInput,
-      updateOptions = this._updateCtxOptions,
-      values = this.ctxValues;
-
-    return Object.freeze({
-      get input() {
-        return input;
-      },
-      get options() {
-        return cloneWithMethods(options);
-      },
-      get rawInput() {
-        return rawInput;
-      },
-      get updateOptions() {
-        return updateOptions;
-      },
-      get values() {
-        return values;
-      },
-    });
+    return Object.freeze(
+      new Ctx.ConstantCtx(
+        this.ctxInput,
+        this.ctxRawInput,
+        this.ctxOptions,
+        this._updateCtxOptions,
+        this.ctxValues,
+      ),
+    ) as unknown as ConstantResolverCtx<I, O, CtxOptions>;
   }
 
   private _getInitResolverCtx(): InitResolverCtx<I, CtxOptions> {
-    const input = this.ctxInput,
-      options = this.ctxOptions,
-      rawInput = this.ctxRawInput,
-      updateOptions = this._updateCtxOptions;
-
-    return Object.freeze({
-      get input() {
-        return input;
-      },
-      get rawInput() {
-        return rawInput;
-      },
-      get options() {
-        return cloneWithMethods(options);
-      },
-      get updateOptions() {
-        return updateOptions;
-      },
-    });
+    return Object.freeze(
+      new Ctx.InitResolverCtx(
+        this.ctxInput,
+        this.ctxRawInput,
+        this.ctxOptions,
+        this._updateCtxOptions,
+      ),
+    ) as unknown as InitResolverCtx<I, CtxOptions>;
   }
 
   private _getUpdateResolverCtx(): UpdateResolverCtx<I, O, CtxOptions> {
-    const input = this.ctxInput,
-      options = this.ctxOptions,
-      rawInput = this.ctxRawInput,
-      previousValues = this.ctxPreviousValues,
-      updateOptions = this._updateCtxOptions;
-
-    return Object.freeze({
-      get input() {
-        return input;
-      },
-      get rawInput() {
-        return rawInput;
-      },
-      get previousValues() {
-        return previousValues!;
-      },
-      get options() {
-        return cloneWithMethods(options);
-      },
-      get updateOptions() {
-        return updateOptions;
-      },
-    });
+    return Object.freeze(
+      new Ctx.UpdateResolverCtx(
+        this.ctxInput,
+        this.ctxRawInput,
+        this.ctxOptions,
+        this._updateCtxOptions,
+        this.ctxPreviousValues!,
+      ),
+    ) as unknown as UpdateResolverCtx<I, O, CtxOptions>;
   }
 
   private _setCxtInput(updates: Partial<I>) {
