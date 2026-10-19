@@ -39,8 +39,10 @@ computes a dependent default, a constant or a timestamp.
    has succeeded.
 9. **Dependent defaults** -- every dependent field gets its `#[default(...)]`.
 10. **Resolve dependents** -- `#[resolve]`, one round per dependency-graph level, looping until
-    nothing new changes. `ctx.values()` inside a resolver reflects everything resolved in earlier
-    rounds.
+    nothing new changes. Only the dependents of fields that were provided (or of dependents
+    resolved in an earlier round) are resolved: a lax field's default doesn't trigger them, so
+    their dependents keep their `#[default(...)]`. `ctx.values()` inside a resolver reflects
+    everything resolved in earlier rounds.
 11. **Attach constants** -- `#[constant]`, after dependents resolve, so a constant resolver can
     read resolved dependent values via `ctx.values()`.
 12. **Attach timestamps** -- `#[created_at]`/`#[updated_at]`, after constants. The shared resolver

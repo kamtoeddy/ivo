@@ -91,10 +91,23 @@ test.describe("ivo docs site", () => {
       await expect(page.locator("text=Rust").first()).toBeVisible();
     });
 
-    test("default landing version is v0.6.0", async ({ page }) => {
+    test("default landing version is v0.7.0", async ({ page }) => {
       await page.goto("/docs/rs");
       await expect(page.locator("text=Getting Started").first()).toBeVisible();
-      await expect(page.locator("text=0.6.0").first()).toBeVisible();
+      await expect(page.locator("text=0.7.0").first()).toBeVisible();
+    });
+
+    test("v0.7.0 changes page is linked from the sidebar", async ({ page }) => {
+      await page.goto("/docs/rs");
+      await page.locator("text=What's new in v0.7.0").first().click();
+      await expect(page).toHaveURL(/\/docs\/rs\/whats-new\/?$/);
+      await expect(page.locator("text=Breaking changes").first()).toBeVisible();
+    });
+
+    test("v0.6.1 archive is accessible", async ({ page }) => {
+      await page.goto("/docs/rs/0.6.1");
+      await expect(page.locator("text=Getting Started").first()).toBeVisible();
+      await expect(page.locator("text=0.6.1").first()).toBeVisible();
     });
 
     test("v0.5.0 archive is accessible", async ({ page }) => {

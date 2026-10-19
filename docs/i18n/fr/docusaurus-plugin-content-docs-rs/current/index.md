@@ -5,7 +5,8 @@ slug: /
 
 # Démarrage
 
-Cette documentation couvre `ivo` pour Rust **v0.6.0**.
+Cette documentation couvre `ivo` pour Rust **v0.7.0**. Vous passez de la v0.6 ? Voir
+[Nouveautés de la v0.7.0](./whats-new.md).
 
 Les schémas se déclarent, ils ne se construisent pas de façon impérative : une seule macro
 d'attribut, `#[ivo_schema(...)]`, prend un module contenant vos déclarations de champs et génère

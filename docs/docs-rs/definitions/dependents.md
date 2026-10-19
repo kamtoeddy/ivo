@@ -42,8 +42,8 @@ mod dependents_schema {
 }
 
 fn main() {
-    // `value` defaults to 0 -- but a lax field's default still counts as "provided" for its
-    // own resolution, so `computed` still resolves once: 0 + 1 = 1.
+    // `value` isn't provided: it gets its default (0), which doesn't trigger `computed`'s
+    // resolver, so `computed` keeps its own default (1).
     let (created, _ctx_options) = dependents_schema::DataModel
         .create(dependents_schema::PartialDataInput { value: None }, ())
         .unwrap();

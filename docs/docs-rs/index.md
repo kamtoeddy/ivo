@@ -5,7 +5,8 @@ slug: /
 
 # Getting Started
 
-These docs cover `ivo` for Rust **v0.6.0**.
+These docs cover `ivo` for Rust **v0.7.0**. Upgrading from v0.6? See
+[What's new in v0.7.0](./whats-new.md).
 
 Schemas are declared, not built imperatively: a single attribute macro, `#[ivo_schema(...)]`,
 takes a module containing your field declarations and generates the input/output structs, their

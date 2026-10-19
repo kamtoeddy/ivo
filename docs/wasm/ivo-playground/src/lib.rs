@@ -12,8 +12,8 @@ fn set_panic_hook() {
 }
 
 #[ivo_schema(
-    input(ConstantsInput, derive(Debug, Clone, PartialEq)),
-    output(ConstantsData, derive(Debug, Clone, PartialEq))
+    input(ConstantsInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(ConstantsData, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod constants_schema {
     struct Fields {
@@ -44,7 +44,7 @@ pub async fn constants_create(input_json: String) -> Result<String, JsValue> {
     }
 }
 
-#[ivo_schema(input(LaxDefaultsInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(LaxDefaultsInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod lax_defaults_schema {
     struct Fields {
         #[lax("default-username".to_string())]
@@ -71,7 +71,7 @@ pub async fn lax_defaults_create(input_json: String) -> Result<String, JsValue> 
     }
 }
 
-#[ivo_schema(input(RequiredInput, derive(Debug, Clone, PartialEq)))]
+#[ivo_schema(input(RequiredInput, ivo_attrs(derive(Debug, Clone, PartialEq))))]
 mod required_schema {
     struct Fields {
         #[required]
@@ -99,15 +99,15 @@ pub async fn required_create(input_json: String) -> Result<String, JsValue> {
 }
 
 #[ivo_schema(
-    input(VirtualsInput, derive(Debug, Clone, PartialEq)),
-    output(VirtualsData, derive(Debug, Clone, PartialEq))
+    input(VirtualsInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(VirtualsData, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod virtuals_schema {
     const DEFAULT_DEPENDENT: &str = "DEFAULT_DEPENDENT_VALUE";
 
     struct Fields {
         #[ivo_virtual]
-        #[validate(|v: String, _, _| Ok(Some(v)))]
+        #[validate(|v: &String, _, _| Ok(Some(v.clone())))]
         pub virtual_field: String,
 
         #[depends_on("virtual_field")]
@@ -116,7 +116,7 @@ mod virtuals_schema {
             ctx.input()
                 .virtual_field
                 .clone()
-                .unwrap_or_else(|| ctx.values().dependent.clone())
+                .unwrap_or_else(|| DEFAULT_DEPENDENT.to_string())
         })]
         pub dependent: String,
     }
@@ -141,8 +141,8 @@ pub async fn virtuals_create(input_json: String) -> Result<String, JsValue> {
 }
 
 #[ivo_schema(
-    input(DependentsInput, derive(Debug, Clone, PartialEq)),
-    output(DependentsData, derive(Debug, Clone, PartialEq))
+    input(DependentsInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(DependentsData, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod dependents_schema {
     struct Fields {
@@ -151,7 +151,7 @@ mod dependents_schema {
 
         #[depends_on("value")]
         #[default(1_001)]
-        #[resolve(|ctx, _| ctx.values().value + 12)]
+        #[resolve(|ctx, _| ctx.values().value.unwrap() + 12)]
         pub computed: i32,
     }
 }
@@ -175,8 +175,8 @@ pub async fn dependents_create(input_json: String) -> Result<String, JsValue> {
 }
 
 #[ivo_schema(
-    input(TimestampsInput, derive(Debug, Clone, PartialEq)),
-    output(TimestampsData, derive(Debug, Clone, PartialEq))
+    input(TimestampsInput, ivo_attrs(derive(Debug, Clone, PartialEq))),
+    output(TimestampsData, ivo_attrs(derive(Debug, Clone, PartialEq)))
 )]
 mod timestamps_schema {
     use chrono::{DateTime, Utc};
@@ -245,7 +245,12 @@ fn parse_optional_field<T: serde::de::DeserializeOwned>(
 fn error_response<Metadata: Clone>(payload: ivo::IvoErrorPayload<Metadata>) -> String {
     let fields: serde_json::Map<String, serde_json::Value> = payload
         .into_iter()
-        .map(|(field, err)| (field, serde_json::Value::String(err.reason)))
+        .map(|(field, err)| {
+            (
+                field.to_string(),
+                serde_json::Value::String(err.reason.into_owned()),
+            )
+        })
         .collect();
 
     serde_json::json!({

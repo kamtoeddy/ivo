@@ -46,8 +46,8 @@ fn main() {
 }
 ```
 
-`#[re_validate]` requires `#[validate]` to be present on the same field -- it's a compile error
-otherwise. See it used for real (checking a username isn't already taken, via `ctx_options`) in
+A field can have `#[re_validate]` without `#[validate]` (since v0.6.1). See it used for real
+(checking a username isn't already taken, via `ctx_options`) in
 [`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 - Validators & re-validators: see

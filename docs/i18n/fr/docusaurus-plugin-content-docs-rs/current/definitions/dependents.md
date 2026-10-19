@@ -45,9 +45,8 @@ mod dependents_schema {
 }
 
 fn main() {
-    // `value` prend la valeur par défaut 0 -- mais la valeur par défaut d'un champ lax compte
-    // tout de même comme "fournie" pour sa propre résolution, donc `computed` se résout quand
-    // même une fois : 0 + 1 = 1.
+    // `value` n'est pas fourni : il prend sa valeur par défaut (0), qui ne déclenche pas le
+    // résolveur de `computed`, donc `computed` garde sa propre valeur par défaut (1).
     let (created, _ctx_options) = dependents_schema::DataModel
         .create(dependents_schema::PartialDataInput { value: None }, ())
         .unwrap();

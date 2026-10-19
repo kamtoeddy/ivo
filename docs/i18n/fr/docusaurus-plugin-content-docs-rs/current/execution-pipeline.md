@@ -41,8 +41,10 @@ constante ni d'horodatage.
    réussie.
 9. **Valeurs par défaut des dépendants** -- chaque champ dépendant reçoit son `#[default(...)]`.
 10. **Résolution des dépendants** -- `#[resolve]`, un tour par niveau du graphe de dépendances, en
-    boucle jusqu'à ce que plus rien ne change. `ctx.values()` dans un résolveur reflète tout ce qui
-    a été résolu lors des tours précédents.
+    boucle jusqu'à ce que plus rien ne change. Seuls les dépendants des champs fournis (ou des
+    dépendants résolus lors d'un tour précédent) sont résolus : la valeur par défaut d'un champ lax
+    ne les déclenche pas, et leurs dépendants gardent leur `#[default(...)]`. `ctx.values()` dans
+    un résolveur reflète tout ce qui a été résolu lors des tours précédents.
 11. **Attachement des constantes** -- `#[constant]`, après la résolution des dépendants, afin qu'un
     résolveur de constante puisse lire les valeurs dépendantes résolues via `ctx.values()`.
 12. **Attachement des horodatages** -- `#[created_at]`/`#[updated_at]`, après les constantes. Le

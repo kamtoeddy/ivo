@@ -9,6 +9,11 @@ const sidebars: SidebarsConfig = {
       label: "Getting Started",
     },
     {
+      type: "doc",
+      id: "whats-new",
+      label: "What's new in v0.7.0",
+    },
+    {
       type: "category",
       label: "Fields",
       items: [

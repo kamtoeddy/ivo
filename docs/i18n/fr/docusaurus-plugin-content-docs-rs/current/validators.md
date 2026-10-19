@@ -47,9 +47,8 @@ fn main() {
 }
 ```
 
-`#[re_validate]` nécessite la présence de `#[validate]` sur le même champ -- c'est une erreur de
-compilation sinon. Voir un exemple réel (vérifier qu'un nom d'utilisateur n'est pas déjà pris, via
-`ctx_options`) dans
+Un champ peut avoir `#[re_validate]` sans `#[validate]` (depuis la v0.6.1). Voir un exemple
+réel (vérifier qu'un nom d'utilisateur n'est pas déjà pris, via `ctx_options`) dans
 [`examples/main_demo`](https://github.com/kamtoeddy/ivo/blob/main/rs/examples/main_demo/src/domain.rs).
 
 - Validateurs et re-validateurs : voir les
