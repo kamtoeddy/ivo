@@ -100,6 +100,9 @@ main();`}
 
 Global listener(s) invoked by `model.delete`. Receives the full entity and context options.
 
+Since v2.1.0, listeners receive frozen copies of the entity and options: the objects passed to
+`model.delete` are no longer frozen themselves.
+
 <TsPlayground
 ivoVersion="local"
 code={`import { Schema } from "ivo";

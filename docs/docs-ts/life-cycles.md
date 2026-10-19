@@ -10,17 +10,38 @@ import TsPlayground from '@site/src/components/TsPlayground';
 
 ## Operation context
 
-Handlers receive a context object with useful operation state:
+Validators, resolvers and listeners receive a context object (`ctx`) with the operation's state:
 
 ```ts
 {
-  input: Input; // sanitized input values
-  rawInput: Input; // original input values
-  values: Output; // current output values (including defaults and resolved dependents)
+  input: Partial<Input>; // sanitized input values
+  rawInput: Partial<Input>; // original input values
+  values: Output; // current values (on update: previous values merged with the changes)
   isUpdate: boolean;
-  summary: IvoSummary<Input, Output>;
+  changes: Partial<Output> | null; // on update, the changes; null on create
+  previousValues: Output | null; // on update, the values before the update; null on create
+  options: CtxOptions; // a fresh copy on every read
+  updateOptions: (options: Partial<CtxOptions>) => void; // not given to listeners
 }
 ```
+
+Constant, default and `ignoreUpdate` resolvers receive a smaller context (`input`, `rawInput`,
+`options` and `updateOptions`, plus `values` for constants and `previousValues` for `ignoreUpdate`).
+
+The context is frozen, and its properties are getters. Read them directly or destructure them:
+
+```ts
+.validate((value, ctx) => {
+  const { isUpdate, values } = ctx; // ✅
+  // ...
+});
+```
+
+:::caution[Since v2.1.0]
+The getters are defined on the context's prototype, not on the object itself, so `{ ...ctx }`,
+`Object.keys(ctx)` and `JSON.stringify(ctx)` no longer list them. Copy the properties you need
+instead, e.g. `{ values: ctx.values, isUpdate: ctx.isUpdate }`.
+:::
 
 ## Global listeners
 

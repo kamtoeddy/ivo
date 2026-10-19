@@ -10,17 +10,41 @@ import TsPlayground from '@site/src/components/TsPlayground';
 
 ## Contexte d'opération
 
-Les gestionnaires reçoivent un objet de contexte avec l'état utile de l'opération :
+Les validateurs, résolveurs et écouteurs reçoivent un objet de contexte (`ctx`) avec l'état de
+l'opération :
 
 ```ts
 {
-  input: Input; // valeurs d'entrée nettoyées
-  rawInput: Input; // valeurs d'entrée d'origine
-  values: Output; // valeurs de sortie actuelles (valeurs par défaut et dépendants résolus inclus)
+  input: Partial<Input>; // valeurs d'entrée nettoyées
+  rawInput: Partial<Input>; // valeurs d'entrée d'origine
+  values: Output; // valeurs actuelles (en mise à jour : anciennes valeurs + modifications)
   isUpdate: boolean;
-  summary: IvoSummary<Input, Output>;
+  changes: Partial<Output> | null; // en mise à jour, les modifications ; null à la création
+  previousValues: Output | null; // en mise à jour, les valeurs avant la mise à jour ; null à la création
+  options: CtxOptions; // une nouvelle copie à chaque lecture
+  updateOptions: (options: Partial<CtxOptions>) => void; // non fourni aux écouteurs
 }
 ```
+
+Les résolveurs de constantes, de valeurs par défaut et `ignoreUpdate` reçoivent un contexte plus
+réduit (`input`, `rawInput`, `options` et `updateOptions`, plus `values` pour les constantes et
+`previousValues` pour `ignoreUpdate`).
+
+Le contexte est figé (`Object.freeze`) et ses propriétés sont des accesseurs (getters). Lisez-les
+directement ou par déstructuration :
+
+```ts
+.validate((value, ctx) => {
+  const { isUpdate, values } = ctx; // ✅
+  // ...
+});
+```
+
+:::caution[Depuis la v2.1.0]
+Les accesseurs sont définis sur le prototype du contexte et non sur l'objet lui-même : `{ ...ctx }`,
+`Object.keys(ctx)` et `JSON.stringify(ctx)` ne les listent plus. Copiez plutôt les propriétés
+dont vous avez besoin, p. ex. `{ values: ctx.values, isUpdate: ctx.isUpdate }`.
+:::
 
 ## Écouteurs globaux
 

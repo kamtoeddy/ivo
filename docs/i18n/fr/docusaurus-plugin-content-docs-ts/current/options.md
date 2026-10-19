@@ -100,6 +100,9 @@ main();`}
 
 Global listener(s) invoked by `model.delete`. Receives the full entity and context options.
 
+Depuis la v2.1.0, les écouteurs reçoivent des copies figées de l'entité et des options : les objets
+passés à `model.delete` ne sont plus figés.
+
 <TsPlayground
 ivoVersion="local"
 code={`import { Schema } from "ivo";

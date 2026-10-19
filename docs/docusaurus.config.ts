@@ -120,15 +120,15 @@ const config: Config = {
         sidebarPath: "./sidebars-ts.ts",
         editUrl: `${repoUrl}/tree/main/docs/docs-ts/`,
         includeCurrentVersion: true,
-        // v2.0.0 (docs-ts/, the "current" version) isn't released yet - keep the
-        // latest *released* version as the default landing point, and expose the
-        // in-progress v2.0.0 docs under /docs/ts/next/ until it ships (see
-        // Phase 6 in TODO.md).
         lastVersion: "current",
         versions: {
           current: {
-            label: "2.0.0",
+            label: "2.1.0",
             path: "",
+          },
+          "2.0.0": {
+            label: "2.0.0",
+            path: "2.0.0",
           },
           "1.9.0": {
             label: "1.9.0",

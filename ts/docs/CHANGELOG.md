@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+# v2.1.0 <small><sup>2026-10-19</sup></small>
+
+- Feat: add the `escapeHTML` option (default: `true`) to `makeStringValidator`. `&`, `<`, `>`, `"` and `'` are escaped as HTML entities after normalizing and trimming, and before the length checks.
+- Breaking change: strings validated with `makeStringValidator` are HTML-escaped by default; pass `escapeHTML: false` to keep them as they are.
+- Breaking change: the getters of handler contexts (`ctx`) are defined on their prototype, so `{ ...ctx }`, `Object.keys(ctx)` and `JSON.stringify(ctx)` no longer list them. Reading and destructuring are unchanged.
+- Fix: `validateEmail` only accepts values that are an email address as a whole, not values that contain one.
+- Fix: `validateCreditCard` accepts valid card numbers whose check digit is `0`.
+- Fix: async `filter` and `postModFilter` functions of `makeArrayValidator` are awaited (their promise was always treated as truthy).
+- Fix: `uniqueKey` of `makeArrayValidator` compares keys by type (`1` and `"1"` are different) and keeps first-seen order.
+- Fix: `unique` of `makeArrayValidator` returns the original items instead of JSON copies (a `Date` stays a `Date`).
+- Fix: `makeNumberValidator` accepts bigints instead of throwing.
+- Fix: `isEqual` no longer treats values of different kinds as equal (e.g. a number and an object, a `Date` and a non-`Date`, an array and an object).
+- Fix: the `ignoreUpdate` resolver of a required field runs once per update instead of twice.
+- Fix: `model.delete` no longer freezes the data and options passed to it; `onDelete` listeners get frozen copies.
+- Perf: synchronous phases complete without promises, schema analysis is cached per schema, contexts are cached and built without per-getter closures, and values are cloned with a faster path for plain data: `create` and `update` are 3–9× faster than in v2.0.1 depending on the schema.
+- Perf: faster `validateCreditCard` (~11×) and `unique` array validation (~2×).
+
 # v1.9.0 <small><sup>2026-05-03</sup></small>
 
 - Release
