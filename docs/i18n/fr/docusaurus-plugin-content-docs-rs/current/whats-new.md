@@ -1,17 +1,33 @@
 ---
-title: Nouveautés de la v0.7.0
+title: Nouveautés de la v0.7
 ---
 
-# Nouveautés de la v0.7.0
+# Nouveautés de la v0.7
+
+## v0.7.1
+
+Le moment où un champ dépendant est résolu est corrigé, voir
+[quand le résolveur s'exécute](./definitions/dependents.md#quand-le-résolveur-sexécute) :
+
+- À la création, un champ lax fourni avec sa valeur par défaut statique (ou validé à celle-ci) ne
+  déclenche plus les résolveurs de ses champs dépendants : ce n'est pas un changement par rapport
+  à la valeur qu'il aurait eue de toute façon. Un champ lax dont la valeur par défaut est un
+  résolveur (une closure, ou le chemin d'une fonction sans argument) les déclenche toujours dès
+  qu'il est fourni.
+- Un champ dépendant résolu à la valeur qu'il avait déjà (sa valeur par défaut à la création, sa
+  valeur précédente lors d'une mise à jour) ne déclenche plus les résolveurs des champs dépendants
+  qui en dépendent.
+
+## v0.7.0
 
 La v0.7.0 change la façon dont les structs générées reçoivent leurs attributs, ce que reçoivent les
 gestionnaires et la façon dont les erreurs sont stockées, et elle rend `create`/`update` beaucoup
 plus rapides. La plupart des changements incompatibles sont détectés à la compilation, et les
 messages d'erreur de la macro indiquent quoi écrire à la place.
 
-## Changements incompatibles
+### Changements incompatibles
 
-### Attributs des structs et des champs : `ivo_attrs(...)`
+#### Attributs des structs et des champs : `ivo_attrs(...)`
 
 `derive(...)`/`derive_partial(...)` sur les structs générées sont remplacés par `ivo_attrs(...)` et
 `ivo_partial_attrs(...)`, qui acceptent **n'importe quel** attribut, pas seulement des derives :
@@ -56,7 +72,7 @@ pub username: String,
 
 Voir [Démarrage](./index.md#démarrage-rapide) pour toutes les règles.
 
-### `#[post_validate]` : plus de `validate =`
+#### `#[post_validate]` : plus de `validate =`
 
 Le validateur est passé directement, en second argument :
 
@@ -79,7 +95,7 @@ const _: () = ();
 
 `pre_validate = ...` ne change pas.
 
-### Les validateurs reçoivent la valeur par référence
+#### Les validateurs reçoivent la valeur par référence
 
 Les validateurs et re-validateurs reçoivent maintenant `&T` au lieu de `T`. Renvoyez `Ok(None)`
 pour garder la valeur telle quelle, ou `Ok(Some(...))` avec une valeur possédée pour la remplacer :
@@ -92,7 +108,7 @@ pour garder la valeur telle quelle, ou `Ok(Some(...))` avec une valeur possédé
 #[validate(|v: &String, _, _| Ok(Some(v.trim().to_string())))]
 ```
 
-### Les gestionnaires reçoivent `&IvoContext`
+#### Les gestionnaires reçoivent `&IvoContext`
 
 Les résolveurs, validateurs, post-validateurs et gestionnaires `on_success`/`on_failure` reçoivent
 maintenant le contexte par référence. Les closures aux paramètres inférés (`|ctx, _opts| ...`)
@@ -109,7 +125,7 @@ const _: () = ();
 Les fonctions utilisées comme gestionnaires doivent prendre `&IvoContext<...>` au lieu de
 `IvoContext<...>`.
 
-### `ctx.values()` renvoie la sortie partielle
+#### `ctx.values()` renvoie la sortie partielle
 
 `ctx.values()` renvoie maintenant la struct de sortie **partielle** du schéma : chaque champ est
 une `Option`. Pendant `create`, elle se remplit au fil du pipeline (un champ pas encore atteint vaut
@@ -126,7 +142,7 @@ une `Option`. Pendant `create`, elle se remplit au fil du pipeline (un champ pas
 Voir [ce que contient `ctx.values()`](./execution-pipeline.md#ce-que-contient-ctxvalues) à chaque
 étape.
 
-### Les raisons d'erreur sont des `Cow<'static, str>`
+#### Les raisons d'erreur sont des `Cow<'static, str>`
 
 La raison d'erreur d'un champ est maintenant un `IvoErrorReason` (`Cow<'static, str>`) : un
 littéral est utilisé tel quel, sans allocation, et un message construit à l'exécution est possédé.
@@ -161,9 +177,9 @@ let owned: String = errors.get("username").unwrap().reason.clone().into_owned();
 `IvoErrorReason` est exporté à la racine du crate. Un nettoyeur d'erreurs personnalisé reçoit ces
 erreurs (voir [Options](./options.md)).
 
-## Nouveautés
+### Nouveautés
 
-### Fonctions sans argument comme constantes et valeurs par défaut
+#### Fonctions sans argument comme constantes et valeurs par défaut
 
 `#[constant(...)]`, `#[lax(...)]` et le `#[default(...)]` d'un champ dépendant acceptent le chemin
 d'une fonction sans argument. Elle est appelée pour produire la valeur : `|| make_value()` n'est
@@ -193,14 +209,14 @@ struct Fields {
 }
 ```
 
-## Corrections
+### Corrections
 
 - `validate_email` (fonctionnalité `validators`) n'accepte que les valeurs qui sont entièrement une
   adresse e-mail, et plus celles qui en contiennent simplement une.
 - `validate_credit_card` (fonctionnalité `validators`) accepte les numéros de carte valides dont le
   chiffre de contrôle est `0`.
 
-## Performances
+### Performances
 
 `create` et `update` allouent et clonent beaucoup moins : les contextes partagent l'entrée brute et
 les valeurs précédentes au lieu de les copier, les gestionnaires et validateurs empruntent au lieu

@@ -1,16 +1,30 @@
 ---
-title: What's new in v0.7.0
+title: What's new in v0.7
 ---
 
-# What's new in v0.7.0
+# What's new in v0.7
+
+## v0.7.1
+
+When a dependent field resolves is fixed, see
+[when the resolver runs](./definitions/dependents.md#when-the-resolver-runs):
+
+- On create, a lax field provided with (or validated to) its static default no longer triggers the
+  resolvers of its dependent fields: it's no change from the value it would have had anyway. A lax
+  field whose default is a resolver (a closure, or a path to a zero-argument function) still
+  triggers them whenever it's provided.
+- A dependent field that resolves to the value it already had (its default on create, its previous
+  value on update) no longer triggers the resolvers of the dependent fields below it.
+
+## v0.7.0
 
 v0.7.0 changes how generated structs get their attributes, what handlers receive, and how errors
 are stored, and it makes `create`/`update` much faster. Most of the breaking changes are caught at
 compile time, and the macro's error messages say what to write instead.
 
-## Breaking changes
+### Breaking changes
 
-### Struct and field attributes: `ivo_attrs(...)`
+#### Struct and field attributes: `ivo_attrs(...)`
 
 `derive(...)`/`derive_partial(...)` on the generated structs are replaced by `ivo_attrs(...)` and
 `ivo_partial_attrs(...)`, which accept **any** attribute, not only derives:
@@ -54,7 +68,7 @@ pub username: String,
 
 See [Getting Started](./index.md#quickstart) for the full rules.
 
-### `#[post_validate]`: no more `validate =`
+#### `#[post_validate]`: no more `validate =`
 
 The validator is passed directly, as the second argument:
 
@@ -77,7 +91,7 @@ const _: () = ();
 
 `pre_validate = ...` is unchanged.
 
-### Validators receive the value by reference
+#### Validators receive the value by reference
 
 Validators and re-validators now get `&T` instead of `T`. Return `Ok(None)` to keep the value as it
 is, or `Ok(Some(...))` with an owned value to replace it:
@@ -90,7 +104,7 @@ is, or `Ok(Some(...))` with an owned value to replace it:
 #[validate(|v: &String, _, _| Ok(Some(v.trim().to_string())))]
 ```
 
-### Handlers receive `&IvoContext`
+#### Handlers receive `&IvoContext`
 
 Resolvers, validators, post-validators and `on_success`/`on_failure` handlers now receive the
 context by reference. Closures with inferred parameters (`|ctx, _opts| ...`) need no change; clone
@@ -106,7 +120,7 @@ const _: () = ();
 
 Functions used as handlers must take `&IvoContext<...>` instead of `IvoContext<...>`.
 
-### `ctx.values()` returns the partial output
+#### `ctx.values()` returns the partial output
 
 `ctx.values()` now returns the schema's **partial** output struct, so every field is an `Option`.
 During `create`, it fills in as the pipeline runs (a field not reached yet is `None`); during an
@@ -122,7 +136,7 @@ update and in `on_success` handlers, every field is `Some`:
 
 See [what `ctx.values()` holds](./execution-pipeline.md#what-ctxvalues-holds) at each step.
 
-### Error reasons are `Cow<'static, str>`
+#### Error reasons are `Cow<'static, str>`
 
 A field's error reason is now an `IvoErrorReason` (`Cow<'static, str>`): a string literal is used
 as-is, without allocating, and a message built at runtime is owned. Validators build one with
@@ -157,9 +171,9 @@ let owned: String = errors.get("username").unwrap().reason.clone().into_owned();
 `IvoErrorReason` is exported from the crate root. A custom error sanitizer receives this payload
 (see [Options](./options.md)).
 
-## New features
+### New features
 
-### Zero-argument functions as constants and defaults
+#### Zero-argument functions as constants and defaults
 
 `#[constant(...)]`, `#[lax(...)]` and a dependent field's `#[default(...)]` accept the path of a
 zero-argument function. It's called to produce the value, so `|| make_value()` is no longer needed.
@@ -189,14 +203,14 @@ struct Fields {
 }
 ```
 
-## Fixes
+### Fixes
 
 - `validate_email` (`validators` feature) only accepts values that are an email address as a
   whole, not values that merely contain one.
 - `validate_credit_card` (`validators` feature) accepts valid card numbers whose check digit is
   `0`.
 
-## Performance
+### Performance
 
 `create` and `update` allocate and clone much less: contexts share the raw input and previous
 values instead of copying them, handlers and validators borrow instead of taking ownership, error

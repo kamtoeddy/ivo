@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# Unreleased
+# v2.1.1 <small><sup>2026-11-05</sup></small>
 
 - Breaking change: remove the `escapeHTML` option of `makeStringValidator` (added in v2.1.0). Validated strings are no longer HTML-escaped.
 - Fix: a dependent field that resolves to the value it already had (its previous value on update, its default on create) no longer triggers the resolvers of the dependent fields below it.

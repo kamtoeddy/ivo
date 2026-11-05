@@ -11,7 +11,7 @@ const sidebars: SidebarsConfig = {
     {
       type: "doc",
       id: "whats-new",
-      label: "What's new in v0.7.0",
+      label: "What's new in v0.7",
     },
     {
       type: "category",

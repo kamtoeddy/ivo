@@ -123,7 +123,7 @@ const config: Config = {
         lastVersion: "current",
         versions: {
           current: {
-            label: "2.1.0",
+            label: "2.1.1",
             path: "",
           },
           "2.0.0": {
@@ -149,7 +149,7 @@ const config: Config = {
         lastVersion: "current",
         versions: {
           current: {
-            label: "0.7.0",
+            label: "0.7.1",
             path: "",
           },
           "0.6.1": {
