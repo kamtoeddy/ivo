@@ -4,6 +4,18 @@ title: What's new in v0.7
 
 # What's new in v0.7
 
+## v0.7.2
+
+More fixes to when a dependent field resolves, see
+[when the resolver runs](./definitions/dependents.md#when-the-resolver-runs):
+
+- On create, a lax field whose default is a resolver (a closure, or a path to a zero-argument
+  function) triggers the resolvers of its dependent fields even when it isn't provided, and so
+  does a dependent field whose default is a resolver: neither value is a static default.
+- A dependent field resolves at most once per operation. One with parents on different dependency
+  levels (e.g. `x` depending on `a` and on `e`, itself a dependent of `b`) used to resolve once per
+  level; dependents now resolve one dependency level at a time, after all their parents.
+
 ## v0.7.1
 
 When a dependent field resolves is fixed, see

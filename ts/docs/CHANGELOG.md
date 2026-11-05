@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# Unreleased
+# v2.1.2 <small><sup>2026-11-05</sup></small>
 
 - Fix: on create, a lax field with a default resolver triggers the resolvers of its dependent fields even when it isn't provided, and so does a dependent field with a default resolver: neither value is a static default.
 - Fix: a dependent field resolves at most once per operation. One with parents on different dependency levels resolved once per level; dependents now resolve one dependency level at a time, after all their parents.

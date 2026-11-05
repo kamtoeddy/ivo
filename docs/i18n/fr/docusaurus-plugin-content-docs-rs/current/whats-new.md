@@ -4,6 +4,20 @@ title: Nouveautés de la v0.7
 
 # Nouveautés de la v0.7
 
+## v0.7.2
+
+D'autres corrections du moment où un champ dépendant est résolu, voir
+[quand le résolveur s'exécute](./definitions/dependents.md#quand-le-résolveur-sexécute) :
+
+- À la création, un champ lax dont la valeur par défaut est un résolveur (une closure, ou le
+  chemin d'une fonction sans argument) déclenche les résolveurs de ses champs dépendants même
+  s'il n'est pas fourni, tout comme un champ dépendant dont la valeur par défaut est un
+  résolveur : aucune de ces valeurs n'est une valeur par défaut statique.
+- Un champ dépendant est résolu au plus une fois par opération. Un champ dont les parents sont
+  sur des niveaux de dépendance différents (p. ex. `x` dépendant de `a` et de `e`, lui-même
+  dépendant de `b`) était résolu une fois par niveau ; les champs dépendants sont maintenant
+  résolus un niveau de dépendance à la fois, après tous leurs parents.
+
 ## v0.7.1
 
 Le moment où un champ dépendant est résolu est corrigé, voir

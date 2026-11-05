@@ -5,7 +5,7 @@ slug: /
 
 # Getting Started
 
-These docs cover `ivo` for Rust **v0.7.1**. Upgrading from v0.6? See
+These docs cover `ivo` for Rust **v0.7.2**. Upgrading from v0.6? See
 [What's new in v0.7](./whats-new.md).
 
 Schemas are declared, not built imperatively: a single attribute macro, `#[ivo_schema(...)]`,

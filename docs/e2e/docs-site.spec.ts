@@ -7,10 +7,10 @@ test.describe("ivo docs site", () => {
   });
 
   test.describe("TypeScript docs", () => {
-    test("default landing version is v2.1.1", async ({ page }) => {
+    test("default landing version is v2.1.2", async ({ page }) => {
       await page.goto("/docs/ts");
       await expect(page.locator("text=Getting Started").first()).toBeVisible();
-      await expect(page.locator("text=2.1.1").first()).toBeVisible();
+      await expect(page.locator("text=2.1.2").first()).toBeVisible();
     });
 
     test("v2.0.0 archive is accessible", async ({ page }) => {
@@ -27,10 +27,10 @@ test.describe("ivo docs site", () => {
       await expect(page.locator("text=1.9.0").first()).toBeVisible();
     });
 
-    test("French translation of v2.1.1 works", async ({ page }) => {
+    test("French translation of v2.1.2 works", async ({ page }) => {
       await page.goto("/fr/docs/ts");
       await expect(page.locator("text=Premiers pas").first()).toBeVisible();
-      await expect(page.locator("text=2.1.1").first()).toBeVisible();
+      await expect(page.locator("text=2.1.2").first()).toBeVisible();
     });
 
     test("French translation of v2.0.0 archive does not 404", async ({
@@ -55,7 +55,7 @@ test.describe("ivo docs site", () => {
       ).not.toBeVisible();
     });
 
-    test("language switcher navigates between locales on v2.1.1", async ({
+    test("language switcher navigates between locales on v2.1.2", async ({
       page,
     }) => {
       await page.goto("/docs/ts");
@@ -77,7 +77,7 @@ test.describe("ivo docs site", () => {
       ).toBeVisible();
     });
 
-    test("interactive playground renders on a v2.1.1 page", async ({
+    test("interactive playground renders on a v2.1.2 page", async ({
       page,
     }) => {
       await page.goto("/docs/ts/definitions/constants");
@@ -91,10 +91,10 @@ test.describe("ivo docs site", () => {
       await expect(page.locator("text=Rust").first()).toBeVisible();
     });
 
-    test("default landing version is v0.7.1", async ({ page }) => {
+    test("default landing version is v0.7.2", async ({ page }) => {
       await page.goto("/docs/rs");
       await expect(page.locator("text=Getting Started").first()).toBeVisible();
-      await expect(page.locator("text=0.7.1").first()).toBeVisible();
+      await expect(page.locator("text=0.7.2").first()).toBeVisible();
     });
 
     test("v0.7 changes page is linked from the sidebar", async ({ page }) => {
@@ -131,7 +131,7 @@ test.describe("ivo docs site", () => {
     test("TS version dropdown is not shown on Rust docs", async ({ page }) => {
       await page.goto("/docs/rs");
       await expect(
-        page.locator('.navbar__item:has-text("2.1.1")').first(),
+        page.locator('.navbar__item:has-text("2.1.2")').first(),
       ).not.toBeVisible();
       await expect(
         page.locator('.navbar__item:has-text("2.0.0")').first(),
