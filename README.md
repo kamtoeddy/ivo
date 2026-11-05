@@ -193,7 +193,7 @@ A dependent field is a purely output field whose value changes whenever at least
 
 - it **must** have either a default `static value` or a [`resolver`](#resolver) for the default value.
 - it **must** depend on at least one other field which can be a [`lax`](#lax-fields), [`required`](#required-fields), [`virtual`](#virtual-fields) or another `dependent` field (provided no circular dependency is identified).
-- it **must** have a [`resolver`](#resolver) to generate new values whenever any of its parent fields is provided and accepted for that operation.
+- it **must** have a [`resolver`](#resolver) to generate new values whenever any of its parent fields changes: on create, when a parent is provided and accepted (a lax parent with a value other than its static default) or resolved to a value other than its default; on update, when a parent is provided and accepted, or resolved, with a value different from its previous one.
 - it may leverage the [`readonly`](#readonly) provision rule to prevent further updates once its current value is different from its **default static value** irrespective of new updates made to values of its parent fields.
 - it may have [delete](#on-delete) and [success](#on-success) event handlers.
 - it may also be used in [grouped success](#on-success-grouped) event handlers.

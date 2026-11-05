@@ -340,10 +340,9 @@ describe('dependent', () => {
 
         expect(data).toEqual({ laxField: '', laxField_1: 'hey' });
 
-        expect(resolversCalledStats).toEqual({
-          dependentField: 1,
-          dependentField_1: 1,
-        });
+        // `dependentField` resolves back to its previous value (3), so the
+        // dependents below it aren't resolved again
+        expect(resolversCalledStats).toEqual({ dependentField: 1 });
 
         expect(onSuccessStats).toEqual({});
       });
@@ -819,6 +818,132 @@ describe('dependent', () => {
           }),
         );
       }
+    });
+  });
+
+  describe('when resolvers run', () => {
+    type Output = { a: number; r: string; b: number; c: number; vb: number };
+    type Input = Output & { v: number };
+
+    const calls = { b: 0, c: 0, vb: 0 };
+
+    // `a` (default 1, 100 is validated to 1) -> `b` (10 if a > 5, else its
+    // default 0) -> `c` (b + 1); `v` (virtual) -> `vb`
+    const Model = new Schema<Input, Output>((s) =>
+      s
+        .field(
+          s.lax('a', 1).validate(((x: number) => ({
+            valid: true,
+            validated: x === 100 ? 1 : x,
+          })) as never),
+        )
+        .field(s.required('r').validate((() => true) as never))
+        .field(s.virtual('v').validate((() => true) as never))
+        .field(
+          s
+            .dependent('b', 'a')
+            .default(0)
+            .resolve((ctx) => {
+              calls.b++;
+              return ctx.values.a! > 5 ? 10 : 0;
+            }),
+        )
+        .field(
+          s
+            .dependent('c', 'b')
+            .default(0)
+            .resolve((ctx) => {
+              calls.c++;
+              return ctx.values.b! + 1;
+            }),
+        )
+        .field(
+          s
+            .dependent('vb', 'v')
+            .default(0)
+            .resolve((ctx) => {
+              calls.vb++;
+              return ctx.input.v!;
+            }),
+        ),
+    ).getModel();
+
+    afterEach(() => {
+      calls.b = 0;
+      calls.c = 0;
+      calls.vb = 0;
+    });
+
+    describe('creation', () => {
+      it('should not resolve the dependents of a lax field provided with its default value', async () => {
+        const { data } = await Model.create({ r: 'x', a: 1 }, {});
+
+        expect(calls).toEqual({ b: 0, c: 0, vb: 0 });
+        expect(data).toMatchObject({ a: 1, b: 0, c: 0 });
+      });
+
+      it('should not resolve the dependents of a lax field validated to its default value', async () => {
+        await Model.create({ r: 'x', a: 100 }, {});
+
+        expect(calls).toEqual({ b: 0, c: 0, vb: 0 });
+      });
+
+      it('should not resolve the dependents of a dependent resolved to its default value', async () => {
+        const { data } = await Model.create({ r: 'x', a: 3 }, {});
+
+        expect(calls).toEqual({ b: 1, c: 0, vb: 0 });
+        expect(data).toMatchObject({ a: 3, b: 0, c: 0 });
+      });
+
+      it('should resolve the dependents of a dependent resolved to another value', async () => {
+        const { data } = await Model.create({ r: 'x', a: 7 }, {});
+
+        expect(calls).toEqual({ b: 1, c: 1, vb: 0 });
+        expect(data).toMatchObject({ a: 7, b: 10, c: 11 });
+      });
+
+      it('should resolve the dependents of a provided virtual field', async () => {
+        const { data } = await Model.create({ r: 'x', v: 4 }, {});
+
+        expect(calls).toEqual({ b: 0, c: 0, vb: 1 });
+        expect(data).toMatchObject({ vb: 4 });
+      });
+    });
+
+    describe('updates', () => {
+      const previous: Output = { a: 7, r: 'x', b: 10, c: 11, vb: 0 };
+
+      it('should not resolve the dependents of a dependent resolved to its previous value', async () => {
+        const { data } = await Model.update(previous, { a: 8 }, {});
+
+        expect(calls).toEqual({ b: 1, c: 0, vb: 0 });
+        expect(data).toEqual({ a: 8 });
+      });
+
+      it('should resolve the dependents of a dependent resolved to a new value', async () => {
+        const { data } = await Model.update(previous, { a: 2 }, {});
+
+        expect(calls).toEqual({ b: 1, c: 1, vb: 0 });
+        expect(data).toEqual({ a: 2, b: 0, c: 1 });
+      });
+
+      it('should not resolve the dependents of a field whose validated value is unchanged', async () => {
+        const { error } = await Model.update(
+          { ...previous, a: 1, b: 0, c: 1 },
+          { a: 100 },
+          {},
+        );
+
+        expect(calls).toEqual({ b: 0, c: 0, vb: 0 });
+        expect(error).toEqual({ isNothingToUpdate: true, payload: null });
+      });
+
+      it('should resolve the dependents of a provided virtual field', async () => {
+        const { data } = await Model.update(previous, { v: 9 }, {});
+
+        expect(calls).toEqual({ b: 0, c: 0, vb: 1 });
+        expect(data).toEqual({ vb: 9 });
+      });
     });
   });
 });

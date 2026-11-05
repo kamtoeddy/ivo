@@ -92,14 +92,15 @@ mod allow_constant_and_dependents_on_success_schema {
 
 #[tokio::test]
 async fn should_allow_constant_and_dependents_in_fields_array() {
-    let input = allow_constant_and_dependents_on_success_schema::DataInput { lax: 5678 };
+    // a lax value other than its default (5678), so the dependent resolves
+    let input = allow_constant_and_dependents_on_success_schema::DataInput { lax: 1000 };
 
     let (created, ..) = allow_constant_and_dependents_on_success_schema::DataModel
         .create(input, ())
         .unwrap();
 
     assert_eq!(created.id, 1234);
-    assert_eq!(created.dependent, 5679);
+    assert_eq!(created.dependent, 1001);
 }
 
 // -----------------------------------------------------------------------------

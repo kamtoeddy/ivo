@@ -202,6 +202,35 @@ impl<T> ResolveStaticPathValue<T> for &mut PathValue<T> {
     }
 }
 
+/// The static default behind a bare path given to `#[lax(...)]`, if it has
+/// one: `None` when the path is a zero-argument function (a default resolver,
+/// whose value can't be known without calling it), `Some(value)` otherwise.
+/// Resolved the same way as `PathValue` (autoref specialization).
+pub struct PathStaticDefault<V>(pub Option<V>);
+
+pub trait ResolveFnPathStaticDefault<T> {
+    fn __ivo_static_default(self) -> Option<T>;
+}
+
+impl<T, F> ResolveFnPathStaticDefault<T> for PathStaticDefault<F>
+where
+    F: Fn() -> T,
+{
+    fn __ivo_static_default(self) -> Option<T> {
+        None
+    }
+}
+
+pub trait ResolveStaticPathStaticDefault<T> {
+    fn __ivo_static_default(self) -> Option<T>;
+}
+
+impl<T> ResolveStaticPathStaticDefault<T> for &mut PathStaticDefault<T> {
+    fn __ivo_static_default(self) -> Option<T> {
+        self.0.take()
+    }
+}
+
 pub async fn run_post_validator<Ctx, Opts, F, Partial, Errors>(
     ctx: &Ctx,
     opts: Opts,

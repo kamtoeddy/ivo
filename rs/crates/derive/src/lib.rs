@@ -327,6 +327,33 @@ fn static_or_fn_path_value_expr(tokens: &proc_macro2::TokenStream) -> proc_macro
     }
 }
 
+/// For a lax field, an expression evaluating to its static default as an
+/// `Option` (`None` when the default is a resolver: a closure, or a path to a
+/// zero-argument function). `None` for any other field, or a lax field whose
+/// default is a closure (known to be a resolver without evaluating anything).
+fn lax_static_default_expr(f: &FieldDef) -> Option<proc_macro2::TokenStream> {
+    if !matches!(f.field_type, FieldType::Lax) {
+        return None;
+    }
+    let tokens = attr_value_tokens(&f.attrs, "lax")?;
+    if is_non_static_default(&tokens) {
+        return None;
+    }
+    if syn::parse2::<syn::ExprPath>(tokens.clone()).is_err() {
+        return Some(quote! { ::core::option::Option::Some(#tokens) });
+    }
+    Some(quote! {
+        {
+            #[allow(unused_imports)]
+            use ::ivo::__ivo_internals::{
+                ResolveFnPathStaticDefault as _, ResolveStaticPathStaticDefault as _,
+            };
+            ::ivo::__ivo_internals::PathStaticDefault(::core::option::Option::Some(#tokens))
+                .__ivo_static_default()
+        }
+    })
+}
+
 fn find_attr<'a>(attrs: &'a [Attribute], name: &str) -> Option<&'a Attribute> {
     attrs.iter().find(|a| a.path().is_ident(name))
 }
@@ -3313,8 +3340,26 @@ fn generate_model(
         .filter_map(|f| {
             let index = dependent_parent_index(&f.name.to_string())?;
             let input_name = input_field_name(f);
+            // A lax field provided with (or validated to) its static default
+            // is no change from what it would have been anyway, so it doesn't
+            // trigger its dependents. A default resolver can't be compared
+            // without calling it, so a lax field with one always counts.
+            let differs_from_default = match lax_static_default_expr(f) {
+                Some(default_expr) => {
+                    let name = &f.name;
+                    quote! {
+                        && match #default_expr {
+                            ::core::option::Option::Some(__default) => {
+                                output.#name.as_ref() != ::core::option::Option::Some(&__default)
+                            }
+                            ::core::option::Option::None => true,
+                        }
+                    }
+                }
+                None => quote! {},
+            };
             Some(quote! {
-                if input.#input_name.is_some() {
+                if input.#input_name.is_some() #differs_from_default {
                     __dependent_current_parents[#index] = true;
                 }
             })

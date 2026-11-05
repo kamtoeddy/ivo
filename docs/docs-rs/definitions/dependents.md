@@ -5,8 +5,8 @@ title: Dependent Fields
 # Dependent Fields
 
 A dependent field is an output-only field whose value is recomputed whenever at least one of its
-declared parent fields is provided (e.g. `username_last_updated_at` should only update whenever
-`username` changes).
+declared parent fields changes (e.g. `username_last_updated_at` should only update whenever
+`username` changes) -- see [when the resolver runs](#when-the-resolver-runs).
 
 - Declared with `#[depends_on("parent", ...)]` -- at least one parent, each a string literal
   naming another field on the schema ([lax](./lax.md), [required](./required.md),
@@ -71,6 +71,21 @@ fn main() {
 `ctx.values()` inside the resolver gives access to every field resolved so far in the same
 `create`/`update` call, including sibling dependents earlier in the dependency graph -- see
 [Execution Pipeline](../execution-pipeline.md) for the exact phase ordering.
+
+## When the resolver runs
+
+- **On create**, a dependent resolves when at least one of its parents was:
+  - a required or virtual field, provided and accepted;
+  - a lax field, provided and accepted with a value other than its static default (a lax field
+    with a default resolver -- a closure or a path to a zero-argument function -- counts whenever it's provided, since its
+    default isn't known without calling it);
+  - a dependent field, resolved to a value other than its default.
+- **On update**, a dependent resolves when at least one of its parents was provided and accepted,
+  or resolved, with a value different from its previous one. A provided virtual field always
+  counts, since it has no previous value.
+
+A dependent that resolves to the value it already had is not a change, so the dependents below it
+don't resolve.
 
 ## More examples
 

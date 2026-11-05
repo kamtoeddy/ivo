@@ -5,8 +5,9 @@ title: Champs dépendants
 # Champs dépendants
 
 Un champ dépendant est un champ exclusif à la sortie dont la valeur est recalculée chaque fois
-qu'au moins un de ses champs parents déclarés est fourni (par ex. `username_last_updated_at` ne
-devrait être mis à jour que lorsque `username` change).
+qu'au moins un de ses champs parents déclarés change (par ex. `username_last_updated_at` ne
+devrait être mis à jour que lorsque `username` change) -- voir
+[quand le résolveur s'exécute](#quand-le-résolveur-sexécute).
 
 - Déclaré avec `#[depends_on("parent", ...)]` -- au moins un parent, chacun un littéral de chaîne
   nommant un autre champ du schéma ([lax](./lax.md), [requis](./required.md),
@@ -75,6 +76,21 @@ fn main() {
 `create`/`update`, y compris les champs dépendants voisins résolus plus tôt dans le graphe de
 dépendances -- voir [Pipeline d'exécution](../execution-pipeline.md) pour l'ordre exact des
 phases.
+
+## Quand le résolveur s'exécute
+
+- **À la création**, un champ dépendant est résolu si au moins un de ses parents est :
+  - un champ requis ou virtuel, fourni et accepté ;
+  - un champ lax, fourni et accepté avec une valeur différente de sa valeur par défaut statique
+    (un champ lax dont la valeur par défaut est un résolveur -- une closure ou le chemin d’une fonction sans argument -- compte dès
+    qu'il est fourni, car sa valeur par défaut n'est pas connue sans l'appeler) ;
+  - un champ dépendant, résolu à une valeur différente de sa valeur par défaut.
+- **Lors d'une mise à jour**, un champ dépendant est résolu si au moins un de ses parents a été
+  fourni et accepté, ou résolu, avec une valeur différente de la précédente. Un champ virtuel
+  fourni compte toujours, puisqu'il n'a pas de valeur précédente.
+
+Un champ dépendant résolu à la valeur qu'il avait déjà n'est pas un changement : les champs qui en
+dépendent ne sont donc pas résolus.
 
 ## Autres exemples
 

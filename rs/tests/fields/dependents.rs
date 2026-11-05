@@ -95,7 +95,7 @@ fn should_properly_run_sync_dependent_resolver() {
     let (created, ..) = sync_resolver_schema::DataModel
         .create(
             sync_resolver_schema::PartialDataInput {
-                lax: Some(default_lax_value),
+                lax: Some(default_lax_value + 1),
             },
             (),
         )
@@ -106,7 +106,7 @@ fn should_properly_run_sync_dependent_resolver() {
         created,
         sync_resolver_schema::Data {
             dependent: default_dependent_value + 1,
-            lax: default_lax_value
+            lax: default_lax_value + 1
         }
     );
 
@@ -527,7 +527,8 @@ fn should_not_run_sync_dependent_resolver_if_readonly_is_provided_and_value_is_d
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let lax = default_lax_value;
+    // a lax value other than its default, so the dependent resolves
+    let lax = default_lax_value + 1;
 
     let (created, ..) = sync_readonly_schema::DataModel
         .create(
@@ -798,7 +799,7 @@ fn should_trigger_sync_on_success_handlers_if_resolver_is_run_at_creation() {
     let (created, _ctx_options, handle_success) = sync_on_success_schema::DataModel
         .create(
             sync_on_success_schema::PartialDataInput {
-                lax: Some(default_lax_value),
+                lax: Some(default_lax_value + 1),
             },
             (),
         )
@@ -809,7 +810,7 @@ fn should_trigger_sync_on_success_handlers_if_resolver_is_run_at_creation() {
         created,
         sync_on_success_schema::Data {
             dependent: default_dependent_value + 1,
-            lax: default_lax_value
+            lax: default_lax_value + 1
         }
     );
 
@@ -856,7 +857,7 @@ fn should_trigger_sync_on_success_handlers_even_if_resolver_is_not_run_at_creati
     let (created, _ctx_options, handle_success) = sync_on_success_multiple_schema::DataModel
         .create(
             sync_on_success_multiple_schema::PartialDataInput {
-                lax: Some(default_lax_value),
+                lax: Some(default_lax_value + 1),
             },
             (),
         )
@@ -867,7 +868,7 @@ fn should_trigger_sync_on_success_handlers_even_if_resolver_is_not_run_at_creati
         created,
         sync_on_success_multiple_schema::Data {
             dependent: default_dependent_value + 1,
-            lax: default_lax_value
+            lax: default_lax_value + 1
         }
     );
 
@@ -914,7 +915,7 @@ fn should_trigger_sync_on_success_handlers_if_resolver_is_run_during_updates() {
     let (created, _ctx_options, handle_success) = sync_on_success_schema::DataModel
         .create(
             sync_on_success_schema::PartialDataInput {
-                lax: Some(default_lax_value),
+                lax: Some(default_lax_value + 1),
             },
             (),
         )
@@ -925,7 +926,7 @@ fn should_trigger_sync_on_success_handlers_if_resolver_is_run_during_updates() {
         created,
         sync_on_success_schema::Data {
             dependent: default_dependent_value + 1,
-            lax: default_lax_value
+            lax: default_lax_value + 1
         }
     );
 

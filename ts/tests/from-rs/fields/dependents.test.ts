@@ -66,11 +66,11 @@ describe('fields.dependent', () => {
         .field(b.lax('lax', defaultLaxValue)),
     ).getModel();
 
-    let { data } = await Model.create({ lax: defaultLaxValue }, {});
+    let { data } = await Model.create({ lax: defaultLaxValue + 1 }, {});
 
     expect(data).toEqual({
       dependent: defaultDependentValue + 1,
-      lax: defaultLaxValue,
+      lax: defaultLaxValue + 1,
     });
 
     const lax = 700;
@@ -210,11 +210,11 @@ describe('fields.dependent', () => {
         .field(f.lax('lax', defaultLaxValue)),
     ).getModel();
 
-    let { data } = await Model.create({ lax: defaultLaxValue }, {});
+    let { data } = await Model.create({ lax: defaultLaxValue + 1 }, {});
 
     expect(data).toEqual({
       dependent: defaultDependentValue + 1,
-      lax: defaultLaxValue,
+      lax: defaultLaxValue + 1,
     });
 
     let previous = data!;
@@ -326,13 +326,16 @@ describe('fields.dependent', () => {
     ).getModel();
 
     const { data, handleSuccess } = await Model.create(
-      { lax: defaultLaxValue },
+      { lax: defaultLaxValue + 1 },
       {},
     );
 
     const resolvedValue = defaultDependentValue + 1;
 
-    expect(data).toEqual({ dependent: resolvedValue, lax: defaultLaxValue });
+    expect(data).toEqual({
+      dependent: resolvedValue,
+      lax: defaultLaxValue + 1,
+    });
 
     await handleSuccess?.();
 
@@ -368,13 +371,16 @@ describe('fields.dependent', () => {
     ).getModel();
 
     const { data, handleSuccess } = await Model.create(
-      { lax: defaultLaxValue },
+      { lax: defaultLaxValue + 1 },
       {},
     );
 
     const resolvedValue = defaultDependentValue + 1;
 
-    expect(data).toEqual({ dependent: resolvedValue, lax: defaultLaxValue });
+    expect(data).toEqual({
+      dependent: resolvedValue,
+      lax: defaultLaxValue + 1,
+    });
 
     await handleSuccess?.();
 
@@ -493,13 +499,16 @@ describe('fields.dependent', () => {
     ).getModel();
 
     const { data, handleSuccess } = await Model.create(
-      { lax: defaultLaxValue },
+      { lax: defaultLaxValue + 1 },
       {},
     );
 
     const resolvedValue = defaultDependentValue + 1;
 
-    expect(data).toEqual({ dependent: resolvedValue, lax: defaultLaxValue });
+    expect(data).toEqual({
+      dependent: resolvedValue,
+      lax: defaultLaxValue + 1,
+    });
 
     await handleSuccess?.();
 

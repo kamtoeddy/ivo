@@ -41,9 +41,11 @@ constante ni d'horodatage.
    réussie.
 9. **Valeurs par défaut des dépendants** -- chaque champ dépendant reçoit son `#[default(...)]`.
 10. **Résolution des dépendants** -- `#[resolve]`, un tour par niveau du graphe de dépendances, en
-    boucle jusqu'à ce que plus rien ne change. Seuls les dépendants des champs fournis (ou des
-    dépendants résolus lors d'un tour précédent) sont résolus : la valeur par défaut d'un champ lax
-    ne les déclenche pas, et leurs dépendants gardent leur `#[default(...)]`. `ctx.values()` dans
+    boucle jusqu'à ce que plus rien ne change. Seuls les dépendants des champs qui ont changé sont
+    résolus (voir
+    [quand le résolveur s'exécute](./definitions/dependents.md#quand-le-résolveur-sexécute)) : un
+    champ lax laissé à sa valeur par défaut statique, ou fourni avec celle-ci, ne les déclenche
+    pas, et ils gardent leur `#[default(...)]`. `ctx.values()` dans
     un résolveur reflète tout ce qui a été résolu lors des tours précédents.
 11. **Attachement des constantes** -- `#[constant]`, après la résolution des dépendants, afin qu'un
     résolveur de constante puisse lire les valeurs dépendantes résolues via `ctx.values()`.

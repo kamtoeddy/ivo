@@ -7,7 +7,7 @@ import TsPlayground from '@site/src/components/TsPlayground';
 # Dependent Fields
 
 A dependent field is a purely output field whose value changes whenever at least one field it
-depends on is provided and accepted.
+depends on changes -- see [when the resolver runs](#when-the-resolver-runs).
 
 <TsPlayground
 ivoVersion="local"
@@ -47,8 +47,23 @@ b.dependent("slug", "name")
   .resolve(({ input }) => input.name!.toLowerCase().replace(/\s+/g, "-"));
 ```
 
-The static default is used when none of the dependencies are provided or accepted. The resolver
-receives the operation context and is invoked whenever a dependency is accepted.
+The default is used until the resolver runs (see [when the resolver runs](#when-the-resolver-runs)).
+The resolver receives the operation context.
+
+## When the resolver runs
+
+- **On create**, a dependent resolves when at least one of its parents was:
+  - a required or virtual field, provided and accepted;
+  - a lax field, provided and accepted with a value other than its static default (a lax field
+    with a default resolver -- a function -- counts whenever it's provided, since its
+    default isn't known without calling it);
+  - a dependent field, resolved to a value other than its default.
+- **On update**, a dependent resolves when at least one of its parents was provided and accepted,
+  or resolved, with a value different from its previous one. A provided virtual field always
+  counts, since it has no previous value.
+
+A dependent that resolves to the value it already had is not a change, so the dependents below it
+don't resolve.
 
 ## Readonly
 
@@ -99,7 +114,7 @@ Dependent fields support `onDelete` and `onSuccess` listeners.
 | ------------------------------ | ------------------------------------------------------------------------ |
 | `dependent(name, dependsOn)`   | Create a dependent field. `dependsOn` can be a single field or an array. |
 | `default(value)`               | Static default used when no dependency is triggered.                     |
-| `default(resolver).resolve(r)` | Computed default; resolver runs when a dependency is accepted.           |
+| `default(resolver).resolve(r)` | Computed default; resolver runs when a dependency changes.               |
 | `readonly()`                   | Locks after divergence; only with a static default.                      |
 | `onDelete(handler)`            | Listener invoked by `model.delete`.                                      |
 | `onSuccess(handler)`           | Listener invoked after a successful create/update.                       |

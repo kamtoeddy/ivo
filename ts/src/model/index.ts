@@ -216,6 +216,8 @@ class ModelTool<
 
     let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
 
+    this._dropLaxFieldsLeftAtTheirDefaults(collection);
+
     while (collection.relevantDependentConfigNames.size > 0) {
       const next = this._resolveDependentChanges(collection);
       collection = isThenable(next) ? await next : next;
@@ -1630,6 +1632,30 @@ class ModelTool<
     };
   }
 
+  /**
+   * On create, a lax field provided with (or validated to) its static default
+   * is no change from what it would have been anyway, so it doesn't trigger
+   * its dependents. A default resolver can't be compared without calling it,
+   * so a lax field with one always counts as changed when provided.
+   */
+  private _dropLaxFieldsLeftAtTheirDefaults(
+    fieldsCollection: FieldInfoCollection,
+  ) {
+    const names = fieldsCollection.relevantDependentConfigNames;
+    const values = this.ctxValues as Record<string, unknown>;
+
+    for (const name of names) {
+      const config = this.definitions[name];
+
+      if (
+        config?.type === 'lax' &&
+        typeof config.default !== 'function' &&
+        isEqual(values[name], config.default, this.options.equalityDepth)
+      )
+        names.delete(name);
+    }
+  }
+
   private _resolveDependentChanges(
     fieldsCollection: FieldInfoCollection,
   ): MaybePromise<FieldInfoCollection> {
@@ -1688,10 +1714,25 @@ class ModelTool<
             ? prevValues[name]
             : null;
 
-        if (!isEqual(value, values[name], this.options.equalityDepth)) {
-          fieldsResolved.add(name);
-          values[name] = value;
-        }
+        // on update, `values` only holds the changes: a dependent without
+        // one still has its previous value
+        const current =
+          isUpdate && !Object.hasOwn(values, name)
+            ? prevValues[name]
+            : values[name];
+
+        // a value that didn't change doesn't trigger the dependents below it
+        if (isEqual(value, current, this.options.equalityDepth)) return;
+
+        fieldsResolved.add(name);
+
+        // back to its previous value: no longer a change
+        if (
+          isUpdate &&
+          isEqual(value, prevValues[name], this.options.equalityDepth)
+        )
+          delete values[name];
+        else values[name] = value;
       },
     );
 
