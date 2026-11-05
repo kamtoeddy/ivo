@@ -2,7 +2,7 @@
   "name": "ivo",
   "author": "kamtoeddy",
   "description": "The schema valitator that brings user stories to life",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "scripts": {
     "build": "tsdown",
     "build:dev": "tsdown",
