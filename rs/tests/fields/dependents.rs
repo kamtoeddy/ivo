@@ -626,7 +626,8 @@ async fn should_not_run_async_dependent_resolver_if_readonly_is_provided_and_val
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let lax = default_lax_value;
+    // a lax value other than its default, so the dependent resolves
+    let lax = default_lax_value + 1;
 
     let (created, ..) = async_readonly_schema::DataModel
         .create(
@@ -973,7 +974,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
     let (created, _ctx_options, handle_success) = grouped_on_success_schema::DataModel
         .create(
             grouped_on_success_schema::PartialDataInput {
-                lax: Some(default_lax_value),
+                lax: Some(default_lax_value + 1),
             },
             (),
         )
@@ -985,7 +986,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
         created,
         grouped_on_success_schema::Data {
             dependent: default_dependent_value + 1,
-            lax: default_lax_value,
+            lax: default_lax_value + 1,
         }
     );
 
@@ -1169,7 +1170,8 @@ mod grouped_on_success_schema {
         #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
 
-        #[lax(async |_, _| 20)]
+        // a static default: a resolver default would trigger the dependent
+        #[lax(20)]
         pub lax: i32,
     }
 
@@ -1258,7 +1260,8 @@ mod async_static_default_schema {
         #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
 
-        #[lax(async |_, _| 20)]
+        // a static default: a resolver default would trigger the dependent
+        #[lax(20)]
         pub lax: i32,
     }
 }
@@ -1290,7 +1293,8 @@ mod async_computed_default_schema {
         #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
 
-        #[lax(async |_, _| 20)]
+        // a static default: a resolver default would trigger the dependent
+        #[lax(20)]
         pub lax: i32,
     }
 }
@@ -1442,7 +1446,8 @@ mod async_readonly_schema {
         #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
 
-        #[lax(async |_, _| 20)]
+        // a static default: a resolver default would trigger the dependent
+        #[lax(20)]
         pub lax: i32,
     }
 }
@@ -1626,7 +1631,8 @@ mod entity_level_on_success_schema {
         #[resolve(async |ctx, _| ctx.values().dependent.unwrap() + 1)]
         pub dependent: i32,
 
-        #[lax(async |_, _| 20)]
+        // a static default: a resolver default would trigger the dependent
+        #[lax(20)]
         pub lax: i32,
     }
 

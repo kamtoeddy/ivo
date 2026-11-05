@@ -327,16 +327,13 @@ fn static_or_fn_path_value_expr(tokens: &proc_macro2::TokenStream) -> proc_macro
     }
 }
 
-/// For a lax field, an expression evaluating to its static default as an
-/// `Option` (`None` when the default is a resolver: a closure, or a path to a
-/// zero-argument function). `None` for any other field, or a lax field whose
-/// default is a closure (known to be a resolver without evaluating anything).
-fn lax_static_default_expr(f: &FieldDef) -> Option<proc_macro2::TokenStream> {
-    if !matches!(f.field_type, FieldType::Lax) {
-        return None;
-    }
-    let tokens = attr_value_tokens(&f.attrs, "lax")?;
-    if is_non_static_default(&tokens) {
+/// For a `#[lax(...)]`/`#[default(...)]` value, an expression evaluating to
+/// the static default as an `Option`: `None` when the path given is a
+/// zero-argument function (a default resolver). `None` itself (no expression)
+/// when the value is a closure, known to be a resolver without evaluating
+/// anything.
+fn static_default_expr(tokens: &proc_macro2::TokenStream) -> Option<proc_macro2::TokenStream> {
+    if is_non_static_default(tokens) {
         return None;
     }
     if syn::parse2::<syn::ExprPath>(tokens.clone()).is_err() {
@@ -3329,40 +3326,59 @@ fn generate_model(
     };
     let dependent_parent_index = |name: &str| dependent_parent_names.iter().position(|n| n == name);
     let dependent_parent_count = dependent_parent_names.len();
+    // What counts as changed for the dependents below, before any of them
+    // resolves: a required or virtual field that was provided (and accepted:
+    // validation has passed by now); a lax field whose value isn't its static
+    // default (provided with another value, or given by a default resolver);
+    // a dependent field whose default comes from a resolver.
     let dependent_create_init_fields: Vec<_> = fields
         .iter()
-        .filter(|f| {
-            matches!(
-                f.field_type,
-                FieldType::Required | FieldType::Lax | FieldType::Virtual { .. }
-            )
-        })
         .filter_map(|f| {
             let index = dependent_parent_index(&f.name.to_string())?;
-            let input_name = input_field_name(f);
-            // A lax field provided with (or validated to) its static default
-            // is no change from what it would have been anyway, so it doesn't
-            // trigger its dependents. A default resolver can't be compared
-            // without calling it, so a lax field with one always counts.
-            let differs_from_default = match lax_static_default_expr(f) {
-                Some(default_expr) => {
-                    let name = &f.name;
-                    quote! {
-                        && match #default_expr {
-                            ::core::option::Option::Some(__default) => {
-                                output.#name.as_ref() != ::core::option::Option::Some(&__default)
-                            }
-                            ::core::option::Option::None => true,
+            let name = &f.name;
+            let mark = quote! { __dependent_changed[#index] = true; };
+            match f.field_type {
+                FieldType::Required | FieldType::Virtual { .. } => {
+                    let input_name = input_field_name(f);
+                    Some(quote! {
+                        if input.#input_name.is_some() {
+                            #mark
                         }
-                    }
+                    })
                 }
-                None => quote! {},
-            };
-            Some(quote! {
-                if input.#input_name.is_some() #differs_from_default {
-                    __dependent_current_parents[#index] = true;
+                FieldType::Lax => {
+                    let tokens = attr_value_tokens(&f.attrs, "lax")?;
+                    let Some(default_expr) = static_default_expr(&tokens) else {
+                        return Some(mark);
+                    };
+                    Some(quote! {
+                        match #default_expr {
+                            ::core::option::Option::Some(__default) => {
+                                if input.#name.is_some()
+                                    && output.#name.as_ref() != ::core::option::Option::Some(&__default)
+                                {
+                                    #mark
+                                }
+                            }
+                            ::core::option::Option::None => {
+                                #mark
+                            }
+                        }
+                    })
                 }
-            })
+                FieldType::Dependent => {
+                    let tokens = attr_value_tokens(&f.attrs, "default")?;
+                    let Some(default_expr) = static_default_expr(&tokens) else {
+                        return Some(mark);
+                    };
+                    Some(quote! {
+                        if (#default_expr).is_none() {
+                            #mark
+                        }
+                    })
+                }
+                _ => None,
+            }
         })
         .collect();
 
@@ -3373,14 +3389,17 @@ fn generate_model(
     // `resolver` and not on the ctx/opts expressions passed to it.
     struct DependentInfo {
         name: proc_macro2::Ident,
-        // Its index in the changed-parents arrays, if anything depends on it.
+        // Its index in the changed-fields array, if anything depends on it.
         parent_index: Option<usize>,
+        // 0 without dependent parents, else one more than its deepest one.
+        level: usize,
         ty: proc_macro2::TokenStream,
         parent_guard: proc_macro2::TokenStream,
         resolver: proc_macro2::TokenStream,
     }
     let dependent_infos: Vec<DependentInfo> = {
         let order = dependency_order(fields);
+        let mut levels: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
         order
             .into_iter()
             .filter_map(|name| {
@@ -3396,10 +3415,17 @@ fn generate_model(
                     quote!(#ty)
                 };
                 let parents = parse_depends_on(f).unwrap_or_default();
+                // `dependency_order` lists parents first, so theirs are known
+                let level = parents
+                    .iter()
+                    .filter_map(|p| levels.get(p))
+                    .max()
+                    .map_or(0, |l| l + 1);
+                levels.insert(name.to_string(), level);
                 let parent_checks: Vec<_> = parents
                     .iter()
                     .filter_map(|p| dependent_parent_index(p))
-                    .map(|index| quote! { __dependent_current_parents[#index] })
+                    .map(|index| quote! { __dependent_changed[#index] })
                     .collect();
                 let parent_guard = if parent_checks.is_empty() {
                     quote! { false }
@@ -3411,6 +3437,7 @@ fn generate_model(
                 DependentInfo {
                     name,
                     parent_index,
+                    level,
                     ty,
                     parent_guard,
                     resolver,
@@ -3419,7 +3446,7 @@ fn generate_model(
             .collect()
     };
     let mark_dependent_changed = |parent_index: &Option<usize>| match parent_index {
-        Some(index) => quote! { __dependent_next_parents[#index] = true; },
+        Some(index) => quote! { __dependent_changed[#index] = true; },
         None => quote! {},
     };
     let dependent_async_count = dependent_infos
@@ -3442,9 +3469,9 @@ fn generate_model(
         quote! {}
     } else if dependent_async_count < 2 {
         // At most one async resolver: sequential `.await`s are already as
-        // parallel as it gets, so keep the simpler, incrementally-updated-ctx
-        // codegen (each field observes prior fields' changes within the same
-        // round, matching the pre-existing, well-tested behavior).
+        // parallel as it gets, so resolve one dependent at a time, in
+        // dependency order: a single pass resolves each one at most once,
+        // after all its parents.
         // Later resolvers observe earlier ones' changes, so `ctx` is rebuilt
         // after every change (an unchanged value leaves the snapshot as is).
         let dependent_create_phase = dependent_infos.iter().map(|d| {
@@ -3471,109 +3498,111 @@ fn generate_model(
             }
         });
         quote! {
-            let mut __dependent_current_parents = [false; #dependent_parent_count];
+            let mut __dependent_changed = [false; #dependent_parent_count];
             #(#dependent_create_init_fields)*
-            loop {
-                let mut __dependent_next_parents = [false; #dependent_parent_count];
-                #(#dependent_create_phase)*
-                if !__dependent_next_parents.contains(&true) {
-                    break;
-                }
-                __dependent_current_parents = __dependent_next_parents;
-            }
+            #(#dependent_create_phase)*
         }
     } else {
-        // Two or more async resolvers: fields ready in the same round are, by
-        // the dependency-graph rules (no redundant/transitive deps, no
-        // cycles), independent of one another, so resolve them all against a
-        // single per-round `ctx` snapshot and poll the async ones
+        // Two or more async resolvers: the dependents of a dependency level
+        // only depend on earlier levels (and input fields), so resolve each
+        // level against a single `ctx` snapshot, polling its async resolvers
         // concurrently via `join!` (stack-only, no boxing/allocation) rather
-        // than one `.await` at a time.
-        let result_idents: Vec<_> = (0..dependent_infos.len())
-            .map(|i| format_ident!("__dependent_result_{}", i))
-            .collect();
-        let value_exprs: Vec<_> = dependent_infos
+        // than one `.await` at a time. Levels run in order, so each dependent
+        // resolves at most once, after all its parents.
+        let level_count = dependent_infos
             .iter()
-            .map(|d| {
+            .map(|d| d.level)
+            .max()
+            .map_or(0, |l| l + 1);
+        let levels = (0..level_count).map(|level| {
+            let mut bindings = Vec::new();
+            let mut async_exprs = Vec::new();
+            let mut async_idents = Vec::new();
+            let mut applies = Vec::new();
+
+            for (i, d) in dependent_infos.iter().enumerate().filter(|(_, d)| d.level == level) {
                 let DependentInfo {
+                    name,
+                    parent_index,
                     ty,
                     parent_guard,
                     resolver,
                     ..
                 } = d;
+                let ident = format_ident!("__dependent_result_{}", i);
                 let ctx_expr = quote!(&ctx);
                 let opts_expr = quote!(&_rw_ctx_options);
-                let (_, resolver_expr) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
-                quote! {
+                let (is_async, resolver_expr) = make_resolver_call(resolver, &ctx_expr, &opts_expr);
+                let value_expr = quote! {
                     if #parent_guard {
                         let __new_value: #ty = #resolver_expr;
                         ::core::option::Option::Some(__new_value)
                     } else {
                         ::core::option::Option::None
                     }
+                };
+                if is_async {
+                    async_exprs.push(quote! { async { #value_expr } });
+                    async_idents.push(ident.clone());
+                } else {
+                    bindings.push(quote! { let #ident = #value_expr; });
                 }
-            })
-            .collect();
 
-        let mut round_bindings = Vec::new();
-        let mut async_exprs = Vec::new();
-        let mut async_idents = Vec::new();
-        for ((d, ident), value_expr) in dependent_infos.iter().zip(&result_idents).zip(&value_exprs)
-        {
-            let ctx_expr = quote!(&ctx);
-            let opts_expr = quote!(&_rw_ctx_options);
-            let (is_async, _) = make_resolver_call(&d.resolver, &ctx_expr, &opts_expr);
-            if is_async {
-                async_exprs.push(quote! { async { #value_expr } });
-                async_idents.push(ident.clone());
-            } else {
-                round_bindings.push(quote! { let #ident = #value_expr; });
-            }
-        }
-        let join_stmt = quote! {
-            let (#(#async_idents),*) = ::ivo::futures_util_join!(#(#async_exprs),*);
-        };
-
-        let applies = dependent_infos
-            .iter()
-            .zip(&result_idents)
-            .map(|(d, ident)| {
-                let DependentInfo {
-                    name, parent_index, ..
-                } = d;
                 let mark_changed = mark_dependent_changed(parent_index);
-                quote! {
+                applies.push(quote! {
                     if let ::core::option::Option::Some(__new_value) = #ident {
                         if output.#name.as_ref() != ::core::option::Option::Some(&__new_value) {
                             output.#name = ::core::option::Option::Some(__new_value);
                             #mark_changed
+                            __level_changed = true;
                         }
                     }
-                }
-            });
+                });
+            }
 
-        // Every resolver in a round reads the same snapshot (`ctx` only
-        // changes between rounds).
-        quote! {
-            let mut __dependent_current_parents = [false; #dependent_parent_count];
-            #(#dependent_create_init_fields)*
-            loop {
-                let mut __dependent_next_parents = [false; #dependent_parent_count];
-                #(#round_bindings)*
+            let join_stmt = match async_exprs.len() {
+                0 => quote! {},
+                1 => {
+                    let (ident, expr) = (&async_idents[0], &async_exprs[0]);
+                    quote! { let #ident = #expr.await; }
+                }
+                _ => quote! {
+                    let (#(#async_idents),*) = ::ivo::futures_util_join!(#(#async_exprs),*);
+                },
+            };
+
+            // the next level reads this one's values (an unchanged level leaves
+            // the snapshot as is)
+            let rebuild_ctx = if level + 1 < level_count {
+                quote! {
+                    if __level_changed {
+                    ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
+                        input.clone(),
+                        __original_input.clone(),
+                        ::core::convert::Into::into(output.clone()),
+                        ::core::option::Option::None,
+                        ::core::option::Option::None,
+                    );
+                    }
+                }
+            } else {
+                quote! {}
+            };
+
+            quote! {
+                #[allow(unused_mut, unused_variables)]
+                let mut __level_changed = false;
+                #(#bindings)*
                 #join_stmt
                 #(#applies)*
-                if !__dependent_next_parents.contains(&true) {
-                    break;
-                }
-                __dependent_current_parents = __dependent_next_parents;
-                ctx = ::ivo::__ivo_internals::IvoContext::<#partial_input_name, #output_name>::new(
-                    input.clone(),
-                    __original_input.clone(),
-                    ::core::convert::Into::into(output.clone()),
-                    ::core::option::Option::None,
-                    ::core::option::Option::None,
-                );
+                #rebuild_ctx
             }
+        });
+
+        quote! {
+            let mut __dependent_changed = [false; #dependent_parent_count];
+            #(#dependent_create_init_fields)*
+            #(#levels)*
         }
     };
 

@@ -39,18 +39,21 @@ main();`}
 
 ## Quand le résolveur s'exécute
 
-- **À la création**, un champ dépendant est résolu si au moins un de ses parents est :
-  - un champ requis ou virtuel, fourni et accepté ;
-  - un champ lax, fourni et accepté avec une valeur différente de sa valeur par défaut statique
-    (un champ lax dont la valeur par défaut est un résolveur -- une fonction -- compte dès
-    qu'il est fourni, car sa valeur par défaut n'est pas connue sans l'appeler) ;
-  - un champ dépendant, résolu à une valeur différente de sa valeur par défaut.
-- **Lors d'une mise à jour**, un champ dépendant est résolu si au moins un de ses parents a été
-  fourni et accepté, ou résolu, avec une valeur différente de la précédente. Un champ virtuel
-  fourni compte toujours, puisqu'il n'a pas de valeur précédente.
+- **À la création**, un champ dépendant est résolu si au moins un de ses parents :
+  - est un champ requis ou virtuel fourni et accepté ;
+  - est un champ lax fourni et accepté avec une valeur différente de sa valeur par défaut
+    statique, ou dont la valeur par défaut vient d'un résolveur (une fonction), fourni ou non ;
+  - est un champ dépendant résolu à une valeur différente de sa valeur par défaut, ou dont la
+    valeur par défaut vient d'un résolveur.
+- **Lors d'une mise à jour**, un champ dépendant est résolu si au moins un de ses parents :
+  - est un champ virtuel fourni et accepté (toujours, puisqu'il n'a pas de valeur précédente) ;
+  - est un champ requis ou lax fourni et accepté avec une valeur différente de la précédente ;
+  - est un champ dépendant résolu à une valeur différente de la précédente.
 
 Un champ dépendant résolu à la valeur qu'il avait déjà n'est pas un changement : les champs qui en
-dépendent ne sont donc pas résolus.
+dépendent ne sont donc pas résolus. Les champs dépendants sont résolus dans l'ordre des
+dépendances, chacun au plus une fois par opération, après tous ses parents : un champ dépendant
+de plusieurs parents n'est jamais résolu deux fois.
 
 ## Règles
 

@@ -74,18 +74,21 @@ fn main() {
 
 ## When the resolver runs
 
-- **On create**, a dependent resolves when at least one of its parents was:
-  - a required or virtual field, provided and accepted;
-  - a lax field, provided and accepted with a value other than its static default (a lax field
-    with a default resolver -- a closure or a path to a zero-argument function -- counts whenever it's provided, since its
-    default isn't known without calling it);
-  - a dependent field, resolved to a value other than its default.
-- **On update**, a dependent resolves when at least one of its parents was provided and accepted,
-  or resolved, with a value different from its previous one. A provided virtual field always
-  counts, since it has no previous value.
+- **On create**, a dependent resolves when at least one of its parents:
+  - is a required or virtual field that was provided and accepted;
+  - is a lax field that was provided and accepted with a value other than its static default, or
+    whose default comes from a resolver (a closure or a path to a zero-argument function), provided or not;
+  - is a dependent field that resolved to a value other than its default, or whose default comes
+    from a resolver.
+- **On update**, a dependent resolves when at least one of its parents:
+  - is a virtual field that was provided and accepted (always, since it has no previous value);
+  - is a required or lax field that was provided and accepted with a value other than its
+    previous one;
+  - is a dependent field that resolved to a value other than its previous one.
 
 A dependent that resolves to the value it already had is not a change, so the dependents below it
-don't resolve.
+don't resolve. Dependents resolve in dependency order, each one at most once per operation, after
+all its parents: a dependent with several parents never resolves twice.
 
 ## More examples
 

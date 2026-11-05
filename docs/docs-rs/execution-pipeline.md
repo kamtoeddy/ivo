@@ -38,8 +38,9 @@ computes a dependent default, a constant or a timestamp.
 8. **Sanitize** -- `#[sanitize]` on virtual fields that were provided and not ignored, once step 7
    has succeeded.
 9. **Dependent defaults** -- every dependent field gets its `#[default(...)]`.
-10. **Resolve dependents** -- `#[resolve]`, one round per dependency-graph level, looping until
-    nothing new changes. Only the dependents of fields that changed are resolved (see
+10. **Resolve dependents** -- `#[resolve]`, one dependency-graph level at a time, so each
+    dependent resolves at most once, after all its parents. Only the dependents of fields that
+    changed are resolved (see
     [when the resolver runs](./definitions/dependents.md#when-the-resolver-runs)): a lax field
     left at, or provided with, its static default doesn't trigger them, so they keep their
     `#[default(...)]`. `ctx.values()` inside a resolver reflects

@@ -53,8 +53,17 @@ interface SchemaPlan {
   defaultables: DefinitionEntry[];
   /** every field that can be required: all but constants and dependents */
   requirables: DefinitionEntry[];
-  /** dependent fields with the fields they depend on */
-  dependents: [string, string[]][];
+  /**
+   * dependent fields with the fields they depend on, by dependency level: a
+   * level only depends on input fields and earlier levels, so resolving them
+   * in order resolves each dependent at most once, after all its parents
+   */
+  dependentLevels: [string, string[]][][];
+  /**
+   * lax and dependent fields with a default resolver: their value is never a
+   * static default, so on create they count as changed for their dependents
+   */
+  resolverDefaults: string[];
   /** the fields' own `onDelete` handlers */
   deleteHandlers: NS.DeleteHandler<any, any>[];
   /** whether any field is read under an alias */
@@ -99,11 +108,14 @@ class ModelTool<
         constants: [],
         defaultables: [],
         requirables: [],
-        dependents: [],
+        dependentLevels: [],
+        resolverDefaults: [],
         deleteHandlers: [],
         hasAliases: false,
         hasSuccessHandlers: false,
       };
+
+      const dependents: [string, string[]][] = [];
 
       for (const entry of Object.entries(this.definitions)) {
         const config = entry[1];
@@ -113,8 +125,14 @@ class ModelTool<
 
         if (config.type === 'dependent') {
           plan.defaultables.push(entry);
-          plan.dependents.push([entry[0], toArray(config.dependsOn)]);
+          dependents.push([entry[0], toArray(config.dependsOn)]);
         } else if (config.type === 'lax') plan.defaultables.push(entry);
+
+        if (
+          (config.type === 'dependent' || config.type === 'lax') &&
+          typeof config.default === 'function'
+        )
+          plan.resolverDefaults.push(entry[0]);
 
         if (config.type !== 'virtual' && config.onDelete)
           plan.deleteHandlers = plan.deleteHandlers.concat(config.onDelete);
@@ -123,6 +141,8 @@ class ModelTool<
 
         if (config.onSuccess) plan.hasSuccessHandlers = true;
       }
+
+      plan.dependentLevels = groupByDependencyLevel(dependents);
 
       ModelTool._planCache.set(this.definitions, plan);
     }
@@ -214,14 +234,14 @@ class ModelTool<
     const sanitized = this._sanitizeVirtuals(fieldsCollection);
     if (sanitized) await sanitized;
 
-    let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
+    const changed = new Set(fieldsCollection.relevantConfigNames);
 
-    this._dropLaxFieldsLeftAtTheirDefaults(collection);
+    this._dropLaxFieldsLeftAtTheirDefaults(changed);
 
-    while (collection.relevantDependentConfigNames.size > 0) {
-      const next = this._resolveDependentChanges(collection);
-      collection = isThenable(next) ? await next : next;
-    }
+    for (const name of this._plan.resolverDefaults) changed.add(name);
+
+    const resolved = this._resolveDependents(changed);
+    if (resolved) await resolved;
 
     this._attachTimestamps();
 
@@ -302,12 +322,10 @@ class ModelTool<
     const sanitized = this._sanitizeVirtuals(fieldsCollection);
     if (sanitized) await sanitized;
 
-    let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
-
-    while (collection.relevantDependentConfigNames.size > 0) {
-      const next = this._resolveDependentChanges(collection);
-      collection = isThenable(next) ? await next : next;
-    }
+    const resolved = this._resolveDependents(
+      new Set(fieldsCollection.relevantConfigNames),
+    );
+    if (resolved) await resolved;
 
     const updatedValues = this.ctxValues;
     let hasUpdates = false;
@@ -1638,10 +1656,7 @@ class ModelTool<
    * its dependents. A default resolver can't be compared without calling it,
    * so a lax field with one always counts as changed when provided.
    */
-  private _dropLaxFieldsLeftAtTheirDefaults(
-    fieldsCollection: FieldInfoCollection,
-  ) {
-    const names = fieldsCollection.relevantDependentConfigNames;
+  private _dropLaxFieldsLeftAtTheirDefaults(names: Set<string>) {
     const values = this.ctxValues as Record<string, unknown>;
 
     for (const name of names) {
@@ -1656,23 +1671,33 @@ class ModelTool<
     }
   }
 
-  private _resolveDependentChanges(
-    fieldsCollection: FieldInfoCollection,
-  ): MaybePromise<FieldInfoCollection> {
-    const ctx = this._getContext();
+  /**
+   * Resolves the dependents of the fields in `changed`, one dependency level
+   * at a time, so each dependent resolves at most once, after all its parents.
+   * A dependent whose value changes is added to `changed`, for the levels
+   * below it.
+   */
+  private _resolveDependents(changed: Set<string>): MaybePromise<void> {
+    if (!changed.size) return;
 
-    const isUpdate = ctx.isUpdate;
-    const toResolve = new Set<string>();
+    const levels = this._plan.dependentLevels;
 
-    for (const [configName, parents] of this._plan.dependents)
-      if (
-        parents.some((parent) =>
-          fieldsCollection.relevantDependentConfigNames.has(parent),
-        )
-      )
-        toResolve.add(configName);
+    const resolveFrom = (index: number): MaybePromise<void> => {
+      for (let i = index; i < levels.length; i++) {
+        const settled = this._resolveDependentLevel(levels[i]!, changed);
 
-    const fieldsResolved = new Set<string>();
+        if (settled) return settled.then(() => resolveFrom(i + 1));
+      }
+    };
+
+    return resolveFrom(0);
+  }
+
+  private _resolveDependentLevel(
+    level: [string, string[]][],
+    changed: Set<string>,
+  ): MaybePromise<void> {
+    const isUpdate = this.isUpdate;
     const values = this.ctxValues as Record<string, unknown>;
     const prevValues = (this.ctxPreviousValues ?? {}) as Record<
       string,
@@ -1681,7 +1706,9 @@ class ModelTool<
 
     const resolvable: [string, NS.DependentField<any, I, O, CtxOptions>][] = [];
 
-    for (const name of toResolve) {
+    for (const [name, parents] of level) {
+      if (!parents.some((parent) => changed.has(parent))) continue;
+
       const config = this.definitions[name] as NS.DependentField<
         any,
         I,
@@ -1702,8 +1729,12 @@ class ModelTool<
       resolvable.push([name, config]);
     }
 
+    if (!resolvable.length) return;
+
+    const ctx = this._getContext();
+
     // each value is applied as soon as its resolver settles
-    const settled = settleEach(
+    return settleEach(
       resolvable,
       ([, config]) => config.resolver(ctx),
       ([name], outcome) => {
@@ -1724,7 +1755,7 @@ class ModelTool<
         // a value that didn't change doesn't trigger the dependents below it
         if (isEqual(value, current, this.options.equalityDepth)) return;
 
-        fieldsResolved.add(name);
+        changed.add(name);
 
         // back to its previous value: no longer a change
         if (
@@ -1735,11 +1766,6 @@ class ModelTool<
         else values[name] = value;
       },
     );
-
-    const next = () =>
-      fieldsCollection.newWithResolvedDependentFields(fieldsResolved);
-
-    return settled ? settled.then(next) : next();
   }
 
   private _sanitizeValidationResponse<T>(
@@ -1854,6 +1880,45 @@ class Model<
     this.modelFactory().update(values, changes, options);
 }
 
+/**
+ * Groups dependents by dependency level: a dependent with no dependent parent
+ * is on level 0, any other one on the level after its deepest dependent
+ * parent. Each level keeps definition order. Schemas reject circular
+ * dependencies, so every dependent gets a level.
+ */
+function groupByDependencyLevel(dependents: [string, string[]][]) {
+  const parentsOf = new Map(dependents);
+  const levelOf = new Map<string, number>();
+
+  const getLevel = (name: string): number => {
+    let level = levelOf.get(name);
+
+    if (level === undefined) {
+      level = 0;
+
+      for (const parent of parentsOf.get(name)!)
+        if (parentsOf.has(parent))
+          level = Math.max(level, getLevel(parent) + 1);
+
+      levelOf.set(name, level);
+    }
+
+    return level;
+  };
+
+  const levels: [string, string[]][][] = [];
+
+  for (const dependent of dependents) {
+    const level = getLevel(dependent[0]);
+
+    if (!levels[level]) levels[level] = [];
+
+    levels[level].push(dependent);
+  }
+
+  return levels;
+}
+
 function getValidationFailedResponse(value: unknown) {
   return {
     metadata: null,
@@ -1866,7 +1931,6 @@ function getValidationFailedResponse(value: unknown) {
 class FieldInfoCollection {
   private _fieldsProvided: Set<string> = new Set();
   private _relevantFieldsProvided: Set<string> = new Set();
-  private _relevantDependentConfigNames: Set<string> = new Set();
   private _relevantConfigNames: Set<string> = new Set();
 
   constructor(
@@ -1914,30 +1978,9 @@ class FieldInfoCollection {
     this._relevantFieldsProvided.add(name);
   }
 
-  clonedFromRelevantFieldsProvided() {
-    const col = new FieldInfoCollection(this._fields, this._hasAliases);
-
-    col._relevantDependentConfigNames = new Set(this._relevantConfigNames);
-
-    return col;
-  }
-
-  newWithResolvedDependentFields(names: Set<string>) {
-    const col = new FieldInfoCollection(this._fields, this._hasAliases);
-
-    col._relevantDependentConfigNames = names;
-
-    return col;
-  }
-
   clear() {
     this._relevantConfigNames.clear();
     this._relevantFieldsProvided.clear();
-    this._relevantDependentConfigNames.clear();
-  }
-
-  get relevantDependentConfigNames() {
-    return this._relevantDependentConfigNames;
   }
 
   get relevantConfigNames() {
