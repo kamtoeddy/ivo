@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # Unreleased
 
+- Breaking change: remove the `escapeHTML` option of `makeStringValidator` (added in v2.1.0). Validated strings are no longer HTML-escaped.
 - Fix: a dependent field that resolves to the value it already had (its previous value on update, its default on create) no longer triggers the resolvers of the dependent fields below it.
 - Fix: on create, a lax field provided with (or validated to) its static default no longer triggers the resolvers of its dependent fields. A lax field with a default resolver still triggers them whenever it's provided.
 

@@ -203,44 +203,15 @@ makeStringValidator({ regExp: { value: pattern, error: 'Invalid username' } })('
 ```
 
 Les étapes s'exécutent dans cet ordre : `exclude` → `allow` → `nullable` → vérification du type →
-`regExp` → `normalize` → `trim` → `escapeHTML` → `min`/`max`.
+`regExp` → `normalize` → `trim` → `min`/`max`.
 
 | Option        | Type                                              | Description                                                                                   |
 | ------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `allow`       | `T[] \| { values: T[]; error: string }`           | Seules ces valeurs sont valides, renvoyées telles quelles (exclut les options suivantes).     |
 | `exclude`     | `T \| T[] \| { values: T \| T[]; error: string }` | Valeurs jamais valides.                                                                       |
-| `escapeHTML`  | `boolean`                                         | Échappe `&`, `<`, `>`, `"` et `'` en entités HTML. Par défaut : **`true`**.                   |
-| `min` / `max` | `number \| { value: number; error: string }`      | Limites de longueur. Par défaut : `1` et `255`. Vérifiées sur la valeur échappée.             |
+| `min` / `max` | `number \| { value: number; error: string }`      | Limites de longueur. Par défaut : `1` et `255`.                                               |
 | `normalize`   | `boolean`                                         | Normalise la valeur (Unicode). Par défaut : `true`.                                           |
 | `normalForm`  | `"NFC" \| "NFD" \| "NFKC" \| "NFKD"`              | La forme de normalisation. Par défaut : `"NFC"`.                                              |
 | `nullable`    | `boolean`                                         | Accepte `""`, `null` et `undefined` (validés comme `null`).                                   |
-| `regExp`      | `{ value: RegExp; error: string }`                | La valeur (non nettoyée, non échappée) doit y correspondre.                                   |
+| `regExp`      | `{ value: RegExp; error: string }`                | La valeur (non nettoyée) doit y correspondre.                                                 |
 | `trim`        | `boolean`                                         | Supprime les espaces au début et à la fin.                                                    |
-
-#### Échappement HTML
-
-Depuis la v2.1.0, les chaînes sont échappées par défaut, pour qu'une valeur puisse être affichée
-dans une page comme du texte sans être interprétée comme du balisage :
-
-```ts
-makeStringValidator()('<b>Tom & "Jerry"</b>');
-// { valid: true, validated: "&lt;b&gt;Tom &amp; &quot;Jerry&quot;&lt;/b&gt;" }
-
-makeStringValidator({ escapeHTML: false })('<b>Tom & "Jerry"</b>');
-// { valid: true, validated: "<b>Tom & \"Jerry\"</b>" }
-```
-
-`min` et `max` s'appliquent à la valeur échappée (celle qui est enregistrée) ; l'échappement peut
-donc rendre une valeur trop longue :
-
-```ts
-makeStringValidator({ max: 5 })('<&'); // "&lt;&amp;" fait 9 caractères
-// { valid: false, reason: "too_long", metadata: { min: 1, max: 5 } }
-```
-
-:::caution
-L'échappement n'est pas idempotent : une valeur validée une seconde fois (p. ex. un texte déjà
-échappé renvoyé lors d'une mise à jour) est échappée de nouveau (`&amp;` devient `&amp;amp;`).
-Utilisez `escapeHTML: false` pour les champs qui contiennent du balisage ou que vous échappez à
-l'affichage.
-:::
