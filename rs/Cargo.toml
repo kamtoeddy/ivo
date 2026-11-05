@@ -22,7 +22,7 @@ members = ["crates/*", "examples/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.7.1"
+version = "0.7.2"
 edition = "2021"
 authors = ["kamtoeddy <kamtoeddytagne@gmail.com>"]
 categories = ["data-structures", "development-tools"]
@@ -55,8 +55,8 @@ futures-util = { version = "0.3", default-features = false, features = [
     "async-await",
     "async-await-macro",
 ] }
-ivo-derive = { path = "./crates/derive", version = "0.7.1" }
-ivo-validators = { path = "./crates/validators", version = "0.7.1", optional = true }
+ivo-derive = { path = "./crates/derive", version = "0.7.2" }
+ivo-validators = { path = "./crates/validators", version = "0.7.2", optional = true }
 
 [dev-dependencies]
 async-std = { workspace = true, features = ["attributes"] }
